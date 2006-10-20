@@ -190,8 +190,8 @@ class InfoTool {
 		}
 
 		foreach (Assembly assembly in assemblies) {
-			foreach (Type type in ReflectionFu.ScanAssemblyForInterface (assembly, typeof (Beagle.Daemon.IQueryable))) {
-				foreach (Beagle.Daemon.QueryableFlavor flavor in ReflectionFu.ScanTypeForAttribute (type, typeof (Beagle.Daemon.QueryableFlavor))) {
+			foreach (Type type in ReflectionFu.ScanAssemblyForInterface (assembly, typeof (Beagle.Daemon.IBackend))) {
+				foreach (Beagle.Daemon.BackendFlavor flavor in ReflectionFu.ScanTypeForAttribute (type, typeof (Beagle.Daemon.BackendFlavor))) {
 					Console.WriteLine ("{0,-20} (" + assembly.Location + ")", flavor.Name);
 				}
 			}
