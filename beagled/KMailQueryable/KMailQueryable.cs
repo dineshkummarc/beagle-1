@@ -34,7 +34,7 @@ using Beagle.Util;
 
 namespace Beagle.Daemon.KMailQueryable {
 
-	[QueryableFlavor (Name="KMail", Domain=QueryDomain.Local, RequireInotify=false)]
+	[BackendFlavor (Name="KMail", Domain=QueryDomain.Local)]
 	public class KMailQueryable : LuceneFileQueryable {
 
 		// for non-inotify case, poll after this number of seconds
@@ -205,10 +205,6 @@ namespace Beagle.Daemon.KMailQueryable {
 		/////////////////////////////////////////////////////////////////////////////
 
 		// FIXME: How to determine if an mbox hit is valid without scanning the whole file
-
-		public string Name {
-			get { return "KMail"; }
-		}
 
 		/** 
 		 * path of local maildir - mine is in ~/.Mail

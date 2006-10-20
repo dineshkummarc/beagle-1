@@ -34,7 +34,7 @@ using Beagle.Util;
 
 namespace Beagle.Daemon.KonqQueryable {
 
-	[QueryableFlavor (Name="KonquerorHistory", Domain=QueryDomain.Local, RequireInotify=false)]
+	[BackendFlavor (Name="KonquerorHistory", Domain=QueryDomain.Local)]
 	public class KonqQueryable : LuceneFileQueryable, IIndexableGenerator {
 
 		private static Logger log = Logger.Get ("KonqQueryable");

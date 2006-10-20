@@ -74,7 +74,7 @@ namespace Beagle.Daemon {
 			this.SendAsyncResponse (new FinishedResponse ());
 		}
 
-		private void OnQueryDriverChanged (Queryable queryable, IQueryableChangeData change_data)
+		private void OnQueryDriverChanged (IQueryable queryable, IQueryableChangeData change_data)
 		{
 			if (this.result != null)
 				QueryDriver.DoOneQuery (queryable, this.query, this.result, change_data);

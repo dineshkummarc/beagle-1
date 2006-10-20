@@ -27,407 +27,66 @@
 using System;
 using System.IO;
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using System.Threading;
 using Beagle.Util;
+
 namespace Beagle.Daemon {
 	
 	public class QueryDriver {
 
-		// Contains list of queryables explicitly asked by --allow-backend or --backend name
-		// --allow-backend/--backend name : dont read config information and only start backend 'name'
-		static ArrayList excl_allowed_queryables = new ArrayList ();
-
-		// Contains list of denied queryables from config/arguments (every queryable is enabled by default)
-		// Unless overruled by --allow-backend/--backend name, deny backend only if names appears here.
-		static ArrayList denied_queryables = new ArrayList ();
-		
-		static bool to_read_conf = true; // read backends from conf if true
-		static bool done_reading_conf = false;
-
-		static private void ReadBackendsFromConf ()
-		{
-			if (! to_read_conf || done_reading_conf)
-				return;
-
-			// set flag here to stop Allow() from calling ReadBackendsFromConf() again
-			done_reading_conf = true;
-
-			// To allow static indexes, "static" should be in allowed_queryables
-			if (Conf.Daemon.AllowStaticBackend)
-				Allow ("static");
-
-			if (Conf.Daemon.DeniedBackends == null)
-				return;
-			
-			foreach (string name in Conf.Daemon.DeniedBackends)
-				denied_queryables.Add (name.ToLower ());
-		}
-
-		static public void OnlyAllow (string name)
-		{
-			excl_allowed_queryables.Add (name.ToLower ());
-			to_read_conf = false;
-		}
-		
-		static public void Allow (string name)
-		{
-			if (! done_reading_conf && to_read_conf)
-				ReadBackendsFromConf ();
-
-			denied_queryables.Remove (name.ToLower ());
-		}
-		
-		static public void Deny (string name)
-		{
-			if (! done_reading_conf && to_read_conf)
-				ReadBackendsFromConf ();
-
-			name = name.ToLower ();
-			if (!denied_queryables.Contains (name))
-				denied_queryables.Add (name);
-		}
-
-		static private bool UseQueryable (string name)
-		{
-			name = name.ToLower ();
-
-			if (excl_allowed_queryables.Contains (name))
-				return true;
-			if (excl_allowed_queryables.Count != 0)
-				return false;
-
-			if (denied_queryables.Contains (name))
-				return false;
-
-			return true;
-		}
-
 		//////////////////////////////////////////////////////////////////////////////////////
 
-		// Paths to static queryables
+		private static List <IQueryable> queryables = null;
 
-		static ArrayList static_queryables = new ArrayList ();
-		
-		static public void AddStaticQueryable (string path) {
-
-			if (! static_queryables.Contains (path))
-				static_queryables.Add (path);
+		private static List <IQueryable> Queryables {
+			get { return queryables; }
 		}
 
-		//////////////////////////////////////////////////////////////////////////////////////
-
-		// Delay before starting the indexing process
-
-		static int indexing_delay = 60;  // Default to 60 seconds
-
-		public static int IndexingDelay {
-			set { indexing_delay = value; }
-		}
-
-		//////////////////////////////////////////////////////////////////////////////////////
-
-		// Use introspection to find all classes that implement IQueryable, the construct
-		// associated Queryables objects.
-
-		static ArrayList queryables = new ArrayList ();
-		static Hashtable iqueryable_to_queryable = new Hashtable ();
-
-		static bool ThisApiSoVeryIsBroken (Type m, object criteria)
-		{
-			return m == (Type) criteria;
-		}
-
-		static bool TypeImplementsInterface (Type t, Type iface)
-		{
-			Type[] impls = t.FindInterfaces (new TypeFilter (ThisApiSoVeryIsBroken),
-							 iface);
-			return impls.Length > 0;
-		}
-
-		// For every type in the assembly that
-		// (1) implements IQueryable
-		// (2) Has a QueryableFlavor attribute attached
-		// assemble a Queryable object and stick it into our list of queryables.
-		static void ScanAssembly (Assembly assembly)
+		public static void Init ()
 		{
 			int count = 0;
 
-			foreach (Type type in ReflectionFu.ScanAssemblyForInterface (assembly, typeof (IQueryable))) {
-				bool type_accepted = false;
-				foreach (QueryableFlavor flavor in ReflectionFu.ScanTypeForAttribute (type, typeof (QueryableFlavor))) {
-					if (! UseQueryable (flavor.Name))
-						continue;
+			// Populate our list of queryables and get the keyword
+			// mappings at the same time.
+			queryables = new List <IQueryable> ();
 
-					if (flavor.RequireInotify && ! Inotify.Enabled) {
-						Logger.Log.Warn ("Can't start backend '{0}' without inotify", flavor.Name);
-						continue;
-					}
+			foreach (IBackend backend in BackendDriver.Backends) {
+				IQueryable queryable = backend.Queryable;
 
-					if (flavor.RequireExtendedAttributes && ! ExtendedAttribute.Supported) {
-						Logger.Log.Warn ("Can't start backend '{0}' without extended attributes", flavor.Name);
-						continue;
-					}
+				if (! queryables.Contains (queryable))
+					queryables.Add (queryable);
 
-					IQueryable iq = null;
-					try {
-						iq = Activator.CreateInstance (type) as IQueryable;
-					} catch (Exception e) {
-						Logger.Log.Error (e, "Caught exception while instantiating {0} backend", flavor.Name);
-					}
-
-					if (iq != null) {
-						Queryable q = new Queryable (flavor, iq);
-						queryables.Add (q);
-						iqueryable_to_queryable [iq] = q;
-						++count;
-						type_accepted = true;
-						break;
-					}
-				}
-
-				if (! type_accepted)
-					continue;
-
-				object[] attributes = type.GetCustomAttributes (false);
-				foreach (object attribute in attributes) {
-					PropertyKeywordMapping mapping = attribute as PropertyKeywordMapping;
-					if (mapping == null)
-						continue;
-					//Logger.Log.Debug (mapping.Keyword + " => " 
-					//		+ mapping.PropertyName + 
-					//		+ " is-keyword=" + mapping.IsKeyword + " (" 
-					//		+ mapping.Description + ") "
-					//		+ "(" + type.FullName + ")");
+				foreach (PropertyKeywordMapping mapping in ReflectionFu.ScanTypeForAttribute (backend.GetType (), typeof (PropertyKeywordMapping))) {
 					PropertyKeywordFu.RegisterMapping (mapping);
+					++count;
 				}
-					
 			}
-			Logger.Log.Debug ("Found {0} backends in {1}", count, assembly.Location);
-		}
 
-		////////////////////////////////////////////////////////
+			Log.Debug ("Found {0} queryables in {1} backends", queryables.Count, BackendDriver.Backends.Count);
+			Log.Debug ("Registered {0} keyword mappings from backends", count);
 
-		public static void ReadKeywordMappings ()
-		{
-			Logger.Log.Debug ("Reading mapping from filters");
+			count = 0;
+
 			ArrayList assemblies = ReflectionFu.ScanEnvironmentForAssemblies ("BEAGLE_FILTER_PATH", PathFinder.FilterDir);
 
 			foreach (Assembly assembly in assemblies) {
-				foreach (Type type in assembly.GetTypes ())
-					if (type.FullName.StartsWith ("Beagle.Filters")) {
-
-						if (type.IsNestedPrivate ||
-						    type.IsNestedPublic ||
-						    type.IsNestedAssembly ||
-						    type.IsNestedFamily)
-							continue;
-
-						object[] attributes = type.GetCustomAttributes (false);
-						foreach (object attribute in attributes) {
-
-							PropertyKeywordMapping mapping = attribute as PropertyKeywordMapping;
-							if (mapping == null)
-								continue;
-							//Logger.Log.Debug (mapping.Keyword + " => " 
-							//		+ mapping.PropertyName
-							//		+ " is-keyword=" + mapping.IsKeyword + " (" 
-							//		+ mapping.Description + ") "
-							//		+ "(" + type.FullName + ")");
-							PropertyKeywordFu.RegisterMapping (mapping);
-						}
+				foreach (Type t in ReflectionFu.ScanAssemblyForClass (assembly, typeof (Filter))) {
+					foreach (PropertyKeywordMapping mapping in ReflectionFu.ScanTypeForAttribute (t, typeof (PropertyKeywordMapping))) {
+						PropertyKeywordFu.RegisterMapping (mapping);
+						++count;
 					}
-			}
-		}
-
-		////////////////////////////////////////////////////////
-
-		// Scans PathFinder.SystemIndexesDir after available 
-		// system-wide indexes.
-		static void LoadSystemIndexes () 
-		{
-			if (!Directory.Exists (PathFinder.SystemIndexesDir))
-				return;
-			
-			Logger.Log.Info ("Loading system static indexes.");
-
-			int count = 0;
-
-			foreach (DirectoryInfo index_dir in new DirectoryInfo (PathFinder.SystemIndexesDir).GetDirectories ()) {
-				if (! UseQueryable (index_dir.Name))
-					continue;
-				
-				if (LoadStaticQueryable (index_dir, QueryDomain.System))
-					count++;
-			}
-
-			Logger.Log.Info ("Found {0} system-wide indexes.", count);
-		}
-
-		// Scans configuration for user-specified index paths 
-		// to load StaticQueryables from.
-		static void LoadStaticQueryables () 
-		{
-			int count = 0;
-
-			if (UseQueryable ("static")) {
-				Logger.Log.Info ("Loading user-configured static indexes.");
-				foreach (string path in Conf.Daemon.StaticQueryables)
-					static_queryables.Add (path);
-			}
-
-			foreach (string path in static_queryables) {
-				DirectoryInfo index_dir = new DirectoryInfo (StringFu.SanitizePath (path));
-
-				if (!index_dir.Exists)
-					continue;
-				
-				// FIXME: QueryDomain might be other than local
-				if (LoadStaticQueryable (index_dir, QueryDomain.Local))
-					count++;
-			}
-
-			Logger.Log.Info ("Found {0} user-configured static indexes..", count);
-		}
-
-		// Instantiates and loads a StaticQueryable from an index directory
-		static private bool LoadStaticQueryable (DirectoryInfo index_dir, QueryDomain query_domain) 
-		{
-			StaticQueryable static_queryable = null;
-			
-			if (!index_dir.Exists)
-				return false;
-			
-			try {
-				static_queryable = new StaticQueryable (index_dir.Name, index_dir.FullName, true);
-			} catch (InvalidOperationException) {
-				Logger.Log.Warn ("Unable to create read-only index (likely due to index version mismatch): {0}", index_dir.FullName);
-				return false;
-			} catch (Exception e) {
-				Logger.Log.Error (e, "Caught exception while instantiating static queryable: {0}", index_dir.Name);
-				return false;
-			}
-			
-			if (static_queryable != null) {
-				QueryableFlavor flavor = new QueryableFlavor ();
-				flavor.Name = index_dir.Name;
-				flavor.Domain = query_domain;
-				
-				Queryable queryable = new Queryable (flavor, static_queryable);
-				queryables.Add (queryable);
-				
-				iqueryable_to_queryable [static_queryable] = queryable;
-
-				return true;
-			}
-
-			return false;
-		}
-
-		////////////////////////////////////////////////////////
-
-		private static ArrayList assemblies = null;
-
-		// Perform expensive initialization steps all at once.
-		// Should be done before SignalHandler comes into play.
-		static public void Init ()
-		{
-			ReadBackendsFromConf ();
-			SystemInformation.LogMemoryUsage ();
-			assemblies = ReflectionFu.ScanEnvironmentForAssemblies ("BEAGLE_BACKEND_PATH", PathFinder.BackendDir);
-		}
-
-		static public void Start ()
-		{
-			// Only add the executing assembly if we haven't already loaded it.
-			if (assemblies.IndexOf (Assembly.GetExecutingAssembly ()) == -1)
-				assemblies.Add (Assembly.GetExecutingAssembly ());
-
-			foreach (Assembly assembly in assemblies) {
-				ScanAssembly (assembly);
-
-				// This allows backends to define their
-				// own executors.
-				Server.ScanAssemblyForExecutors (assembly);
-			}
-			
-			assemblies = null;
-
-
-			SystemInformation.LogMemoryUsage ();
-
-			ReadKeywordMappings ();
-
-			LoadSystemIndexes ();
-			LoadStaticQueryables ();
-
-			if (indexing_delay <= 0 || Environment.GetEnvironmentVariable ("BEAGLE_EXERCISE_THE_DOG") != null)
-				StartQueryables ();
-			else {
-				Logger.Log.Debug ("Waiting {0} seconds before starting queryables", indexing_delay);
-				GLib.Timeout.Add ((uint) indexing_delay * 1000, new GLib.TimeoutHandler (StartQueryables));
-			}
-		}
-
-		static private bool StartQueryables ()
-		{
-			Logger.Log.Debug ("Starting queryables");
-
-			foreach (Queryable q in queryables) {
-				Logger.Log.Info ("Starting backend: '{0}'", q.Name);
-				q.Start ();
-			}
-
-			return false;
-		}
-
-		static public string ListBackends ()
-		{
-			ArrayList assemblies = ReflectionFu.ScanEnvironmentForAssemblies ("BEAGLE_BACKEND_PATH", PathFinder.BackendDir);
-
-			// Only add the executing assembly if we haven't already loaded it.
-			if (assemblies.IndexOf (Assembly.GetExecutingAssembly ()) == -1)
-				assemblies.Add (Assembly.GetExecutingAssembly ());
-
-			string ret = "User:\n";
-
-			foreach (Assembly assembly in assemblies) {
-				foreach (Type type in ReflectionFu.ScanAssemblyForInterface (assembly, typeof (IQueryable))) {
-					foreach (QueryableFlavor flavor in ReflectionFu.ScanTypeForAttribute (type, typeof (QueryableFlavor)))
-						ret += String.Format (" - {0}\n", flavor.Name);
 				}
 			}
-			
-			if (!Directory.Exists (PathFinder.SystemIndexesDir)) 
-				return ret;
-			
-			ret += "System:\n";
-			foreach (DirectoryInfo index_dir in new DirectoryInfo (PathFinder.SystemIndexesDir).GetDirectories ()) {
-				ret += String.Format (" - {0}\n", index_dir.Name);
-			}
 
-			return ret;
-		}
-
-		static public Queryable GetQueryable (string name)
-		{
-			foreach (Queryable q in queryables) {
-				if (q.Name == name)
-					return q;
-			}
-
-			return null;
-		}
-
-		static public Queryable GetQueryable (IQueryable iqueryable)
-		{
-			return (Queryable) iqueryable_to_queryable [iqueryable];
+			Log.Debug ("Registered {0} keyword mappings from filters", count);
 		}
 
 		////////////////////////////////////////////////////////
 
-		public delegate void ChangedHandler (Queryable            queryable,
+		public delegate void ChangedHandler (IQueryable           iqueryable,
 						     IQueryableChangeData changeData);
 
 		static public event ChangedHandler ChangedEvent;
@@ -437,8 +96,7 @@ namespace Beagle.Daemon {
 						     IQueryableChangeData change_data)
 		{
 			if (ChangedEvent != null) {
-				Queryable queryable = iqueryable_to_queryable [iqueryable] as Queryable;
-				ChangedEvent (queryable, change_data);
+				ChangedEvent (iqueryable, change_data);
 			}
 		}
 
@@ -446,17 +104,17 @@ namespace Beagle.Daemon {
 
 		private class QueryClosure : IQueryWorker {
 
-			Queryable queryable;
+			IQueryable iqueryable;
 			Query query;
 			IQueryResult result;
 			IQueryableChangeData change_data;
 			
-			public QueryClosure (Queryable            queryable,
+			public QueryClosure (IQueryable           iqueryable,
 					     Query                query,
 					     QueryResult          result,
 					     IQueryableChangeData change_data)
 			{
-				this.queryable = queryable;
+				this.iqueryable = iqueryable;
 				this.query = query;
 				this.result = result;
 				this.change_data = change_data;
@@ -464,17 +122,17 @@ namespace Beagle.Daemon {
 
 			public void DoWork ()
 			{
-				queryable.DoQuery (query, result, change_data);
+				iqueryable.DoQuery (query, result, change_data);
 			}
 		}
 
-		static public void DoOneQuery (Queryable            queryable,
+		static public void DoOneQuery (IQueryable           iqueryable,
 					       Query                query,
 					       QueryResult          result,
 					       IQueryableChangeData change_data)
 		{
-			if (queryable.AcceptQuery (query)) {
-				QueryClosure qc = new QueryClosure (queryable, query, result, change_data);
+			if (iqueryable.AcceptQuery (query)) {
+				QueryClosure qc = new QueryClosure (iqueryable, query, result, change_data);
 				result.AttachWorker (qc);
 			}
 		}
@@ -590,8 +248,8 @@ namespace Beagle.Daemon {
 			if (! result.WorkerStart (dummy_worker))
 				return;
 			
-			foreach (Queryable queryable in queryables)
-				DoOneQuery (queryable, query, result, null);
+			foreach (IQueryable iqueryable in Queryables)
+				DoOneQuery (iqueryable, query, result, null);
 			
 			result.WorkerFinished (dummy_worker);
 		}
@@ -625,7 +283,7 @@ namespace Beagle.Daemon {
 
 		static public IEnumerable GetIndexInformation ()
 		{
-			foreach (Queryable q in queryables)
+			foreach (IQueryable q in Queryables)
 				yield return q.GetQueryableStatus ();
 		}
 
@@ -633,7 +291,7 @@ namespace Beagle.Daemon {
 
 		static public bool IsIndexing {
 			get {
-				foreach (Queryable q in queryables) {
+				foreach (IQueryable q in Queryables) {
 					QueryableStatus status = q.GetQueryableStatus ();
 
 					if (status == null)

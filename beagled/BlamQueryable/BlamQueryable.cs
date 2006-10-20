@@ -36,7 +36,7 @@ using Beagle.Util;
 
 namespace Beagle.Daemon.BlamQueryable {
 
-	[QueryableFlavor (Name="Blam", Domain=QueryDomain.Local, RequireInotify=false)]
+	[BackendFlavor (Name="Blam", Domain=QueryDomain.Local)]
 	public class BlamQueryable : LuceneFileQueryable {
 
 		private static Logger log = Logger.Get ("BlamQueryable");

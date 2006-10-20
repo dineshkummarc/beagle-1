@@ -1,7 +1,7 @@
 //
-// SnippetExecutor.cs
+// IBackend.cs
 //
-// Copyright (C) 2005 Novell, Inc.
+// Copyright (C) 2004-2006 Novell, Inc.
 //
 
 //
@@ -25,28 +25,17 @@
 //
 
 using System;
-using System.Collections;
-using System.Xml.Serialization;
-
-using Beagle.Util;
 
 namespace Beagle.Daemon {
 
-	[RequestMessage (typeof (SnippetRequest))]
-	public class SnippetExecutor : RequestMessageExecutor {
+	public interface IBackend {
 
-		public override ResponseMessage Execute (RequestMessage req)
-		{
-			SnippetRequest request = (SnippetRequest) req;
-			IQueryable queryable = BackendDriver.GetBackend (request.Hit.Source).Queryable;
-			string snippet;
+		void Start ();
 
-			if (queryable == null)
-				snippet = String.Format ("ERROR: No queryable object matches '{0}'", request.Hit.Source);
-			else
-				snippet = queryable.GetSnippet (request.QueryTerms, request.Hit);
+		string Name { get; set; }
+		
+		QueryDomain Domain { get; set; }
 
-			return new SnippetResponse (snippet);
-		}
+		IQueryable Queryable { get; }
 	}
 }

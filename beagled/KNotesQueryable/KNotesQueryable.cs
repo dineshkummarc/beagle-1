@@ -37,7 +37,7 @@ using Beagle.Util;
 
 namespace Beagle.Daemon.KNotesQueryable {
 
-	[QueryableFlavor (Name="KNotes", Domain=QueryDomain.Local, RequireInotify=false)]
+	[BackendFlavor (Name="KNotes", Domain=QueryDomain.Local)]
 	public class KNotesQueryable : LuceneFileQueryable {
 
 		private static Logger log = Logger.Get ("KNotesQueryable");

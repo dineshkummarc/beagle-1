@@ -35,7 +35,7 @@ using Beagle.Util;
 
 namespace Beagle.Daemon.LabyrinthQueryable {
 
-	[QueryableFlavor (Name="Labyrinth", Domain=QueryDomain.Local, RequireInotify=false)]
+	[BackendFlavor (Name="Labyrinth", Domain=QueryDomain.Local)]
 	public class LabyrinthQueryable  : LuceneFileQueryable, IIndexableGenerator {
 
 		private static Logger log = Logger.Get ("LabyrinthQueryable");

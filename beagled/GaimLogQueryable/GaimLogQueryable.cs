@@ -36,7 +36,7 @@ using Beagle.Util;
 namespace Beagle.Daemon.GaimLogQueryable {
 
 	// FIXME: This should be rather renamed to Gaim to be compliant with other backend names
-	[QueryableFlavor (Name="GaimLog", Domain=QueryDomain.Local, RequireInotify=false)]
+	[BackendFlavor (Name="GaimLog", Domain=QueryDomain.Local)]
 	public class GaimLogQueryable : LuceneFileQueryable, IIndexableGenerator {
 
 		private static Logger log = Logger.Get ("GaimLogQueryable");

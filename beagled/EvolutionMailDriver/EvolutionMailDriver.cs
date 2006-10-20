@@ -37,7 +37,7 @@ using LNI = Lucene.Net.Index;
 
 namespace Beagle.Daemon.EvolutionMailDriver {
 
-	[QueryableFlavor (Name="EvolutionMail", Domain=QueryDomain.Local, RequireInotify=false)]
+	[BackendFlavor (Name="EvolutionMail", Domain=QueryDomain.Local)]
 	public class EvolutionMailQueryable : LuceneQueryable {
 
 		public int polling_interval_in_seconds = 60;

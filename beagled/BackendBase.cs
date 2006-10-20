@@ -1,7 +1,7 @@
 //
-// SnippetExecutor.cs
+// BackendBase.cs
 //
-// Copyright (C) 2005 Novell, Inc.
+// Copyright (C) 2006 Novell, Inc.
 //
 
 //
@@ -25,28 +25,38 @@
 //
 
 using System;
-using System.Collections;
-using System.Xml.Serialization;
-
-using Beagle.Util;
+using Beagle;
 
 namespace Beagle.Daemon {
 
-	[RequestMessage (typeof (SnippetRequest))]
-	public class SnippetExecutor : RequestMessageExecutor {
+	// Convenience base class for backends
+	public abstract class BackendBase : IBackend {
 
-		public override ResponseMessage Execute (RequestMessage req)
-		{
-			SnippetRequest request = (SnippetRequest) req;
-			IQueryable queryable = BackendDriver.GetBackend (request.Hit.Source).Queryable;
-			string snippet;
+		private string name;
+		private QueryDomain domain;
 
-			if (queryable == null)
-				snippet = String.Format ("ERROR: No queryable object matches '{0}'", request.Hit.Source);
-			else
-				snippet = queryable.GetSnippet (request.QueryTerms, request.Hit);
-
-			return new SnippetResponse (snippet);
+		public string Name {
+			get { return name; }
+			set {
+				if (name == null)
+					name = value;
+				else
+					throw new ArgumentException ("Backend name can only be set once");
+			}
 		}
+
+		public QueryDomain Domain {
+			get { return domain; }
+			set {
+				if (domain == 0)
+					domain = value;
+				else
+					throw new ArgumentException ("Backend domain can only be set once");
+			}
+		}
+
+		public abstract void Start ();
+
+		public abstract IQueryable Queryable { get; }
 	}
 }

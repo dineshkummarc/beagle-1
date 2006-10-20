@@ -35,7 +35,7 @@ using Beagle.Util;
 
 namespace Beagle.Daemon.KopeteQueryable {
 
-	[QueryableFlavor (Name="Kopete", Domain=QueryDomain.Local, RequireInotify=false)]
+	[BackendFlavor (Name="Kopete", Domain=QueryDomain.Local)]
 	public class KopeteQueryable : LuceneFileQueryable {
 
 		private string config_dir, log_dir;

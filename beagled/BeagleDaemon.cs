@@ -37,6 +37,7 @@ using Beagle.Util;
 using Log = Beagle.Util.Log;
 
 namespace Beagle.Daemon {
+
 	class BeagleDaemon {
 
 		public static Thread MainLoopThread = null;
@@ -153,9 +154,14 @@ namespace Beagle.Daemon {
 			    Environment.GetEnvironmentVariable ("BEAGLE_SYNCHRONIZE_LOCALLY") != null)
 				IndexSynchronization.Initialize ();
 
+			BackendDriver.LoadBackends ();
+			QueryDriver.Init ();
+
+			BackendDriver.StartBackends ();
+
 			// Start the query driver.
-			Logger.Log.Debug ("Starting QueryDriver");
-			QueryDriver.Start ();
+			//Logger.Log.Debug ("Starting QueryDriver");
+			//QueryDriver.Start ();
 
 			bool initially_on_battery = SystemInformation.UsingBattery && ! Conf.Indexing.IndexOnBattery;
 
@@ -249,7 +255,7 @@ namespace Beagle.Daemon {
 
 				case "--list-backends":
 					Console.WriteLine ("Current available backends:");
-					Console.Write (QueryDriver.ListBackends ());
+					Console.Write (BackendDriver.ListBackends ());
 					Environment.Exit (0);
 					break;
 
@@ -295,12 +301,12 @@ namespace Beagle.Daemon {
 					}
 
 					if (next_arg [0] != '+' && next_arg [0] != '-')
-						QueryDriver.OnlyAllow (next_arg);
+						BackendDriver.OnlyAllow (next_arg);
 					else {
 						if (next_arg [0] == '+')
-							QueryDriver.Allow (next_arg.Substring (1));
+							BackendDriver.Allow (next_arg.Substring (1));
 						else
-							QueryDriver.Deny (next_arg.Substring (1));
+							BackendDriver.Deny (next_arg.Substring (1));
 					}
 
 					++i; // we used next_arg
@@ -311,20 +317,20 @@ namespace Beagle.Daemon {
 					// it will disable reading the list of enabled/disabled backends
 					// from conf and start the backend given
 					if (next_arg != null)
-						QueryDriver.OnlyAllow (next_arg);
+						BackendDriver.OnlyAllow (next_arg);
 					++i; // we used next_arg
 					break;
 					
 				case "--deny-backend":
 					// deprecated: use --backends -'name' instead
 					if (next_arg != null)
-						QueryDriver.Deny (next_arg);
+						BackendDriver.Deny (next_arg);
 					++i; // we used next_arg
 					break;
 
 			       case "--add-static-backend": 
 					if (next_arg != null)
-						QueryDriver.AddStaticQueryable (next_arg);
+						BackendDriver.AddStaticBackendPath (next_arg);
 					++i;
 					break;
 
@@ -335,7 +341,7 @@ namespace Beagle.Daemon {
 				case "--indexing-delay":
 					if (next_arg != null) {
 						try {
-							QueryDriver.IndexingDelay = Int32.Parse (next_arg);
+							BackendDriver.IndexingDelay = Int32.Parse (next_arg);
 						} catch {
 							Console.WriteLine ("'{0}' is not a valid number of seconds", next_arg);
 							Environment.Exit (1);
@@ -428,8 +434,15 @@ namespace Beagle.Daemon {
 				Logger.Log.Debug ("Unable to establish a connection to the X server");
 			XSetIOErrorHandler (BeagleXIOErrorHandler);
 
-			QueryDriver.Init ();
+			SystemInformation.LogMemoryUsage ();
+
+			BackendDriver.Init ();
+
+			SystemInformation.LogMemoryUsage ();
+
 			Server.Init ();
+
+			SystemInformation.LogMemoryUsage ();
 
 			SetupSignalHandlers ();
 			Shutdown.ShutdownEvent += OnShutdown;

@@ -39,7 +39,7 @@ using Evolution;
 
 namespace Beagle.Daemon.EvolutionDataServerQueryable {
 
-	[QueryableFlavor (Name="EvolutionDataServer", Domain=QueryDomain.Local, RequireInotify=false)]
+	[BackendFlavor (Name="EvolutionDataServer", Domain=QueryDomain.Local)]
 	public class EvolutionDataServerQueryable : LuceneQueryable {
 		//private Scheduler.Priority priority = Scheduler.Priority.Immediate;
 		private Scheduler.Priority priority = Scheduler.Priority.Delayed;

@@ -35,7 +35,7 @@ using Beagle.Util;
 
 namespace Beagle.Daemon.ThunderbirdQueryable {
 
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
+	[BackendFlavor (Name = "Thunderbird", Domain = QueryDomain.Local)]
 	public class ThunderbirdQueryable : LuceneQueryable {
 		private static DateTime indexing_start;
 		private ThunderbirdIndexer indexer;

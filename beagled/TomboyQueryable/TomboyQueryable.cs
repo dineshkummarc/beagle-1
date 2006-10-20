@@ -35,8 +35,8 @@ using Beagle.Util;
 
 namespace Beagle.Daemon.TomboyQueryable {
 
-	[QueryableFlavor (Name="Tomboy", Domain=QueryDomain.Local, RequireInotify=false)]
-	public class TomboyQueryable : LuceneFileQueryable, IIndexableGenerator  {
+	[BackendFlavor (Name="Tomboy", Domain=QueryDomain.Local)]
+	public class TomboyQueryable : LuceneFileQueryable, IIndexableGenerator {
 
 		string tomboy_dir;
 		Hashtable note_text_cache = UriFu.NewHashtable ();

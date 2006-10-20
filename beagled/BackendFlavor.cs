@@ -1,7 +1,7 @@
 //
-// QueryableFlavor.cs
+// BackendFlavor.cs
 //
-// Copyright (C) 2004 Novell, Inc.
+// Copyright (C) 2004-2006 Novell, Inc.
 //
 
 //
@@ -29,11 +29,9 @@ using System;
 namespace Beagle.Daemon {
 	
 	[AttributeUsage (AttributeTargets.Class)]
-	public class QueryableFlavor : Attribute {
+	public class BackendFlavor : Attribute {
 
 		public string      Name;
 		public QueryDomain Domain;
-		public bool        RequireInotify = true;
-		public bool        RequireExtendedAttributes = false;
 	}
 }

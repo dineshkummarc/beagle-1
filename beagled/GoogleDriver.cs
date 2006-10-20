@@ -35,8 +35,8 @@ using Beagle.Util;
 
 namespace Beagle.Daemon {
 
-	[QueryableFlavor (Name="Google", Domain=QueryDomain.Global, RequireInotify=false)]
-	public class GoogleDriver : IQueryable {
+	[BackendFlavor (Name="Google", Domain=QueryDomain.Global)]
+	public class GoogleDriver : BackendBase, IQueryable {
 
 		int maxResults = 5;
 
@@ -48,12 +48,12 @@ namespace Beagle.Daemon {
 			googleKey = Environment.GetEnvironmentVariable ("GOOGLE_WEB_API_KEY");
 		}
 
-		public string Name {
-			get { return "Google"; }
+		public override void Start () 
+		{
 		}
 
-		public void Start () 
-		{
+		public override IQueryable Queryable {
+			get { return this; }
 		}
 
 		Hit FromGoogleResultElement (ResultElement res, int rank)

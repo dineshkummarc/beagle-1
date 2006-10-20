@@ -41,6 +41,7 @@ using LNS = Lucene.Net.Search;
 using Beagle;
 using Beagle.Util;
 using FSQ = Beagle.Daemon.FileSystemQueryable.FileSystemQueryable;
+using Stopwatch = Beagle.Util.Stopwatch;
 
 namespace Beagle.Daemon 
 {

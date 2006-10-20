@@ -40,7 +40,7 @@ using Beagle.Util;
 
 namespace Beagle.Daemon.KabcQueryable {
 
-	[QueryableFlavor (Name="KAddressBook", Domain=QueryDomain.Local, RequireInotify=false)]
+	[BackendFlavor (Name="KAddressBook", Domain=QueryDomain.Local)]
 	public class KabcQueryable : LuceneFileQueryable {
 
 		private static Logger log = Logger.Get ("KAddressBookQueryable");

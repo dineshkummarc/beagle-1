@@ -356,12 +356,16 @@ DAEMON_DLL_CSFILES = 						\
 	$(KNOTES_QUERYABLE_CSFILES)				\
 	$(KABC_QUERYABLE_CSFILES)				\
 	$(KOPETE_QUERYABLE_CSFILES)				\
+	$(srcdir)/BackendBase.cs				\
+	$(srcdir)/BackendDriver.cs				\
+	$(srcdir)/BackendFlavor.cs				\
 	$(srcdir)/FileAttributes.cs				\
 	$(srcdir)/FileAttributesStore.cs			\
 	$(srcdir)/FileAttributesStore_ExtendedAttribute.cs	\
 	$(srcdir)/FileAttributesStore_Mixed.cs			\
 	$(srcdir)/FileAttributesStore_Sqlite.cs			\
 	$(srcdir)/FilterFactory.cs				\
+	$(srcdir)/IBackend.cs					\
 	$(srcdir)/IFileAttributesStore.cs			\
 	$(srcdir)/IIndexer.cs					\
 	$(srcdir)/IndexSynchronization.cs			\
@@ -382,8 +386,6 @@ DAEMON_DLL_CSFILES = 						\
 	$(srcdir)/QueryExecutor.cs				\
 	$(srcdir)/QueryResult.cs				\
 	$(srcdir)/QueryStringParser.cs				\
-	$(srcdir)/Queryable.cs					\
-	$(srcdir)/QueryableFlavor.cs				\
 	$(srcdir)/RemoteControlExecutors.cs			\
 	$(srcdir)/RemoteIndexerRequest.cs			\
 	$(srcdir)/RemoteIndexerResponse.cs			\

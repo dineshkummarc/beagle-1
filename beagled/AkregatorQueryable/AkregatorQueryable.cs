@@ -37,7 +37,7 @@ using Beagle.Util;
 
 namespace Beagle.Daemon.AkregatorQueryable {
 
-	[QueryableFlavor (Name="Akregator", Domain=QueryDomain.Local, RequireInotify=false)]
+	[BackendFlavor (Name="Akregator", Domain=QueryDomain.Local)]
 	public class AkregatorQueryable : LuceneFileQueryable {
 
 		private static Logger log = Logger.Get ("AkregatorQueryable");

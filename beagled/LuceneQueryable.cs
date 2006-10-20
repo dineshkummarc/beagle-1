@@ -32,7 +32,7 @@ using Beagle.Util;
 
 namespace Beagle.Daemon {
 
-	public abstract class LuceneQueryable : IQueryable {
+	public abstract class LuceneQueryable : BackendBase, IQueryable {
 		
 		static public bool OptimizeRightAway = false;
 
@@ -138,9 +138,13 @@ namespace Beagle.Daemon {
 
 		/////////////////////////////////////////
 
-		virtual public void Start ()
+		public override void Start ()
 		{
 
+		}
+
+		public override IQueryable Queryable {
+			get { return this; }
 		}
 
 		/////////////////////////////////////////
@@ -375,6 +379,7 @@ namespace Beagle.Daemon {
 		{
 			QueryableStatus status = new QueryableStatus ();
 
+			status.Name = this.Name;
 			status.State = state;
 			status.ProgressPercent = progress_percent;
 
@@ -822,7 +827,7 @@ namespace Beagle.Daemon {
 
 		protected void AddIndexable (Indexable indexable)
 		{
-			indexable.Source = QueryDriver.GetQueryable (this).Name;
+			indexable.Source = this.Name;
 
 			lock (request_lock)
 				pending_request.Add (indexable);

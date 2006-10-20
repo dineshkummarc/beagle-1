@@ -37,7 +37,7 @@ using Beagle.Util;
 
 namespace Beagle.Daemon.LifereaQueryable {
 
-	[QueryableFlavor (Name="Liferea", Domain=QueryDomain.Local, RequireInotify=false)]
+	[BackendFlavor (Name="Liferea", Domain=QueryDomain.Local)]
 	public class LifereaQueryable : LuceneFileQueryable {
 
 		private static Logger log = Logger.Get ("LifereaQueryable");
