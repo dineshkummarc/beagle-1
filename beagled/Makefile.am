@@ -3,15 +3,16 @@
 # Most of these are thanks to DotLucene.  It would be nice if we could use
 # "#pragma warning" on these.
 #
+# 0108 = hides inherited member (probably a bad one to ignore)
 # 0162 = Unreachable code detected
 # 0164 = This label has not been referenced
 # 0168 = The variable 'foo' is declared but never used
-# 0169 = The private method/field 'foo' is never used
 # 0219 = Variable is assigned but never used
 # 0436 = Ignore imported type (local SqliteClient)
+# 0618 = Obsolete warnings
 
 # unsafe arg for Mono.Data.SqliteClient fork
-CSC = $(MCS) -debug -nowarn:0162,0164,0168,0169,0219,0436 -unsafe
+CSC = $(MCS) -debug -unsafe -nowarn:0108,0162,0164,0168,0219,0436,0618
 
 BACKENDDIR = $(pkglibdir)/Backends
 

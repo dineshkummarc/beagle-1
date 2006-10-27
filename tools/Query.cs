@@ -321,7 +321,8 @@ class QueryTool {
 
 			case "--keywords":
 				ReadBackendMappings ();
-				QueryDriver.ReadKeywordMappings ();
+				// XXX: Fix this.
+				//QueryDriver.ReadKeywordMappings ();
 
 				Console.WriteLine ("Supported query keywords are:");
 

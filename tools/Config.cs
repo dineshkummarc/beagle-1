@@ -32,6 +32,7 @@ using System.Collections.Specialized;
 using System.Reflection;
 
 using Beagle;
+using Beagle.Daemon;
 using Beagle.Util;
 
 //using Gtk;
@@ -217,13 +218,13 @@ public static class ConfigTool {
 		}
 
 		foreach (Assembly assembly in assemblies) {
-			foreach (Type type in ReflectionFu.ScanAssemblyForInterface (assembly, typeof (Beagle.Daemon.IQueryable))) {
-				foreach (Beagle.Daemon.QueryableFlavor flavor in ReflectionFu.ScanTypeForAttribute (type, typeof (Beagle.Daemon.QueryableFlavor)))
+			foreach (Type type in ReflectionFu.ScanAssemblyForInterface (assembly, typeof (IBackend))) {
+				foreach (BackendFlavor flavor in ReflectionFu.ScanTypeForAttribute (type, typeof (BackendFlavor)))
 					backends.Add (flavor.Name);
 			}
 		}
 		
-		if ( Directory.Exists (PathFinder.SystemIndexesDir)) {
+		if (Directory.Exists (PathFinder.SystemIndexesDir)) {
 			foreach (DirectoryInfo index_dir in new DirectoryInfo (PathFinder.SystemIndexesDir).GetDirectories ())
 				backends.Add (index_dir.Name);
 		}

@@ -42,6 +42,7 @@ using Lucene.Net.QueryParsers;
 using LNS = Lucene.Net.Search;
 
 using Beagle.Util;
+using Stopwatch = Beagle.Util.Stopwatch;
 
 namespace Beagle.Daemon {
 
@@ -77,8 +78,8 @@ namespace Beagle.Daemon {
 		// 15: analyze PropertyKeyword field, and store all properties as
 		//     lower case so that we're truly case insensitive.
 		// 16: add inverted timestamp to make querying substantially faster
-		private const int MAJOR_VERSION = 16;
-		private int minor_version = 0;
+		// 17: add source to secondary index when used
+		private const int INDEX_VERSION = 17;
 
 		private string index_name;
 		private string top_dir;
@@ -96,10 +97,9 @@ namespace Beagle.Daemon {
 
 		//////////////////////////////////////////////////////////////////////////////
 
-		protected LuceneCommon (string index_name, int minor_version)
+		protected LuceneCommon (string index_name)
 		{
 			this.index_name = index_name;
-			this.minor_version = minor_version;
 
 			this.top_dir = (Path.IsPathRooted (index_name)) ? index_name : Path.Combine (PathFinder.IndexDir, index_name);
 		}
@@ -242,23 +242,19 @@ namespace Beagle.Daemon {
 			version_str = version_reader.ReadLine ();
 			version_reader.Close ();
 
-			int current_major_version, current_minor_version;
-			int i = version_str.IndexOf ('.');
-			
-			if (i != -1) {
-				current_major_version = Convert.ToInt32 (version_str.Substring (0, i));
-				current_minor_version = Convert.ToInt32 (version_str.Substring (i+1));
-			} else {
-				current_minor_version = Convert.ToInt32 (version_str);
-				current_major_version = 0;
+			int current_version = -1;
+
+			try {
+				current_version = Convert.ToInt32 (version_str);
+			} catch (FormatException) {
+				// This is an old major.minor file and doesn't parse.
+				// That's ok, it means it's out of date.
 			}
 
-			if (current_major_version != MAJOR_VERSION
-			    || (minor_version >= 0 && current_minor_version != minor_version)) {
+			if (current_version != INDEX_VERSION) {
 				Logger.Log.Debug ("Version mismatch in {0}", index_name);
-				Logger.Log.Debug ("Index has version {0}.{1}, expected {2}.{3}",
-						  current_major_version, current_minor_version,
-						  MAJOR_VERSION, minor_version);
+				Logger.Log.Debug ("Index has version {0}, expected {1}",
+						  current_version, INDEX_VERSION);
 				return false;
 			}
 
@@ -295,11 +291,8 @@ namespace Beagle.Daemon {
 
 		// Create will kill your index dead.  Use it with care.
 		// You don't need to call Open after calling Create.
-		protected void Create ()
+		protected void Create (string source_name, int source_version)
 		{
-			if (minor_version < 0)
-				minor_version = 0;
-
 			// Purge any existing directories.
 			if (Directory.Exists (top_dir)) {
 				Logger.Log.Debug ("Purging {0}", top_dir);
@@ -323,16 +316,19 @@ namespace Beagle.Daemon {
 
 			// Store our index version information.
 			writer = new StreamWriter (VersionFile, false);
-			writer.WriteLine ("{0}.{1}", MAJOR_VERSION, minor_version);
+			writer.WriteLine (INDEX_VERSION);
 			writer.Close ();
+
+			// Store the source version information.
+			WriteSourceVersionFile (source_name, source_version);
 		}
 
-		protected void Open ()
+		protected void Open (string source_name, int source_version)
 		{
-			Open (false);
+			Open (source_name, source_version, false);
 		}
 
-		protected void Open (bool read_only_mode)
+		protected void Open (string source_name, int source_version, bool read_only_mode)
 		{
 			// Read our index fingerprint.
 			TextReader reader;
@@ -343,6 +339,58 @@ namespace Beagle.Daemon {
 			// Create stores for our indexes.
 			primary_store = Lucene.Net.Store.FSDirectory.GetDirectory (PrimaryIndexDirectory, LockDirectory, false, read_only_mode);
 			secondary_store = Lucene.Net.Store.FSDirectory.GetDirectory (SecondaryIndexDirectory, LockDirectory, false, read_only_mode);
+
+			bool source_version_write_needed = true;
+
+			// Check to see if our source version matches.
+			string version_file = GetSourceVersionFile (source_name);
+			if (File.Exists (version_file)) {
+				reader = new StreamReader (version_file);
+				string version_str = reader.ReadLine ();
+				reader.Close ();
+
+				int current_version = Convert.ToInt32 (version_str);
+
+				if (current_version != source_version) {
+					File.Delete (version_file);
+					PurgeSource (source_name);
+				} else
+					source_version_write_needed = false;
+			}
+
+			if (source_version_write_needed)
+				WriteSourceVersionFile (source_name, source_version);
+		}
+
+		private void WriteSourceVersionFile (string source_name, int source_version)
+		{
+			string version_file = GetSourceVersionFile (source_name);
+			StreamWriter writer = new StreamWriter (version_file);
+			writer.WriteLine (source_version);
+			writer.Close ();
+		}
+
+		private string GetSourceVersionFile (string source_name)
+		{
+			return Path.Combine (top_dir, "version-" + source_name);
+		}
+
+		private void PurgeSource (string source_name)
+		{
+			Log.Debug ("Purging items from source '{0}'", source_name);
+
+			Stopwatch w = new Stopwatch ();
+			w.Start ();
+
+			IndexReader primary_reader = GetReader (PrimaryStore);
+			IndexReader secondary_reader = GetReader (SecondaryStore);
+
+			Term term = new Term ("Source", source_name);
+			int count = primary_reader.Delete (term);
+			secondary_reader.Delete (term);
+
+			w.Stop ();
+			Log.Debug ("Purged {0} items from source '{1}' in {2}", count, source_name, w);
 		}
 
 		////////////////////////////////////////////////////////////////
@@ -680,12 +728,6 @@ namespace Beagle.Daemon {
 				AddPropertyToDocument (prop, primary_doc);
 			}
 
-			if (indexable.Source != null) {
-				Property prop;
-				prop = Property.NewUnsearched ("beagle:Source", indexable.Source);
-				AddPropertyToDocument (prop, primary_doc);
-			}
-
 			// Store the other properties
 				
 			foreach (Property prop in indexable.Properties) {
@@ -701,6 +743,15 @@ namespace Beagle.Daemon {
 					
 				AddPropertyToDocument (prop, target_doc);
 			}
+
+			Property source_prop = Property.NewUnsearched ("beagle:Source", indexable.Source);
+			AddPropertyToDocument (source_prop, primary_doc);
+
+			f = Field.Keyword ("Source", indexable.Source);
+			primary_doc.Add (f);
+
+			if (secondary_doc != null)
+				secondary_doc.Add (f);
 		}
 
 		static protected Document RewriteDocument (Document old_secondary_doc,

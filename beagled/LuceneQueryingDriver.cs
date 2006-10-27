@@ -53,14 +53,14 @@ namespace Beagle.Daemon {
 		public delegate bool UriFilter (Uri uri);
 		public delegate double RelevancyMultiplier (Hit hit);
 
-		public LuceneQueryingDriver (string index_name, int minor_version, bool read_only) 
-			: base (index_name, minor_version)
+		public LuceneQueryingDriver (string index_name, int source_version, bool read_only) 
+			: base (index_name)
 		{
 			// FIXME: Maybe the LuceneQueryingDriver should never try to create the index?
 			if (Exists ())
-				Open (read_only);
+				Open (index_name, source_version, read_only);
 			else if (!read_only)
-				Create ();
+				Create (index_name, source_version);
 			else {
 				// We're in read-only mode, but we can't create an index.
 				// Maybe a different exception would be better?  This one is caught

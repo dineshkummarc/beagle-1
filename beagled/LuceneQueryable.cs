@@ -827,7 +827,10 @@ namespace Beagle.Daemon {
 
 		protected void AddIndexable (Indexable indexable)
 		{
-			indexable.Source = this.Name;
+			// XXX: Fix this to not point to the index name
+			//indexable.Source = this.Name;
+			indexable.Source = this.IndexName;
+			Log.Debug ("Source name is {0}", indexable.Source);
 
 			lock (request_lock)
 				pending_request.Add (indexable);

@@ -53,13 +53,13 @@ namespace Beagle.Daemon {
 
 		object flush_lock = new object ();
 
-		public LuceneIndexingDriver (string index_name, int minor_version, bool build_usercache) 
-			: base (index_name, minor_version)
+		public LuceneIndexingDriver (string source_name, int source_version, bool build_usercache) 
+			: base (source_name)
 		{
 			if (Exists ())
-				Open ();
+				Open (source_name, source_version);
 			else
-				Create ();
+				Create (source_name, source_version);
 
 			if (build_usercache)
 				text_cache = TextCache.UserCache;
