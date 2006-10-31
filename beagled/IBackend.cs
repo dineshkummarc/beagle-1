@@ -37,5 +37,10 @@ namespace Beagle.Daemon {
 		QueryDomain Domain { get; set; }
 
 		IQueryable Queryable { get; }
+
+		string GetSnippet (string[] query_terms, Hit hit);
+
+		// XXX: Need to fix QueryableStatus name
+		QueryableStatus GetBackendStatus ();
 	}
 }

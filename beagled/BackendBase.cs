@@ -58,5 +58,10 @@ namespace Beagle.Daemon {
 		public abstract void Start ();
 
 		public abstract IQueryable Queryable { get; }
+
+		public abstract string GetSnippet (string [] query_terms, Hit hit);
+
+		// XXX: Need to fix QueryableStatus name
+		public abstract QueryableStatus GetBackendStatus ();
 	}
 }

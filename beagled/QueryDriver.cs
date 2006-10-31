@@ -283,16 +283,22 @@ namespace Beagle.Daemon {
 
 		static public IEnumerable GetIndexInformation ()
 		{
+#if joe_wip
+			// XXX: Move something like this to BackendDriver
 			foreach (IQueryable q in Queryables)
-				yield return q.GetQueryableStatus ();
+				yield return q.GetBackendStatus ();
+#endif
+			return null;
 		}
 
 		////////////////////////////////////////////////////////
 
 		static public bool IsIndexing {
 			get {
+#if joe_wip
+				// XXX: Move somethng like this to BackendDriver
 				foreach (IQueryable q in Queryables) {
-					QueryableStatus status = q.GetQueryableStatus ();
+					QueryableStatus status = q.GetBackendStatus ();
 
 					if (status == null)
 						return false;
@@ -300,7 +306,7 @@ namespace Beagle.Daemon {
 					if (status.IsIndexing)
 						return true;
 				}
-
+#endif
 				return false;
 			}
 		}					

@@ -32,20 +32,12 @@ namespace Beagle.Daemon {
 
 	public interface IQueryable {
 
-		void Start ();
-
 		bool AcceptQuery (Query query);
 
 		void DoQuery (Query query,
 			      IQueryResult result,
 			      IQueryableChangeData data);
-
-		string GetSnippet (string[] query_terms, Hit hit);
-
-		QueryableStatus GetQueryableStatus ();
 	}
 
-	public interface IQueryableChangeData { 
-	
-	}
+	public interface IQueryableChangeData { }
 }

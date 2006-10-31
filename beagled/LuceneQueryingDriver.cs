@@ -44,7 +44,7 @@ using Beagle.Util;
 
 namespace Beagle.Daemon {
 
-	public class LuceneQueryingDriver : LuceneCommon {
+	public class LuceneQueryingDriver : LuceneCommon, IQueryable {
 
 		static public bool Debug = false;
 
@@ -93,6 +93,14 @@ namespace Beagle.Daemon {
 
 		////////////////////////////////////////////////////////////////
 
+		public bool AcceptQuery (Query query)
+		{
+			// Accept all queries by default.
+			return true;
+		}
+
+		////////////////////////////////////////////////////////////////
+
 		public Uri[] PropertyQuery (Property prop)
 		{
 			// FIXME: Should we support scanning the secondary
@@ -119,6 +127,128 @@ namespace Beagle.Daemon {
 			ReleaseReader (primary_reader);
 
 			return uri_list;
+		}
+
+		////////////////////////////////////////////////////////////////
+
+		public void QueryableChanged (ICollection added_uris, ICollection removed_uris)
+		{
+			ChangeData change_data = new ChangeData ();
+			change_data.AddedUris = added_uris;
+			change_data.RemovedUris = removed_uris;
+
+			QueryDriver.QueryableChanged (this, change_data);
+		}
+
+		////////////////////////////////////////////////////////////////
+
+		// *** FIXME *** FIXME *** FIXME *** FIXME ***
+		// When we rename a directory, we need to somehow
+		// propagate change information to files under that
+		// directory.  Example: say that file foo is in
+		// directory bar, and there is an open query that
+		// matches foo.  The tile probably says something
+		// like "foo, in folder bar".
+		// Then assume I rename bar to baz.  That notification
+		// will go out, so a query matching bar will get
+		// updated... but the query matching foo will not.
+		// What should really happen is that the tile
+		// should change to say "foo, in folder baz".
+		// But making that work will require some hacking
+		// on the QueryResults.
+		// *** FIXME *** FIXME *** FIXME *** FIXME ***
+
+		private class ChangeData : IQueryableChangeData {
+
+			// These get fed back to LuceneQueryingDriver.DoQuery
+			// as a search subset, and hence need to be internal
+			// Uris when we are remapping.
+			public ICollection AddedUris;
+
+			// These get reported directly to clients in
+			// Subtract events, and thus need to be external Uris
+			// when we are remapping.
+			public ICollection RemovedUris;
+		}
+
+		public void DoQuery (Query                query,
+				     IQueryResult         query_result,
+				     IQueryableChangeData i_change_data)
+		{
+			ChangeData change_data = (ChangeData) i_change_data;
+			
+			ICollection added_uris = null;
+
+			// Index listeners never return any initial matches.
+			if (change_data == null && query.IsIndexListener)
+				return;
+
+			if (change_data != null) {
+				
+				if (change_data.RemovedUris != null)
+					query_result.Subtract (change_data.RemovedUris);
+
+				// If nothing was added, we can safely return now: this change
+				// cannot have any further effect on an outstanding live query.
+				if (change_data.AddedUris == null
+				    || change_data.AddedUris.Count == 0)
+					return;
+
+				added_uris = change_data.AddedUris;
+
+				// If this is an index listener, we don't need to do a query:
+				// we just build up synthethic hits and add them unconditionally.
+				if (query.IsIndexListener) {
+#if joe_wip
+					// XXX: Fix index listener.s
+					ArrayList synthetic_hits = new ArrayList ();
+					foreach (Uri uri in added_uris) {
+						if (our_uri_filter != null) {
+							bool accept = false;
+
+							try {
+								accept = our_uri_filter (uri);
+							} catch (Exception e) {
+								Log.Warn (e, "Caught an exception in HitIsValid for {0}", uri);
+							}
+
+							if (! accept)
+								continue;
+						}
+
+						Hit hit = new Hit ();
+						hit.Uri = uri;
+
+						if (our_hit_filter != null) {
+							bool accept = false;
+
+							try {
+								accept = our_hit_filter (hit);
+							} catch (Exception e) {
+								Log.Warn (e, "Caught an exception in HitFilter for {0}", hit.Uri);
+							}
+
+							if (! accept)
+								continue;
+						}
+
+						synthetic_hits.Add (hit);
+					}
+					if (synthetic_hits.Count > 0)
+						query_result.Add (synthetic_hits);
+#endif
+					return;
+				}
+			}
+			
+			DoQuery (query, 
+				 query_result,
+				 added_uris,
+				 null, null);
+#if joe_wip
+				 our_uri_filter,
+				 our_hit_filter);
+#endif
 		}
 
 		////////////////////////////////////////////////////////////////

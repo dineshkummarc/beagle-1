@@ -38,13 +38,13 @@ namespace Beagle.Daemon {
 		public override ResponseMessage Execute (RequestMessage req)
 		{
 			SnippetRequest request = (SnippetRequest) req;
-			IQueryable queryable = BackendDriver.GetBackend (request.Hit.Source).Queryable;
+			IBackend backend = BackendDriver.GetBackend (request.Hit.Source);
 			string snippet;
 
-			if (queryable == null)
+			if (backend == null)
 				snippet = String.Format ("ERROR: No queryable object matches '{0}'", request.Hit.Source);
 			else
-				snippet = queryable.GetSnippet (request.QueryTerms, request.Hit);
+				snippet = backend.GetSnippet (request.QueryTerms, request.Hit);
 
 			return new SnippetResponse (snippet);
 		}
