@@ -41,7 +41,7 @@ namespace Beagle.Daemon.TomboyQueryable {
 		string tomboy_dir;
 		Hashtable note_text_cache = UriFu.NewHashtable ();
 
-		public TomboyQueryable () : base ("TomboyIndex")
+		public TomboyQueryable () : base ("Tomboy")
 		{
 			tomboy_dir = Path.Combine (PathFinder.HomeDir, ".tomboy");
 		}
@@ -207,6 +207,8 @@ namespace Beagle.Daemon.TomboyQueryable {
 
 		override protected bool HitIsValid (Uri uri)
 		{
+			Log.Debug ("Uri: {0}", uri);
+
 			string note = Path.Combine (tomboy_dir, uri.Segments [1] + ".note");
 
 			if (File.Exists (note))

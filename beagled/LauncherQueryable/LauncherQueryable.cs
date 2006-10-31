@@ -43,7 +43,7 @@ namespace Beagle.Daemon.LauncherQueryable {
 		ArrayList Dirs;
 		int polling_interval_in_hours = 1;
 
-		public LauncherQueryable () : base ("LauncherIndex")
+		public LauncherQueryable () : base ("Launcher")
 		{
 			Dirs = new ArrayList ();
 			// Add GNOME dirs

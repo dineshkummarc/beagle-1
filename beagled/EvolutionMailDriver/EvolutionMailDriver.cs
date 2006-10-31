@@ -59,7 +59,7 @@ namespace Beagle.Daemon.EvolutionMailDriver {
 		//    change Indexable when they change for IMAP generators.
 		private const int INDEX_VERSION = 4;
 
-		public EvolutionMailQueryable () : base ("EvolutionMailIndex", INDEX_VERSION)
+		public EvolutionMailQueryable () : base ("EvolutionMail", INDEX_VERSION)
 		{
 			this.local_path = Path.Combine (PathFinder.HomeDir, ".evolution/mail/local");
 			this.imap_path = Path.Combine (PathFinder.HomeDir, ".evolution/mail/imap");

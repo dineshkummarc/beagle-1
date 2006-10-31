@@ -40,8 +40,7 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 		private static DateTime indexing_start;
 		private ThunderbirdIndexer indexer;
 		
-		public ThunderbirdQueryable () :
-			base ("ThunderbirdIndex")
+		public ThunderbirdQueryable () : base ("Thunderbird")
 		{
 			// Remove one second from the start time to make sure we don't run into any troubles
 			indexing_start = DateTime.UtcNow.Subtract (new TimeSpan (0, 0, 1));

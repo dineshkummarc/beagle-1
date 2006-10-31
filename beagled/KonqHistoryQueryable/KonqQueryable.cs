@@ -46,7 +46,7 @@ namespace Beagle.Daemon.KonqQueryable {
 		// ISO-Latin1 is 28591
 		private Encoding latin_encoding = Encoding.GetEncoding (28591);
 
-		public KonqQueryable () : base ("KonqHistoryIndex")
+		public KonqQueryable () : base ("KonquerorHistory")
 		{
 			/* How to determine kio-http cache location ?
 			 * From KDE web-page it looks like /var/tmp/kdecache-$USERNAME/http

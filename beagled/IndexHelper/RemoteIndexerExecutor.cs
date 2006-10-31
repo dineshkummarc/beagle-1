@@ -37,7 +37,8 @@ namespace Beagle.IndexHelper {
 	public class RemoteIndexerExecutor : RequestMessageExecutor {
 
 		static public int Count = 0;
-		static Hashtable indexer_table = new Hashtable ();
+
+		IIndexer indexer = LuceneIndexingDriver.Singleton;
 
 		Indexable[] child_indexables;
 		FilteredStatus[] uris_filtered;
@@ -47,17 +48,6 @@ namespace Beagle.IndexHelper {
 			RemoteIndexerRequest remote_request = (RemoteIndexerRequest) raw_request;
 
 			IndexHelperTool.ReportActivity ();
-
-			// Find the appropriate driver for this request.
-			IIndexer indexer;
-			lock (indexer_table) {
-				indexer = indexer_table [remote_request.RemoteIndexName] as IIndexer;
-				if (indexer == null) {
-					indexer = new LuceneIndexingDriver (remote_request.RemoteIndexName,
-									    remote_request.RemoteIndexMinorVersion);
-					indexer_table [remote_request.RemoteIndexName] = indexer;
-				}
-			}
 
 			IndexerReceipt [] receipts = null;
 			if (remote_request.Request != null) // If we just want the item count, this will be null

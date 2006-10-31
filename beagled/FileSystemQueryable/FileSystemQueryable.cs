@@ -89,7 +89,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 
 		//////////////////////////////////////////////////////////////////////////
 
-		public FileSystemQueryable () : base ("FileSystemIndex", MINOR_VERSION)
+		public FileSystemQueryable () : base ("Files", MINOR_VERSION)
 		{
 			// Set up our event backend
 			if (Inotify.Enabled) {

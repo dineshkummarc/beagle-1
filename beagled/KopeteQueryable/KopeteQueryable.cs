@@ -46,7 +46,7 @@ namespace Beagle.Daemon.KopeteQueryable {
 
 		private KopeteBuddyListReader list = new KopeteBuddyListReader ();
 
-		public KopeteQueryable () : base ("KopeteIndex")
+		public KopeteQueryable () : base ("Kopete")
 		{
 			config_dir = Path.Combine (PathFinder.HomeDir, ".kde/share/apps/kopete");
 			log_dir = Path.Combine (config_dir, "logs");

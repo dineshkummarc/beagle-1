@@ -58,7 +58,7 @@ namespace Beagle.Daemon.LifereaQueryable {
 		// v2: remove dc:date, use Timestamp property.
 		private const int INDEX_VERSION = 2;
 		
-		public LifereaQueryable () : base ("LifereaIndex", INDEX_VERSION)
+		public LifereaQueryable () : base ("Liferea", INDEX_VERSION)
 		{
 			liferea_dir = Path.Combine (PathFinder.HomeDir, ".liferea");
 			liferea_dir = Path.Combine (liferea_dir, "cache");

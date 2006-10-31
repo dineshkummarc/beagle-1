@@ -38,12 +38,9 @@ namespace Beagle.Daemon.LabyrinthQueryable {
 	[BackendFlavor (Name="Labyrinth", Domain=QueryDomain.Local)]
 	public class LabyrinthQueryable  : LuceneFileQueryable, IIndexableGenerator {
 
-		private static Logger log = Logger.Get ("LabyrinthQueryable");
-		
-		
 		string lab_dir;
 
-		public LabyrinthQueryable () : base ("LabyrinthIndex")
+		public LabyrinthQueryable () : base ("Labyrinth")
 		{
 			lab_dir = Path.Combine (PathFinder.HomeDir, ".gnome2");
 			lab_dir = Path.Combine (lab_dir, "labyrinth");
@@ -58,7 +55,7 @@ namespace Beagle.Daemon.LabyrinthQueryable {
 				return;
 			}
 
-			log.Info ("Starting Labyrinth backend");
+			Log.Info ("Starting Labyrinth backend");
 
 			Stopwatch stopwatch = new Stopwatch ();
 			stopwatch.Start ();
@@ -77,7 +74,7 @@ namespace Beagle.Daemon.LabyrinthQueryable {
 			
 			stopwatch.Stop ();
 
-			log.Info ("labyrinth backend worker thread done in {0}", stopwatch); 
+			Log.Info ("labyrinth backend worker thread done in {0}", stopwatch); 
 		}
 		
 		public override void Start () 

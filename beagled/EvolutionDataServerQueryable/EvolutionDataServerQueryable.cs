@@ -52,9 +52,9 @@ namespace Beagle.Daemon.EvolutionDataServerQueryable {
 		// 2: Updated URI scheme for Evolution 2.4/EDS 1.4
 		private const int INDEX_VERSION = 2;
 
-		public EvolutionDataServerQueryable () : base ("EvolutionDataServerIndex", INDEX_VERSION)
+		public EvolutionDataServerQueryable () : base ("EvolutionDataServer", INDEX_VERSION)
 		{
-			photo_dir = Path.Combine (Driver.TopDirectory, "Photos");
+			photo_dir = Path.Combine (SourceDataDir, "Photos");
 			System.IO.Directory.CreateDirectory (photo_dir);
 		}
 

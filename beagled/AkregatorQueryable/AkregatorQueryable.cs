@@ -74,7 +74,7 @@ namespace Beagle.Daemon.AkregatorQueryable {
 		// v2: remove dc:date, use Timestamp property.
 		private const int INDEX_VERSION = 2;
 		
-		public AkregatorQueryable () : base ("AkregatorIndex", INDEX_VERSION)
+		public AkregatorQueryable () : base ("Akregator", INDEX_VERSION)
 		{
 			akregator_dir = Path.Combine (PathFinder.HomeDir, ".kde");
 			akregator_dir = Path.Combine (akregator_dir, "share");

@@ -39,8 +39,8 @@ namespace Beagle.Daemon {
 		static string helper_path;
 		static int helper_pid = -1;
 
-		string remote_index_name;
-		int remote_index_minor_version = 0;
+		string remote_source_name;
+		int remote_source_version = 0;
 		int last_item_count = -1;
 
 		static RemoteIndexer ()
@@ -55,15 +55,15 @@ namespace Beagle.Daemon {
 			Logger.Log.Debug ("Found index helper at {0}", helper_path);
 		}
 
-		static public IIndexer NewRemoteIndexer (string name, int minor_version)
+		static public IIndexer NewRemoteIndexer (string source_name, int source_version)
 		{
-			return new RemoteIndexer (name, minor_version);
+			return new RemoteIndexer (source_name, source_version);
 		}
 
-		public RemoteIndexer (string name, int minor_version)
+		public RemoteIndexer (string source_name, int source_version)
 		{
-			this.remote_index_name = name;
-			this.remote_index_minor_version = minor_version;
+			this.remote_source_name = source_name;
+			this.remote_source_version = source_version;
 		}
 
 		public IndexerReceipt [] Flush (IndexerRequest request)
@@ -82,8 +82,8 @@ namespace Beagle.Daemon {
 
 			RemoteIndexerRequest remote_request;
 			remote_request = new RemoteIndexerRequest ();
-			remote_request.RemoteIndexName = this.remote_index_name;
-			remote_request.RemoteIndexMinorVersion = this.remote_index_minor_version;
+			remote_request.RemoteSourceName = this.remote_source_name;
+			remote_request.RemoteSourceVersion = this.remote_source_version;
 			remote_request.Request = request;
 			
 			RemoteIndexerResponse response;
@@ -130,8 +130,8 @@ namespace Beagle.Daemon {
 			if (Environment.GetEnvironmentVariable ("BEAGLE_RUN_HELPER_BY_HAND") != null)
 				start_helper_by_hand = true;
 
-			request.RemoteIndexName = remote_index_name;
-			request.RemoteIndexMinorVersion = remote_index_minor_version;
+			request.RemoteSourceName = remote_source_name;
+			request.RemoteSourceVersion = remote_source_version;
 			
 			while (response == null
 			       && exception_count < 5

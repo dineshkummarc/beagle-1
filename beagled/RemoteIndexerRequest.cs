@@ -34,8 +34,8 @@ namespace Beagle.Daemon {
 
 	public class RemoteIndexerRequest : RequestMessage {
 
-		public string         RemoteIndexName;
-		public int            RemoteIndexMinorVersion;
+		public string         RemoteSourceName;
+		public int            RemoteSourceVersion;
 		public IndexerRequest Request;
 
 		public RemoteIndexerRequest () : base ("socket-helper")

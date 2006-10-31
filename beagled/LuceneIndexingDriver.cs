@@ -76,6 +76,21 @@ namespace Beagle.Daemon {
 	
 		////////////////////////////////////////////////////////////////
 
+		private static LuceneIndexingDriver singleton_driver = null;
+
+		public static LuceneIndexingDriver Singleton {
+			get {
+				if (singleton_driver != null)
+					return singleton_driver;
+
+				singleton_driver = new LuceneIndexingDriver ("Singleton", -1);
+
+				return singleton_driver;
+			}
+		}
+
+		////////////////////////////////////////////////////////////////
+
 		//
 		// Implementation of the IIndexer interface
 		//

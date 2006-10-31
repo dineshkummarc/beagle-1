@@ -47,7 +47,7 @@ namespace Beagle.Daemon.GaimLogQueryable {
 		
 		private GaimBuddyListReader list = new GaimBuddyListReader ();
 
-		public GaimLogQueryable () : base ("GaimLogIndex")
+		public GaimLogQueryable () : base ("GaimLog")
 		{
 			config_dir = Path.Combine (PathFinder.HomeDir, ".gaim");
 			log_dir = Path.Combine (config_dir, "logs");

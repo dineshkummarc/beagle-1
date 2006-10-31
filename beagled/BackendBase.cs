@@ -35,7 +35,7 @@ namespace Beagle.Daemon {
 		private string name;
 		private QueryDomain domain;
 
-		public string Name {
+		public virtual string Name {
 			get { return name; }
 			set {
 				if (name == null)

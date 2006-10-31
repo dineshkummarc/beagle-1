@@ -78,6 +78,18 @@ namespace Beagle.Daemon {
 
 		////////////////////////////////////////////////////////////////
 
+		private static LuceneQueryingDriver singleton_driver = null;
+
+		public static LuceneQueryingDriver Singleton {
+			get {
+				if (singleton_driver != null)
+					return singleton_driver;
+
+				singleton_driver = new LuceneQueryingDriver ("Singleton", -1, false);
+
+				return singleton_driver;
+			}
+		}
 
 		////////////////////////////////////////////////////////////////
 

@@ -55,7 +55,7 @@ namespace Beagle.Daemon.IndexingServiceQueryable {
 	[BackendFlavor (Name="IndexingService", Domain=QueryDomain.Local)]
 	public class IndexingServiceQueryable : LuceneQueryable {
 
-		public IndexingServiceQueryable () : base ("IndexingServiceIndex")
+		public IndexingServiceQueryable () : base ("IndexingService")
 		{
 			Server.RegisterRequestMessageHandler (typeof (IndexingServiceRequest), new Server.RequestMessageHandler (HandleMessage));
 		}

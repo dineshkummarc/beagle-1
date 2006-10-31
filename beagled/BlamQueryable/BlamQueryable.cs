@@ -49,7 +49,7 @@ namespace Beagle.Daemon.BlamQueryable {
 		// v2: remove dc:date, use Timestamp property.
 		private const int INDEX_VERSION = 2;
 
-		public BlamQueryable () : base ("BlamIndex", INDEX_VERSION)
+		public BlamQueryable () : base ("Blam", INDEX_VERSION)
 		{
 			blam_dir = Path.Combine (Path.Combine (PathFinder.HomeDir, ".gnome2"), "blam");
 			blam_file = new FileInfo (Path.Combine (blam_dir, "collection.xml"));

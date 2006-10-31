@@ -59,7 +59,7 @@ namespace Beagle.Daemon.KMailQueryable {
 			get { return sentmail_foldername; }
 		}
 		
-		public KMailQueryable () : base ("KMailIndex")
+		public KMailQueryable () : base ("KMail")
 		{
 			// the local mail path is different for different distributions
 			local_path = GuessLocalFolderPath ();

@@ -36,7 +36,7 @@ namespace Beagle.Daemon {
 		
 		static public bool OptimizeRightAway = false;
 
-		public delegate IIndexer IndexerCreator (string name, int minor_version);
+		public delegate IIndexer IndexerCreator (string source_name, int source_version);
 
 		static private IndexerCreator indexer_hook = null;
 
@@ -44,11 +44,6 @@ namespace Beagle.Daemon {
 			set { indexer_hook = value; }
 		}
 		
-		virtual protected IIndexer LocalIndexerHook ()
-		{
-			return null;
-		}
-
 		//////////////////////////////////////////////////////////
 
 		public delegate void OptimizeAllHandler ();
@@ -66,9 +61,7 @@ namespace Beagle.Daemon {
 		private Scheduler scheduler = Scheduler.Global;
 		private FileAttributesStore fa_store = null;
 
-		private string index_name;
-		private int minor_version;
-		private bool read_only_mode;
+		private string source_name;
 
 		private LuceneQueryingDriver driver;
 		private IIndexer indexer = null;
@@ -83,19 +76,17 @@ namespace Beagle.Daemon {
 
 		//////////////////////////////////////////////////////////
 
-		public LuceneQueryable (string index_name) : this (index_name, -1, false) { }
+		public LuceneQueryable (string source_name) : this (source_name, -1, false) { }
 
-		public LuceneQueryable (string index_name, bool read_only_mode) : this (index_name, -1, read_only_mode) { }
+		public LuceneQueryable (string source_name, bool read_only_mode) : this (source_name, -1, read_only_mode) { }
 
-		public LuceneQueryable (string index_name, int minor_version) : this (index_name, minor_version, false) { }
+		public LuceneQueryable (string source_name, int source_version) : this (source_name, source_version, false) { }
 
-		public LuceneQueryable (string index_name, int minor_version, bool read_only_mode)
+		public LuceneQueryable (string source_name, int source_version, bool read_only_mode)
 		{
-			this.index_name = index_name;
-			this.minor_version = minor_version;
-			this.read_only_mode = read_only_mode;
+			this.source_name = source_name;
 
-			driver = BuildLuceneQueryingDriver (this.index_name, this.minor_version, this.read_only_mode);
+			driver = BuildLuceneQueryingDriver (source_name, source_version, read_only_mode);
 			our_uri_filter = new LuceneQueryingDriver.UriFilter (this.HitIsValid);
 			our_hit_filter = new LuceneCommon.HitFilter (this.HitFilter);
 
@@ -104,9 +95,11 @@ namespace Beagle.Daemon {
 			if (read_only_mode)
 				return;
 
-			indexer = LocalIndexerHook ();
-			if (indexer == null && indexer_hook != null)
-				indexer = indexer_hook (this.index_name, this.minor_version);
+			if (indexer_hook != null)
+				indexer = indexer_hook (source_name, source_version);
+
+			if (indexer == null)
+				throw new Exception ("No indexer available for source " + source_name);
 
 			OptimizeAllEvent += OnOptimizeAllEvent;
 
@@ -116,8 +109,13 @@ namespace Beagle.Daemon {
 			Shutdown.ShutdownEvent += new Shutdown.ShutdownHandler (OnShutdownEvent);
 		}
 
-		protected string IndexName {
-			get { return index_name; }
+		public override string Name {
+			set {
+				if (value != source_name)
+					throw new Exception (String.Format ("Backend name (from BackendFlavor) '{0}' does not match source name (from LuceneQueryable ctor) '{1}'", value, source_name));
+
+				base.Name = value;
+			}
 		}
 
 		protected string IndexDirectory {
@@ -126,6 +124,10 @@ namespace Beagle.Daemon {
 
 		protected string IndexFingerprint {
 			get { return driver.Fingerprint; }
+		}
+
+		protected string SourceDataDir {
+			get { return Path.Combine (IndexDirectory, this.source_name); }
 		}
 
 		protected LuceneQueryingDriver Driver {
@@ -428,7 +430,10 @@ namespace Beagle.Daemon {
 
 		public FileStream ReadDataStream (string name)
 		{
-			string path = Path.Combine (Path.Combine (PathFinder.IndexDir, this.IndexName), name);
+			if (! Directory.Exists (SourceDataDir))
+				return null;
+
+			string path = Path.Combine (SourceDataDir, name);
 
 			if (!File.Exists (path))
 				return null;
@@ -452,7 +457,10 @@ namespace Beagle.Daemon {
 
 		public FileStream WriteDataStream (string name)
 		{
-			string path = Path.Combine (Path.Combine (PathFinder.IndexDir, this.IndexName), name);
+			if (! Directory.Exists (SourceDataDir))
+				Directory.CreateDirectory (SourceDataDir);
+
+			string path = Path.Combine (SourceDataDir, name);
 			
 			return new FileStream (path, System.IO.FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
 		}
@@ -460,7 +468,10 @@ namespace Beagle.Daemon {
 		public void WriteDataLine (string name, string line)
 		{
 			if (line == null) {
-				string path = Path.Combine (Path.Combine (PathFinder.IndexDir, this.IndexName), name);
+				if (! Directory.Exists (SourceDataDir))
+					return;
+
+				string path = Path.Combine (SourceDataDir, name);
 
 				if (File.Exists (path))
 					File.Delete (path);
@@ -724,7 +735,7 @@ namespace Beagle.Daemon {
 			if (our_final_flush_task == null) {
 				our_final_flush_task = new FinalFlushTask (this);
 
-				our_final_flush_task.Tag = "Final Flush for " + IndexName;
+				our_final_flush_task.Tag = "Final Flush for " + Name;
 				our_final_flush_task.Priority = Scheduler.Priority.Maintenance;
 				our_final_flush_task.SubPriority = 100; // do this first when starting maintenance
 				our_final_flush_task.Source = this;
@@ -764,7 +775,7 @@ namespace Beagle.Daemon {
 		{
 			Scheduler.Task task;
 			task = new OptimizeTask (this);
-			task.Tag = "Optimize " + IndexName;
+			task.Tag = "Optimize " + Name;
 			task.Priority = Scheduler.Priority.Maintenance;
 			task.Source = this;
 
@@ -827,10 +838,7 @@ namespace Beagle.Daemon {
 
 		protected void AddIndexable (Indexable indexable)
 		{
-			// XXX: Fix this to not point to the index name
-			//indexable.Source = this.Name;
-			indexable.Source = this.IndexName;
-			Log.Debug ("Source name is {0}", indexable.Source);
+			indexable.Source = this.Name;
 
 			lock (request_lock)
 				pending_request.Add (indexable);
@@ -1039,11 +1047,12 @@ namespace Beagle.Daemon {
 
 		//////////////////////////////////////////////////////////////////////////////////
 
-		virtual protected LuceneQueryingDriver BuildLuceneQueryingDriver (string index_name,
-										  int    minor_version,
+		virtual protected LuceneQueryingDriver BuildLuceneQueryingDriver (string source_name,
+										  int    source_version,
 										  bool   read_only_mode)
 		{
-			return new LuceneQueryingDriver (index_name, minor_version, read_only_mode);
+			//return new LuceneQueryingDriver (source_name, source_version, read_only_mode);
+			return LuceneQueryingDriver.Singleton;
 		}
 	}
 }

@@ -46,7 +46,7 @@ namespace Beagle.Daemon.KNotesQueryable {
 		private string knotes_file;
 		private Hashtable last_modified_table;
 
-		public KNotesQueryable () : base ("KNotesIndex")
+		public KNotesQueryable () : base ("KNotes")
 		{
 			knotes_dir = Path.Combine (PathFinder.HomeDir, ".kde");
 			knotes_dir = Path.Combine (knotes_dir, "share");
