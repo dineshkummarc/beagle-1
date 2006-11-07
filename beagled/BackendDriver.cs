@@ -300,19 +300,13 @@ namespace Beagle.Daemon {
 		// Instantiates and loads a StaticLuceneBackend from an index directory
 		private static bool LoadStaticBackend (DirectoryInfo index_dir, QueryDomain query_domain)
 		{
-			/// XXX: FIXME
-
-			return false;
-
-#if false
-			// OLD QUERYDRIVER CODE
-			StaticQueryable static_queryable = null;
+			StaticQueryable static_backend = null;
 			
 			if (!index_dir.Exists)
 				return false;
 			
 			try {
-				static_queryable = new StaticQueryable (index_dir.Name, index_dir.FullName, true);
+				static_backend = new StaticQueryable (index_dir.FullName);
 			} catch (InvalidOperationException) {
 				Logger.Log.Warn ("Unable to create read-only index (likely due to index version mismatch): {0}", index_dir.FullName);
 				return false;
@@ -321,21 +315,16 @@ namespace Beagle.Daemon {
 				return false;
 			}
 			
-			if (static_queryable != null) {
-				QueryableFlavor flavor = new QueryableFlavor ();
-				flavor.Name = index_dir.Name;
-				flavor.Domain = query_domain;
-				
-				Queryable queryable = new Queryable (flavor, static_queryable);
-				queryables.Add (queryable);
-				
-				iqueryable_to_queryable [static_queryable] = queryable;
+			if (static_backend != null) {
+				static_backend.Name = index_dir.Name;
+				static_backend.Domain = query_domain;
+
+				backends.Add (static_backend);
 
 				return true;
 			}
 
 			return false;
-#endif
 		}
 
 		///////////////////////////////////////////////////////////////

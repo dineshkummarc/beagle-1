@@ -40,8 +40,9 @@ namespace Beagle.Daemon {
 			SnippetRequest request = (SnippetRequest) req;
 			IBackend backend = BackendDriver.GetBackend (request.Hit.Source);
 			string snippet;
-
-			if (backend == null)
+			
+			/// XXX - snippets are broken; fix the "|| true" below
+			if (backend == null || true)
 				snippet = String.Format ("ERROR: No queryable object matches '{0}'", request.Hit.Source);
 			else
 				snippet = backend.GetSnippet (request.QueryTerms, request.Hit);

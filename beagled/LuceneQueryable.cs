@@ -66,8 +66,6 @@ namespace Beagle.Daemon {
 		private LuceneQueryingDriver driver;
 		private IIndexer indexer = null;
 
-		private LuceneQueryingDriver.UriFilter our_uri_filter;
-		private LuceneCommon.HitFilter our_hit_filter;
 		private Scheduler.Task our_final_flush_task = null;
 		private Scheduler.Task our_optimize_task = null;
 
@@ -87,8 +85,7 @@ namespace Beagle.Daemon {
 			this.source_name = source_name;
 
 			driver = BuildLuceneQueryingDriver (source_name, source_version, read_only_mode);
-			our_uri_filter = new LuceneQueryingDriver.UriFilter (this.HitIsValid);
-			our_hit_filter = new LuceneCommon.HitFilter (this.HitFilter);
+			driver.RegisterHitFilter (source_name, this.HitFilter);
 
 			// If the queryable is in read-only more, don't 
 			// instantiate an indexer for it.
@@ -169,11 +166,6 @@ namespace Beagle.Daemon {
 		}
 
 		/////////////////////////////////////////
-
-		virtual protected bool HitIsValid (Uri uri)
-		{
-			return true;
-		}
 
 		virtual protected bool HitFilter (Hit hit)
 		{

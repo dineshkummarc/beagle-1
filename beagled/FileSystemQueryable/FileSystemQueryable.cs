@@ -106,7 +106,8 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			file_crawl_task = new FileCrawlTask (this);
 			file_crawl_task.Source = this;
 
-			name_resolver = (LuceneNameResolver) Driver;
+			name_resolver = new LuceneNameResolver (Driver);
+			//name_resolver = (LuceneNameResolver) Driver;
 			PreloadDirectoryNameInfo ();
 
 			// Setup our file-name filter
@@ -121,13 +122,6 @@ namespace Beagle.Daemon.FileSystemQueryable {
 		override protected IFileAttributesStore BuildFileAttributesStore ()
 		{
 			return new FileAttributesStore_Mixed (IndexDirectory, IndexFingerprint);
-		}
-
-		override protected LuceneQueryingDriver BuildLuceneQueryingDriver (string index_name,
-										   int    minor_version,
-										   bool   read_only_mode)
-		{
-			return new LuceneNameResolver (index_name, minor_version, read_only_mode);
 		}
 
 		public FileNameFilter Filter {

@@ -529,7 +529,7 @@ namespace Beagle.Daemon {
 		}
 
 		// Exposing this is a little bit suspicious.
-		static protected string PropertyToFieldName (PropertyType type, string key)
+		static public string PropertyToFieldName (PropertyType type, string key)
 		{
 			return String.Format ("prop:{0}:{1}", TypeToCode (type), key);
 
@@ -600,7 +600,7 @@ namespace Beagle.Daemon {
 				AddDateFields (field_name, prop, doc);
 		}
 
-		static protected Property GetPropertyFromDocument (Field f, Document doc, bool from_primary_index)
+		static public Property GetPropertyFromDocument (Field f, Document doc, bool from_primary_index)
 		{
 			// Note: we don't use the document that we pass in,
 			// but in theory we could.  At some later point we
@@ -962,6 +962,25 @@ namespace Beagle.Daemon {
 			public bool HitFilter (Hit hit)
 			{
 				return ! original (hit);
+			}
+		}
+
+		public class SourceHitFilter {
+			string source;
+			HitFilter original;
+
+			public SourceHitFilter (string source, HitFilter original)
+			{
+				this.source = source;
+				this.original = original;
+			}
+
+			public bool HitFilter (Hit hit)
+			{
+				if (hit.Source != this.source)
+					return false;
+
+				return this.original (hit);
 			}
 		}
 
@@ -1436,17 +1455,17 @@ namespace Beagle.Daemon {
 			throw new Exception ("Unhandled QueryPart type! " + abstract_part.ToString ());
 		}
 
-		static protected LNS.Query UriQuery (string field_name, Uri uri)
+		static public LNS.Query UriQuery (string field_name, Uri uri)
 		{
 			return new LNS.TermQuery (new Term (field_name, UriFu.UriToEscapedString (uri)));
 		}
 
-		static protected LNS.Query UriQuery (string field_name, ICollection uri_list)
+		static public LNS.Query UriQuery (string field_name, ICollection uri_list)
 		{
 			return UriQuery (field_name, uri_list, null);
 		}
 
-		static protected LNS.Query UriQuery (string field_name, ICollection uri_list, LNS.Query extra_requirement)
+		static public LNS.Query UriQuery (string field_name, ICollection uri_list, LNS.Query extra_requirement)
 		{
 			if (uri_list.Count == 0)
 				return null;

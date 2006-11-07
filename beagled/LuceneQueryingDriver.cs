@@ -26,6 +26,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -46,21 +47,23 @@ namespace Beagle.Daemon {
 
 	public class LuceneQueryingDriver : LuceneCommon, IQueryable {
 
-		static public bool Debug = false;
+		static public bool Debug = true;
 
 		public const string PrivateNamespace = "_private:";
 
 		public delegate bool UriFilter (Uri uri);
 		public delegate double RelevancyMultiplier (Hit hit);
 
-		public LuceneQueryingDriver (string index_name, int source_version, bool read_only) 
-			: base (index_name)
+		private OrHitFilter source_hit_filters = new OrHitFilter ();
+
+		public LuceneQueryingDriver (string source_name, int source_version, bool read_only) 
+			: base (source_name)
 		{
 			// FIXME: Maybe the LuceneQueryingDriver should never try to create the index?
 			if (Exists ())
-				Open (index_name, source_version, read_only);
+				Open (source_name, source_version, read_only);
 			else if (!read_only)
-				Create (index_name, source_version);
+				Create (source_name, source_version);
 			else {
 				// We're in read-only mode, but we can't create an index.
 				// Maybe a different exception would be better?  This one is caught
@@ -142,6 +145,13 @@ namespace Beagle.Daemon {
 
 		////////////////////////////////////////////////////////////////
 
+		public void RegisterHitFilter (string source, HitFilter hit_filter)
+		{
+			source_hit_filters.Add (new SourceHitFilter (source, hit_filter).HitFilter);
+		}
+
+		////////////////////////////////////////////////////////////////
+
 		// *** FIXME *** FIXME *** FIXME *** FIXME ***
 		// When we rename a directory, we need to somehow
 		// propagate change information to files under that
@@ -199,44 +209,28 @@ namespace Beagle.Daemon {
 				// If this is an index listener, we don't need to do a query:
 				// we just build up synthethic hits and add them unconditionally.
 				if (query.IsIndexListener) {
-#if joe_wip
-					// XXX: Fix index listener.s
 					ArrayList synthetic_hits = new ArrayList ();
 					foreach (Uri uri in added_uris) {
-						if (our_uri_filter != null) {
-							bool accept = false;
-
-							try {
-								accept = our_uri_filter (uri);
-							} catch (Exception e) {
-								Log.Warn (e, "Caught an exception in HitIsValid for {0}", uri);
-							}
-
-							if (! accept)
-								continue;
-						}
-
 						Hit hit = new Hit ();
 						hit.Uri = uri;
 
-						if (our_hit_filter != null) {
-							bool accept = false;
+						bool accept = false;
 
-							try {
-								accept = our_hit_filter (hit);
-							} catch (Exception e) {
-								Log.Warn (e, "Caught an exception in HitFilter for {0}", hit.Uri);
-							}
-
-							if (! accept)
-								continue;
+						try {
+							accept = source_hit_filters.HitFilter (hit);
+						} catch (Exception e) {
+							Log.Warn (e, "Caught an exception in HitFilter for {0}", hit.Uri);
 						}
+						
+						if (! accept)
+							continue;
 
 						synthetic_hits.Add (hit);
 					}
+
 					if (synthetic_hits.Count > 0)
 						query_result.Add (synthetic_hits);
-#endif
+
 					return;
 				}
 			}
@@ -244,11 +238,7 @@ namespace Beagle.Daemon {
 			DoQuery (query, 
 				 query_result,
 				 added_uris,
-				 null, null);
-#if joe_wip
-				 our_uri_filter,
-				 our_hit_filter);
-#endif
+				 source_hit_filters);
 		}
 
 		////////////////////////////////////////////////////////////////
@@ -258,8 +248,7 @@ namespace Beagle.Daemon {
 		public void DoQuery (Query               query,
 				     IQueryResult        result,
 				     ICollection         search_subset_uris, // should be internal uris
-				     UriFilter           uri_filter,
-				     HitFilter           hit_filter)
+				     OrHitFilter         source_hit_filters)
 		{
 			if (Debug)
 				Logger.Log.Debug ("###### {0}: Starting low-level queries", IndexName);
@@ -278,8 +267,7 @@ namespace Beagle.Daemon {
 
 			AndHitFilter all_hit_filters;
 			all_hit_filters = new AndHitFilter ();
-			if (hit_filter != null)
-				all_hit_filters.Add (hit_filter);
+			all_hit_filters.Add (source_hit_filters.HitFilter);
 
 			ArrayList term_list = new ArrayList ();
 
@@ -455,7 +443,6 @@ namespace Beagle.Daemon {
 						      result,
 						      term_list,
 						      query.MaxHits,
-						      uri_filter,
 						      new HitFilter (all_hit_filters.HitFilter),
 						      IndexName);
 			}
@@ -702,23 +689,22 @@ namespace Beagle.Daemon {
 							  IQueryResult      result,
 							  ICollection       query_term_list,
 							  int               max_results,
-							  UriFilter         uri_filter,
 							  HitFilter         hit_filter,
-							  string            index_name)
+							  string            source_name)
 		{
 			TopScores top_docs = null;
 			ArrayList all_docs = null;
 
 			if (Debug)
-				Logger.Log.Debug (">>> {0}: Initially handed {1} matches", index_name, primary_matches.TrueCount);
+				Logger.Log.Debug (">>> {0}: Initially handed {1} matches", source_name, primary_matches.TrueCount);
 
 			if (primary_matches.TrueCount <= max_results) {
 				if (Debug)
-					Logger.Log.Debug (">>> {0}: Initial count is within our limit of {1}", index_name, max_results);
+					Logger.Log.Debug (">>> {0}: Initial count is within our limit of {1}", source_name, max_results);
 				all_docs = new ArrayList ();
 			} else {
 				if (Debug)
-					Logger.Log.Debug (">>> {0}: Number of hits is capped at {1}", index_name, max_results);
+					Logger.Log.Debug (">>> {0}: Number of hits is capped at {1}", source_name, max_results);
 				top_docs = new TopScores (max_results);
 			}
 
@@ -797,10 +783,10 @@ namespace Beagle.Daemon {
 
 				a.Stop ();
 				if (Debug) {
-					Log.Debug (">>> {0}: Walked {1} items, populated an enum with {2} items", index_name, docs_walked, docs_found, a);
+					Log.Debug (">>> {0}: Walked {1} items, populated an enum with {2} items", source_name, docs_walked, docs_found, a);
 					
 					if (docs_found == max_results)
-						Log.Debug (">>> {0}: Successfully short circuited timestamp ordering!", index_name);
+						Log.Debug (">>> {0}: Successfully short circuited timestamp ordering!", source_name);
 				}
 			}
 
@@ -834,14 +820,6 @@ namespace Beagle.Daemon {
 						continue;
 				}
 
-				// If we have a UriFilter, apply it.
-				if (uri_filter != null) {
-					Uri uri;
-					uri = GetUriFromDocument (doc);
-					if (! uri_filter (uri)) 
-						continue;
-				}
-
 				DocAndId doc_and_id = new DocAndId ();
 				doc_and_id.Doc = doc;
 				doc_and_id.Id = i;
@@ -856,7 +834,7 @@ namespace Beagle.Daemon {
 			}
 
 			if (Debug)
-				Log.Debug (">>> {0}: Processed roughly {1} documents", index_name, count);
+				Log.Debug (">>> {0}: Processed roughly {1} documents", source_name, count);
 
 			b.Stop ();
 
@@ -889,7 +867,7 @@ namespace Beagle.Daemon {
 			} else {
 
 				if (Debug)
-					Logger.Log.Debug (">>> {0}: Performing cross-index Hit reunification", index_name);
+					Logger.Log.Debug (">>> {0}: Performing cross-index Hit reunification", source_name);
 
 				Hashtable hits_by_uri;
 				hits_by_uri = UriFu.NewHashtable ();
@@ -903,6 +881,7 @@ namespace Beagle.Daemon {
 					hits_by_id [doc_and_id.Id] = hit;
 					hits_by_uri [hit.Uri] = hit;
 					secondary_matches.AddUri (hit.Uri);
+					final_list_of_hits.Add (hit);
 				}
 
 				secondary_matches.FlushUris ();
@@ -948,7 +927,15 @@ namespace Beagle.Daemon {
 				for (int i = 0; i < final_list_of_hits.Count; ++i) {
 					Hit hit;
 					hit = final_list_of_hits [i] as Hit;
-					if (! hit_filter (hit)) {
+					bool allow = false;
+
+					try {
+						allow = hit_filter (hit);
+					} catch (Exception e) {
+						Log.Warn (e, "Caught exception in hit filter for {0}", hit.Uri);
+					}
+
+					if (! allow) {
 						if (Debug)
 							Logger.Log.Debug ("Filtered out {0}", hit.Uri);
 						final_list_of_hits [i] = null;
@@ -981,12 +968,12 @@ namespace Beagle.Daemon {
 			total.Stop ();
 
 			if (Debug) {
-				Logger.Log.Debug (">>> {0}: GenerateQueryResults time statistics:", index_name);
-				Logger.Log.Debug (">>> {0}: Short circuit {1,6} ({2:0.0}%)", index_name, a == null ? "N/A" : a.ToString (), a == null ? 0.0 : 100 * a.ElapsedTime / total.ElapsedTime);
-				Logger.Log.Debug (">>> {0}:    First pass {1,6} ({2:0.0}%)", index_name, b, 100 * b.ElapsedTime / total.ElapsedTime);
-				Logger.Log.Debug (">>> {0}:  Hit assembly {1,6} ({2:0.0}%)", index_name, c, 100 * c.ElapsedTime / total.ElapsedTime);
-				Logger.Log.Debug (">>> {0}:    Final pass {1,6} ({2:0.0}%)", index_name, d, 100 * d.ElapsedTime / total.ElapsedTime);
-				Logger.Log.Debug (">>> {0}:         TOTAL {1,6}", index_name, total);
+				Logger.Log.Debug (">>> {0}: GenerateQueryResults time statistics:", source_name);
+				Logger.Log.Debug (">>> {0}: Short circuit {1,6} ({2:0.0}%)", source_name, a == null ? "N/A" : a.ToString (), a == null ? 0.0 : 100 * a.ElapsedTime / total.ElapsedTime);
+				Logger.Log.Debug (">>> {0}:    First pass {1,6} ({2:0.0}%)", source_name, b, 100 * b.ElapsedTime / total.ElapsedTime);
+				Logger.Log.Debug (">>> {0}:  Hit assembly {1,6} ({2:0.0}%)", source_name, c, 100 * c.ElapsedTime / total.ElapsedTime);
+				Logger.Log.Debug (">>> {0}:    Final pass {1,6} ({2:0.0}%)", source_name, d, 100 * d.ElapsedTime / total.ElapsedTime);
+				Logger.Log.Debug (">>> {0}:         TOTAL {1,6}", source_name, total);
 			}
 		}
 

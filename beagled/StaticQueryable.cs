@@ -40,7 +40,7 @@ namespace Beagle.Daemon {
 		
 		protected TextCache text_cache;
 		
-		public StaticQueryable (string index_name, string index_path, bool read_only_mode) : base (index_path, read_only_mode)
+		public StaticQueryable (string index_path) : base (index_path, true)
 		{
 			Logger.Log.Debug ("Initializing static queryable: {0}", index_path);
 
@@ -51,6 +51,13 @@ namespace Beagle.Daemon {
 					Logger.Log.Warn ("Unable to purge static queryable text cache in {0}.  Will run without it.", index_path);
 				}
 			}
+		}
+
+		override protected LuceneQueryingDriver BuildLuceneQueryingDriver (string source_name, int source_version, bool read_only_mode)
+		{
+			// Return a new querying driver for static backends
+			// instead of the normal singleton.
+			return new LuceneQueryingDriver (source_name, source_version, read_only_mode);
 		}
 
 		override public string GetSnippet (string[] query_terms, Hit hit) 
@@ -69,20 +76,15 @@ namespace Beagle.Daemon {
 			return snippet;
 		}
 
-		override protected bool HitIsValid (Uri uri)
+		override protected bool HitFilter (Hit hit)
 		{
-			// We can't check anything else than file uris
-			if (! uri.IsFile)
+			// We can't cehck anything else than filr uris
+			if (! hit.Uri.IsFile)
 				return true;
-			
-			// FIXME: This is a hack, we need to support parent Uri's in some sane way
-			try {
-				int j = uri.LocalPath.LastIndexOf ('#');
-				return File.Exists ((j == -1) ? uri.LocalPath : uri.LocalPath.Substring (0, j));
-			} catch (Exception e) {
-				Logger.Log.Warn ("Exception executing HitIsValid on {0}", uri.LocalPath);
-				return false;
-			}
+
+			// FIXME: This is a hack.  We need to support parent Uris in some sane way
+			int j = hit.Uri.LocalPath.LastIndexOf ('#');
+			return File.Exists ((j == -1) ? hit.Uri.LocalPath : hit.Uri.LocalPath.Substring (0, j));
 		}
 	}
 }

@@ -178,19 +178,13 @@ namespace Beagle.Daemon {
 			file_info_cache.Remove (indexable.Uri);
 		}
 
-		override protected bool HitIsValid (Uri uri)
+		override protected bool HitFilter (Hit hit)
 		{
-			// Do the right thing if the Uri is a file.
-			// If the file Uri we need is the ContentUri, this won't work.
-			if (! uri.IsFile)
+			// If this isn't a file URI, pass through.
+			if (! hit.Uri.IsFile)
 				return true;
 
-			try {
-				return FileSystem.Exists (uri.LocalPath);
-			} catch (Exception e) {
-				Logger.Log.Warn ("Exception executing HitIsValid on {0}", uri.LocalPath);
-				return false;
-			}
+			return FileSystem.Exists (hit.Uri.LocalPath);
 		}
 
 		///////////////////////////////////////////////////////////////////////////

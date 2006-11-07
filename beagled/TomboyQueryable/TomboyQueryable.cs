@@ -205,11 +205,9 @@ namespace Beagle.Daemon.TomboyQueryable {
 			note_text_cache.Remove (receipt.Uri);
 		}
 
-		override protected bool HitIsValid (Uri uri)
+		override protected bool HitFilter (Hit hit)
 		{
-			Log.Debug ("Uri: {0}", uri);
-
-			string note = Path.Combine (tomboy_dir, uri.Segments [1] + ".note");
+			string note = Path.Combine (tomboy_dir, hit.Uri.Segments [1] + ".note");
 
 			if (File.Exists (note))
 				return true;

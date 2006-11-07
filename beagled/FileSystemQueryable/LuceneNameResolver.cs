@@ -43,7 +43,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 	// back to filenames.
 	//
 
-	public class LuceneNameResolver : LuceneQueryingDriver {
+	public class LuceneNameResolver {
 
 		public class NameInfo {
 			public Guid   Id;
@@ -52,10 +52,11 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			public bool   IsDirectory;
 		}
 
-		public LuceneNameResolver (string index_name, int minor_version, bool read_only)
-			: base (index_name, minor_version, read_only)
-		{
+		private LuceneQueryingDriver driver;
 
+		public LuceneNameResolver (LuceneQueryingDriver driver)
+		{
+			this.driver = driver;
 		}
 
 		////////////////////////////////////////////////////////////////
@@ -76,7 +77,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 
 			foreach (Field f in doc.Fields ()) {
 				Property prop;
-				prop = GetPropertyFromDocument (f, doc, false);
+				prop = LuceneCommon.GetPropertyFromDocument (f, doc, false);
 				if (prop == null)
 					continue;
 
@@ -129,13 +130,13 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			uri = GuidFu.ToUri (id);
 			
 			LNS.Query query;
-			query = UriQuery ("Uri", uri);
+			query = LuceneCommon.UriQuery ("Uri", uri);
 			
 			SingletonCollector collector;
 			collector = new SingletonCollector ();
 
 			LNS.IndexSearcher searcher;
-			searcher = LuceneCommon.GetSearcher (SecondaryStore);
+			searcher = LuceneCommon.GetSearcher (driver.SecondaryStore);
 			searcher.Search (query, null, collector);
 
 			NameInfo info = null;
@@ -159,10 +160,10 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			parent_uri_str = GuidFu.ToUriString (parent_id);
 
 			string key1;
-			key1 = PropertyToFieldName (PropertyType.Keyword, FileSystemQueryable.ParentDirUriPropKey);
+			key1 = LuceneCommon.PropertyToFieldName (PropertyType.Keyword, FileSystemQueryable.ParentDirUriPropKey);
 
 			string key2;
-			key2 = PropertyToFieldName (PropertyType.Keyword, FileSystemQueryable.ExactFilenamePropKey);
+			key2 = LuceneCommon.PropertyToFieldName (PropertyType.Keyword, FileSystemQueryable.ExactFilenamePropKey);
 
 			LNS.Query q1;
 			q1 = new LNS.TermQuery (new Term (key1, parent_uri_str));
@@ -179,7 +180,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			collector = new SingletonCollector ();
 
 			LNS.IndexSearcher searcher;
-			searcher = LuceneCommon.GetSearcher (SecondaryStore);
+			searcher = LuceneCommon.GetSearcher (driver.SecondaryStore);
 			searcher.Search (query, null, collector);
 
 			Guid id;
@@ -219,8 +220,8 @@ namespace Beagle.Daemon.FileSystemQueryable {
 		{
 			// First we assemble a query to find all of the directories.
 			string field_name;
-			field_name = PropertyToFieldName (PropertyType.Keyword,
-							  FileSystemQueryable.IsDirectoryPropKey);
+			field_name = LuceneCommon.PropertyToFieldName (PropertyType.Keyword,
+								       FileSystemQueryable.IsDirectoryPropKey);
 			
 			LNS.Query query;
 			query = new LNS.TermQuery (new Term (field_name, "true"));
@@ -228,7 +229,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			// Then we actually run the query
 			LNS.IndexSearcher searcher;
 			//searcher = new LNS.IndexSearcher (SecondaryStore);
-			searcher = LuceneCommon.GetSearcher (SecondaryStore);
+			searcher = LuceneCommon.GetSearcher (driver.SecondaryStore);
 
 			BetterBitArray matches;
 			matches = new BetterBitArray (searcher.MaxDoc ());
