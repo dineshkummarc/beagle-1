@@ -1,7 +1,7 @@
 //
-// FilterDirectory.cs
+// AssemblyInfo.cs
 //
-// Copyright (C) 2005 Novell, Inc.
+// Copyright (C) 2006 Novell, Inc.
 //
 
 //
@@ -24,42 +24,28 @@
 // DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Collections;
-using System.IO;
-using System.Text;
-using System.Diagnostics;
+using System.Reflection;
 
-using Beagle.Daemon;
-using Beagle.Util;
+using Beagle;
 
-namespace Beagle.Filters {
-
-	public class FilterDirectory : FilterDesktop {
-
-		public FilterDirectory ()
-		{
-			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("x-directory/normal"));
-			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("inode/directory"));
-		}
-
-		override protected void DoOpen (DirectoryInfo dir)
-		{
-			FileInfo file = new FileInfo (Path.Combine (dir.FullName, ".directory"));
-
-			if (!file.Exists) {
-				Logger.Log.Debug ("No directory meta-data file found for directory: {0}", dir.FullName);
-				Finished ();
-				return;
-			}
-				
-			try {
-				reader = new StreamReader (file.FullName);
-			} catch (Exception) {
-				Logger.Log.Debug ("Could not open directory meta-data file, not filtering: {0}", dir.FullName);
-				Error ();
-				return;
-			}
-		}
-	}
-}
+// Any request message types in the Beagle.dll file must be registered here.
+[assembly: RequestMessageTypes (
+	 typeof (IndexingServiceRequest),
+	 typeof (Query),
+	 typeof (DaemonInformationRequest),
+	 typeof (ShutdownRequest),
+	 typeof (ReloadConfigRequest),
+	 typeof (OptimizeIndexesRequest),
+	 typeof (SnippetRequest)
+)]
+	 
+[assembly: ResponseMessageTypes (
+	 typeof (EmptyResponse),
+	 typeof (ErrorResponse),
+	 typeof (HitsAddedResponse),
+	 typeof (HitsSubtractedResponse),
+	 typeof (FinishedResponse),
+	 typeof (SearchTermResponse),
+	 typeof (DaemonInformationResponse),
+	 typeof (SnippetResponse)
+)]

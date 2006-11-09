@@ -163,13 +163,19 @@ namespace Beagle.Daemon.KabcQueryable {
 
 		internal void RemoveDeletedContacts (Hashtable deleted_contacts)
 		{
+			ArrayList to_delete = new ArrayList ();
 			lock (last_modified_table) {
 				foreach (string uid in last_modified_table.Keys) {
 					if (! deleted_contacts.Contains (uid) ||
 					    (bool)deleted_contacts [uid] == true) {
-						RemoveContact (uid);
+						to_delete.Add (uid);
 					}
 				}
+			}
+
+			foreach (string uid in to_delete) {
+				RemoveContact (uid);
+				last_modified_table.Remove (uid);
 			}
 		}
 
@@ -328,11 +334,11 @@ namespace Beagle.Daemon.KabcQueryable {
 					if (current_dt == old_dt)
 						return false;
 					else {
-						Log.Debug ("Updating last_mod_date [{0}] = {1}", current_uid, current_dt);
+						//Log.Debug ("Updating last_mod_date [{0}] = {1}", current_uid, current_dt);
 						last_modified_table [current_uid] = current_dt;
 					}
 				} else {
-					Log.Debug ("Adding last_mod_date [{0}] = {1}", current_uid, current_dt);
+					//Log.Debug ("Adding last_mod_date [{0}] = {1}", current_uid, current_dt);
 					last_modified_table [current_uid] = current_dt;
 				}
 			}
@@ -356,7 +362,7 @@ namespace Beagle.Daemon.KabcQueryable {
 			indexable.AddProperty (Property.NewUnsearched ("fixme:uid", current_uid));
 
 			// FIXME: Comment this Debug statement after the backend stabilizes
-			Log.Debug ("Creating {0} from:[{1}]", uri, string_builder.ToString ());
+			//Log.Debug ("Creating {0} from:[{1}]", uri, string_builder.ToString ());
 			StringReader string_reader = new StringReader (string_builder.ToString());
 			indexable.SetTextReader (string_reader);
 

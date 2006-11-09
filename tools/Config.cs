@@ -45,7 +45,7 @@ public static class ConfigTool {
 		string usage =
 			"beagle-config: Command-line interface to the Beagle config file.\n" +
 			"Web page: http://www.gnome.org/projects/beagle\n" +
-			"Copyright (C) 2005 Novell, Inc.\n\n";
+			"Copyright (C) 2005-2006 Novell, Inc.\n\n";
 		usage +=
 			"Usage: beagle-config [OPTIONS]\n" +
 			"   or: beagle-config <SECTION>\n" +
@@ -218,7 +218,7 @@ public static class ConfigTool {
 		}
 
 		foreach (Assembly assembly in assemblies) {
-			foreach (Type type in ReflectionFu.ScanAssemblyForInterface (assembly, typeof (IBackend))) {
+			foreach (Type type in ReflectionFu.GetTypesFromAssemblyAttribute (assembly, typeof (IBackendTypesAttribute))) {
 				foreach (BackendFlavor flavor in ReflectionFu.ScanTypeForAttribute (type, typeof (BackendFlavor)))
 					backends.Add (flavor.Name);
 			}

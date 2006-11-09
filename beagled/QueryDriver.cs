@@ -73,7 +73,7 @@ namespace Beagle.Daemon {
 			ArrayList assemblies = ReflectionFu.ScanEnvironmentForAssemblies ("BEAGLE_FILTER_PATH", PathFinder.FilterDir);
 
 			foreach (Assembly assembly in assemblies) {
-				foreach (Type t in ReflectionFu.ScanAssemblyForClass (assembly, typeof (Filter))) {
+				foreach (Type t in ReflectionFu.GetTypesFromAssemblyAttribute (assembly, typeof (FilterTypesAttribute))) {
 					foreach (PropertyKeywordMapping mapping in ReflectionFu.ScanTypeForAttribute (t, typeof (PropertyKeywordMapping))) {
 						PropertyKeywordFu.RegisterMapping (mapping);
 						++count;

@@ -136,7 +136,7 @@ namespace Beagle.Daemon {
 		{
 			int count = 0;
 
-			foreach (Type type in ReflectionFu.ScanAssemblyForInterface (assembly, typeof (IBackend))) {
+			foreach (Type type in ReflectionFu.GetTypesFromAssemblyAttribute (assembly, typeof (IBackendTypesAttribute))) {
 				foreach (BackendFlavor flavor in ReflectionFu.ScanTypeForAttribute (type, typeof (BackendFlavor))) {
 					if (! UseBackend (flavor.Name))
 						continue;
@@ -348,7 +348,7 @@ namespace Beagle.Daemon {
 			PopulateAssemblies ();
 
 			foreach (Assembly assembly in assemblies) {
-				foreach (Type type in ReflectionFu.ScanAssemblyForInterface (assembly, typeof (IBackend))) {
+				foreach (Type type in ReflectionFu.GetTypesFromAssemblyAttribute (assembly, typeof (IBackendTypesAttribute))) {
 					foreach (BackendFlavor flavor in ReflectionFu.ScanTypeForAttribute (type, typeof (BackendFlavor)))
 						ret += String.Format (" - {0}\n", flavor.Name);
 				}

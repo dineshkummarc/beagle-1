@@ -1,9 +1,8 @@
 //
-// FilterDirectory.cs
+// EvolutionBackendsAssemblyInfo.cs
 //
-// Copyright (C) 2005 Novell, Inc.
+// Copyright (C) 2006 Novell, Inc.
 //
-
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -25,41 +24,12 @@
 //
 
 using System;
-using System.Collections;
-using System.IO;
-using System.Text;
-using System.Diagnostics;
 
 using Beagle.Daemon;
-using Beagle.Util;
+using Beagle.Daemon.EvolutionMailDriver;
+using Beagle.Daemon.EvolutionDataServerQueryable;
 
-namespace Beagle.Filters {
-
-	public class FilterDirectory : FilterDesktop {
-
-		public FilterDirectory ()
-		{
-			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("x-directory/normal"));
-			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("inode/directory"));
-		}
-
-		override protected void DoOpen (DirectoryInfo dir)
-		{
-			FileInfo file = new FileInfo (Path.Combine (dir.FullName, ".directory"));
-
-			if (!file.Exists) {
-				Logger.Log.Debug ("No directory meta-data file found for directory: {0}", dir.FullName);
-				Finished ();
-				return;
-			}
-				
-			try {
-				reader = new StreamReader (file.FullName);
-			} catch (Exception) {
-				Logger.Log.Debug ("Could not open directory meta-data file, not filtering: {0}", dir.FullName);
-				Error ();
-				return;
-			}
-		}
-	}
-}
+[assembly: IBackendTypes (
+	 typeof (EvolutionMailQueryable),
+	 typeof (EvolutionDataServerQueryable)
+)]

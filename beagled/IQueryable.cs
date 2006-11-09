@@ -24,9 +24,10 @@
 // DEALINGS IN THE SOFTWARE.
 //
 
-
 using System;
 using System.Collections;
+
+using Beagle.Util;
 
 namespace Beagle.Daemon {
 

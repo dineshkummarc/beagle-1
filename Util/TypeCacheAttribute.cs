@@ -1,7 +1,7 @@
 //
-// FilterDirectory.cs
+// TypeCacheAttribute.cs
 //
-// Copyright (C) 2005 Novell, Inc.
+// Copyright (C) 2006 Novell, Inc.
 //
 
 //
@@ -26,40 +26,20 @@
 
 using System;
 using System.Collections;
-using System.IO;
-using System.Text;
-using System.Diagnostics;
+using System.Reflection;
 
-using Beagle.Daemon;
-using Beagle.Util;
+namespace Beagle.Util {
 
-namespace Beagle.Filters {
+	public abstract class TypeCacheAttribute : Attribute {
+		private Type[] types;
 
-	public class FilterDirectory : FilterDesktop {
-
-		public FilterDirectory ()
+		public TypeCacheAttribute (params Type[] types)
 		{
-			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("x-directory/normal"));
-			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("inode/directory"));
+			this.types = types;
 		}
 
-		override protected void DoOpen (DirectoryInfo dir)
-		{
-			FileInfo file = new FileInfo (Path.Combine (dir.FullName, ".directory"));
-
-			if (!file.Exists) {
-				Logger.Log.Debug ("No directory meta-data file found for directory: {0}", dir.FullName);
-				Finished ();
-				return;
-			}
-				
-			try {
-				reader = new StreamReader (file.FullName);
-			} catch (Exception) {
-				Logger.Log.Debug ("Could not open directory meta-data file, not filtering: {0}", dir.FullName);
-				Error ();
-				return;
-			}
+		public ICollection Types {
+			get { return this.types; }
 		}
 	}
 }

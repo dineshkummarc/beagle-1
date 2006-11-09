@@ -162,13 +162,19 @@ namespace Beagle.Daemon.KNotesQueryable {
 
 		internal void RemoveDeletedNotes (Hashtable deleted_notes)
 		{
+			ArrayList to_delete = new ArrayList ();
 			lock (last_modified_table) {
 				foreach (string uid in last_modified_table.Keys) {
 					if (! deleted_notes.Contains (uid) ||
 					    (bool)deleted_notes [uid] == true) {
-						RemoveNote (uid);
+						to_delete.Add (uid);
 					}
 				}
+			}
+
+			foreach (string uid in to_delete) {
+				RemoveNote (uid);
+				last_modified_table.Remove (uid);
 			}
 		}
 
@@ -336,11 +342,11 @@ VERSION:2.0
 					if (dt == old_dt)
 						return null;
 					else {
-						Log.Debug ("Updating last_mod_date [{0}] = {1}", uid, dt);
+						//Log.Debug ("Updating last_mod_date [{0}] = {1}", uid, dt);
 						last_modified_table [uid] = dt;
 					}
 				} else {
-					Log.Debug ("Adding last_mod_date [{0}] = {1}", uid, dt);
+					//Log.Debug ("Adding last_mod_date [{0}] = {1}", uid, dt);
 					last_modified_table [uid] = dt;
 				}
 			}
@@ -361,7 +367,7 @@ VERSION:2.0
 			indexable.AddProperty (Property.NewUnsearched ("fixme:uid", uid));
 
 			// FIXME: Comment this Debug statement after the backend stabilizes
-			Log.Debug ("Creating {0} from:[{1}]", uri, string_builder.ToString ());
+			//Log.Debug ("Creating {0} from:[{1}]", uri, string_builder.ToString ());
 			StringReader string_reader = new StringReader (string_builder.ToString());
 			indexable.SetTextReader (string_reader);
 

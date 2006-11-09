@@ -194,6 +194,8 @@ namespace Beagle.Daemon {
 
 			Logger.Log.Debug ("Daemon initialization finished after {0}", stopwatch);
 
+			SystemInformation.LogMemoryUsage (); 
+
 			if (arg_indexing_test_mode) {
 				Thread.Sleep (1000); // Ugly paranoia: wait a second for the backends to settle.
 				Logger.Log.Debug ("Running in indexing test mode");
@@ -249,7 +251,8 @@ namespace Beagle.Daemon {
 
 				case "--heap-buddy":
 				case "--mdb":
-					// Silently ignore the --heap-buddy argument: it gets handled
+				case "--mono-debug":
+					// Silently ignore these arguments: they get handled
 					// in the wrapper script.
 					break;
 

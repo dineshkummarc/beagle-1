@@ -1,7 +1,7 @@
 //
-// FilterDirectory.cs
+// AssemblyInfo.cs
 //
-// Copyright (C) 2005 Novell, Inc.
+// Copyright (C) 2006 Novell, Inc.
 //
 
 //
@@ -25,41 +25,26 @@
 //
 
 using System;
-using System.Collections;
-using System.IO;
-using System.Text;
-using System.Diagnostics;
 
-using Beagle.Daemon;
-using Beagle.Util;
+using Search.Tiles;
 
-namespace Beagle.Filters {
-
-	public class FilterDirectory : FilterDesktop {
-
-		public FilterDirectory ()
-		{
-			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("x-directory/normal"));
-			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("inode/directory"));
-		}
-
-		override protected void DoOpen (DirectoryInfo dir)
-		{
-			FileInfo file = new FileInfo (Path.Combine (dir.FullName, ".directory"));
-
-			if (!file.Exists) {
-				Logger.Log.Debug ("No directory meta-data file found for directory: {0}", dir.FullName);
-				Finished ();
-				return;
-			}
-				
-			try {
-				reader = new StreamReader (file.FullName);
-			} catch (Exception) {
-				Logger.Log.Debug ("Could not open directory meta-data file, not filtering: {0}", dir.FullName);
-				Error ();
-				return;
-			}
-		}
-	}
-}
+[assembly: TileActivatorTypes (
+	 typeof (ApplicationActivator),
+	 typeof (AudioActivator),
+	 typeof (CalendarActivator),
+	 typeof (CAppletActivator),
+	 typeof (ContactActivator),
+	 typeof (FileActivator),
+	 typeof (FolderActivator),
+	 typeof (ImageActivator),
+	 typeof (IMLogActivator),
+	 typeof (MailAttachmentActivator),
+	 typeof (MailMessageActivator),
+	 typeof (NoteActivator),
+	 typeof (PresentationActivator),
+	 typeof (RSSFeedActivator),
+	 typeof (SpreadsheetActivator),
+	 typeof (TextDocumentActivator),
+	 typeof (VideoActivator),
+	 typeof (WebHistoryActivator)
+)]

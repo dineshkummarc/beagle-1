@@ -325,6 +325,10 @@ konqhistoryqueryable = $(srcdir)/KonqHistoryQueryable
 KONQHISTORY_QUERYABLE_CSFILES =				\
 	$(konqhistoryqueryable)/KonqQueryable.cs
 
+konqbookmarkqueryable = $(srcdir)/KonqBookmarkQueryable
+KONQBOOKMARK_QUERYABLE_CSFILES =				\
+	$(konqbookmarkqueryable)/KonqBookmarkQueryable.cs
+
 kopetequeryable = $(srcdir)/KopeteQueryable
 KOPETE_QUERYABLE_CSFILES =				\
 	$(kopetequeryable)/KopeteQueryable.cs 	 	\
@@ -354,9 +358,11 @@ DAEMON_DLL_CSFILES = 						\
 	$(LIFEREA_QUERYABLE_CSFILES)				\
 	$(AKREGATOR_QUERYABLE_CSFILES)				\
 	$(KONQHISTORY_QUERYABLE_CSFILES)			\
+	$(KONQBOOKMARK_QUERYABLE_CSFILES)			\
 	$(KNOTES_QUERYABLE_CSFILES)				\
 	$(KABC_QUERYABLE_CSFILES)				\
 	$(KOPETE_QUERYABLE_CSFILES)				\
+	$(srcdir)/AssemblyInfo.cs				\
 	$(srcdir)/BackendBase.cs				\
 	$(srcdir)/BackendDriver.cs				\
 	$(srcdir)/BackendFlavor.cs				\
@@ -465,11 +471,14 @@ EVO_MAIL_QUERYABLE_CSFILES =					\
 
 EVO_DLL_TARGET = EvolutionBackends.dll
 EVO_DLL_CSFLAGS = $(BACKEND_CSFLAGS)
-EVO_DLL_CSFILES = $(EDS_QUERYABLE_CSFILES) $(EVO_MAIL_QUERYABLE_CSFILES)
+EVO_DLL_CSFILES = 					\
+	$(srcdir)/EvolutionBackendsAssemblyInfo.cs 	\
+	$(EDS_QUERYABLE_CSFILES) 			\
+	$(EVO_MAIL_QUERYABLE_CSFILES)
 EVO_DLL_ASSEMBLIES = $(BACKEND_ASSEMBLIES) $(EVO_LIBS)
 
 $(EVO_DLL_TARGET): $(EVO_DLL_CSFILES) $(DAEMON_DLL_LOCAL_ASSEMBLIES) $(DAEMON_DLL_TARGET)
-	$(CSC) -out:$@ $(EVO_DLL_CSFLAGS) $(EVO_DLL_CSFILES) -r:$(DAEMON_DLL_TARGET) $(EVO_DLL_ASSEMBLIES)
+	$(CSC) -out:$@ $(EVO_DLL_CSFLAGS) $(EVO_DLL_CSFILES) $(EVO_DLL_ASSEMBLIES)
 
 ############################################################
 

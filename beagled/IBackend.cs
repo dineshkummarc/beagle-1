@@ -26,6 +26,8 @@
 
 using System;
 
+using Beagle.Util;
+
 namespace Beagle.Daemon {
 
 	public interface IBackend {
@@ -42,5 +44,10 @@ namespace Beagle.Daemon {
 
 		// XXX: Need to fix QueryableStatus name
 		QueryableStatus GetBackendStatus ();
+	}
+
+	[AttributeUsage (AttributeTargets.Assembly)]
+	public class IBackendTypesAttribute : TypeCacheAttribute {
+		public IBackendTypesAttribute (params Type[] backend_types) : base (backend_types) { }
 	}
 }
