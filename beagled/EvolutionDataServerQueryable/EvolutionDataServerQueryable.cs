@@ -80,7 +80,7 @@ namespace Beagle.Daemon.EvolutionDataServerQueryable {
 			timer.Start ();
 
 			start_time = DateTime.Now;
-			State = QueryableState.Crawling;
+			State = BackendState.Crawling;
 
 			bool success = false;
 
@@ -95,7 +95,7 @@ namespace Beagle.Daemon.EvolutionDataServerQueryable {
 			} catch (DllNotFoundException ex) {
 				Logger.Log.Error (ex, "Unable to start EvolutionDataServer backend: Unable to find or open libraries:");
 			} finally {
-				State = QueryableState.Idle;
+				State = BackendState.Idle;
 				timer.Stop ();
 			}
 			

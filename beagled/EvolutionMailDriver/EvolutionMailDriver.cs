@@ -90,12 +90,12 @@ namespace Beagle.Daemon.EvolutionMailDriver {
 			}
 
 			Logger.Log.Debug ("Starting mail crawl");
-			State = QueryableState.Crawling;
+			State = BackendState.Crawling;
 			crawler = new MailCrawler (this.local_path, this.imap_path, this.imap4_path);
 			crawler.MboxAddedEvent += IndexMbox;
 			crawler.SummaryAddedEvent += IndexSummary;
 			crawler.Crawl ();
-			State = QueryableState.Idle;
+			State = BackendState.Idle;
 			Logger.Log.Debug ("Mail crawl finished");
 
 			// If we don't have inotify, we have to poll the file system.  Ugh.

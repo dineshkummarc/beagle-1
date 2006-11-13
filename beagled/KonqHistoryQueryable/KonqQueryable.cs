@@ -96,12 +96,12 @@ namespace Beagle.Daemon.KonqQueryable {
 
 		private void Crawl ()
 		{
-                        State = QueryableState.Crawling;
+                        State = BackendState.Crawling;
 			directory_enumerator = DirectoryWalker.GetDirectoryInfos (konq_cache_dir).GetEnumerator ();
 			Scheduler.Task crawl_task = NewAddTask (this);
 			crawl_task.Tag = crawler_tag;
 			ThisScheduler.Add (crawl_task);
-			State = QueryableState.Idle;
+			State = BackendState.Idle;
 		}
 
 		private string crawler_tag = "Konqueror History Crawler";

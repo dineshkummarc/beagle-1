@@ -47,14 +47,14 @@ namespace Beagle.Daemon {
 			if (req.GetSchedInfo)
 				response.SchedulerInformation = Scheduler.Global.GetCurrentStatus ();
 
-			if (req.GetIndexStatus) {
-				response.IndexStatus = new ArrayList ();
-				foreach (QueryableStatus status in QueryDriver.GetIndexInformation ())
-					response.IndexStatus.Add (status);
+			if (req.GetBackendStatus) {
+				response.BackendStatus = new ArrayList ();
+				foreach (IBackend backend in BackendDriver.Backends)
+					response.BackendStatus.Add (backend.BackendStatus);
 			}
 
 			if (req.GetIsIndexing)
-				response.IsIndexing = QueryDriver.IsIndexing;
+				response.IsIndexing = BackendDriver.IsIndexing;
 
 			return response;
 		}

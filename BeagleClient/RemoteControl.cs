@@ -35,7 +35,7 @@ namespace Beagle {
 
 	public class DaemonInformationRequest : RequestMessage {
 		/* User can request one or more of the four information. */
-		public bool GetVersion, GetSchedInfo, GetIndexStatus, GetIsIndexing;
+		public bool GetVersion, GetSchedInfo, GetBackendStatus, GetIsIndexing;
 
 		// For backward compatibility
 		public DaemonInformationRequest () : this (true, true, true, true) { }
@@ -43,12 +43,12 @@ namespace Beagle {
 		public DaemonInformationRequest (
 			bool get_version,
 			bool get_scheduler_info,
-			bool get_index_status,
+			bool get_backend_status,
 			bool get_is_indexing)
 		{
 			this.GetVersion = get_version;
 			this.GetSchedInfo = get_scheduler_info;
-			this.GetIndexStatus = get_index_status;
+			this.GetBackendStatus = get_backend_status;
 			this.GetIsIndexing = get_is_indexing;
 		}
 	}
@@ -66,8 +66,8 @@ namespace Beagle {
 		public SchedulerInformation SchedulerInformation = null;
 
 		[XmlArray]
-		[XmlArrayItem (ElementName = "QueryableStatus", Type = typeof (QueryableStatus))]
-		public ArrayList IndexStatus = null;
+		[XmlArrayItem (typeof (BackendStatus))]
+		public ArrayList BackendStatus = null;
 
 		public bool IsIndexing = false;
 
@@ -86,14 +86,14 @@ namespace Beagle {
 		}
 		
 		[XmlIgnore]
-		public string IndexInformation {
+		public string BackendInformation {
 			get {
-				if (IndexStatus == null)
+				if (BackendStatus == null)
 					return null;
 
 				StringBuilder builder = new StringBuilder ('\n');
 
-				foreach (QueryableStatus status in IndexStatus) {
+				foreach (BackendStatus status in BackendStatus) {
 					builder.Append ("Name: ").Append (status.Name).Append ('\n');
 					builder.Append ("Count: ").Append (status.ItemCount).Append ('\n');
 					builder.Append ("Indexing: ").Append (status.IsIndexing).Append ('\n');

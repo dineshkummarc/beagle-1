@@ -29,6 +29,7 @@ using System;
 using System.Collections;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 
@@ -369,14 +370,24 @@ namespace Beagle {
 
 		//////////////////////////
 
+		public override string ToString ()
+		{
+			StringBuilder sb = new StringBuilder ();
+
+			sb.Append ("Hit: " + uri + "\n");
+
+			foreach (Property p in properties)
+				sb.Append ("  " + p.ToString () + "\n");
+
+			return sb.ToString ();
+		}
+
 		public override int GetHashCode ()
 		{
 			return (uri != null ? uri.ToString().GetHashCode () : 0)
 				^ (type != null ? type.GetHashCode () : 0)
 				^ (source != null ? source.GetHashCode () : 0);
 		}
-
-		//////////////////////////
 
 		public int CompareTo (object obj)
 		{

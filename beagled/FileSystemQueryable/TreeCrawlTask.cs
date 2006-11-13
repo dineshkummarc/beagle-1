@@ -84,8 +84,8 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			}
 			
 			LuceneQueryable queryable = (LuceneQueryable) Source;
-			QueryableState old_state = queryable.State;
-			queryable.State = QueryableState.Crawling;
+			BackendState old_state = queryable.State;
+			queryable.State = BackendState.Crawling;
 
 			if (dir.IsAttached) {
 				if (FileSystemQueryable.Debug)

@@ -165,6 +165,18 @@ class QueryTool {
 		System.Environment.Exit (0);
 	}
 
+	private static void RegisterMappings (Type t)
+	{
+		foreach (PropertyKeywordMapping mapping in ReflectionFu.ScanTypeForAttribute (t, typeof (PropertyKeywordMapping))) {
+			//Logger.Log.Debug (mapping.Keyword + " => " 
+			//		+ mapping.PropertyName + 
+			//		+ " is-keyword=" + mapping.IsKeyword + " (" 
+			//		+ mapping.Description + ") "
+			//		+ "(" + type.FullName + ")");
+			PropertyKeywordFu.RegisterMapping (mapping);
+		}
+	}
+
 	private static void ReadBackendMappings ()
 	{
 		ArrayList assemblies = ReflectionFu.ScanEnvironmentForAssemblies ("BEAGLE_BACKEND_PATH", PathFinder.BackendDir);
@@ -188,20 +200,18 @@ class QueryTool {
 		}
 
 		foreach (Assembly assembly in assemblies) {
-			foreach (Type type in ReflectionFu.GetTypesFromAssemblyAttribute (assembly, typeof (IBackendTypesAttribute))) {
-				object[] attributes = type.GetCustomAttributes (false);
-				foreach (object attribute in attributes) {
-					PropertyKeywordMapping mapping = attribute as PropertyKeywordMapping;
-					if (mapping == null)
-						continue;
-					//Logger.Log.Debug (mapping.Keyword + " => " 
-					//		+ mapping.PropertyName + 
-					//		+ " is-keyword=" + mapping.IsKeyword + " (" 
-					//		+ mapping.Description + ") "
-					//		+ "(" + type.FullName + ")");
-					PropertyKeywordFu.RegisterMapping (mapping);
-				}
-			}
+			foreach (Type type in ReflectionFu.GetTypesFromAssemblyAttribute (assembly, typeof (IBackendTypesAttribute)))
+				RegisterMappings (type);
+		}
+	}
+
+	private static void ReadFilterMappings ()
+	{
+		ArrayList assemblies = ReflectionFu.ScanEnvironmentForAssemblies ("BEAGLE_FILTER_PATH", PathFinder.FilterDir);
+
+		foreach (Assembly assembly in assemblies) {
+			foreach (Type type in ReflectionFu.GetTypesFromAssemblyAttribute (assembly, typeof (FilterTypesAttribute)))
+				RegisterMappings (type);
 		}
 	}
 
@@ -321,8 +331,7 @@ class QueryTool {
 
 			case "--keywords":
 				ReadBackendMappings ();
-				// XXX: Fix this.
-				//QueryDriver.ReadKeywordMappings ();
+				ReadFilterMappings ();
 
 				Console.WriteLine ("Supported query keywords are:");
 

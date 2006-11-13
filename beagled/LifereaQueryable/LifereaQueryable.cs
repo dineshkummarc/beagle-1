@@ -100,7 +100,7 @@ namespace Beagle.Daemon.LifereaQueryable {
 
                         log.Info ("Scanning Liferea feeds...");
 
-			State = QueryableState.Crawling;
+			State = BackendState.Crawling;
 			Stopwatch stopwatch = new Stopwatch ();
 			stopwatch.Start ();
 
@@ -110,7 +110,7 @@ namespace Beagle.Daemon.LifereaQueryable {
 				IndexSingleFeed (file.FullName);
 			}
 
-			State = QueryableState.Idle;
+			State = BackendState.Idle;
 			stopwatch.Stop ();
                         log.Info ("{0} files will be parsed (scanned in {1})", count, stopwatch);
 		}

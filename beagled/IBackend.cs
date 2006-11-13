@@ -42,8 +42,7 @@ namespace Beagle.Daemon {
 
 		string GetSnippet (string[] query_terms, Hit hit);
 
-		// XXX: Need to fix QueryableStatus name
-		QueryableStatus GetBackendStatus ();
+		BackendStatus BackendStatus { get; }
 	}
 
 	[AttributeUsage (AttributeTargets.Assembly)]

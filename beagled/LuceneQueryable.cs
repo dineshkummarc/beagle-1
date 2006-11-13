@@ -253,44 +253,46 @@ namespace Beagle.Daemon {
 		/////////////////////////////////////////
 
 		private int progress_percent = -1;
-		private QueryableState state = QueryableState.Idle;
+		private BackendState state = BackendState.Idle;
 		private DateTime last_state_change = DateTime.MinValue;
 
-		public override QueryableStatus GetBackendStatus ()
-		{
-			QueryableStatus status = new QueryableStatus ();
+		public override BackendStatus BackendStatus {
+			get {
+				BackendStatus status = new BackendStatus ();
 
-			status.Name = this.Name;
-			status.State = state;
-			status.ProgressPercent = progress_percent;
+				status.Name = this.Name;
+				status.State = state;
+				status.ProgressPercent = progress_percent;
 
-			// If we're in read-only mode, query the driver
-			// and not the indexer for the item count.
-			if (indexer == null)
-				status.ItemCount = driver.GetItemCount ();
-			else
-				status.ItemCount = indexer.GetItemCount ();
+				// XXX: Item counts are so very broken
+				// If we're in read-only mode, query the driver
+				// and not the indexer for the item count.
+				if (indexer == null)
+					status.ItemCount = driver.GetItemCount ();
+				else
+					status.ItemCount = indexer.GetItemCount ();
 
-			// Frequent state changes are common, and there isn't
-			// a real state machine with continuity when it comes
-			// to the indexing process.  A delayed indexing task,
-			// for example, might not actually run for several
-			// seconds after it is scheduled.  In this case, the
-			// backend might be in an "Idle" state, but the
-			// indexing process clearly isn't done.  To work
-			// around this, we also track the last time the state
-			// changed.  If it's less than some threshold, then
-			// we consider ourselves to still be in the process of
-			// indexing.
-			if (state != QueryableState.NotApplicable
-			    && (state != QueryableState.Idle
-				|| (DateTime.Now - last_state_change).TotalSeconds <= 30))
-				status.IsIndexing = true;
-
-			return status;
+				// Frequent state changes are common, and there isn't
+				// a real state machine with continuity when it comes
+				// to the indexing process.  A delayed indexing task,
+				// for example, might not actually run for several
+				// seconds after it is scheduled.  In this case, the
+				// backend might be in an "Idle" state, but the
+				// indexing process clearly isn't done.  To work
+				// around this, we also track the last time the state
+				// changed.  If it's less than some threshold, then
+				// we consider ourselves to still be in the process of
+				// indexing.
+				if (state != BackendState.NotApplicable
+				    && (state != BackendState.Idle
+					|| (DateTime.Now - last_state_change).TotalSeconds <= 30))
+					status.IsIndexing = true;
+				
+				return status;
+			}
 		}
 
-		public QueryableState State {
+		public BackendState State {
 			get { return this.state; }
 			set { 
 				//Logger.Log.Debug ("State {0}: {1} -> {2}", this, this.state, value);
@@ -409,8 +411,8 @@ namespace Beagle.Daemon {
 
 			override protected void DoTaskReal ()
 			{
-				QueryableState old_state = queryable.State;
-				queryable.State = QueryableState.Indexing;
+				BackendState old_state = queryable.State;
+				queryable.State = BackendState.Indexing;
 
 				if (queryable.PreAddIndexableHook (indexable)) {
 					queryable.AddIndexable (indexable);
@@ -460,8 +462,8 @@ namespace Beagle.Daemon {
 				// get re-scheduled after it is run.
 				Reschedule = true;
 
-				QueryableState old_state = queryable.State;
-				queryable.State = QueryableState.Indexing;
+				BackendState old_state = queryable.State;
+				queryable.State = BackendState.Indexing;
 
 				// Number of times a null indexable was returned.  We don't want
 				// to spin tightly in a loop here if we're not actually indexing
@@ -738,8 +740,8 @@ namespace Beagle.Daemon {
 		// Returns true if we actually did flush, false otherwise.
 		protected bool ConditionalFlush ()
 		{
-			QueryableState old_state = State;
-			State = QueryableState.Flushing;
+			BackendState old_state = State;
+			State = BackendState.Flushing;
 
 			try {
 				lock (request_lock) {
@@ -756,8 +758,8 @@ namespace Beagle.Daemon {
 
 		protected void Flush ()
 		{
-			QueryableState old_state = State;
-			State = QueryableState.Flushing;
+			BackendState old_state = State;
+			State = BackendState.Flushing;
 
 			try {
 				DoFlush ();

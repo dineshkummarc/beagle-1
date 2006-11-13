@@ -214,9 +214,6 @@ namespace Beagle.Daemon {
 			// No reason to keep around the assemblies list
 			assemblies = null;
 
-			// XXX: Move this into the filter loading code; it makes a lot more sense there
-			//ReadKeywordMappings ();
-
 			LoadSystemIndexes ();
 		}
 
@@ -339,6 +336,22 @@ namespace Beagle.Daemon {
 			return null;
 		}
 
+		static public bool IsIndexing {
+			get {
+				foreach (IBackend backend in Backends) {
+					BackendStatus status = backend.BackendStatus;
+
+					if (status == null)
+						return false;
+
+					if (status.IsIndexing)
+						return true;
+				}
+
+				return false;
+			}
+		}					
+
 		///////////////////////////////////////////////////////////////
 
 		static public string ListBackends ()
@@ -364,5 +377,6 @@ namespace Beagle.Daemon {
 
 			return ret;
 		}
+
 	}
 }

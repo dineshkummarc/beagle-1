@@ -1,7 +1,7 @@
 //
-// QueryableStatus.cs
+// BackendStatus.cs
 //
-// Copyright (C) 2005 Novell, Inc.
+// Copyright (C) 2005-2006 Novell, Inc.
 //
 
 //
@@ -29,7 +29,7 @@ using System.Xml.Serialization;
 
 namespace Beagle {
 
-	public enum QueryableState {
+	public enum BackendState {
 		NotApplicable,
 		Idle,
 		Crawling,
@@ -37,11 +37,11 @@ namespace Beagle {
 		Flushing
 	}
 
-	public class QueryableStatus {
+	public class BackendStatus {
 
 		private string name;
 		private int item_count = -1;
-		private QueryableState state = QueryableState.NotApplicable;
+		private BackendState state = BackendState.NotApplicable;
 		private int progress_percent = -1;
 		private bool is_indexing = false;
 
@@ -58,7 +58,7 @@ namespace Beagle {
 		}
 
 		[XmlAttribute]
-		public QueryableState State {
+		public BackendState State {
 			get { return this.state; }
 			set { this.state = value; }
 		}

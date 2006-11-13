@@ -933,6 +933,7 @@ namespace Beagle.Daemon {
 			{
 				if (contains_known_true)
 					return true;
+
 				foreach (HitFilter hit_filter in all)
 					if (hit_filter (hit))
 						return true;

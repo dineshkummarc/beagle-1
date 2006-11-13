@@ -1378,6 +1378,8 @@ namespace Beagle.Daemon.FileSystemQueryable {
 
 		override public string GetSnippet (string [] query_terms, Hit hit)
 		{
+			Log.Debug (hit.ToString ());
+
 			// Uri remapping from a hit is easy: the internal uri
 			// is stored in a property.
 			Uri uri = UriFu.EscapedStringToUri (hit ["beagle:InternalUri"]);

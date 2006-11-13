@@ -111,7 +111,7 @@ class InfoTool {
 
 		if (get_index_status) {
 			Console.WriteLine ("Index information:");
-			Console.WriteLine (response.IndexInformation);
+			Console.WriteLine (response.BackendInformation);
 		}
 
 		if (get_is_indexing)

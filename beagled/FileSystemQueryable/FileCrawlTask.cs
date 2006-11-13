@@ -68,8 +68,8 @@ namespace Beagle.Daemon.FileSystemQueryable {
 
 		override protected void DoTaskReal ()
 		{
-			QueryableState old_state = queryable.State;
-			queryable.State = QueryableState.Crawling;
+			BackendState old_state = queryable.State;
+			queryable.State = BackendState.Crawling;
 
 			try {
 				DoCrawl ();

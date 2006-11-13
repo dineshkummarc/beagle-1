@@ -118,7 +118,7 @@ namespace Beagle.Daemon.AkregatorQueryable {
 
                         log.Info ("Scanning Akregator feeds...");
 
-			State = QueryableState.Crawling;
+			State = BackendState.Crawling;
 			Stopwatch stopwatch = new Stopwatch ();
 			stopwatch.Start ();
 
@@ -131,7 +131,7 @@ namespace Beagle.Daemon.AkregatorQueryable {
 				}
 			}
 
-			State = QueryableState.Idle;
+			State = BackendState.Idle;
 			stopwatch.Stop ();
                         log.Info ("{0} files will be parsed (scanned in {1})", count, stopwatch);
 		}

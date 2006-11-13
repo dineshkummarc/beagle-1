@@ -905,8 +905,6 @@ namespace Beagle.Daemon {
 					hit = hits_by_uri [uri] as Hit;
 
 					AddPropertiesToHit (hit, secondary_doc, false);
-
-					final_list_of_hits.Add (hit);
 				}
 			}
 
