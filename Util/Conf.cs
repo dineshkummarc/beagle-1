@@ -581,6 +581,54 @@ namespace Beagle.Util {
 				return false;
 			}
 
+			public class RemovableMediaInfo {
+				public string Name;
+				public string MountPath;
+
+				public RemovableMediaInfo ()
+				{
+				}
+
+				public RemovableMediaInfo (string name, string path)
+				{
+					Name = name;
+					MountPath = path;
+				}
+			}
+
+			private ArrayList removable_media = new ArrayList ();
+			[XmlArray]
+			[XmlArrayItem (ElementName="MediaInfo", Type=typeof (RemovableMediaInfo))]
+			public ArrayList RemovableMedia {
+				get { return removable_media; }
+				set { removable_media = value; }
+			}
+
+			// Not visible to users
+			public bool AddRemovableIndex (string name, string mount_path)
+			{
+				bool exists = false;
+
+				Log.Debug ("Adding {0} <-> {1} to indexingconfig", name, mount_path);
+				foreach (RemovableMediaInfo info in removable_media) {
+					if (info.Name != name)
+						continue;
+
+					if (! Directory.Exists (mount_path))
+						return false;
+
+					info.MountPath = mount_path;
+					exists = true;
+					break;
+				}
+
+				if (! exists)
+					removable_media.Add (
+						new RemovableMediaInfo (name, mount_path));
+
+				SaveNeeded = true;
+				return true;
+			}
 		}
 
 		public class Section {

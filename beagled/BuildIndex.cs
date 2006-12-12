@@ -46,13 +46,66 @@ namespace Beagle.Daemon
 {
 	class BuildIndex 
 	{
-		static string [] argv;
+		bool arg_recursive = false;
+		bool arg_delete = false;
+		bool arg_cache_text = false;
+		bool arg_disable_filtering = false;
+		bool arg_disable_restart = false;
+		bool arg_disable_directories = false;
 
-		static bool arg_recursive = false, arg_delete = false, arg_debug = false, arg_cache_text = false, arg_disable_filtering = false, arg_disable_restart = false, arg_disable_directories = false;
+		protected bool Recursive {
+			get { return arg_recursive; }
+			set { arg_recursive = value; }
+		}
 
-		static Hashtable remap_table = new Hashtable ();
+		protected bool EnableDelete {
+			get { return arg_delete; }
+			set { arg_delete = value; }
+		}
 
-		static string arg_output, arg_tag, arg_source;
+		protected bool CacheText {
+			get { return arg_cache_text; }
+			set { arg_cache_text = value; }
+		}
+
+		protected bool DisableFiltering {
+			get { return arg_disable_filtering; }
+			set { arg_disable_filtering = value; }
+		}
+
+		protected bool DisableRestart {
+			get { return arg_disable_restart; }
+			set { arg_disable_restart = value; }
+		}
+
+		protected bool HandleDeletions {
+			get { return arg_delete; }
+			set { arg_delete = value; }
+		}
+
+		protected bool IndexDirectories {
+			get { return ! arg_disable_directories; }
+			set { arg_disable_directories = !value; }
+		}
+
+		protected string Source {
+			get { return arg_source; }
+			set { arg_source = value; }
+		}
+
+		Hashtable remap_table = new Hashtable ();
+
+		string arg_output, arg_tag, arg_source;
+
+		protected string Target {
+			get { return arg_output; }
+			set { arg_output = value; }
+		}
+
+		protected string Tag {
+			get { return arg_tag; }
+			set { arg_tag = value; }
+		}
 
 		/////////////////////////////////////////////////////////
 
@@ -74,37 +127,30 @@ namespace Beagle.Daemon
 
 		/////////////////////////////////////////////////////////
 		
-		static FileAttributesStore_Sqlite backing_fa_store;
-		static FileAttributesStore fa_store;
+		FileAttributesStore_Sqlite backing_fa_store;
+		FileAttributesStore fa_store;
 
-		static LuceneIndexingDriver driver;
+		LuceneIndexingDriver driver;
 
-		static bool crawling = true, indexing = true, shutdown = false, restart = false;
+		bool crawling = true, indexing = true, shutdown = false, restart = false;
 
-		static ArrayList allowed_patterns = new ArrayList ();
-		static ArrayList denied_patterns = new ArrayList ();
+		protected ArrayList allowed_patterns = new ArrayList ();
+		protected ArrayList denied_patterns = new ArrayList ();
 
-		static Queue pending_files = new Queue ();
-		static Queue pending_directories = new Queue ();
+		protected Queue pending_files = new Queue ();
+		protected Queue pending_directories = new Queue ();
 		
 		const int BATCH_SIZE = 30;
 		
 		/////////////////////////////////////////////////////////
-		
-		static void Main (string [] args)
+
+		public BuildIndex (string[] args)
 		{
-			try {
-				DoMain (args);
-			} catch (Exception ex) {
-				Logger.Log.Error (ex, "Unhandled exception thrown.  Exiting immediately.");
-				Environment.Exit (1);
-			}
+			ProcessParams (args);
 		}
 
-		static void DoMain (string [] args)
+		private void GetParams (string[] args)
 		{
-			SystemInformation.SetProcessName ("beagle-build-index");
-
 			if (args.Length < 2)
 				PrintUsage ();
 		
@@ -225,11 +271,12 @@ namespace Beagle.Daemon
 					break;
 				}
 			}
-			
-			argv = args;
-			
-			/////////////////////////////////////////////////////////
-				
+		}
+
+		protected virtual void ProcessParams (string[] args)
+		{
+			GetParams (args);
+
 			if (arg_output == null) {
 				Logger.Log.Error ("--target must be specified");
 				Environment.Exit (1);
@@ -274,6 +321,10 @@ namespace Beagle.Daemon
 				}
 			}
 
+		}
+
+		protected void DoBuildIndex ()
+		{
 			// Set the IO priority so we don't slow down the system
 			IoPriority.ReduceIoPriority ();
 			
@@ -327,7 +378,7 @@ namespace Beagle.Daemon
 		
 		/////////////////////////////////////////////////////////////////
 		
-		static void CrawlWorker ()
+		void CrawlWorker ()
 		{
 			Logger.Log.Debug ("Starting CrawlWorker");
 			
@@ -373,15 +424,15 @@ namespace Beagle.Daemon
 		
 		/////////////////////////////////////////////////////////////////
 
-		static void AddToRequest (IndexerRequest request, Indexable indexable)
+		void AddToRequest (IndexerRequest request, Indexable indexable)
 		{
 			// Disable filtering and only index file attributes
 			if (arg_disable_filtering)
 				indexable.Filtering = IndexableFiltering.Never;
-					
+
 			// Tag the item for easy identification (for say, removal)
 			if (arg_tag != null)
-				indexable.AddProperty (Property.NewUnsearched("Tag", arg_tag));
+				indexable.AddProperty (Property.NewKeyword ("Tag", arg_tag));
 
 			if (arg_source == null) {
 				DirectoryInfo dir = new DirectoryInfo (StringFu.SanitizePath (arg_output));
@@ -393,7 +444,7 @@ namespace Beagle.Daemon
 			request.Add (indexable);
 		}
 
-		static IndexerReceipt [] FlushIndexer (IIndexer indexer, IndexerRequest request)
+		IndexerReceipt [] FlushIndexer (IIndexer indexer, IndexerRequest request)
 		{
 			IndexerReceipt [] receipts;
 			receipts = indexer.Flush (request);
@@ -449,21 +500,25 @@ namespace Beagle.Daemon
 			return receipts;
 		}
 
-		static Indexable FileToIndexable (FileInfo file)
+		Indexable FileToIndexable (FileInfo file)
 		{
 			if (!file.Exists || Ignore (file))
-				return null;
-
-			// Check if file information is uptodate in the attributes store
-			FileAttributes attr = fa_store.Read (file.FullName);
-			// FIXME:.Net-2.0 DateTime - compare attr.LastWriteTime, no need to ToUTC()
-			if (attr != null && file.LastWriteTimeUtc <= attr.LastWriteTime.ToUniversalTime ())
 				return null;
 
 			// Create the indexable and add the standard properties we
 			// use in the FileSystemQueryable.
 			Uri uri = UriFu.PathToFileUri (file.FullName);
+			uri = RemapUri (uri);
+
+			// Check if file information is uptodate in the attributes store
+			FileAttributes attr = fa_store.Read (uri.LocalPath);
+			// FIXME:.Net-2.0 DateTime - compare attr.LastWriteTime, no need to ToUTC()
+			if (attr != null && file.LastWriteTimeUtc <= attr.LastWriteTime.ToUniversalTime ())
+				return null;
+
+
 			Indexable indexable = new Indexable (uri);
+			indexable.ContentUri = UriFu.PathToFileUri (file.FullName);
 			indexable.Timestamp = file.LastWriteTimeUtc;
 			FSQ.AddStandardPropertiesToIndexable (indexable, file.Name, Guid.Empty, false);
 
@@ -474,19 +529,20 @@ namespace Beagle.Daemon
 			return indexable;
 		}
 
-		static Indexable DirectoryToIndexable (DirectoryInfo dir, Queue modified_directories)
+		Indexable DirectoryToIndexable (DirectoryInfo dir, Queue modified_directories)
 		{
 			if (!dir.Exists)
 				return null;
 
+			Uri uri = UriFu.PathToFileUri (dir.FullName);
+			uri = RemapUri (uri);
+
 			// Check if the directory information is stored in attributes store
-			// And if the mtime of the directory is same as that in the attributes store
-			FileAttributes attr = fa_store.Read (dir.FullName);
+			FileAttributes attr = fa_store.Read (uri.LocalPath);
 
 			// If the directory exists in the fa store, then it is already indexed
 			if (attr != null) {
 				// FIXME:.Net-2.0 DateTime - compare attr.LastWriteTime, no need to ToUTC()
-				// Temporary protection against incorrect LastWriteTimeUtc
 				if (arg_delete && dir.LastWriteTimeUtc > attr.LastWriteTime.ToUniversalTime ())
 					modified_directories.Enqueue (dir);
 				return null;
@@ -494,7 +550,6 @@ namespace Beagle.Daemon
 
 			// Create the indexable and add the standard properties we
 			// use in the FileSystemQueryable.
-			Uri uri = UriFu.PathToFileUri (dir.FullName);
 			Indexable indexable = new Indexable (uri);
 			indexable.MimeType = "inode/directory";
 			indexable.NoContent = true;
@@ -510,7 +565,7 @@ namespace Beagle.Daemon
 			return indexable;
 		}
 		
-		static void IndexWorker ()
+		void IndexWorker ()
 		{
 			Logger.Log.Debug ("Starting IndexWorker");
 			Queue modified_directories = new Queue ();
@@ -630,7 +685,7 @@ namespace Beagle.Daemon
 		private const string IsDirectoryPropKey = "beagle:IsDirectory";
 
 		// Returns a list of all files and directories in dir
-		static ICollection GetAllItemsInDirectory (DirectoryInfo dir)
+		ICollection GetAllItemsInDirectory (DirectoryInfo dir)
 		{
 			// form the query
 			string parent_uri_str = UriFu.PathToFileUri (dir.FullName).ToString ();
@@ -681,7 +736,7 @@ namespace Beagle.Daemon
 			return match_list;
 		}
 
-		static private Dirent DocumentToDirent (Document doc)
+		private Dirent DocumentToDirent (Document doc)
 		{
 			string path;
 			bool is_dir = false;
@@ -703,7 +758,7 @@ namespace Beagle.Daemon
 
 		/////////////////////////////////////////////////////////////////
 
-		static void MemoryMonitorWorker ()
+		void MemoryMonitorWorker ()
 		{
 			int vmrss_original = SystemInformation.VmRss;
 
@@ -734,7 +789,7 @@ namespace Beagle.Daemon
 		
 		// From BeagleDaemon.cs
 
-		static void SetupSignalHandlers ()
+		void SetupSignalHandlers ()
 		{
 			// Force OurSignalHandler to be JITed
 			OurSignalHandler (-1);
@@ -746,7 +801,7 @@ namespace Beagle.Daemon
 				Mono.Unix.Native.Stdlib.signal (Mono.Unix.Native.Signum.SIGQUIT, OurSignalHandler);
 		}
 		
-		static void OurSignalHandler (int signal)
+		void OurSignalHandler (int signal)
 		{
 			// This allows us to call OurSignalHandler w/o doing anything.
 			// We want to call it once to ensure that it is pre-JITed.
@@ -796,17 +851,19 @@ namespace Beagle.Daemon
 		
 		/////////////////////////////////////////////////////////
 		
-		static Uri RemapUri (Uri uri)
+		protected virtual Uri RemapUri (Uri uri)
 		{
+			/* FIXME: Bring back URI remapping ... please
 			// FIXME: This is ghetto
 			foreach (DictionaryEntry dict in remap_table) {
 				if (uri.LocalPath.IndexOf ((string) dict.Key) == -1)
 					continue;
 				return new Uri (uri.LocalPath.Replace ((string) dict.Key, (string) dict.Value));
 			}
+			*/
 			return uri;
 		}
-		
+
 		static bool Ignore (DirectoryInfo directory)
 		{
 			if (directory.Name.StartsWith ("."))
@@ -815,7 +872,7 @@ namespace Beagle.Daemon
 			return false;
 		}
 
-		static bool Ignore (FileInfo file)
+		bool Ignore (FileInfo file)
 		{
 			if (file.Name.StartsWith ("."))
 				return true;
@@ -839,5 +896,21 @@ namespace Beagle.Daemon
 			
 			return false;
 		}
+
+#if BUILD_INDEX_MAIN
+		static void Main (string [] args)
+		{
+			try {
+				SystemInformation.SetProcessName ("beagle-build-index");
+				BuildIndex build_index = new BuildIndex (args);
+
+				build_index.DoBuildIndex ();
+			} catch (Exception ex) {
+				Logger.Log.Error (ex, "Unhandled exception thrown.  Exiting immediately.");
+				Environment.Exit (1);
+			}
+		}
+#endif
+
 	}
 }

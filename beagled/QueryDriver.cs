@@ -108,7 +108,7 @@ namespace Beagle.Daemon {
 
 		// Paths to static queryables
 
-		static ArrayList static_queryables = new ArrayList ();
+		static private ArrayList static_queryables = new ArrayList ();
 		
 		static public void AddStaticQueryable (string path) {
 
@@ -250,7 +250,7 @@ namespace Beagle.Daemon {
 				if (! UseQueryable (index_dir.Name))
 					continue;
 				
-				if (LoadStaticQueryable (index_dir, QueryDomain.System))
+				if (LoadStaticQueryable (index_dir, QueryDomain.System, null))
 					count++;
 			}
 
@@ -276,34 +276,64 @@ namespace Beagle.Daemon {
 					continue;
 				
 				// FIXME: QueryDomain might be other than local
-				if (LoadStaticQueryable (index_dir, QueryDomain.Local))
+				if (LoadStaticQueryable (index_dir, QueryDomain.Local, null))
 					count++;
 			}
 
 			Logger.Log.Info ("Found {0} user-configured static indexes..", count);
 		}
 
-		// Instantiates and loads a StaticQueryable from an index directory
-		static private bool LoadStaticQueryable (DirectoryInfo index_dir, QueryDomain query_domain) 
+		// Scans configuration for user created removable media index paths
+		// to load StaticQueryables from.
+		static void LoadRemovableMediaIndexes () 
 		{
-			StaticQueryable static_queryable = null;
-			
+			int count = 0;
+
+			Logger.Log.Info ("Loading removable media indexes.");
+			foreach (Conf.IndexingConfig.RemovableMediaInfo info in Conf.Indexing.RemovableMedia) {
+				string index_dir = PathFinder.IndexDir;
+				index_dir = Path.Combine (index_dir, info.Name);
+				if (! Directory.Exists (index_dir))
+					continue;
+
+				if (! LoadStaticQueryable ("RemovableIndex", index_dir, QueryDomain.Local, info))
+					continue;
+
+				count++;
+				Log.Debug ("Loading removable index {0} from {1}", info.Name, index_dir);
+			}
+
+			Logger.Log.Info ("Found {0} removable media indexes..", count);
+		}
+
+		static private bool LoadStaticQueryable (DirectoryInfo index_dir, QueryDomain query_domain, Conf.IndexingConfig.RemovableMediaInfo media_info)
+		{
 			if (!index_dir.Exists)
 				return false;
 			
+			return LoadStaticQueryable (index_dir.Name, index_dir.FullName, query_domain, media_info);
+		}
+
+		// Instantiates and loads a StaticQueryable from an index directory
+		static private bool LoadStaticQueryable (string index_name, string index_dir, QueryDomain query_domain, Conf.IndexingConfig.RemovableMediaInfo media_info) 
+		{
+			StaticQueryable static_queryable = null;
+			
 			try {
-				static_queryable = new StaticQueryable (index_dir.Name, index_dir.FullName, true);
+				static_queryable = new StaticQueryable (index_name, index_dir, true);
+				if (media_info != null)
+					static_queryable.RemovableMedia = media_info;
 			} catch (InvalidOperationException) {
-				Logger.Log.Warn ("Unable to create read-only index (likely due to index version mismatch): {0}", index_dir.FullName);
+				Logger.Log.Warn ("Unable to create read-only index (likely due to index version mismatch): {0}", index_dir);
 				return false;
 			} catch (Exception e) {
-				Logger.Log.Error (e, "Caught exception while instantiating static queryable: {0}", index_dir.Name);
+				Logger.Log.Error (e, "Caught exception while instantiating static queryable: {0}", index_name);
 				return false;
 			}
-			
+
 			if (static_queryable != null) {
 				QueryableFlavor flavor = new QueryableFlavor ();
-				flavor.Name = index_dir.Name;
+				flavor.Name = index_name;
 				flavor.Domain = query_domain;
 				
 				Queryable queryable = new Queryable (flavor, static_queryable);
@@ -351,6 +381,7 @@ namespace Beagle.Daemon {
 
 			LoadSystemIndexes ();
 			LoadStaticQueryables ();
+			LoadRemovableMediaIndexes ();
 
 			if (indexing_delay <= 0 || Environment.GetEnvironmentVariable ("BEAGLE_EXERCISE_THE_DOG") != null)
 				StartQueryables ();
