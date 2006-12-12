@@ -42,6 +42,11 @@ namespace Beagle.Daemon {
 	public class StaticQueryable : LuceneQueryable 	{
 		
 		protected TextCache text_cache;
+
+		private Conf.IndexingConfig.RemovableMediaInfo  removable_media_info = null;
+		public Conf.IndexingConfig.RemovableMediaInfo RemovableMedia {
+			set { removable_media_info = value; }
+		}
 		
 		public StaticQueryable (string index_name, string index_path, bool read_only_mode) : base (index_path, read_only_mode)
 		{
@@ -87,6 +92,29 @@ namespace Beagle.Daemon {
 				Logger.Log.Warn ("Exception executing HitIsValid on {0}", uri.LocalPath);
 				return false;
 			}
+		}
+
+		// Remap uri based on mount point for removable indexes
+		// FIXME: Return false for non-existent files if option set in Conf
+		override protected bool HitFilter (Hit hit)
+		{
+			if (removable_media_info == null)
+				return true;
+			else if (hit.Uri.Scheme != "removable")
+				return true;
+			//else if (hit ["Tag"] != removable_media_info.Name)
+			//	return false;
+
+			string path = hit.Uri.LocalPath;
+			path = path.Substring (1); // Remove initial '/'
+			path = Path.Combine (removable_media_info.MountPath, path);
+			Log.Debug ("Remapping {0} to {1}", hit.Uri.LocalPath, path);
+			hit.Uri = UriFu.PathToFileUri (path);
+
+			if (! File.Exists (path) && ! Directory.Exists (path))
+				hit.AddProperty (Beagle.Property.NewBool ("fixme:not_found", true));
+
+			return true;
 		}
 	}
 }
