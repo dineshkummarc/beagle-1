@@ -28,50 +28,10 @@ using System;
 
 namespace Beagle.Util {
 
-	public class Stopwatch {
-
-		private double elapsed = 0;
-		private bool running = false;
-		private DateTime startTime;
-
-		public void Start ()
-		{
-			if (! running) {
-				running = true;
-				startTime = DateTime.Now;
-			}
-		}
-
-		private double SinceStart {
-			get { return running ? (DateTime.Now - startTime).TotalSeconds : 0; }
-		}
-
-		public void Stop ()
-		{
-			if (running) {
-				elapsed += SinceStart;
-				running = false;
-			}
-		}
-
-		public void Reset ()
-		{
-			Stop ();
-			elapsed = 0;
-		}
-
-		public void Restart ()
-		{
-			Reset ();
-			Start ();
-		}
-
-		public bool IsRunning {
-			get { return running; }
-		}
+	public class Stopwatch : System.Diagnostics.Stopwatch {
 
 		public double ElapsedTime {
-			get { return elapsed + SinceStart; }
+			get { return Elapsed.TotalSeconds; }
 		}
 
 		public override string ToString ()

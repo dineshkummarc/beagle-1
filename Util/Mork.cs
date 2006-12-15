@@ -42,9 +42,9 @@ namespace Beagle.Util
 		protected Hashtable rows;
 		protected Hashtable tables;
 		
-		protected string regex_row = @"(?<action>[-!+]?)\[(-|)(?<roid>[0-9A-Za-z:\^]+)(?<cells>(?>[^\[\]]+)?)\]";
-		protected string regex_cell = @"\^(?<key>[0-9A-Fa-f]+)(\^(?<pvalue>[0-9A-Fa-f]+)|=(?<value>[0-9A-Fa-f]+))";
-		protected string regex_table = @"{.*?:(?<ns>[0-9A-Fa-f\^]+) {\(k\^(?<tbl>[0-9A-Fa-f]+):c\)";
+		protected string regex_row_str = @"(?<action>[-!+]?)\[(-|)(?<roid>[0-9A-Za-z:\^]+)(?<cells>(?>[^\[\]]+)?)\]";
+		protected string regex_cell_str = @"\^(?<key>[0-9A-Fa-f]+)(\^(?<pvalue>[0-9A-Fa-f]+)|=(?<value>[0-9A-Fa-f]+))";
+		protected string regex_table_str = @"{.*?:(?<ns>[0-9A-Fa-f\^]+) {\(k\^(?<tbl>[0-9A-Fa-f]+):c\)";
 
 		public MorkDatabase (string mork_file)
 		{
@@ -110,9 +110,11 @@ namespace Beagle.Util
 				 }else if (content [position].Equals ('[')) 
 					// Parse rows
 					ParseRows (Read (content, ref position, "[", "]"), null, null);
-				else if (content [position].Equals ('@') && content [position+1].Equals ('$'))
+				else if (content [position].Equals ('@') && content [position+1].Equals ('$')) {
+					//Console.WriteLine ("left = {0}", content.Substring (position));
 					// Parse groups
 					ParseGroups (Read (content, ref position, "@$${", "@$$}"));
+				}
 			}
 		}
 		
@@ -170,14 +172,14 @@ namespace Beagle.Util
 		protected virtual void ParseTable (string table)
 		{
 			int start = table.IndexOf ('}')+1;
-			Match m = new Regex (regex_table, RegexOptions.Compiled).Match (table);
+			Match m = new Regex (regex_table_str, RegexOptions.Compiled).Match (table);
 			
 			ParseRows (table.Substring (start, table.Length-start-1), m.Result ("${ns}"), m.Result ("${tbl}"));
 		}
 		
 		protected virtual void ParseRows (string rows, string ns, string table)
 		{
-			Regex reg = new Regex (regex_row, RegexOptions.Compiled);
+			Regex reg = new Regex (regex_row_str, RegexOptions.Compiled);
 			
 			foreach (Match m in reg.Matches (Clean (rows))) {
 				// tmp [0] == id, tmp [1] == ns
@@ -258,7 +260,7 @@ namespace Beagle.Util
 				return null;
 			
 			Hashtable tbl = new Hashtable ();
-			Regex reg = new Regex (regex_cell, RegexOptions.Compiled);
+			Regex reg = new Regex (regex_cell_str, RegexOptions.Compiled);
 			
 			foreach (Match m in reg.Matches (GetCells (id, ns2))) {
 				string value = (string) (m.Result ("${pvalue}") != string.Empty ? 
