@@ -38,7 +38,7 @@ namespace Beagle.Daemon {
 
 	[PropertyKeywordMapping (Keyword="extension", PropertyName="beagle:FilenameExtension", IsKeyword=true, Description="File extension, e.g. extension:jpeg. Use extension: to search in files with no extension.")]
 	[PropertyKeywordMapping (Keyword="ext", PropertyName="beagle:FilenameExtension", IsKeyword=true, Description="File extension, e.g. ext:jpeg. Use ext: to search in files with no extension.")]
-
+	[PropertyKeywordMapping (Keyword="media", PropertyName="fixme:media_name", IsKeyword=false, Description="Name of removable media.")]
 	public class StaticQueryable : LuceneQueryable 	{
 		
 		protected TextCache text_cache;

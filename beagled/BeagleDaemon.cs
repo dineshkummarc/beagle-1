@@ -36,6 +36,7 @@ using GLib;
 
 using Beagle.Util;
 using Log = Beagle.Util.Log;
+using Stopwatch = Beagle.Util.Stopwatch;
 
 namespace Beagle.Daemon {
 	class BeagleDaemon {
@@ -49,6 +50,11 @@ namespace Beagle.Daemon {
 		private static bool arg_disable_scheduler = false;
 		private static bool arg_indexing_test_mode = false;
 		private static bool arg_heap_shot = false;
+
+		private static bool cache_text = true;
+		public static bool CacheText {
+			get { return cache_text; }
+		}
 
 		public static bool StartServer ()
 		{
@@ -394,6 +400,10 @@ namespace Beagle.Daemon {
 					// FIXME: This option is deprecated and will be removed in a future release.
 					break;
 
+				case "--no-textcache":
+					cache_text = false;
+					break;
+
 				default:
 					Console.WriteLine ("Unknown argument '{0}'", arg);
 					Environment.Exit (1);
@@ -557,6 +567,7 @@ namespace Beagle.Daemon {
 			Mono.Unix.Native.Stdlib.signal (Mono.Unix.Native.Signum.SIGINT, OurSignalHandler);
 			Mono.Unix.Native.Stdlib.signal (Mono.Unix.Native.Signum.SIGTERM, OurSignalHandler);
 			Mono.Unix.Native.Stdlib.signal (Mono.Unix.Native.Signum.SIGUSR1, OurSignalHandler);
+			Mono.Unix.Native.Stdlib.signal (Mono.Unix.Native.Signum.SIGUSR2, OurSignalHandler);
 
 			// Ignore SIGPIPE
 			Mono.Unix.Native.Stdlib.signal (Mono.Unix.Native.Signum.SIGPIPE, Mono.Unix.Native.Stdlib.SIG_IGN);
@@ -588,7 +599,12 @@ namespace Beagle.Daemon {
 				LogLevel old_level = Log.Level;
 				Log.Level = LogLevel.Debug;
 				Log.Debug ("Moving from log level {0} to Debug", old_level);
-				GLib.Idle.Add (new GLib.IdleHandler (delegate () { RemoteIndexer.SignalRemoteIndexer (); return false; }));
+			}
+
+			// Send informational signals to the helper too.
+			if ((Mono.Unix.Native.Signum) signal == Mono.Unix.Native.Signum.SIGUSR1 ||
+			    (Mono.Unix.Native.Signum) signal == Mono.Unix.Native.Signum.SIGUSR2) {
+				GLib.Idle.Add (new GLib.IdleHandler (delegate () { RemoteIndexer.SignalRemoteIndexer ((Mono.Unix.Native.Signum) signal); return false; }));
 				return;
 			}
 
