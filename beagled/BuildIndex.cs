@@ -40,6 +40,7 @@ using LNS = Lucene.Net.Search;
 
 using Beagle;
 using Beagle.Util;
+using Stopwatch = Beagle.Util.Stopwatch;
 using FSQ = Beagle.Daemon.FileSystemQueryable.FileSystemQueryable;
 
 namespace Beagle.Daemon 
@@ -424,7 +425,7 @@ namespace Beagle.Daemon
 		
 		/////////////////////////////////////////////////////////////////
 
-		void AddToRequest (IndexerRequest request, Indexable indexable)
+		protected virtual void AddToRequest (IndexerRequest request, Indexable indexable)
 		{
 			// Disable filtering and only index file attributes
 			if (arg_disable_filtering)
@@ -505,17 +506,15 @@ namespace Beagle.Daemon
 			if (!file.Exists || Ignore (file))
 				return null;
 
-			// Create the indexable and add the standard properties we
-			// use in the FileSystemQueryable.
 			Uri uri = UriFu.PathToFileUri (file.FullName);
 			uri = RemapUri (uri);
 
-			// Check if file information is uptodate in the attributes store
 			FileAttributes attr = fa_store.Read (uri.LocalPath);
-			// FIXME:.Net-2.0 DateTime - compare attr.LastWriteTime, no need to ToUTC()
-			if (attr != null && file.LastWriteTimeUtc <= attr.LastWriteTime.ToUniversalTime ())
+			if (attr != null && FileAttributesStore.IsUpToDate (file.FullName, attr))
 				return null;
 
+			// Create the indexable and add the standard properties we
+			// use in the FileSystemQueryable.
 
 			Indexable indexable = new Indexable (uri);
 			indexable.ContentUri = UriFu.PathToFileUri (file.FullName);
@@ -542,8 +541,7 @@ namespace Beagle.Daemon
 
 			// If the directory exists in the fa store, then it is already indexed
 			if (attr != null) {
-				// FIXME:.Net-2.0 DateTime - compare attr.LastWriteTime, no need to ToUTC()
-				if (arg_delete && dir.LastWriteTimeUtc > attr.LastWriteTime.ToUniversalTime ())
+				if (arg_delete && ! FileAttributesStore.IsUpToDate (dir.FullName, attr))
 					modified_directories.Enqueue (dir);
 				return null;
 			}
