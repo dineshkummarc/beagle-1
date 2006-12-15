@@ -1724,7 +1724,7 @@ namespace Beagle.Daemon {
 		// For a large index, this will be very slow and will consume
 		// a lot of memory.  Don't call it without a good reason!
 		// We return a hashtable indexed by Uri.
-		public Hashtable GetAllHitsByUri ()
+		public Hashtable GetAllHitsByUri (string[] fields)
 		{
 			Hashtable all_hits;
 			all_hits = UriFu.NewHashtable ();
@@ -1743,10 +1743,19 @@ namespace Beagle.Daemon {
 					continue;
 
 				Document doc;
-				doc = primary_reader.Document (i);
+				if (fields == null)
+					doc = primary_reader.Document (i);
+				else
+					doc = primary_reader.Document (i, fields);
 
 				Hit hit;
-				hit = DocumentToHit (doc);
+				if (fields == null) {
+					hit = new Hit ();
+					hit.Uri = GetUriFromDocument (doc);
+					AddPropertiesToHit (hit, doc, true);
+				} else
+					hit = DocumentToHit (doc);
+
 				all_hits [hit.Uri] = hit;
 			}
 
@@ -1759,7 +1768,10 @@ namespace Beagle.Daemon {
 						continue;
 
 					Document doc;
-					doc = secondary_reader.Document (i);
+					if (fields == null)
+						doc = secondary_reader.Document (i);
+					else
+						doc = secondary_reader.Document (i, fields);
 					
 					Uri uri;
 					uri = GetUriFromDocument (doc);
