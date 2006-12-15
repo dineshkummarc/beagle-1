@@ -64,12 +64,15 @@ class DumpIndexTool {
 
 	static int DumpOneIndex_Metadata (string index_name, bool only_dump_the_urls)
 	{
+		if (only_dump_the_urls)
+			return DumpOneIndex_Urls (index_name);
+
 		Console.WriteLine (); // a visual cue that something has changed
 		LuceneQueryingDriver driver;
 		driver = new LuceneQueryingDriver (index_name, -1, true);
 		
 		Hashtable all_hits_by_uri;
-		all_hits_by_uri = driver.GetAllHitsByUri ();
+		all_hits_by_uri = driver.GetAllHitsByUri (null);
 
 		ArrayList all_hits;
 		all_hits = new ArrayList (all_hits_by_uri.Values);
@@ -102,6 +105,33 @@ class DumpIndexTool {
 				    Console.WriteLine ("  Prop: {0} = '{1}'", prop.Key, prop.Value);
 
 			Console.WriteLine ();
+		}
+
+		return all_hits.Count;
+	}
+
+	static int DumpOneIndex_Urls (string index_name)
+	{
+		Console.WriteLine (); // a visual cue that something has changed
+		LuceneQueryingDriver driver;
+		driver = new LuceneQueryingDriver (index_name, -1, true);
+		
+		Hashtable all_hits_by_uri;
+		string[] fields = { "Uri", "beagle:ExactFilename", "_private:ParentDirUri"};
+		//all_hits_by_uri = driver.GetAllHitsByUri (null);
+		all_hits_by_uri = driver.GetAllHitsByUri (fields);
+
+		ArrayList all_hits;
+		all_hits = new ArrayList (all_hits_by_uri.Values);
+
+		if (index_name == "FileSystemIndex") // A hard-wired hack
+			foreach (Hit hit in all_hits)
+				hit.Uri = UriFu.PathToFileUri (RemapUriToPath (all_hits_by_uri, hit));
+
+		all_hits.Sort (new HitByUriComparer ());
+
+		foreach (Hit hit in all_hits) {
+			Console.WriteLine ("{0}: {1}", index_name, hit.Uri);
 		}
 
 		return all_hits.Count;
@@ -254,7 +284,6 @@ class DumpIndexTool {
 		LuceneQueryingDriver driver;
 		driver = new LuceneQueryingDriver (indexdir, -1, true);
 
-
 		// first try for the Uri:"uid:xxxxxxxxxxxxxxx"
 		Lucene.Net.Search.Query query = new TermQuery(new Term("Uri", uri_string));
 		if (DoQuery (driver, query))
@@ -264,8 +293,8 @@ class DumpIndexTool {
 		path = UriFu.PathToFileUriString (path);
 		Console.WriteLine ("Querying by:[" + path + "]");
 		query = new TermQuery(new Term("Uri", path));
+
 		DoQuery (driver, query);
-		
 	}
 
 	static bool DoQuery (LuceneQueryingDriver driver, Lucene.Net.Search.Query query)
@@ -275,55 +304,27 @@ class DumpIndexTool {
 		
 		Hits primary_hits = primary_searcher.Search(query);
 		Hits secondary_hits = secondary_searcher.Search (query);
-		Console.WriteLine ("{0} hits from primary store; {1} hits from secondary store", primary_hits.Length (), secondary_hits.Length ());
+		//Console.WriteLine ("{0} hits from primary store; {1} hits from secondary store", primary_hits.Length (), secondary_hits.Length ());
 		
 		Document primary_doc, secondary_doc;
 		// there should be exactly one primary hit and 0/1 secondary hit
 		if (primary_hits.Length () == 1) {
-			primary_doc = primary_hits.Doc (0);
+			primary_doc = primary_hits.Doc (0, new string[] {"Uri"});
 			Console.WriteLine (
 			"------------[ Immutable data ]------------");
+			Console.WriteLine (primary_doc.Get ("Uri"));
 			foreach (Field f in primary_doc.Fields ()) {
-
-				String name = f.Name ();
-				String val = f.StringValue ();
-				bool stored = f.IsStored ();
-				bool searchable = (val [0] == 's');
-				bool tokenized = f.IsTokenized();
-				if (name.Length >= 7 && name.StartsWith ("prop:"))
-					tokenized = (name [5] != 't');
-				float boost = f.GetBoost();
-				Console.WriteLine ("{0,-30} = [{1}]", name, val);
-				Console.WriteLine ("{0,-32} ({1}stored, {2} searchable, {3} tokenized)",
-						    "",
-						    (stored ? "" : "un"),
-						    (searchable ? "" : "not"),
-						    (tokenized ? "" : "not"));
-
+				PrintField (f);
 			}
 		}
 		
 		if (secondary_hits.Length () == 1) {
-			secondary_doc = secondary_hits.Doc (0);
+			secondary_doc = secondary_hits.Doc (0, new string[] {"Uri"});
 			Console.WriteLine (
 			"------------[ Mutable data ]-----------");
+			Console.WriteLine (secondary_doc.Get ("Uri"));
 			foreach (Field f in secondary_doc.Fields ()) {
-
-				String name = f.Name ();
-				String val = f.StringValue ();
-				bool stored = f.IsStored ();
-				bool searchable = (val [0] == 's');
-				bool tokenized = f.IsTokenized();
-				if (name.Length >= 7 && name.StartsWith ("prop:"))
-					tokenized = (name [5] != 't');
-				float boost = f.GetBoost();
-
-				Console.WriteLine ("{0,-30} = [{1}]", name, val);
-				Console.WriteLine ("{0,-32} ({1}stored, {2} searchable, {3} tokenized)",
-						    "",
-						    (stored ? "" : "un"),
-						    (searchable ? "" : "not"),
-						    (tokenized ? "" : "not"));
+				PrintField (f);
 			}
 		}
 
@@ -334,6 +335,25 @@ class DumpIndexTool {
 			return true;
 		else
 			return false;
+	}
+
+	static private void PrintField (Field f)
+	{
+		String name = f.Name ();
+		String val = f.StringValue ();
+		bool stored = f.IsStored ();
+		bool searchable = (val [0] == 's');
+		bool tokenized = f.IsTokenized();
+		if (name.Length >= 7 && name.StartsWith ("prop:"))
+			tokenized = (name [5] != 't');
+		float boost = f.GetBoost();
+
+		Console.WriteLine ("{0,-30} = [{1}]", name, val);
+		Console.WriteLine ("{0,-32} ({1}stored, {2} searchable, {3} tokenized)",
+				    "",
+				    (stored ? "" : "un"),
+				    (searchable ? "" : "not"),
+				    (tokenized ? "" : "not"));
 	}
 
 	enum Mode {
