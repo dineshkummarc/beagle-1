@@ -13,7 +13,7 @@ REQUIRED_GETTEXT_VERSION=${REQUIRED_GETTEXT_VERSION:-0.10.40}
 REQUIRED_GLIB_GETTEXT_VERSION=${REQUIRED_GLIB_GETTEXT_VERSION:-2.2.0}
 REQUIRED_INTLTOOL_VERSION=${REQUIRED_INTLTOOL_VERSION:-0.25}
 REQUIRED_PKG_CONFIG_VERSION=${REQUIRED_PKG_CONFIG_VERSION:-0.14.0}
-REQUIRED_GTK_DOC_VERSION=${REQUIRED_GTK_DOC_VERSION:-1.0}
+REQUIRED_GTK_DOC_VERSION=${REQUIRED_GTK_DOC_VERSION:-2.0}
 REQUIRED_DOC_COMMON_VERSION=${REQUIRED_DOC_COMMON_VERSION:-2.3.0}
 REQUIRED_GNOME_DOC_UTILS_VERSION=${REQUIRED_GNOME_DOC_UTILS_VERSION:-0.3.2}
 
@@ -413,10 +413,10 @@ for configure_ac in $configure_files; do
 	    $GNOME_DOC_PREPARE --force --copy || exit 1
 	fi
 
-        # Now run aclocal to pull in any additional macros needed
+         Now run aclocal to pull in any additional macros needed
 
-	# if the AC_CONFIG_MACRO_DIR() macro is used, pass that
-	# directory to aclocal.
+	 if the AC_CONFIG_MACRO_DIR() macro is used, pass that
+	 directory to aclocal.
 	m4dir=`cat "$basename" | grep '^AC_CONFIG_MACRO_DIR' | sed -n -e 's/AC_CONFIG_MACRO_DIR(\([^()]*\))/\1/p' | sed -e 's/^\[\(.*\)\]$/\1/' | sed -e 1q`
 	if [ -n "$m4dir" ]; then
 	    m4dir="-I $m4dir"
