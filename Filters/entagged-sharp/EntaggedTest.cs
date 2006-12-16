@@ -13,7 +13,13 @@ public class EntaggedTest
         foreach(string file in Directory.GetFiles(testDir)) {
            // try {
                 AudioFile af = new AudioFile(file);
-                Console.WriteLine(af);
+		Console.WriteLine (af);
+		/*
+		Console.WriteLine(af.Title);
+		Console.WriteLine(af.Album);
+		foreach (string artist in af.Artists)
+			System.Console.WriteLine ("Artist: " + artist);
+		*/
           //  } catch(Exception) {}
         }
     }
