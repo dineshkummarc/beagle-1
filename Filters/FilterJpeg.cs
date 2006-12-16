@@ -29,6 +29,8 @@ using System.IO;
 using System.Text;
 
 using Beagle.Util;
+using Beagle.Util.Exif;
+using Beagle.Util.Xmp;
 using Beagle.Daemon;
 
 using SemWeb;
@@ -47,88 +49,67 @@ namespace Beagle.Filters {
 		protected override void PullImageProperties ()
 		{
 			JpegHeader header = new JpegHeader (Stream);
-			byte [] commentdata = header.GetJFIFComment();
-			if (commentdata != null && commentdata.Length != 0)
-			{
-				string comment = System.Text.Encoding.Default.GetString( commentdata, 0, commentdata.Length );
-				if (comment != null && comment != "") {
-					AddProperty (Beagle.Property.New ("jfif:Comment", comment));
-					AddProperty (Beagle.Property.NewUnstored ("fixme:comment", comment));
-				}
-			}
 
-			byte [] data = header.GetRawExif ();
-			if (data == null || data.Length == 0)
-				return;
-			ExifData exif = new ExifData (data, (uint) data.Length);
+			string comment = header.GetJFIFComment ();
+			AddProperty (Beagle.Property.New ("jfif:Comment", comment));
+			AddProperty (Beagle.Property.NewUnstored ("fixme:comment", comment));
+
+			ExifData exif = header.Exif;
 			if (exif == null)
 				return;
-			
+
 			string str;
 			
 			str = exif.LookupFirstValue (ExifTag.UserComment);
-			if (str != null && str != "") {
-				AddProperty (Beagle.Property.New ("exif:UserComment", str));
-				AddProperty (Beagle.Property.NewUnstored ("fixme:comment", str));
-			}
+			AddProperty (Beagle.Property.New ("exif:UserComment", str));
+			AddProperty (Beagle.Property.NewUnstored ("fixme:comment", str));
 
 
 			str = exif.LookupFirstValue (ExifTag.ImageDescription);
-			if (str != null && str != "") {
-				AddProperty (Beagle.Property.New ("exif:ImageDescription", str));
-				AddProperty (Beagle.Property.NewUnstored ("fixme:comment", str));
-			}
+			AddProperty (Beagle.Property.New ("exif:ImageDescription", str));
+			AddProperty (Beagle.Property.NewUnstored ("fixme:comment", str));
 
 			str = exif.LookupFirstValue (ExifTag.PixelXDimension);
-			if (str != null && str != "") {
+			if (str != null && str != String.Empty) {
 				Width = Int32.Parse (str);
 				AddProperty (Beagle.Property.NewUnsearched ("exif:PixelXDimension", str));
 			}
 
 			str = exif.LookupFirstValue (ExifTag.PixelYDimension);
-			if (str != null && str != "") {
+			if (str != null && str != String.Empty) {
 				Height = Int32.Parse (str);
 				AddProperty (Beagle.Property.NewUnsearched ("exif:PixelYDimension", str));
 			}
 
 			str = exif.LookupFirstValue (ExifTag.ISOSpeedRatings);
-			if (str != null && str != "")
-				AddProperty (Beagle.Property.NewUnsearched ("exif:ISOSpeedRatings", str));
+			AddProperty (Beagle.Property.NewUnsearched ("exif:ISOSpeedRatings", str));
 
 			str = exif.LookupFirstValue (ExifTag.ShutterSpeedValue);
-			if (str != null && str != "")
-				AddProperty (Beagle.Property.NewUnsearched ("exif:ShutterSpeedValue", str));
+			AddProperty (Beagle.Property.NewUnsearched ("exif:ShutterSpeedValue", str));
 
 			str = exif.LookupFirstValue (ExifTag.ExposureTime);
-			if (str != null && str != "")
-				AddProperty (Beagle.Property.NewUnsearched ("exif:ExposureTime", str));
+			AddProperty (Beagle.Property.NewUnsearched ("exif:ExposureTime", str));
 
 			str = exif.LookupFirstValue (ExifTag.FNumber);
-			if (str != null && str != "")
-				AddProperty (Beagle.Property.NewUnsearched ("exif:FNumber", str));
+			AddProperty (Beagle.Property.NewUnsearched ("exif:FNumber", str));
 
 			str = exif.LookupFirstValue (ExifTag.ApertureValue);
-			if (str != null && str != "")
-				AddProperty (Beagle.Property.NewUnsearched ("exif:ApertureValue", str));
+			AddProperty (Beagle.Property.NewUnsearched ("exif:ApertureValue", str));
 
 			str = exif.LookupFirstValue (ExifTag.FocalLength);
-			if (str != null && str != "")
-				AddProperty (Beagle.Property.NewUnsearched ("exif:FocalLength", str));
+			AddProperty (Beagle.Property.NewUnsearched ("exif:FocalLength", str));
 
 			str = exif.LookupFirstValue (ExifTag.Flash);
-			if (str != null && str != "")
-				AddProperty (Beagle.Property.NewUnsearched ("exif:Flash", str));
+			AddProperty (Beagle.Property.NewUnsearched ("exif:Flash", str));
 
 			str = exif.LookupFirstValue (ExifTag.Model);
-			if (str != null && str != "")
-				AddProperty (Beagle.Property.NewKeyword ("exif:Model", str));
+			AddProperty (Beagle.Property.NewKeyword ("exif:Model", str));
 
 			str = exif.LookupFirstValue (ExifTag.Copyright);
-			if (str != null && str != "")
-				AddProperty (Beagle.Property.New ("exif:Copyright", str));
+			AddProperty (Beagle.Property.New ("exif:Copyright", str));
 
 			str = exif.LookupFirstValue (ExifTag.DateTime);
-			if (str != null && str != "") {
+			if (str != null && str != String.Empty) {
 				try {
 					DateTime dt = ExifUtil.DateTimeFromString (str);
 					AddProperty (Beagle.Property.NewDate ("exif:DateTime", dt));
@@ -137,19 +118,9 @@ namespace Beagle.Filters {
 				}
 			}
 
-			byte [] xmp_data = header.GetRawXmp ();
-
-			if (xmp_data != null) {
-				int i;
-				for (i = 0; i < xmp_data.Length; i++)
-					if (xmp_data [i] == 0) {
-						i++;
-						break;
-					}
-
-				XmpFile xmp = new XmpFile (new MemoryStream (xmp_data, i, xmp_data.Length - i));
+			XmpFile xmp = header.GetXmp ();
+			if (xmp != null)
 				AddXmpProperties (xmp);
-			}
 
 			Finished (); // That's all folks...
 		}
