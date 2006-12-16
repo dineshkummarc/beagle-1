@@ -1,16 +1,22 @@
 using System.Xml;
+using System.Collections;
 using SemWeb;
 
-
-namespace Beagle.Util {
+namespace Beagle.Util.Xmp {
 	public class XmpFile : SemWeb.StatementSource, SemWeb.StatementSink
 	{
 		MetadataStore store;
 
+                // false seems like a safe default
+                public bool Distinct {
+                        get { return false; }
+                }
+
 		public MetadataStore Store {
 			get { return store; }
+			set { store = value; }
 		}
-		
+
 		public XmpFile (System.IO.Stream stream) : this ()
 		{
 			Load (stream);
@@ -24,10 +30,33 @@ namespace Beagle.Util {
 		public void Load (System.IO.Stream stream)
 		{
 			try {
-				store.Import (new SemWeb.RdfXmlReader (stream));
+				RdfXmlReader reader = new RdfXmlReader (stream);
+				reader.BaseUri = MetadataStore.FSpotXMPBase;
+				store.Import (reader);
 				//Dump ();
 			} catch (System.Exception e) {
 				System.Console.WriteLine (e.ToString ());
+			}
+		}
+
+		private class XmpWriter : RdfXmlWriter {
+			public XmpWriter (XmlDocument dest) : base (dest)
+			{
+				BaseUri = MetadataStore.FSpotXMPBase;
+			}
+			
+			public override void Add (Statement stmt) 
+			{
+				string predicate = stmt.Predicate.Uri;
+				string prefix;
+				string localname;
+
+				// Fill in the namespaces with nice prefixes
+				if (MetadataStore.Namespaces.Normalize (predicate, out prefix, out localname)) {
+					if (prefix != null)
+						Namespaces.AddNamespace (predicate.Remove (predicate.Length - localname.Length, localname.Length), prefix);
+				}
+				base.Add (stmt);
 			}
 		}
 
@@ -36,17 +65,28 @@ namespace Beagle.Util {
 			try {
 				XmlTextWriter text;
 				RdfXmlWriter writer;
+                                XmlDocument rdfdoc = new XmlDocument();
 
+                                // first, construct the rdf guts, semweb style
+                                writer = new XmpWriter (rdfdoc);
+				//writer.Namespaces.Parent = MetadataStore.Namespaces;
+				writer.Write (store);
+				writer.Close ();
+			       
+                                // now construct the xmp wrapper packet
 				text = new XmlTextWriter (stream, System.Text.Encoding.UTF8);
-				using (writer = new RdfXmlWriter (text, MetadataStore.Namespaces)) {
-					text.WriteProcessingInstruction ("xpacket", "begin=\"\ufeff\" id=\"testing\"");
-					text.WriteStartElement ("x:xmpmeta");
-					text.WriteAttributeString ("xmlns", "x", null, "adobe:ns:meta/");
-					store.Select (writer);
+ 				text.Formatting = Formatting.Indented;
+                        
+                                text.WriteProcessingInstruction ("xpacket", "begin=\"\ufeff\" id=\"testing\"");
+                                text.WriteStartElement ("x:xmpmeta");
+                                text.WriteAttributeString ("xmlns", "x", null, "adobe:ns:meta/");
 
-				}
-				text.WriteEndElement ();
-				text.WriteProcessingInstruction ("xpacket", "end=\"r\"");
+				((XmlElement)rdfdoc.ChildNodes[1]).RemoveAttribute ("xml:base");
+				rdfdoc.ChildNodes[1].WriteTo (text);
+
+                                // now close off the xmp packet
+                                text.WriteEndElement ();
+                                text.WriteProcessingInstruction ("xpacket", "end=\"r\"");
 				text.Close ();
 				
 			} catch (System.Exception e) {
