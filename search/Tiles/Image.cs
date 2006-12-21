@@ -27,7 +27,7 @@ namespace Search.Tiles {
 
 			Title = Hit ["beagle:ExactFilename"];
 
-			if (Hit ["beagle:FilenameExtension"].Length > 0)
+			if (Hit ["beagle:FilenameExtension"] != null && Hit ["beagle:FilenameExtension"].Length > 0)
 				Description = Hit ["beagle:FilenameExtension"].Substring (1).ToUpper ();
 			
 			if (Hit ["fixme:width"] != null && Hit ["fixme:width"] != "")
@@ -45,7 +45,7 @@ namespace Search.Tiles {
 
 			// Draw the F-Spot overlay
 			if (size > 32 && Hit ["fspot:IsIndexed"] == "true") {
-				Gdk.Pixbuf icon = image.Pixbuf;
+				Gdk.Pixbuf icon = image.Pixbuf.Copy ();
 				Gdk.Pixbuf emblem = Beagle.Images.GetPixbuf ("emblem-fspot.png", 24, 24);
 
 				if (icon == null || emblem == null)
@@ -61,6 +61,7 @@ namespace Search.Tiles {
 						  emblem.Height, 0,  icon.Height - emblem.Height, 1,  1,
 						  Gdk.InterpType.Bilinear, 255);
 
+				image.Pixbuf.Dispose ();
 				image.Pixbuf = icon;
 			}
 		}

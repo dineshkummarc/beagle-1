@@ -83,7 +83,7 @@ class ExtractContentTool {
 		Console.WriteLine ();
 
 		if (filter.ChildIndexables != null && filter.ChildIndexables.Count > 0) {
-			Console.WriteLine ("Child indexables:");
+			Console.WriteLine ("Child indexables ({0}):", filter.ChildIndexables.Count);
 
 			foreach (Indexable i in filter.ChildIndexables)
 				Console.WriteLine ("  {0}", i.Uri);
@@ -98,10 +98,14 @@ class ExtractContentTool {
 		bool first = true;
 
 		Console.WriteLine ("Properties:");
-		Console.WriteLine ("  Timestamp = {0}", indexable.Timestamp);
+
+		if (indexable.ValidTimestamp)
+			Console.WriteLine ("  Timestamp = {0}", DateTimeUtil.ToString (indexable.Timestamp));
+
 		foreach (Beagle.Property prop in prop_array) {
 			Console.WriteLine ("  {0} = {1}", prop.Key, prop.Value);
 		}
+
 		Console.WriteLine ();
 
 		if (indexable.NoContent)
@@ -151,8 +155,16 @@ class ExtractContentTool {
 		if (stream != null)
 			stream.Close ();
 
-		if (show_children && filter.ChildIndexables != null) {
+		// Clean up any temporary files associated with filtering this indexable.
+		indexable.Cleanup ();
+
+		if (filter.ChildIndexables != null) {
 			foreach (Indexable i in filter.ChildIndexables) {
+				if (! show_children) {
+					i.Cleanup ();
+					continue;
+				}
+
 				i.StoreStream ();
 				Display (i);
 			}

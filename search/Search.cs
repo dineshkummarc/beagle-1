@@ -1,3 +1,9 @@
+//
+// Search.cs
+//
+// Copyright (c) 2006 Novell, Inc.
+//
+
 using System;
 using System.Collections;
 
@@ -13,30 +19,35 @@ namespace Search {
 
 	public class MainWindow : Window {
 
-		UIManager uim;
-		Search.GroupView view;
-		Search.Entry entry;
-		Gtk.Button button;
-		Search.Spinner spinner;
-		Gtk.Tooltips tips;
-		Gtk.Notebook pages;
-		Search.Pages.QuickTips quicktips;
-		Search.Pages.RootUser rootuser;
-		Search.Pages.StartDaemon startdaemon;
-		Search.Pages.NoMatch nomatch;
-		Search.Panes panes;
-		Search.Tray.TrayIcon tray;
+		private Gtk.Button button;
+		private Gtk.Tooltips tips;
+		private Gtk.Notebook pages;
+		private Gtk.Statusbar statusbar;
 
-		uint timeout;
+		private Search.UIManager uim;
+		private Search.NotificationArea notification_area;
+		private Search.GroupView view;
+		private Search.Entry entry;
+		private Search.Spinner spinner;
+		private Search.Panes panes;
+		private Search.Tray.TrayIcon tray;
 
-		string queryText;
-		Beagle.Query currentQuery;
-		Search.ScopeType scope = ScopeType.Everything;
-		Search.SortType sort = SortType.Modified;
-		Search.TypeFilter filter = null;
-		bool showDetails = true;
+		private Search.Pages.QuickTips quicktips;
+		private Search.Pages.RootUser rootuser;
+		private Search.Pages.StartDaemon startdaemon;
+		private Search.Pages.NoMatch nomatch;
 
-		XKeybinder keybinder = new XKeybinder ();
+		private uint timeout;
+
+		private string query_text;
+		private Beagle.Query current_query;
+		private Search.ScopeType scope = ScopeType.Everything;
+		private Search.SortType sort = SortType.Modified;
+		private Search.TypeFilter filter = null;
+		private bool show_details = true;
+		private int total_matches = -1;
+
+		private XKeybinder keybinder = new XKeybinder ();
 
 		public static bool IconEnabled = false;
 
@@ -78,10 +89,7 @@ namespace Search {
 					break;
 
 				case "--autostarted":
-					if (! Conf.Searching.Autostart) {
-						Console.WriteLine ("beagle-search: Autostarting is disabled, not starting");
-						Environment.Exit (0);
-					}
+					// FIXME: This option is deprecated and will be removed in a future release.
 					break;
 
 				// Ignore session management
@@ -127,7 +135,7 @@ namespace Search {
 
 		public MainWindow () : base (WindowType.Toplevel)
 		{
-			Title = "Desktop Search";
+			Title = Catalog.GetString ("Desktop Search");
 			Icon = Beagle.Images.GetPixbuf ("system-search.png");
 
 			DefaultWidth = 700;
@@ -144,20 +152,24 @@ namespace Search {
 			uim.ShowQuickTips += OnShowQuickTips;
 			vbox.PackStart (uim.MenuBar, false, false, 0);
 
-			HBox padding_hbox = new HBox ();
-
 			HBox hbox = new HBox (false, 6);
 			
 			Label label = new Label (Catalog.GetString ("_Find:"));
 			hbox.PackStart (label, false, false, 0);
 			
 			entry = new Entry ();
+			entry.Activated += OnEntryActivated;
+			hbox.PackStart (entry, true, true, 0);
+
 			label.MnemonicWidget = entry;
 			uim.FocusSearchEntry += delegate () { entry.GrabFocus (); };
-			entry.Activated += OnEntryActivated;
-			entry.Changed += OnEntryChanged;
-			entry.MoveCursor += OnEntryMoveCursor;
-			hbox.PackStart (entry, true, true, 0);
+
+			// The auto search after timeout feauture is now optional
+			// and can be disabled.
+			if (Beagle.Util.Conf.Searching.BeagleSearchAutoSearch) {
+				entry.Changed += OnEntryChanged;
+				entry.MoveCursor += OnEntryMoveCursor;
+			}
 
 			button = new Gtk.Button ();
 			Gtk.HBox button_hbox = new Gtk.HBox (false, 2);
@@ -173,18 +185,26 @@ namespace Search {
 			hbox.PackStart (buttonVBox, false, false, 0);
 
 			spinner = new Spinner ();
-
 			hbox.PackStart (spinner, false, false, 0);
 
+			HBox padding_hbox = new HBox ();
 			padding_hbox.PackStart (hbox, true, true, 9);
-
 			vbox.PackStart (padding_hbox, false, true, 6);
+
+			VBox view_box = new VBox (false, 3);
+			vbox.PackStart (view_box, true, true, 0);
+
+			HBox na_padding = new HBox ();
+			view_box.PackStart (na_padding, false, true, 0);
+
+			notification_area = new NotificationArea ();
+			na_padding.PackStart (notification_area, true, true, 3);
 
 			pages = new Gtk.Notebook ();
 			pages.ShowTabs = false;
 			pages.ShowBorder = false;
 			pages.BorderWidth = 3;
-			vbox.PackStart (pages, true, true, 0);
+			view_box.PackStart (pages, true, true, 0);
 
 			quicktips = new Pages.QuickTips ();
 			quicktips.Show ();
@@ -207,6 +227,9 @@ namespace Search {
 			view.TileSelected += ShowInformation;
 			view.CategoryToggled += OnCategoryToggled;
 			panes.MainContents = view;
+
+			this.statusbar = new Gtk.Statusbar ();
+			vbox.PackEnd (this.statusbar, false, false, 0);
 			
 			Add (vbox);
 
@@ -232,11 +255,35 @@ namespace Search {
 			} else {
 				ShowAll ();
 			}
+
+			StartCheckingIndexingStatus ();
 		}
 
 		private void SetWindowTitle (string query)
 		{
-			Title = String.Format ("Desktop Search: {0}", query);
+			Title = String.Format ( Catalog.GetString ("Desktop Search: {0}"), query);
+		}
+
+		private int TotalMatches {
+			get { return this.total_matches; }
+			set {
+				if (this.total_matches != -1)
+					this.statusbar.Pop (0);
+
+				this.total_matches = value;
+				
+				if (this.total_matches > -1) {
+					string message;
+					int tile_count = view.TileCount;
+
+					if (tile_count == this.total_matches)
+						message = String.Format (Catalog.GetString ("Showing all {0} matches"), this.total_matches);
+					else
+						message = String.Format (Catalog.GetString ("Showing the top {0} of {1} total matches"), view.TileCount, this.total_matches);
+
+					this.statusbar.Push (0, message);
+				}
+			}
 		}
 
 		// Whether we should grab focus from the text entry
@@ -249,7 +296,7 @@ namespace Search {
 				timeout = 0;
 			}
 
-			string query = queryText = entry.Text;
+			string query = query_text = entry.Text;
 			if (query == null || query == "")
 				return;
 
@@ -270,14 +317,17 @@ namespace Search {
 			this.grab_focus = grab_focus;
 
 			try {
-				if (currentQuery != null) {
-					currentQuery.HitsAddedEvent -= OnHitsAdded;
-					currentQuery.HitsSubtractedEvent -= OnHitsSubtracted;
-					currentQuery.Close ();
+				if (current_query != null) {
+					TotalMatches = -1;
+					current_query.HitsAddedEvent -= OnHitsAdded;
+					current_query.HitsSubtractedEvent -= OnHitsSubtracted;
+					current_query.Close ();
 				}
 
-				currentQuery = new Query ();
-				currentQuery.AddDomain (QueryDomain.Neighborhood);
+				TotalMatches = 0;
+
+				current_query = new Query ();
+				current_query.AddDomain (QueryDomain.Neighborhood);
 
 				// Don't search documentation by default
 				QueryPart_Property part = new QueryPart_Property ();
@@ -285,16 +335,16 @@ namespace Search {
 				part.Type = PropertyType.Keyword;
 				part.Key = "beagle:Source";
 				part.Value = "documentation";
-				currentQuery.AddPart (part);
+				current_query.AddPart (part);
 
-				currentQuery.AddText (query);
-				currentQuery.HitsAddedEvent += OnHitsAdded;
-				currentQuery.HitsSubtractedEvent += OnHitsSubtracted;
-				currentQuery.FinishedEvent += OnFinished;
+				current_query.AddText (query);
+				current_query.HitsAddedEvent += OnHitsAdded;
+				current_query.HitsSubtractedEvent += OnHitsSubtracted;
+				current_query.FinishedEvent += OnFinished;
 
-				currentQuery.SendAsync ();
+				current_query.SendAsync ();
 				spinner.Start ();
-			} catch (Beagle.ResponseMessageException){
+			} catch (Beagle.ResponseMessageException) {
 				pages.CurrentPage = pages.PageNum (startdaemon);
 			} catch (Exception e) {
 				Console.WriteLine ("Querying the Beagle daemon failed: {0}", e.Message);
@@ -379,20 +429,21 @@ namespace Search {
 
 		private void OnToggleDetails (bool active)
 		{
-			showDetails = active;
+			show_details = active;
 			if (panes.Details != null)
-				panes.ToggleDetails (showDetails);
+				panes.ToggleDetails (show_details);
 			else
 				panes.ToggleDetails (false);
 		}
 
 		private void OnShowQuickTips ()
 		{
-			if (currentQuery != null) {
-				currentQuery.HitsAddedEvent -= OnHitsAdded;
-				currentQuery.HitsSubtractedEvent -= OnHitsSubtracted;
-				currentQuery.Close ();
-				currentQuery = null;
+			if (current_query != null) {
+				TotalMatches = -1;
+				current_query.HitsAddedEvent -= OnHitsAdded;
+				current_query.HitsSubtractedEvent -= OnHitsSubtracted;
+				current_query.Close ();
+				current_query = null;
 			}
 
 			pages.CurrentPage = pages.PageNum (quicktips);
@@ -403,7 +454,7 @@ namespace Search {
 			if (tile != null) {
 				panes.Details = tile.Details;
 				if (tile.Details != null)
-					panes.ToggleDetails (showDetails);
+					panes.ToggleDetails (show_details);
 				else
 					panes.ToggleDetails (false);
 			} else {
@@ -424,7 +475,7 @@ namespace Search {
 		private void OnHitsAdded (HitsAddedResponse response)
 		{
 			foreach (Hit hit in response.Hits) {
-				Tile tile = TileActivatorOrg.MakeTile (hit, currentQuery);
+				Tile tile = TileActivatorOrg.MakeTile (hit, current_query);
 				if (tile == null)
 					continue;
 
@@ -435,12 +486,16 @@ namespace Search {
 				if (pages.CurrentPageWidget != panes)
 					pages.CurrentPage = pages.PageNum (panes);
 			}
+
+			TotalMatches += response.NumMatches;
 		}
 
 		private void OnHitsSubtracted (HitsSubtractedResponse response)
 		{
 			foreach (Uri uri in response.Uris)
 				view.SubtractHit (uri);
+
+			TotalMatches -= response.Uris.Count;
 
 			CheckNoMatch ();
 		}
@@ -455,7 +510,7 @@ namespace Search {
 
 			if (nomatch != null)
 				nomatch.Destroy ();
-			nomatch = new Pages.NoMatch (queryText, matches == MatchType.NoneInScope);
+			nomatch = new Pages.NoMatch (query_text, matches == MatchType.NoneInScope);
 			nomatch.Show ();
 			pages.Add (nomatch);
 			pages.CurrentPage = pages.PageNum (nomatch);
@@ -481,6 +536,28 @@ namespace Search {
 
 			entry.Text = query;
 			Search (true);
+		}
+
+		//////////////////////////////////////
+
+		private void StartCheckingIndexingStatus ()
+		{
+			InformationalMessagesRequest msg_request = new InformationalMessagesRequest ();
+			msg_request.IndexingStatusEvent += OnIndexingStatusEvent;
+			msg_request.SendAsync ();
+		}
+
+		private void OnIndexingStatusEvent (IndexingStatus status)
+		{
+			if (status == IndexingStatus.Running) {
+				NotificationMessage m = new NotificationMessage ();
+				m.Icon = Gtk.Stock.DialogInfo;
+				m.Title = Catalog.GetString ("Your data is being indexed");
+				m.Message = Catalog.GetString ("The search service is in the process of indexing your data.  Search results may be incomplete until indexing has finished.");
+				notification_area.Display (m);
+			} else {
+				notification_area.Hide ();
+			}
 		}
 	}
 }

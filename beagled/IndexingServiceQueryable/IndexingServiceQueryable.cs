@@ -79,14 +79,10 @@ namespace Beagle.Daemon.IndexingServiceQueryable {
 
 			Logger.Log.Info ("Setting up an initial crawl of the IndexingService directory");
 
-			State = BackendState.Crawling;
-
 			IndexableGenerator generator = new IndexableGenerator (GetIndexables (index_path));
 			Scheduler.Task task = NewAddTask (generator);
 			task.Tag = "IndexingService initial crawl";
 			ThisScheduler.Add (task);
-
-			State = BackendState.Idle;
 		}
 
 		private IEnumerable GetIndexables (string path)
@@ -236,6 +232,9 @@ namespace Beagle.Daemon.IndexingServiceQueryable {
 		{
 			Indexable indexable = FileToIndexable (data_file);
 
+			if (indexable == null) // The file disappeared
+				return;
+
 			Scheduler.Task task = NewAddTask (indexable);
 			task.Priority = Scheduler.Priority.Immediate;
 			ThisScheduler.Add (task);
@@ -243,7 +242,10 @@ namespace Beagle.Daemon.IndexingServiceQueryable {
 
 		protected override void PostAddHook (Indexable indexable, IndexerAddedReceipt receipt)
 		{
-			FileInfo meta_file = (FileInfo) indexable.LocalState ["MetaFile"];
+			FileInfo meta_file = indexable.LocalState ["MetaFile"] as FileInfo;
+			if (meta_file == null)
+				return;
+
 			meta_file.Delete ();
 
 			lock (pending_files)
@@ -293,6 +295,7 @@ namespace Beagle.Daemon.IndexingServiceQueryable {
 			IndexingServiceRequest isr = (IndexingServiceRequest) msg;
 
 			foreach (Uri uri in isr.ToRemove) {
+				Log.Debug ("IndexingService: Removing {0}", uri);
 				Scheduler.Task task = NewRemoveTask (uri);
 				ThisScheduler.Add (task);
 			}
@@ -301,6 +304,7 @@ namespace Beagle.Daemon.IndexingServiceQueryable {
 			// scheduler priority of the task.
 
 			if (isr.ToAdd.Count > 0) {
+				Log.Debug ("IndexingService: Adding {0} indexables.", isr.ToAdd.Count);
 				IIndexableGenerator ind_gen = new IndexableGenerator (isr.ToAdd);
 				Scheduler.Task task = NewAddTask (ind_gen);
 				task.Priority = Scheduler.Priority.Immediate;

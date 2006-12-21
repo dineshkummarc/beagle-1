@@ -54,7 +54,10 @@ namespace Beagle.Daemon.KBookmarkQueryable {
 			}
 		}
 
-		public KonqBookmarkQueryable () : base ("KonqBookmark")
+		// 1: Store URL as text
+		const int MINOR_VERSION = 1;
+
+		public KonqBookmarkQueryable () : base ("KonqBookmark", MINOR_VERSION)
 		{
 			konq_dir = Path.Combine (PathFinder.HomeDir, ".kde");
 			konq_dir = Path.Combine (konq_dir, "share");
@@ -348,7 +351,7 @@ namespace Beagle.Daemon.KBookmarkQueryable {
 			if (current_bookmark.Info != null &&
 			    current_bookmark.Info.Metadata != null &&
 			    current_bookmark.Info.Metadata.TimeLastVisited != 0) {
-				DateTime date = new DateTime (1970, 1, 1);
+				DateTime date = DateTimeUtil.UnixToDateTimeUtc (0);
 				current_dt = date.AddSeconds (current_bookmark.Info.Metadata.TimeLastVisited);
 			} else
 				current_dt = file_last_write_time;
@@ -406,7 +409,7 @@ namespace Beagle.Daemon.KBookmarkQueryable {
 			indexable.NoContent = true;
 
 			indexable.AddProperty (Property.New ("dc:title", current_bookmark.Title));
-			indexable.AddProperty (Property.NewKeyword ("dc:identifier", current_bookmark.Href));
+			indexable.AddProperty (Property.New ("dc:identifier", current_bookmark.Href));
 			indexable.AddProperty (Property.NewUnsearched ("fixme:icon", current_bookmark.Icon));
 			if (current_bookmark.Info != null &&
 			    current_bookmark.Info.Metadata != null &&

@@ -1,3 +1,5 @@
+autostartdir = $(sysconfdir)/xdg/autostart
+autostart_DATA = beagled-autostart.desktop
 
 # Warnings we don't want to see.
 # Most of these are thanks to DotLucene.  It would be nice if we could use
@@ -378,6 +380,7 @@ DAEMON_DLL_CSFILES = 						\
 	$(srcdir)/IndexSynchronization.cs			\
 	$(srcdir)/IndexerReceipts.cs				\
 	$(srcdir)/IndexerRequest.cs				\
+	$(srcdir)/InformationalMessagesRequestExecutor.cs	\
 	$(srcdir)/IQueryResult.cs				\
 	$(srcdir)/IQueryWorker.cs               		\
 	$(srcdir)/IQueryable.cs					\
@@ -466,6 +469,7 @@ evomailqueryable = $(srcdir)/EvolutionMailDriver
 EVO_MAIL_QUERYABLE_CSFILES =					\
 	$(evomailqueryable)/EvolutionMailDriver.cs		\
 	$(evomailqueryable)/EvolutionMailIndexableGenerator.cs	\
+	$(evomailqueryable)/EvolutionSummaryTracker.cs		\
 	$(evomailqueryable)/GConfThreadHelper.cs		\
 	$(evomailqueryable)/MailCrawler.cs
 
@@ -575,7 +579,8 @@ INDEX_HELPER_CSFILES =	\
 INDEX_HELPER_LOCAL_ASSEMBLIES =		\
 	../Util/Util.dll		\
 	../BeagleClient/Beagle.dll	\
-	./$(DAEMON_DLL_TARGET)
+	./$(DAEMON_DLL_TARGET)		\
+	./$(PLUGIN_TARGET)
 
 INDEX_HELPER_ASSEMBLIES = \
 	$(BEAGLED_LIBS)				\
@@ -1054,6 +1059,7 @@ noinst_SCRIPTS=	\
 	$(NAME_INDEX_WRAPPER)		
 
 EXTRA_DIST = \
+	$(autostart_DATA)			\
 	$(WRAPPER_IN)   			\
 	$(DAEMON_WRAPPER_IN)			\
 	$(INDEX_HELPER_WRAPPER_IN)		\

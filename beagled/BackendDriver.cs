@@ -179,6 +179,7 @@ namespace Beagle.Daemon {
 		///////////////////////////////////////////////////////////////
 
 		private static ArrayList assemblies = null;
+		private static bool backends_started = false;
 
 		private static void PopulateAssemblies ()
 		{
@@ -234,6 +235,8 @@ namespace Beagle.Daemon {
 		{
 			foreach (IBackend backend in backends)
 				backend.Start ();
+
+			backends_started = true;
 
 			return false;
 		}
@@ -338,6 +341,12 @@ namespace Beagle.Daemon {
 
 		static public bool IsIndexing {
 			get {
+				// If the backends haven't been started yet,
+				// there is at least the initial setup.  Just
+				// assume all the backends are indexing.
+				if (! backends_started)
+					return true;
+
 				foreach (IBackend backend in Backends) {
 					BackendStatus status = backend.BackendStatus;
 

@@ -84,10 +84,16 @@ namespace Beagle.Daemon {
 			// We can't cehck anything else than filr uris
 			if (! hit.Uri.IsFile)
 				return true;
-
-			// FIXME: This is a hack.  We need to support parent Uris in some sane way
-			int j = hit.Uri.LocalPath.LastIndexOf ('#');
-			return File.Exists ((j == -1) ? hit.Uri.LocalPath : hit.Uri.LocalPath.Substring (0, j));
+			
+			// FIXME: This is a hack, we need to support parent Uri's in some sane way
+			try {
+				int j = hit.Uri.LocalPath.LastIndexOf ('#');
+				string actual_path = ((j == -1) ? hit.Uri.LocalPath : hit.Uri.LocalPath.Substring (0, j));
+				return File.Exists (actual_path) || Directory.Exists (actual_path);
+			} catch (Exception e) {
+				Logger.Log.Warn ("Exception executing HitIsValid on {0}", hit.Uri.LocalPath);
+				return false;
+			}
 		}
 	}
 }

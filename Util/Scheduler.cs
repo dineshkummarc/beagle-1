@@ -281,6 +281,8 @@ namespace Beagle.Util {
 
 					if (Reschedule) {
 						++count;
+						if (Debug)
+							Log.Debug ("Rescheduling task {0}", Tag);
 						scheduler.Add (this); // re-add ourselves
 					} else {
 						DecrementAllTaskGroups ();
@@ -521,6 +523,8 @@ namespace Beagle.Util {
 			exercise = Environment.GetEnvironmentVariable ("BEAGLE_EXERCISE_THE_DOG");
 
 			if (exercise != null) {
+				Log.Info ("BEAGLE_EXERCISE_THE_DOG is set.");
+
 				if (exercise.Length > 2 && exercise [0] == 't')
 					global_delay = Double.Parse (exercise.Substring (1));
 				else
@@ -577,10 +581,9 @@ namespace Beagle.Util {
 					return;
 
 				if (Debug) {
-					Logger.Log.Debug ("Adding task");
-					Logger.Log.Debug ("Tag: {0}", task.Tag);
+					Logger.Log.Debug ("Adding task {0}", task.Tag);
 					if (task.Description != null)
-						Logger.Log.Debug ("Desc: {0}", task.Description);
+						Logger.Log.Debug ("  Desc: {0}", task.Description);
 				}
 
 				if (task.Priority == Priority.Shutdown)

@@ -71,6 +71,12 @@ namespace Beagle.Daemon.EvolutionMailDriver {
 		public abstract Indexable GetNextIndexable ();
 		public abstract void Checkpoint ();
 
+
+		protected double progress_percent;
+		public double ProgressPercent {
+			get { return progress_percent; }
+		}
+
 		public void PostFlushHook ()
 		{
 			Checkpoint ();
@@ -102,12 +108,9 @@ namespace Beagle.Daemon.EvolutionMailDriver {
 			return false;
 		}
 					
-		protected void CrawlFinished ()
+		protected virtual void CrawlFinished ()
 		{
-			// FIXME: This is a little sketchy
-			this.queryable.FileAttributesStore.AttachLastWriteTime (this.CrawlFile.FullName, DateTime.UtcNow);
-
-			this.queryable.SetGeneratorProgress (this, 100);
+			this.queryable.RemoveGenerator (this);
 		}
 
 		public string StatusName {
@@ -199,7 +202,7 @@ namespace Beagle.Daemon.EvolutionMailDriver {
 		{
 			if (this.account_name == null) {
 				if (!Setup ()) {
-					this.queryable.RemoveGeneratorProgress (this);
+					this.queryable.RemoveGenerator (this);
 					return false;
 				}
 			}
@@ -394,7 +397,7 @@ namespace Beagle.Daemon.EvolutionMailDriver {
 				progress = String.Format (" ({0}/{1} bytes {2:###.0}%)",
 							  offset, this.file_size, 100.0 * offset / this.file_size);
 
-				this.queryable.SetGeneratorProgress (this, (int) (100.0 * offset / this.file_size));
+				this.progress_percent = 100.0 * offset / this.file_size;
 			}
 
 			Logger.Log.Debug ("{0}: indexed {1} messages{2}",
@@ -422,9 +425,8 @@ namespace Beagle.Daemon.EvolutionMailDriver {
 		private ImapBackendType backend_type;
 		private Camel.Summary summary;
 		private IEnumerator summary_enumerator;
-		private ICollection accounts;
-		private string folder_cache_name;
-		private Hashtable mapping;
+		private EvolutionSummaryTracker tracker;
+		private DateTime start_crawl_time;
 		private ArrayList deleted_list;
 		private bool delete_mode;
 		private int delete_count;
@@ -471,8 +473,10 @@ namespace Beagle.Daemon.EvolutionMailDriver {
 			string imap_start = dir_name.Substring (imap_start_idx);
 			this.imap_name = imap_start.Substring (0, imap_start.IndexOf ('/'));
 
+			ICollection accounts = null;
+
 			try {
-				this.accounts = (ICollection) GConfThreadHelper.Get ("/apps/evolution/mail/accounts");
+				accounts = (ICollection) GConfThreadHelper.Get ("/apps/evolution/mail/accounts");
 			} catch (Exception ex) {
 				Logger.Log.Warn ("Caught exception in Setup(): " + ex.Message);
 				Logger.Log.Warn ("There are no configured evolution accounts, ignoring {0}", this.imap_name);
@@ -480,10 +484,10 @@ namespace Beagle.Daemon.EvolutionMailDriver {
 			}
 
 			// This should only happen if we shut down while waiting for the GConf results to come back.
-			if (this.accounts == null)
+			if (accounts == null)
 				return false;
 
-			foreach (string xml in this.accounts) {
+			foreach (string xml in accounts) {
 				XmlDocument xmlDoc = new XmlDocument ();
 
 				xmlDoc.LoadXml (xml);
@@ -562,79 +566,24 @@ namespace Beagle.Daemon.EvolutionMailDriver {
 			return true;
 		}
 
-		private string FolderCacheName {
-			get {
-				if (this.account_name == null || this.folder_name == null)
-					return null;
-
-				if (this.folder_cache_name == null)
-					this.folder_cache_name = "status-" + this.account_name + "-" + this.folder_name.Replace ('/', '-');
-
-				return this.folder_cache_name;
-			}
-		}
-
-		private bool LoadCache ()
-		{
-			Stream cacheStream;
-			BinaryFormatter formatter;
-
-			if (this.FolderCacheName == null) {
-				this.mapping = new Hashtable ();
-				return false;
-			}
-
-			try {
-				cacheStream = this.queryable.ReadDataStream (this.FolderCacheName);
-				formatter = new BinaryFormatter ();
-				this.mapping = formatter.Deserialize (cacheStream) as Hashtable;
-				cacheStream.Close ();
-				Logger.Log.Debug ("Successfully loaded previous crawled data from disk: {0}", this.FolderCacheName);
-
-				return true;
-			} catch {
-				this.mapping = new Hashtable ();
-
-				return false;
-			}
-		}
-
-		private void SaveCache ()
-		{
-			Stream cacheStream;
-			BinaryFormatter formatter;
-
-			if (this.FolderCacheName == null)
-				return;
-			
-			cacheStream = this.queryable.WriteDataStream (this.FolderCacheName);
-			formatter = new BinaryFormatter ();
-			formatter.Serialize (cacheStream, mapping);
-			cacheStream.Close ();
-		}
-
 		public override bool HasNextIndexable ()
 		{
 			if (this.account_name == null) {
 				if (!Setup ()) {
-					this.queryable.RemoveGeneratorProgress (this);
+					this.queryable.RemoveGenerator (this);
 					return false;
 				}
 			}
 
-			if (this.mapping == null) {
-				bool cache_loaded = this.LoadCache ();
-
-				this.deleted_list = new ArrayList (this.mapping.Keys);
-				this.deleted_list.Sort ();
-				Logger.Log.Debug ("Deleted list starting at {0} for {1}", this.deleted_list.Count, this.folder_name);
-
-				// Check to see if we even need to bother walking the summary
-				if (cache_loaded && this.queryable.FileAttributesStore.IsUpToDate (this.CrawlFile.FullName)) {
+			if (this.tracker == null) {
+				if (this.queryable.FileAttributesStore.IsUpToDate (this.CrawlFile.FullName)) {
 					Logger.Log.Debug ("{0}: summary has not been updated; crawl unncessary", this.folder_name);
-					this.queryable.RemoveGeneratorProgress (this);
+					this.queryable.RemoveGenerator (this);
 					return false;
 				}
+
+				this.tracker = new EvolutionSummaryTracker (this.queryable.IndexDirectory, this.account_name, this.folder_name);
+				this.start_crawl_time = DateTime.UtcNow;
 			}
 
 			if (this.summary == null) {
@@ -645,7 +594,7 @@ namespace Beagle.Daemon.EvolutionMailDriver {
 						this.summary = Camel.Summary.LoadImap4Summary (this.summary_info.FullName);
 				} catch (Exception e) {
 					Logger.Log.Warn (e, "Unable to index {0}:", this.folder_name);
-					this.queryable.RemoveGeneratorProgress (this);
+					this.queryable.RemoveGenerator (this);
 					return false;
 				}
 			}
@@ -657,9 +606,12 @@ namespace Beagle.Daemon.EvolutionMailDriver {
 				return true;
 
 			this.delete_mode = true;
+			this.deleted_list = this.tracker.GetOlderThan (this.start_crawl_time);
 
 			if (this.deleted_list.Count > 0)
 				return true;
+
+			this.deleted_list = null;
 
 			string progress = "";
 			if (this.count > 0 && this.summary.header.count > 0) {
@@ -671,7 +623,8 @@ namespace Beagle.Daemon.EvolutionMailDriver {
 
 			Logger.Log.Debug ("{0}: Finished indexing {1} messages {2}, {3} messages deleted", this.folder_name, this.indexed_count, progress, this.delete_count);
 
-			this.SaveCache ();
+			this.tracker.Close ();
+			this.tracker = null;
 			this.CrawlFinished ();
 
 			return false;
@@ -696,7 +649,7 @@ namespace Beagle.Daemon.EvolutionMailDriver {
 				indexable = new Indexable (IndexableType.Remove, uri);
 
 				this.deleted_list.RemoveAt (0);
-				this.mapping.Remove (uid);
+				this.tracker.Remove (uid);
 
 				this.delete_count++;
 
@@ -712,10 +665,10 @@ namespace Beagle.Daemon.EvolutionMailDriver {
 						  this.count, mi.uid, mi.flags);
 			}
 
-			// Try to load the cached message data off disk
-			object flags = this.mapping[mi.uid];
+			uint flags;
+			bool found = this.tracker.Get (mi.uid, out flags);
 
-			if (flags == null) {
+			if (! found) {
 				// New, previously unseen message
 				string msg_file;
 
@@ -734,11 +687,9 @@ namespace Beagle.Daemon.EvolutionMailDriver {
 				if (Debug)
 					Logger.Log.Debug ("Unseen message, indexable {0} null", indexable == null ? "" : "not");
 
-				this.mapping[mi.uid] = mi.flags;
-
 				if (indexable != null)
 					++this.indexed_count;
-			} else if ((uint) flags != mi.flags) {
+			} else if (found && flags != mi.flags) {
 				// Previously seen message, but flags have changed.
 				Uri uri = CamelMessageUri (mi);
 				indexable = new Indexable (uri);
@@ -757,8 +708,7 @@ namespace Beagle.Daemon.EvolutionMailDriver {
 					Logger.Log.Debug ("Previously seen message, unchanged.");
 			}
 
-			if (flags != null)
-				this.deleted_list.Remove (mi.uid);
+			this.tracker.Update (mi.uid, mi.flags);
 
 			return indexable;
 		}
@@ -890,15 +840,22 @@ namespace Beagle.Daemon.EvolutionMailDriver {
 								  this.summary.header.count,
 								  100.0 * this.count / this.summary.header.count);
 
-					this.queryable.SetGeneratorProgress (this, (int) (100.0 * this.count / this.summary.header.count));
+					this.progress_percent = 100.0 * this.count / this.summary.header.count;
 
 				}
 				
 				Logger.Log.Debug ("{0}: indexed {1} messages{2}",
 						  this.folder_name, this.indexed_count, progress);
 			}
+			
+			if (this.tracker != null)
+				this.tracker.Checkpoint ();
+		}
 
-			this.SaveCache ();
+		protected override void CrawlFinished ()
+		{
+			this.queryable.FileAttributesStore.AttachLastWriteTime (this.CrawlFile.FullName, this.start_crawl_time);
+			base.CrawlFinished ();
 		}
 
 		public override string GetTarget ()

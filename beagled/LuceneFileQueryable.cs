@@ -24,11 +24,6 @@
 // DEALINGS IN THE SOFTWARE.
 //
 
-//
-// This queryable just takes the LuceneQueryable and adds some sane
-// default behavior for indexing files containing multiple indexables.
-// Suitable for feedfiles or mbox style mail files.
-
 using System;
 using System.Collections;
 using System.IO;
@@ -37,6 +32,14 @@ using Beagle.Util;
 
 namespace Beagle.Daemon {
 
+	/**
+	 * This queryable just takes the LuceneQueryable and adds some sane
+	 * default behavior for indexing files containing multiple indexables.
+	 * Suitable for feedfiles or mbox style mail files.
+	 * Use this only if the backend generates multiple indexables from one
+	 * physical source file; _do not_ use this if multiple indexables
+	 * are created from one indexable while filtering (aka child indexables).
+	 */
 	public abstract class LuceneFileQueryable : LuceneQueryable {
 
 		public LuceneFileQueryable (string index_name, int minor_version, bool disable_locking) :
@@ -146,6 +149,8 @@ namespace Beagle.Daemon {
 			if (info == null)
 				return;
 
+			file_info_cache.Remove (info.Uri);
+
 			// Yeah, this is ghetto. If it's a file that's shared across multiple
 			// indexables, only tag it with when the last indexable has been indexed.
 			if (info.Shared && DecrementReferenceCount (info.Path))
@@ -169,8 +174,6 @@ namespace Beagle.Daemon {
 
 			if (! FileAttributesStore.Write (attr))
 				Logger.Log.Warn ("Couldn't write attributes for {0}", info.Path);
-
-			file_info_cache.Remove (info.Uri);
 		}
 
 		override protected void PostRemoveHook (Indexable indexable, IndexerRemovedReceipt receipt)

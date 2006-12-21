@@ -66,6 +66,9 @@ class QueryTool {
 					   (lastQueryTime - queryStartTime).TotalSeconds);
 		}
 
+		if (verbose && response.NumMatches >= 0)
+			Console.WriteLine ("Returned latest {0} results out of total {1} matches", response.Hits.Count, response.NumMatches);
+
 		if (! display_hits) {
 			count += response.Hits.Count;
 			return;
@@ -87,7 +90,7 @@ class QueryTool {
 				Console.WriteLine ("  Src: {0}", hit.Source);
 				Console.WriteLine ("Score: {0}", hit.Score);
 				if (hit.ValidTimestamp)
-					Console.WriteLine (" Time: {0}", hit.Timestamp.ToLocalTime ());
+					Console.WriteLine (" Time: {0}", DateTimeUtil.ToString (hit.Timestamp));
 				
 				foreach (Property prop in hit.Properties)
 					Console.WriteLine ("    {0} = '{1}'", prop.Key, prop.Value);
@@ -158,7 +161,11 @@ class QueryTool {
 			"            \t\t\t(default = 100, max = 100)\n" +
 			"  --flood\t\t\tExecute the query over and over again.  Don't do that.\n" +
 			"  --listener\t\t\tExecute an index listener query.  Don't do that either.\n" +
-			"  --help\t\t\tPrint this usage message.\n";
+			"  --help\t\t\tPrint this usage message.\n" +
+			"\n" +
+			"Query string supports an advanced query syntax.\n" +
+			"For details of the query syntax, please see http://beagle-project.org/Searching_Data\n" +
+			"Note: Quotes (\" or \') need to be shell escaped if used.\n";
 
 		Console.WriteLine (usage);
 
@@ -348,20 +355,9 @@ class QueryTool {
 				break;
 
 			default:
-				
-				// We have to do some nastiness here to deal with shell quoting.
-				// See beagled/QueryStringParser.cs for an idea of how this works.
-				string Pattern = "(?<pm>[+-]?) (?<key>\\w+:)? (?<expr>.*)";
-				Regex r = new Regex (Pattern, RegexOptions.IgnorePatternWhitespace);
-				Match m = r.Match (args [i]);
-				
-				string quoted_query = m.Groups ["pm"].ToString () +
-					m.Groups ["key"].ToString () +
-					"\"" + m.Groups ["expr"].ToString () + "\"";
-				
 				if (query_str.Length > 0)
 					query_str.Append (' ');
-				query_str.Append (quoted_query);
+				query_str.Append (args [i]);
 				
 				break;
 				

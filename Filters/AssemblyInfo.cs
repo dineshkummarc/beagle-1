@@ -30,6 +30,7 @@ using Beagle.Filters;
 
 // All filter types have to be listed here to be loaded.
 [assembly: Beagle.Daemon.FilterTypes (
+	 typeof(FilterArchive),
 	 typeof(FilterAbiWord),
 	 typeof(FilterBMP),
 	 typeof(FilterBoo),
@@ -80,6 +81,7 @@ using Beagle.Filters;
 	 typeof(FilterRuby),
 	 typeof(FilterScheme),
 	 typeof(FilterScilab),
+	 typeof(FilterScribus),
 	 typeof(FilterShellscript),
 	 typeof(FilterSpreadsheet),
 	 typeof(FilterSvg),

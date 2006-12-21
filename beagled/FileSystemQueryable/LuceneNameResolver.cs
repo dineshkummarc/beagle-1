@@ -83,17 +83,17 @@ namespace Beagle.Daemon.FileSystemQueryable {
 
 				switch (prop.Key) {
 					
-				case FileSystemQueryable.ExactFilenamePropKey:
+				case Property.ExactFilenamePropKey:
 					info.Name = prop.Value;
 					have_name = true;
 					break;
 					
-				case FileSystemQueryable.ParentDirUriPropKey:
+				case Property.ParentDirUriPropKey:
 					info.ParentId = GuidFu.FromUriString (prop.Value);
 					have_parent_id = true;
 					break;
 
-				case FileSystemQueryable.IsDirectoryPropKey:
+				case Property.IsDirectoryPropKey:
 					info.IsDirectory = (prop.Value == "true");
 					have_is_dir = true;
 					break;
@@ -160,10 +160,10 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			parent_uri_str = GuidFu.ToUriString (parent_id);
 
 			string key1;
-			key1 = LuceneCommon.PropertyToFieldName (PropertyType.Keyword, FileSystemQueryable.ParentDirUriPropKey);
+			key1 = LuceneCommon.PropertyToFieldName (PropertyType.Keyword, Property.ParentDirUriPropKey);
 
 			string key2;
-			key2 = LuceneCommon.PropertyToFieldName (PropertyType.Keyword, FileSystemQueryable.ExactFilenamePropKey);
+			key2 = LuceneCommon.PropertyToFieldName (PropertyType.Keyword, Property.ExactFilenamePropKey);
 
 			LNS.Query q1;
 			q1 = new LNS.TermQuery (new Term (key1, parent_uri_str));
@@ -221,7 +221,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			// First we assemble a query to find all of the directories.
 			string field_name;
 			field_name = LuceneCommon.PropertyToFieldName (PropertyType.Keyword,
-								       FileSystemQueryable.IsDirectoryPropKey);
+								       Property.IsDirectoryPropKey);
 			
 			LNS.Query query;
 			query = new LNS.TermQuery (new Term (field_name, "true"));

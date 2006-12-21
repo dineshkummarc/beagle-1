@@ -181,7 +181,9 @@ namespace Search.Tiles {
 
 #if ENABLE_OPEN_WITH
 			if (EnableOpenWith) {
-				OpenWithMenu owm = new OpenWithMenu (Hit ["beagle:MimeType"]);
+				// FIXME: Not sure if going with the parent is
+				// the right thing to do in all cases.
+				OpenWithMenu owm = new OpenWithMenu (Utils.GetFirstPropertyOfParent (hit, "beagle:MimeType"));
 				owm.ApplicationActivated += OpenWith;
 				owm.AppendToMenu (menu);
 			}
@@ -340,7 +342,10 @@ namespace Search.Tiles {
 #if ENABLE_DESKTOP_LAUNCH
 			command = "desktop-launch";
 			expects_uris = true;
-#else		       
+#elif ENABLE_XDG_OPEN
+			command = "xdg-open";
+			expects_uris = true;
+#else
 			GnomeFu.VFSMimeApplication app;
 			app = GnomeFu.GetDefaultAction (hit.MimeType);
 			if (app.command != null) {
@@ -353,9 +358,16 @@ namespace Search.Tiles {
 				return;
 			}
 			
-			if (expects_uris)
-				item = hit.EscapedUri;
-			else
+			if (expects_uris) {
+				// FIXME: I'm not sure that opening the parent
+				// URI (if present) is the right thing to do in
+				// all cases, but it does work for all our
+				// current cases.
+				if (hit.ParentUri != null)
+					item = hit.EscapedParentUri;
+				else
+					item = hit.EscapedUri;
+			} else
 				item = hit.Path;
 
 			// Sometimes the command is 'quoted'
@@ -409,9 +421,14 @@ namespace Search.Tiles {
 
 		public void OpenFromUri (string uri)
                 {
-#if ENABLE_DESKTOP_LAUNCH
+#if ENABLE_DESKTOP_LAUNCH || ENABLE_XDG_OPEN
 			SafeProcess p = new SafeProcess ();
+
+#  if ENABLE_DESKTOP_LAUNCH
 			p.Arguments = new string[] { "desktop-launch", uri };
+#  elif ENABLE_XDG_OPEN
+			p.Arguments = new string[] { "xdg-open", uri };
+#  endif
 
 			try {
 				p.Start ();

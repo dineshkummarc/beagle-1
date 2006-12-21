@@ -40,6 +40,7 @@ using LNS = Lucene.Net.Search;
 
 using Beagle;
 using Beagle.Util;
+
 using FSQ = Beagle.Daemon.FileSystemQueryable.FileSystemQueryable;
 using Stopwatch = Beagle.Util.Stopwatch;
 
@@ -480,7 +481,7 @@ namespace Beagle.Daemon
 
 			// If the directory exists in the fa store, then it is already indexed
 			if (attr != null) {
-				if (arg_delete && dir.LastWriteTimeUtc > attr.LastWriteTime)
+				if (arg_delete && ! FileAttributesStore.IsUpToDate (dir.FullName, attr))
 					modified_directories.Enqueue (dir);
 				return null;
 			}

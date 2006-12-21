@@ -43,8 +43,6 @@ namespace Beagle.Daemon.KabcQueryable {
 	[BackendFlavor (Name="KAddressBook", Domain=QueryDomain.Local)]
 	public class KabcQueryable : LuceneFileQueryable {
 
-		private static Logger log = Logger.Get ("KAddressBookQueryable");
-
 		private string kabc_dir;
 		private string kabc_file;
 		private Hashtable last_modified_table;
@@ -81,15 +79,13 @@ namespace Beagle.Daemon.KabcQueryable {
 			}
 
 			if (Inotify.Enabled) {
-				Inotify.EventType mask =  Inotify.EventType.CloseWrite
-							| Inotify.EventType.MovedTo;
+				Inotify.EventType mask = Inotify.EventType.Create | Inotify.EventType.MovedTo;
 				Inotify.Subscribe (kabc_dir, OnInotifyEvent, mask);
 			} else {
 				FileSystemWatcher fsw = new FileSystemWatcher ();
 			       	fsw.Path = kabc_dir;
 				fsw.Filter = kabc_file;
 
-				fsw.Changed += new FileSystemEventHandler (OnChangedEvent);
 				fsw.Created += new FileSystemEventHandler (OnChangedEvent);
 				fsw.Renamed += new RenamedEventHandler (OnChangedEvent);
 				
@@ -275,12 +271,9 @@ namespace Beagle.Daemon.KabcQueryable {
 						return true;
 			}
 
-			if (line == null) {
-				reader.Close ();
-				if (! initial_scan)
-					queryable.RemoveDeletedContacts (deleted_contacts);
-				return false;
-			}
+			reader.Close ();
+			if (! initial_scan)
+				queryable.RemoveDeletedContacts (deleted_contacts);
 
 			return false;
 		}
@@ -318,10 +311,8 @@ namespace Beagle.Daemon.KabcQueryable {
 				}
 			}
 
-			if (line == null) {
-				reader.Close ();
+			if (line == null)
 				return false;
-			}
 
 			// Bad contact
 			if (string_builder.Length == 0 || current_uid == null)

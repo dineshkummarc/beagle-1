@@ -4,7 +4,7 @@ CSC = $(MCS) -debug
 
 TARGET = Filters.dll
 
-CSFLAGS = -target:library
+CSFLAGS = -target:library $(BEAGLE_DEFINES)
 
 # Found at http://sharptoolbox.madgeek.com/
 HAP_CSFILES =						\
@@ -24,6 +24,7 @@ CSFILES = 				\
 	$(srcdir)/AssemblyInfo.cs	\
 	$(ENTAGGED_CSFILES)		\
 	$(HAP_CSFILES)			\
+	$(srcdir)/FilterArchive.cs	\
 	$(srcdir)/FilterHtml.cs		\
 	$(srcdir)/FilterImage.cs	\
 	$(srcdir)/FilterJpeg.cs		\
@@ -75,7 +76,8 @@ CSFILES = 				\
 	$(srcdir)/FilterKAddressBook.cs \
 	$(srcdir)/FilterKCal.cs		\
 	$(srcdir)/FilterKNotes.cs	\
-	$(srcdir)/FilterLabyrinth.cs
+	$(srcdir)/FilterLabyrinth.cs	\
+	$(srcdir)/FilterScribus.cs
 
 if ENABLE_GSF_SHARP
 CSFILES += 				\

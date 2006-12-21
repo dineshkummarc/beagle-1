@@ -86,7 +86,7 @@ namespace Beagle.Daemon {
 					this.client.GetStream ().WriteByte (0xff);
 					this.client.GetStream ().Flush ();
 				} catch (Exception e) {
-					Logger.Log.Debug (e, "Caught an exception sending response.  Shutting down socket.");
+					Logger.Log.Debug (e, "Caught an exception sending {0}.  Shutting down socket.", response.GetType ());
 					return false;
 				}
 
@@ -203,6 +203,9 @@ namespace Beagle.Daemon {
 					if (!(e is IOException || e is ThreadAbortException))
 						throw;
 
+					// Reset the unsightly ThreadAbortException
+					Thread.ResetAbort ();
+
 					Logger.Log.Debug ("Bailing out of HandleConnection -- shutdown requested");
 					Server.MarkHandlerAsKilled (this);
 					Shutdown.WorkerFinished (network_data);
@@ -242,6 +245,13 @@ namespace Beagle.Daemon {
 				RequestWrapper wrapper = (RequestWrapper) req_serializer.Deserialize (buffer_stream);
 				
 				req = wrapper.Message;
+			} catch (InvalidOperationException e) {
+				// Undocumented: Xml Deserialization exceptions
+				if (e.InnerException != null)
+					resp = new ErrorResponse (e.InnerException);
+				else
+					resp = new ErrorResponse (e);
+				force_close_connection = true;
 			} catch (Exception e) {
 				resp = new ErrorResponse (e);
 				force_close_connection = true;

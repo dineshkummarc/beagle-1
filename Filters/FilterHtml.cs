@@ -50,6 +50,7 @@ namespace Beagle.Filters {
 		private Stack ignore_stack;
 		private bool building_text;
 		private StringBuilder builder;
+		protected Encoding enc;
 
 		// delegate types
 		public delegate int AppendTextCallback (string s);
@@ -162,9 +163,9 @@ namespace Beagle.Filters {
 						building_text = false;
 					}
 				} else if (node.Name == "meta") {
-	   				string name = node.GetAttributeValue ("name", "");
-           				string content = node.GetAttributeValue ("content", "");
-					if (name != "" && content != "")
+	   				string name = node.GetAttributeValue ("name", String.Empty);
+           				string content = node.GetAttributeValue ("content", String.Empty);
+					if (name != String.Empty)
 						AddProperty (Beagle.Property.New ("meta:" + name, content));
 				} else if (! NodeIsContentFree (node.Name)) {
 					bool isHot = NodeIsHot (node.Name);
@@ -181,15 +182,16 @@ namespace Beagle.Filters {
 							hot_stack.Push (node.Name);
 						}
 						if (node.Name == "img") {
-							string attr = node.GetAttributeValue ("alt", "");
-							if (attr != "") {
+							string attr = node.GetAttributeValue ("alt", String.Empty);
+							if (attr != String.Empty) {
 								AppendText (HtmlEntity.DeEntitize (attr));
 								AppendWhiteSpace ();
 							}
 						} else if (node.Name == "a") {
-							string attr = node.GetAttributeValue ("href", "");
-							if (attr != "") {
-								AppendText (HtmlEntity.DeEntitize (SW.HttpUtility.UrlDecode (attr)));
+							string attr = node.GetAttributeValue ("href", String.Empty);
+							if (attr != String.Empty) {
+								AppendText (HtmlEntity.DeEntitize (
+									    SW.HttpUtility.UrlDecode (attr, enc)));
 								AppendWhiteSpace ();
 							}
 						}
@@ -236,7 +238,7 @@ namespace Beagle.Filters {
 
 		override protected void DoOpen (FileInfo info)
 		{
-			Encoding enc = null;
+			enc = null;
 
 			foreach (Property prop in IndexableProperties) {
 				if (prop.Key != StringFu.UnindexedNamespace + "encoding")
@@ -256,7 +258,11 @@ namespace Beagle.Filters {
 			if (enc == null) {
 				// we need to tell the parser to detect encoding,
 				HtmlDocument temp_doc = new HtmlDocument ();
-				enc = temp_doc.DetectEncoding (Stream);
+				try {
+					enc = temp_doc.DetectEncoding (Stream);
+				} catch (NotSupportedException) {
+					enc = Encoding.ASCII;
+				}
 				//Console.WriteLine ("Detected encoding:" + (enc == null ? "null" : enc.EncodingName));
 				temp_doc = null;
 				Stream.Seek (0, SeekOrigin.Begin);
@@ -274,9 +280,10 @@ namespace Beagle.Filters {
 				else
 					doc.Load (Stream, enc);
 			} catch (NotSupportedException) {
-				doc.Load (Stream, Encoding.ASCII);
+				enc = Encoding.ASCII;
+				doc.Load (Stream, enc);
 			} catch (Exception e) {
-				Log.Debug (e, "Exception while filtering HTML file");
+				Log.Debug (e, "Exception while filtering HTML file " + info.FullName);
 			}
 
 			Finished ();

@@ -41,29 +41,56 @@ namespace Beagle.Util {
 
 		public const string UnindexedNamespace = "_unindexed:";
 
-		private const String timeFormat = "yyyyMMddHHmmss";
+		private const String TimeFormat = "yyyyMMddHHmmss";
+
+		public static DateTime MinValueUtc = new DateTime (0, DateTimeKind.Utc);
+		public static DateTime MaxValueUtc = new DateTime (DateTime.MaxValue.Ticks, DateTimeKind.Utc);
+
+		// We use this instead of DateTime.ToUniversalTime() because
+		// we want to assume DateTimeKind.Unspecified dates are UTC
+		static private DateTime ToUniversalTime (DateTime dt)
+		{
+			switch (dt.Kind) {
+
+			case DateTimeKind.Utc:
+				return dt;
+
+			case DateTimeKind.Local:
+				return dt.ToUniversalTime ();
+
+			case DateTimeKind.Unspecified:
+				// FIXME: We should fix all the instances of unspecified
+				// DateTimes to avoid any potential comparison issues.
+				//Log.Warn ("Possibly incorrect unspecified date ({0}): {1}", dt, new System.Diagnostics.StackTrace (true).ToString ());
+				return dt;
+			}
+
+			// We'll never hit this, but otherwise the compiler
+			// complains about not all codepaths returning...
+			throw new Exception ("Unreachable code reached");
+		}
 
 		static public string DateTimeToString (DateTime dt)
 		{
-			return dt.ToString (timeFormat);
+			return ToUniversalTime (dt).ToString (TimeFormat);
 		}
 
 		static public string DateTimeToYearMonthString (DateTime dt)
 		{
-			return dt.ToString ("yyyyMM");
+			return ToUniversalTime (dt).ToString ("yyyyMM");
 		}
 
 		static public string DateTimeToDayString (DateTime dt)
 		{
-			return dt.ToString ("dd");
+			return ToUniversalTime (dt).ToString ("dd");
 		}
 
                 static public DateTime StringToDateTime (string str)
                 {
-			if (str == null || str == "")
+			if (str == null || str == String.Empty)
 				return new DateTime ();
 
-			return DateTime.ParseExact (str, timeFormat, CultureInfo.CurrentCulture);
+			return DateTime.ParseExact (str, TimeFormat, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
                 }
 
 		static public string DateTimeToFuzzy (DateTime dt)
@@ -146,6 +173,24 @@ namespace Beagle.Util {
 					
 			
 			return span_str;
+		}
+
+		static public string TimeSpanToString (TimeSpan span)
+		{
+			StringBuilder sb = new StringBuilder ();
+
+			if (span.Days > 0)
+				sb.Append (span.Days + "d");
+
+			if (span.TotalHours > 1.0)
+				sb.Append (span.Hours + "h");
+
+			if (span.TotalMinutes > 1.0)
+				sb.Append (span.Minutes + "m");
+
+			sb.Append (span.Seconds + "s");
+
+			return sb.ToString ();
 		}
 		
 		static public string FileLengthToString (long len)
@@ -305,7 +350,7 @@ namespace Beagle.Util {
 
 			foreach (char c in str) {
 
-				if (Array.IndexOf (CharsToQuote, c) != -1)
+				if (ArrayFu.IndexOfChar (CharsToQuote, c) != -1)
 					builder.Append (Uri.HexEscape (c));
 				else if (c < 128)
 					builder.Append (c);

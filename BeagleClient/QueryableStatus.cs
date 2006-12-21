@@ -29,19 +29,10 @@ using System.Xml.Serialization;
 
 namespace Beagle {
 
-	public enum BackendState {
-		NotApplicable,
-		Idle,
-		Crawling,
-		Indexing,
-		Flushing
-	}
-
 	public class BackendStatus {
 
 		private string name;
 		private int item_count = -1;
-		private BackendState state = BackendState.NotApplicable;
 		private int progress_percent = -1;
 		private bool is_indexing = false;
 
@@ -55,12 +46,6 @@ namespace Beagle {
 		public int ItemCount {
 			get { return this.item_count; }
 			set { this.item_count = value; }
-		}
-
-		[XmlAttribute]
-		public BackendState State {
-			get { return this.state; }
-			set { this.state = value; }
 		}
 
 		[XmlAttribute]

@@ -5,12 +5,20 @@ if ENABLE_DESKTOP_LAUNCH
 CSFLAGS += -define:ENABLE_DESKTOP_LAUNCH
 endif
 
+if ENABLE_XDG_OPEN
+CSFLAGS += -define:ENABLE_XDG_OPEN
+endif
+
 if ENABLE_OPEN_WITH
 CSFLAGS += -define:ENABLE_OPEN_WITH
 endif
 
 if ENABLE_GALAGO
 CSFLAGS += -define:ENABLE_GALAGO
+endif
+
+if ENABLE_THUNDERBIRD
+CSFLAGS += -define:ENABLE_THUNDERBIRD
 endif
 
 pkglib_DATA = Search.exe Search.exe.mdb
@@ -29,6 +37,7 @@ CSFILES =					\
 	$(srcdir)/ConversationCategory.cs	\
 	$(srcdir)/Entry.cs			\
 	$(srcdir)/GroupView.cs			\
+	$(srcdir)/NotificationArea.cs		\
 	$(srcdir)/Panes.cs			\
 	$(srcdir)/Search.cs			\
 	$(srcdir)/SortedTileList.cs		\
@@ -40,6 +49,7 @@ CSFILES =					\
 TILES = 					\
 	$(srcdir)/Tiles/ActionMenuItem.cs	\
 	$(srcdir)/Tiles/Application.cs		\
+	$(srcdir)/Tiles/ArchivedFile.cs		\
 	$(srcdir)/Tiles/AssemblyInfo.cs		\
 	$(srcdir)/Tiles/Audio.cs		\
 	$(srcdir)/Tiles/CApplet.cs		\
@@ -110,6 +120,9 @@ desktop_h_files = $(desktop_in_files:.in=.in.h)
 desktopdir       = $(datadir)/applications
 desktop_DATA     = $(desktop_files)
 
+autostartdir = $(sysconfdir)/xdg/autostart
+autostart_DATA = beagle-search-autostart.desktop
+
 all: $(BIN_WRAPPERS)
 
 install-data-local: $(BIN_WRAPPERS)
@@ -128,6 +141,7 @@ EXTRA_DIST =			\
 	$(PAGES)		\
 	$(TRAY)			\
 	$(desktop_DATA).in	\
+	$(autostart_DATA)	\
 	beagle-search.in	\
 	beagle-search.desktop.in.in
 

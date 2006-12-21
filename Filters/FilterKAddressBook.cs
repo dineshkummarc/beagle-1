@@ -85,6 +85,8 @@ namespace Beagle.Filters {
 							return mapped_prop_name + ":WORK";
 						else if (vcpp.param_value == "HOME")
 							return mapped_prop_name + ":HOME";
+						else if (vcpp.param_value == "CELL")
+							return mapped_prop_name + ":CELL";
 					}
 				}
 				break;
@@ -100,10 +102,7 @@ namespace Beagle.Filters {
 		{
 			pref_email_set = false;
 			base.DoPullProperties ();
-			if (pref_email != null)
-				AddProperty (Beagle.Property.New (
-						"vCard:PREFEMAIL",
-						pref_email));
+			AddProperty (Beagle.Property.New ("vCard:PREFEMAIL", pref_email));
 		}
 
 		override protected void ProcessPropertySpecial (string prop_name,

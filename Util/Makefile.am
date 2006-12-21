@@ -1,7 +1,8 @@
 # Warnings we don't want to see
 # 0169 = The private field is never used
+# 0414 = The private field is assigned but its value is never used
 
-CSC = $(MCS) -debug -nowarn:0169
+CSC = $(MCS) -debug -nowarn:0169,0414
 CSFLAGS = -target:library
 
 UTIL_TARGET = Util.dll
@@ -39,6 +40,7 @@ UTIL_CSFILES = 			        	\
 	$(srcdir)/camel.cs              	\
 	$(srcdir)/CommandLineFu.cs		\
 	$(srcdir)/Conf.cs			\
+	$(srcdir)/DateTimeUtil.cs		\
 	$(srcdir)/DelayedTextWriter.cs		\
 	$(srcdir)/DigikamTags.cs		\
 	$(srcdir)/DirectoryWalker.cs		\

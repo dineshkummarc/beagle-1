@@ -187,11 +187,11 @@ namespace Beagle.Daemon {
 				if (Directory.Exists (path)) {
 					indexable.MimeType = "inode/directory";
 					indexable.NoContent = true;
-					if (! indexable.ValidTimestamp)
+					if (! indexable.ValidTimestamp && indexable.IsNonTransient)
 						indexable.Timestamp = Directory.GetLastWriteTimeUtc (path);
 				} else if (File.Exists (path)) {
 					// Set the timestamp to the best possible estimate (if no timestamp was set by the backend)
-					if (! indexable.ValidTimestamp)
+					if (! indexable.ValidTimestamp && indexable.IsNonTransient)
 						indexable.Timestamp = File.GetLastWriteTimeUtc (path);
 				} else {
 					Logger.Log.Warn ("No such file: {0}", path);
@@ -204,7 +204,7 @@ namespace Beagle.Daemon {
 				if (! indexable.NoContent) {
 					indexable.NoContent = true;
 
-					Logger.Log.Debug ("No filter for {0} ({1}) [{2}]", indexable.Uri, path, indexable.MimeType);
+					Logger.Log.Debug ("No filter for {0} ({1}) [{2}]", indexable.DisplayUri, path, indexable.MimeType);
 					return false;
 				}
 				
@@ -228,8 +228,9 @@ namespace Beagle.Daemon {
 				if (indexable.Crawled)
 					candidate_filter.EnableCrawlMode ();
 				
-				// Set the filter's URI
+				// Set the filter's URIs
 				candidate_filter.Uri = indexable.Uri;
+				candidate_filter.DisplayUri = indexable.DisplayUri;
 
 				// allow the filter access to the indexable's properties
 				candidate_filter.IndexableProperties = indexable.Properties;

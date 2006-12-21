@@ -76,10 +76,8 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 				return;
 			}
 			
-			State = BackendState.Crawling;
 			indexer = new ThunderbirdIndexer (this, Thunderbird.GetProfilePaths (root_path));
 			indexer.Crawl ();
-			State = BackendState.Idle;
 			
 			watch.Stop ();
 			Logger.Log.Info ("Thunderbird backend done in {0}s", watch.ElapsedTime);

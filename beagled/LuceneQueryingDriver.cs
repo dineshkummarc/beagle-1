@@ -42,14 +42,13 @@ using Lucene.Net.QueryParsers;
 using LNS = Lucene.Net.Search;
 
 using Beagle.Util;
+using Stopwatch = Beagle.Util.Stopwatch;
 
 namespace Beagle.Daemon {
 
 	public class LuceneQueryingDriver : LuceneCommon, IQueryable {
 
 		static public bool Debug = true;
-
-		public const string PrivateNamespace = "_private:";
 
 		public delegate bool UriFilter (Uri uri);
 		public delegate double RelevancyMultiplier (Hit hit);
@@ -779,6 +778,10 @@ namespace Beagle.Daemon {
 				if (docs_found == max_results) {
 					all_docs = new ArrayList ();
 					top_docs = null;
+				} else {
+					// Bad luck! Not all docs found
+					// Start afresh - this time traversing all results
+					ordered_matches = null;
 				}
 
 				a.Stop ();
@@ -953,14 +956,14 @@ namespace Beagle.Daemon {
 				int i = 0;
 				while (i < hit.Properties.Count) {
 					Property prop = hit.Properties [i] as Property;
-					if (prop.Key.StartsWith (PrivateNamespace))
+					if (prop.Key.StartsWith (Property.PrivateNamespace))
 						hit.Properties.RemoveAt (i);
 					else
 						++i;
 				}
 			}
 
-			result.Add (final_list_of_hits);
+			result.Add (final_list_of_hits, primary_matches.TrueCount);
 
 			d.Stop ();
 			total.Stop ();

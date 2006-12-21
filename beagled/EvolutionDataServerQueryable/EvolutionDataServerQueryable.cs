@@ -41,11 +41,9 @@ namespace Beagle.Daemon.EvolutionDataServerQueryable {
 
 	[BackendFlavor (Name="EvolutionDataServer", Domain=QueryDomain.Local)]
 	public class EvolutionDataServerQueryable : LuceneQueryable {
-		//private Scheduler.Priority priority = Scheduler.Priority.Immediate;
-		private Scheduler.Priority priority = Scheduler.Priority.Delayed;
-
 		private string photo_dir;
-		private DateTime start_time;
+
+		private bool initial_crawl = false;
 
 		// Index versions
 		// 1: Original version
@@ -67,10 +65,9 @@ namespace Beagle.Daemon.EvolutionDataServerQueryable {
 			base.Start ();
 
 			// Defer the actual startup till main_loop starts.
-			// This will improve kill beagle while starting up.
 			// EDS requires StartWorker to run in mainloop,
 			// hence it is not started in a separate thread.
-			GLib.Idle.Add (new GLib.IdleHandler (delegate () { StartWorker (); return false;}));
+			GLib.Idle.Add (new GLib.IdleHandler (delegate () { StartWorker (); return false; }));
 		}
 
 		private void StartWorker ()
@@ -79,10 +76,26 @@ namespace Beagle.Daemon.EvolutionDataServerQueryable {
 			Stopwatch timer = new Stopwatch ();
 			timer.Start ();
 
-			start_time = DateTime.Now;
-			State = BackendState.Crawling;
+			initial_crawl = true;
 
 			bool success = false;
+
+			// FIXME: This is a total hack.  We call into a
+			// method inside libevolutionglue so that we can
+			// possibly catch a DllNotFoundException if it
+			// fails to load.  This is separate from the next
+			// try-catch-finally block, which calls into the
+			// e-d-s libraries.
+			try {
+				// This is a no-op
+				CalUtil.FreeGlueCompGLibSList (IntPtr.Zero);
+			} catch (DllNotFoundException ex) {
+				Logger.Log.Error (ex, "Unable to start EvolutionDataServer backend: Unable to find or open libraries:");
+				return;
+			} finally {
+				initial_crawl = false;
+				timer.Stop ();
+			}
 
 			// This is the first code which tries to open the
 			// evolution-data-server APIs.  Try to catch
@@ -95,12 +108,16 @@ namespace Beagle.Daemon.EvolutionDataServerQueryable {
 			} catch (DllNotFoundException ex) {
 				Logger.Log.Error (ex, "Unable to start EvolutionDataServer backend: Unable to find or open libraries:");
 			} finally {
-				State = BackendState.Idle;
+				initial_crawl = false;
 				timer.Stop ();
 			}
 			
 			if (success)
 				Logger.Log.Info ("Scanned addressbooks and calendars in {0}", timer);
+		}
+
+		override protected bool IsIndexing {
+			get { return initial_crawl; }
 		}
 
 		public void AddIndexable (Indexable indexable, Scheduler.Priority priority)

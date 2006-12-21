@@ -26,6 +26,7 @@
 
 using System;
 using System.Collections;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -35,6 +36,7 @@ using GLib;
 
 using Beagle.Util;
 using Log = Beagle.Util.Log;
+using Stopwatch = Beagle.Util.Stopwatch;
 
 namespace Beagle.Daemon {
 
@@ -48,6 +50,7 @@ namespace Beagle.Daemon {
 		private static bool arg_replace = false;
 		private static bool arg_disable_scheduler = false;
 		private static bool arg_indexing_test_mode = false;
+		private static bool arg_heap_shot = false;
 
 		public static bool StartServer ()
 		{
@@ -76,12 +79,46 @@ namespace Beagle.Daemon {
 			} while (! StartServer ());			
 		}
 
+		private static int prev_rss = -1;
+		private static long prev_gc = -1;
+		private static int sigprof_count = 0;
+
+		private static void MaybeSendSigprof (int rss, long gc)
+		{
+			bool send_sigprof = false;
+
+			try {
+				if (prev_rss == -1 || prev_gc == -1)
+					return;
+
+				// Log RSS increases of at least 5 megs or 5%
+				if (rss - prev_rss >= 5 * 1024 ||
+				    (double) rss / (double) prev_rss >= 1.05)
+					send_sigprof = true;
+
+				// Log total object size increase of at least 10%.
+				if ((double) gc / (double) prev_gc >= 1.1)
+					send_sigprof = true;
+			} finally {
+				prev_rss = rss;
+				prev_gc = gc;
+
+				if (send_sigprof) {
+					Log.Debug ("Suspicious memory size change detected.  Sending SIGPROF to ourself ({0})", sigprof_count++);
+					Mono.Unix.Native.Syscall.kill (Process.GetCurrentProcess ().Id, Mono.Unix.Native.Signum.SIGPROF);
+				}
+			}
+		}
+
 		private static void LogMemoryUsage ()
 		{
 			while (! Shutdown.ShutdownRequested) {
+				SystemInformation.LogMemoryUsage ();
+
 				int vm_rss = SystemInformation.VmRss;
 
-				SystemInformation.LogMemoryUsage ();
+				if (arg_heap_shot)
+					MaybeSendSigprof (vm_rss, GC.GetTotalMemory (false));
 
 				if (vm_rss > 300 * 1024) {
 					Logger.Log.Debug ("VmRss too large --- shutting down");
@@ -148,9 +185,9 @@ namespace Beagle.Daemon {
 			// Set up out-of-process indexing
 			LuceneQueryable.IndexerHook = new LuceneQueryable.IndexerCreator (RemoteIndexer.NewRemoteIndexer);
 
-			// Initialize synchronization to keep the indexes local if PathFinder.HomeDir
+			// Initialize synchronization to keep the indexes local if PathFinder.StorageDir
 			// is on a non-block device, or if BEAGLE_SYNCHRONIZE_LOCALLY is set
-			if ((! SystemInformation.IsPathOnBlockDevice (PathFinder.HomeDir) && Conf.Daemon.IndexSynchronization) ||
+			if ((! SystemInformation.IsPathOnBlockDevice (PathFinder.StorageDir) && Conf.Daemon.IndexSynchronization) ||
 			    Environment.GetEnvironmentVariable ("BEAGLE_SYNCHRONIZE_LOCALLY") != null)
 				IndexSynchronization.Initialize ();
 
@@ -249,8 +286,6 @@ namespace Beagle.Daemon {
 					Environment.Exit (0);
 					break;
 
-				case "--heap-buddy":
-				case "--heap-shot":
 				case "--mdb":
 				case "--mono-debug":
 					// Silently ignore these arguments: they get handled
@@ -281,6 +316,13 @@ namespace Beagle.Daemon {
 					arg_debug = true;
 					break;
 
+				case "--heap-shot":
+					arg_heap_shot = true;
+					arg_debug = true;
+					arg_debug_memory = true;
+					break;
+
+				case "--heap-buddy":
 				case "--debug-memory":
 					arg_debug = true;
 					arg_debug_memory = true;
@@ -356,10 +398,7 @@ namespace Beagle.Daemon {
 					break;
 
 				case "--autostarted":
-					if (! Conf.Searching.Autostart) {
-						Console.WriteLine ("Autostarting is disabled, not starting");
-						Environment.Exit (0);
-					}
+					// FIXME: This option is deprecated and will be removed in a future release.
 					break;
 
 				default:
@@ -463,6 +502,10 @@ namespace Beagle.Daemon {
 			Logger.Log.Debug ("Starting main loop");
 			main_loop.Run ();
 
+			// We're out of the main loop now, join all the
+			// running threads so we can exit cleanly.
+			ExceptionHandlingThread.JoinAllThreads ();
+
 			// If we placed our sockets in a temp directory, try to clean it up
 			// Note: this may fail because the helper is still running
 			if (PathFinder.GetRemoteStorageDir (false) != PathFinder.StorageDir) {
@@ -471,16 +514,11 @@ namespace Beagle.Daemon {
 				} catch (IOException) { }
 			}
 
-			Logger.Log.Debug ("Leaving BeagleDaemon.Main");
-
-			if (arg_debug) {
-				Thread.Sleep (500);
-				ExceptionHandlingThread.SpewLiveThreads ();
-			}
+			Log.Info ("Beagle daemon process shut down cleanly.");
 		}
 
 		/////////////////////////////////////////////////////////////////////////////
-
+		
 		private static bool prev_on_battery = false;
 
 		private static bool CheckBatteryStatus ()
@@ -533,6 +571,7 @@ namespace Beagle.Daemon {
 			Mono.Unix.Native.Stdlib.signal (Mono.Unix.Native.Signum.SIGINT, OurSignalHandler);
 			Mono.Unix.Native.Stdlib.signal (Mono.Unix.Native.Signum.SIGTERM, OurSignalHandler);
 			Mono.Unix.Native.Stdlib.signal (Mono.Unix.Native.Signum.SIGUSR1, OurSignalHandler);
+			Mono.Unix.Native.Stdlib.signal (Mono.Unix.Native.Signum.SIGUSR2, OurSignalHandler);
 
 			// Ignore SIGPIPE
 			Mono.Unix.Native.Stdlib.signal (Mono.Unix.Native.Signum.SIGPIPE, Mono.Unix.Native.Stdlib.SIG_IGN);
@@ -564,7 +603,12 @@ namespace Beagle.Daemon {
 				LogLevel old_level = Log.Level;
 				Log.Level = LogLevel.Debug;
 				Log.Debug ("Moving from log level {0} to Debug", old_level);
-				GLib.Idle.Add (new GLib.IdleHandler (delegate () { RemoteIndexer.SignalRemoteIndexer (); return false; }));
+			}
+
+			// Send informational signals to the helper too.
+			if ((Mono.Unix.Native.Signum) signal == Mono.Unix.Native.Signum.SIGUSR1 ||
+			    (Mono.Unix.Native.Signum) signal == Mono.Unix.Native.Signum.SIGUSR2) {
+				GLib.Idle.Add (new GLib.IdleHandler (delegate () { RemoteIndexer.SignalRemoteIndexer ((Mono.Unix.Native.Signum) signal); return false; }));
 				return;
 			}
 

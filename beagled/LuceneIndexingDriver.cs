@@ -46,6 +46,7 @@ using Lucene.Net.QueryParsers;
 using LNS = Lucene.Net.Search;
 
 using Beagle.Util;
+using Stopwatch = Beagle.Util.Stopwatch;
 
 namespace Beagle.Daemon {
 
@@ -91,6 +92,15 @@ namespace Beagle.Daemon {
 
 		////////////////////////////////////////////////////////////////
 
+		// We use this in the index helper so that we can report what's
+		// going on if the helper spins the CPU.  The method will be
+		// called with null parameters after filtering has finished.
+
+		public delegate void FileFilterDelegate (Uri display_uri, Filter filter);
+		public FileFilterDelegate FileFilterNotifier = null;
+
+		////////////////////////////////////////////////////////////////
+
 		//
 		// Implementation of the IIndexer interface
 		//
@@ -120,9 +130,12 @@ namespace Beagle.Daemon {
 			// property change requests.
 
 			LNS.BooleanQuery prop_change_query = null;
+			LNS.BooleanQuery prop_change_children_query = null;
 			int delete_count = 0;
 
-			foreach (Indexable indexable in request.Indexables) {
+			ICollection request_indexables = request.Indexables;
+
+			foreach (Indexable indexable in request_indexables) {
 
 				switch (indexable.Type) {
 
@@ -159,9 +172,13 @@ namespace Beagle.Daemon {
 					break;
 
 				case IndexableType.PropertyChange:
-					if (prop_change_query == null)
+					if (prop_change_query == null) {
 						prop_change_query = new LNS.BooleanQuery ();
+						prop_change_children_query = new LNS.BooleanQuery ();
+					}
+
 					prop_change_query.Add (UriQuery ("Uri", indexable.Uri), false, false);
+					prop_change_children_query.Add (UriQuery ("ParentUri", indexable.Uri), false, false);
 					break;
 				}
 			}
@@ -176,6 +193,7 @@ namespace Beagle.Daemon {
 			// store them in a hash table for use later.  Then we
 			// delete the current secondary documents.
 			Hashtable prop_change_docs = null;
+			Hashtable prop_change_children_docs = null;
 			if (prop_change_query != null) {
 				prop_change_docs = UriFu.NewHashtable ();
 
@@ -189,8 +207,8 @@ namespace Beagle.Daemon {
 				delete_terms = new ArrayList ();
 
 				int N = hits.Length ();
+				Document doc;
 				for (int i = 0; i < N; ++i) {
-					Document doc;
 					doc = hits.Doc (i);
 					
 					string uri_str;
@@ -209,6 +227,36 @@ namespace Beagle.Daemon {
 
 				foreach (Term term in delete_terms)
 					secondary_reader.Delete (term);
+
+				// Step #2.5: Find all child indexables for this document
+				// Store them to send them later as IndexerChildIndexablesReceipts
+				prop_change_children_docs = UriFu.NewHashtable ();
+
+				hits = secondary_searcher.Search (prop_change_children_query);
+				N = hits.Length ();
+
+				for (int i = 0; i < N; ++i) {
+					doc = hits.Doc (i);
+					
+					string uri_str, parent_uri_str;
+					uri_str = doc.Get ("Uri");
+					parent_uri_str = doc.Get ("ParentUri");
+
+					Uri uri, parent_uri;
+					uri = UriFu.EscapedStringToUri (uri_str);
+					parent_uri = UriFu.EscapedStringToUri (parent_uri_str);
+
+					if (! prop_change_children_docs.Contains (parent_uri)) {
+						ArrayList c_list = new ArrayList ();
+						prop_change_children_docs [parent_uri] = c_list;
+					}
+
+					ArrayList children_list = (ArrayList) prop_change_children_docs [parent_uri];
+					children_list.Add (uri);
+				}
+
+				secondary_searcher.Close ();
+
 			}
 
 			// We are now done with the readers, so we close them.
@@ -229,7 +277,7 @@ namespace Beagle.Daemon {
 			primary_writer = new IndexWriter (PrimaryStore, IndexingAnalyzer, false);
 			secondary_writer = null;
 
-			foreach (Indexable indexable in request.Indexables) {
+			foreach (Indexable indexable in request_indexables) {
 				
 				if (indexable.Type == IndexableType.Remove)
 					continue;
@@ -254,6 +302,12 @@ namespace Beagle.Daemon {
 						secondary_writer = new IndexWriter (SecondaryStore, IndexingAnalyzer, false);
 					secondary_writer.AddDocument (new_doc);
 
+					// Add children property change indexables...
+					AddChildrenPropertyChange (
+						prop_change_children_docs,
+						indexable,
+						receipt_queue);
+
 					continue; // ...and proceed to the next Indexable
 				}
 
@@ -265,7 +319,10 @@ namespace Beagle.Daemon {
 				Logger.Log.Debug ("+{0}", indexable.DisplayUri);
 
 				Filter filter = null;
-				
+
+				if (FileFilterNotifier != null)
+					FileFilterNotifier (indexable.DisplayUri, null); // We don't know what filter yet.
+
 				// If we have content, try to find a filter
 				// which we can use to process the indexable.
 				try {
@@ -274,6 +331,9 @@ namespace Beagle.Daemon {
 					Logger.Log.Error (e, "Unable to filter {0} (mimetype={1})", indexable.DisplayUri, indexable.MimeType);
 					indexable.NoContent = true;
 				}
+
+				if (FileFilterNotifier != null)
+					FileFilterNotifier (indexable.DisplayUri, filter); // Update with our filter
 					
 				Document primary_doc = null, secondary_doc = null;
 
@@ -309,11 +369,15 @@ namespace Beagle.Daemon {
 
 					// Create a receipt containing any child indexables.
 					if (filter.ChildIndexables.Count > 0) {
+						Log.Debug ("Generated {0} child indexable{1} from {2} (filtered with {3})", filter.ChildIndexables.Count, filter.ChildIndexables.Count > 1 ? "s" : "", indexable.DisplayUri, r.FilterName);
 						IndexerChildIndexablesReceipt cr;
 						cr = new IndexerChildIndexablesReceipt (indexable, filter.ChildIndexables);
 						receipt_queue.Add (cr);
 					}
 				}
+
+				if (FileFilterNotifier != null)
+					FileFilterNotifier (null, null); // reset
 				
 				if (secondary_doc != null) {
 					if (secondary_writer == null)
@@ -356,6 +420,35 @@ namespace Beagle.Daemon {
 				receipt_array [i] = (IndexerReceipt) receipt_queue [i];
 			
 			return receipt_array;
+		}
+
+		// Since some parent properties maybe stored in child properties
+		// as parent: property, any property change should be propagated
+		// to all its children as well.
+		private void AddChildrenPropertyChange (
+				Hashtable children_docs,
+				Indexable parent,
+				ArrayList receipt_queue)
+		{
+			if (! children_docs.Contains (parent.Uri))
+				return;
+
+			ArrayList children_list = (ArrayList) children_docs [parent.Uri];
+			IndexerChildIndexablesReceipt child_r;
+			child_r = new IndexerChildIndexablesReceipt ();
+			ArrayList child_indexable_list = new ArrayList ();
+
+			foreach (Uri uri in children_list) {
+				Indexable child_indexable;
+				child_indexable = new Indexable (IndexableType.PropertyChange, uri);
+				Log.Debug ("Creating property change child indexable for {1} (parent {0})", parent.Uri, uri);
+
+				child_indexable.SetChildOf (parent);
+				child_indexable_list.Add (child_indexable);
+			}
+
+			child_r.Children = child_indexable_list;
+			receipt_queue.Add (child_r);
 		}
 		
 		////////////////////////////////////////////////////////////////

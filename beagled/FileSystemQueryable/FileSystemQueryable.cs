@@ -41,15 +41,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 	[PropertyKeywordMapping (Keyword="ext", PropertyName="beagle:FilenameExtension", IsKeyword=true, Description="File extension, e.g. ext:jpeg. Use ext: to search in files with no extension.")]
 	public class FileSystemQueryable : LuceneQueryable {
 
-		static public bool Debug = false;
-
-		private const string SplitFilenamePropKey = "beagle:SplitFilename";
-		public const string ExactFilenamePropKey = "beagle:ExactFilename";
-		public const string TextFilenamePropKey = "beagle:Filename";
-		public const string NoPunctFilenamePropKey = "beagle:NoPunctFilename";
-		public const string FilenameExtensionPropKey = "beagle:FilenameExtension";
-		public const string ParentDirUriPropKey = LuceneQueryingDriver.PrivateNamespace + "ParentDirUri";
-		public const string IsDirectoryPropKey = LuceneQueryingDriver.PrivateNamespace + "IsDirectory";
+		static public new bool Debug = false;
 
 		// History:
 		// 1: Initially set to force a reindex due to NameIndex changes.
@@ -93,10 +85,10 @@ namespace Beagle.Daemon.FileSystemQueryable {
 		{
 			// Set up our event backend
 			if (Inotify.Enabled) {
-                                Logger.Log.Debug ("Starting Inotify Backend");
+                                Logger.Log.Debug ("Starting Inotify FSQ file event backend");
                                 event_backend = new InotifyBackend ();
                         } else {
-                                Logger.Log.Debug ("Creating null file event backend");
+                                Logger.Log.Debug ("Creating null FSQ file event backend");
 				event_backend = new NullFileEventBackend ();
                         }
 
@@ -121,7 +113,13 @@ namespace Beagle.Daemon.FileSystemQueryable {
 
 		override protected IFileAttributesStore BuildFileAttributesStore ()
 		{
-			return new FileAttributesStore_Mixed (IndexDirectory, IndexFingerprint);
+			// FIXME: This is incorrect, but needed for DISABLE_XATTR
+			// ExtendedAttribute.Supported only looks at homedirectory
+			// There should be a similar check for all mount points or roots
+			if (ExtendedAttribute.Supported)
+				return new FileAttributesStore_Mixed (IndexDirectory, IndexFingerprint);
+                        else
+                                return new FileAttributesStore_Sqlite (IndexDirectory, IndexFingerprint);
 		}
 
 		public FileNameFilter Filter {
@@ -139,51 +137,16 @@ namespace Beagle.Daemon.FileSystemQueryable {
 								     Guid      parent_id,
 								     bool      mutable)
 		{
-			StringBuilder sb;
-			sb = new StringBuilder ();
-
-			string no_ext, ext, no_punct;
-			no_ext = Path.GetFileNameWithoutExtension (name);
-			ext = Path.GetExtension (name).ToLower ();
-			
-			sb.Append (no_ext);
-			for (int i = 0; i < sb.Length; ++i)
-				if (! Char.IsLetterOrDigit (sb [i]))
-					sb [i] = ' ';
-			no_punct = sb.ToString ();
-
-
-			Property prop;
-
-			prop = Property.NewKeyword (ExactFilenamePropKey, name);
-			prop.IsMutable = mutable;
-			indexable.AddProperty (prop);
-
-			prop = Property.New (TextFilenamePropKey, no_ext);
-			prop.IsMutable = mutable;
-			indexable.AddProperty (prop);
-
-			prop = Property.New (NoPunctFilenamePropKey, no_punct);
-			prop.IsMutable = mutable;
-			indexable.AddProperty (prop);
-
-			prop = Property.NewUnsearched (FilenameExtensionPropKey, ext);
-			prop.IsMutable = mutable;
-			indexable.AddProperty (prop);
-
-			string str;
-			str = StringFu.FuzzyDivide (no_ext);
-			prop = Property.NewUnstored (SplitFilenamePropKey, str);
-			prop.IsMutable = mutable;
-			indexable.AddProperty (prop);
+			foreach (Property std_prop in Property.StandardFileProperties (name, mutable))
+				indexable.AddProperty (std_prop);
 
 			if (parent_id == Guid.Empty)
 				return;
 			
-			str = GuidFu.ToUriString (parent_id);
+			string str = GuidFu.ToUriString (parent_id);
 			// We use the uri here to recycle terms in the index,
 			// since each directory's uri will already be indexed.
-			prop = Property.NewUnsearched (ParentDirUriPropKey, str);
+			Property prop = Property.NewUnsearched (Property.ParentDirUriPropKey, str);
 			prop.IsMutable = mutable;
 			indexable.AddProperty (prop);
 		}
@@ -210,9 +173,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 				indexable = new Indexable (IndexableType.Add, GuidFu.ToUri (id));
 				indexable.MimeType = "inode/directory";
 				indexable.NoContent = true;
-				// Set the ContentUri anyway so that we get
-				// nice URIs in the logs.
-				indexable.ContentUri = UriFu.PathToFileUri (path);
+				indexable.DisplayUri = UriFu.PathToFileUri (path);
 				indexable.Timestamp = Directory.GetLastWriteTimeUtc (path);
 			} catch (IOException) {
 				// Looks like the directory was deleted.
@@ -227,7 +188,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			AddStandardPropertiesToIndexable (indexable, name, parent, true);
 
 			Property prop;
-			prop = Property.NewBool (IsDirectoryPropKey, true);
+			prop = Property.NewBool (Property.IsDirectoryPropKey, true);
 			prop.IsMutable = true; // we want this in the secondary index, for efficiency
 			indexable.AddProperty (prop);
 
@@ -247,6 +208,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 				indexable = new Indexable (IndexableType.Add, GuidFu.ToUri (id));
 				indexable.Timestamp = File.GetLastWriteTimeUtc (path);
 				indexable.ContentUri = UriFu.PathToFileUri (path);
+				indexable.DisplayUri = UriFu.PathToFileUri (path);
 				indexable.Crawled = crawl_mode;
 				indexable.Filtering = Beagle.IndexableFiltering.Always;
 			} catch (IOException) {
@@ -268,6 +230,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 		{
 			Indexable indexable;
 			indexable = new Indexable (IndexableType.PropertyChange, GuidFu.ToUri (id));
+			indexable.DisplayUri = UriFu.PathToFileUri (name);
 
 			AddStandardPropertiesToIndexable (indexable, name, parent, true);
 
@@ -360,6 +323,15 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			if (info == null)
 				return null;
 			return ToFullPath (info.Name, info.ParentId);
+		}
+
+		private string UniqueIdToFileName (Guid id)
+		{
+			LuceneNameResolver.NameInfo info;
+			info = name_resolver.GetNameInfoById (id);
+			if (info == null)
+				return null;
+			return info.Name;
 		}
 
 		private void RegisterId (string name, DirectoryModel dir, Guid id)
@@ -641,10 +613,11 @@ namespace Beagle.Daemon.FileSystemQueryable {
 
 			Indexable indexable;
 			indexable = new Indexable (IndexableType.Remove, uri);
+			indexable.DisplayUri = UriFu.PathToFileUri (dir.FullName);
 
 			// Remember a copy of our external Uri, so that we can
 			// easily remap it in the PostRemoveHook.
-			indexable.LocalState ["RemovedUri"] = UriFu.PathToFileUri (dir.FullName);
+			indexable.LocalState ["RemovedUri"] = indexable.DisplayUri;
 
 			// Forget watches and internal references
 			ForgetDirectoryRecursively (dir);
@@ -858,13 +831,6 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			Forget
 		}
 
-		static DateTime epoch = new DateTime (1970, 1, 1, 0, 0, 0);
-
-		static DateTime ToDateTimeUtc (long time_t)
-		{
-			return epoch.AddSeconds (time_t);
-		}
-		
 		private RequiredAction DetermineRequiredAction (DirectoryModel dir,
 								string         name,
 								FileAttributes attr,
@@ -920,12 +886,14 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			}
 
 			DateTime last_write_time, last_attr_time;
-			last_write_time = ToDateTimeUtc (stat.st_mtime);
-			last_attr_time = ToDateTimeUtc (stat.st_ctime);
+			last_write_time = DateTimeUtil.UnixToDateTimeUtc (stat.st_mtime);
+			last_attr_time = DateTimeUtil.UnixToDateTimeUtc (stat.st_ctime);
 
 			if (attr.LastWriteTime != last_write_time) {
 				if (Debug)
-					Logger.Log.Debug ("*** Index it: MTime has changed ({0} vs {1})", attr.LastWriteTime, last_write_time);
+					Logger.Log.Debug ("*** Index it: MTime has changed ({0} vs {1})",
+						DateTimeUtil.ToString (attr.LastWriteTime),
+						DateTimeUtil.ToString (last_write_time));
 				
 				// If the file has been copied, it will have the
 				// original file's EAs.  Thus we have to check to
@@ -952,7 +920,9 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			// ctime will be at some point in the past.
 			if (attr.LastAttrTime < last_attr_time) {
 				if (Debug)
-					Logger.Log.Debug ("*** CTime is newer, checking last known path ({0} vs {1})", attr.LastAttrTime, last_attr_time);
+					Logger.Log.Debug ("*** CTime is newer, checking last known path ({0} vs {1})",
+						DateTimeUtil.ToString (attr.LastAttrTime),
+						DateTimeUtil.ToString (last_attr_time));
 
 				last_known_path = UniqueIdToFullPath (attr.UniqueId);
 
@@ -1089,6 +1059,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 
 			Indexable indexable;
 			indexable = new Indexable (IndexableType.Remove, uri);
+			indexable.DisplayUri = file_uri;
 			indexable.LocalState ["RemovedUri"] = file_uri;
 
 			Scheduler.Task task;
@@ -1207,17 +1178,20 @@ namespace Beagle.Daemon.FileSystemQueryable {
 		// Our magic LuceneQueryable hooks
 		//
 
-		override protected bool PreChildAddHook (Indexable child)
-		{
-			// FIXME: Handling Uri remapping of children is tricky, and there
-			// is also the issue of properly serializing file: uris that
-			// contain fragments.  For now we just punt it all by dropping
-			// any child indexables of file system objects.
-			return false;
+		override protected bool IsIndexing {
+			// FIXME: There is a small race window here, between the starting
+			// of the backend and when either of these tasks first starts
+			// running.  In reality it doesn't come up much, so it's not
+			// urgent to fix.
+			get { return file_crawl_task.IsActive || tree_crawl_task.IsActive; }
 		}
 
 		override protected void PostAddHook (Indexable indexable, IndexerAddedReceipt receipt)
 		{
+			// We don't have anything to do if we are dealing with a child indexable
+			if (indexable.ParentUri != null)
+				return;
+
 			// If we just changed properties, remap to our *old* external Uri
 			// to make notification work out property.
 			if (indexable.Type == IndexableType.PropertyChange) {
@@ -1236,35 +1210,8 @@ namespace Beagle.Daemon.FileSystemQueryable {
 
 			string path;
 			path = (string) indexable.LocalState ["Path"];
-			ForgetId (path);
-
-			DirectoryModel parent;
-			parent = indexable.LocalState ["Parent"] as DirectoryModel;
-
-			// The parent directory might have run away since we were indexed
-			if (parent != null && ! parent.IsAttached)
-				return;
-
-			Guid unique_id;
-			unique_id = GuidFu.FromUri (receipt.Uri);
-
-			FileAttributes attr;
-			attr = FileAttributesStore.ReadOrCreate (path, unique_id);
-			attr.Path = path;
-			attr.LastWriteTime = indexable.Timestamp;
-			
-			attr.FilterName = receipt.FilterName;
-			attr.FilterVersion = receipt.FilterVersion;
-			
-			if (indexable.LocalState ["IsWalkable"] != null) {
-				string name;
-				name = (string) indexable.LocalState ["Name"];
-
-				if (! RegisterDirectory (name, parent, attr))
-					return;
-			}
-
-			FileAttributesStore.Write (attr);
+			if (Debug)
+				Log.Debug ("PostAddHook for {0} ({1}) and receipt uri={2}", indexable.Uri, path, receipt.Uri);
 
 			// Remap the Uri so that change notification will work properly
 			receipt.Uri = UriFu.PathToFileUri (path);
@@ -1282,6 +1229,53 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			ForgetId (external_uri.LocalPath);
 		}
 
+		override protected void PostChildrenIndexedHook (Indexable indexable,
+								 IndexerAddedReceipt receipt,
+								 DateTime Mtime)
+		{
+			// There is no business here for children or if only the property changed
+			if (indexable.Type == IndexableType.PropertyChange ||
+			    indexable.ParentUri != null)
+				return;
+
+			string path;
+			path = (string) indexable.LocalState ["Path"];
+			if (Debug)
+				Log.Debug ("PostChildrenIndexedHook for {0} ({1}) and receipt uri={2}", indexable.Uri, path, receipt.Uri);
+
+			ForgetId (path);
+
+			DirectoryModel parent;
+			parent = indexable.LocalState ["Parent"] as DirectoryModel;
+
+			// The parent directory might have run away since we were indexed
+			if (parent != null && ! parent.IsAttached)
+				return;
+
+			Guid unique_id;
+			unique_id = GuidFu.FromUri (receipt.Uri);
+
+			FileAttributes attr;
+			attr = FileAttributesStore.ReadOrCreate (path, unique_id);
+
+			attr.Path = path;
+			// FIXME: Should timestamp be indexable.timestamp or parameter Mtime
+			attr.LastWriteTime = indexable.Timestamp;
+			
+			attr.FilterName = receipt.FilterName;
+			attr.FilterVersion = receipt.FilterVersion;
+
+			if (indexable.LocalState ["IsWalkable"] != null) {
+				string name;
+				name = (string) indexable.LocalState ["Name"];
+
+				if (! RegisterDirectory (name, parent, attr))
+					return;
+			}
+
+			FileAttributesStore.Write (attr);
+		}
+
 		private bool RemapUri (Hit hit)
 		{
 			// Store the hit's internal uri in a property
@@ -1291,8 +1285,14 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			hit.AddProperty (prop);
 
 			// Now assemble the path by looking at the parent and name
-			string name, path;
-			name = hit [ExactFilenamePropKey];
+			string name = null, path, is_child;
+			is_child = hit [Property.IsChildPropKey];
+
+			if (is_child == "true")
+				name = hit ["parent:" + Property.ExactFilenamePropKey];
+			else
+				name = hit [Property.ExactFilenamePropKey];
+
 			if (name == null) {
 				// If we don't have the filename property, we have to do a lookup
 				// based on the guid.  This happens with synthetic hits produced by
@@ -1301,8 +1301,10 @@ namespace Beagle.Daemon.FileSystemQueryable {
 				hit_id = GuidFu.FromUri (hit.Uri);
 				path = UniqueIdToFullPath (hit_id);
 			} else {
-				string parent_id_uri;
-				parent_id_uri = hit [ParentDirUriPropKey];
+				string parent_id_uri = null;
+				parent_id_uri = hit [Property.ParentDirUriPropKey];
+				if (parent_id_uri == null)
+					parent_id_uri = hit ["parent:" + Property.ParentDirUriPropKey];
 				if (parent_id_uri == null)
 					return false;
 
@@ -1314,6 +1316,9 @@ namespace Beagle.Daemon.FileSystemQueryable {
 					Logger.Log.Debug ("Couldn't find path of file with name '{0}' and parent '{1}'",
 							  name, GuidFu.ToShortString (parent_id));
 			}
+
+			if (Debug)
+				Log.Debug ("Resolved {0} to {1}", hit.Uri, path);
 
 			if (path != null) {
 				hit.Uri = UriFu.PathToFileUri (path);
@@ -1328,6 +1333,8 @@ namespace Beagle.Daemon.FileSystemQueryable {
 		override protected bool HitFilter (Hit hit)
 		{
 			Uri old_uri = hit.Uri;
+			if (Debug)
+				Log.Debug ("HitFilter ({0})", old_uri);
 
 			if (! RemapUri (hit))
 				return false;
@@ -1369,8 +1376,17 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			DirectoryModel parent;
 			parent = GetDirectoryModelByPath (Path.GetDirectoryName (path));
 
+			// If child indexable, attach the relative URI at the end
+			// Relative URI starts with '#'
+			string is_child = hit [Property.IsChildPropKey];
+			string fragment = null;
+			if (is_child == "true") {
+				hit.Uri = UriFu.PathToFileUri (path, old_uri.Fragment);
+				hit.ParentUri = UriFu.PathToFileUri (path);
+			}
+
 			// Check the ignore status of the hit
-			if (filter.Ignore (parent, Path.GetFileName (path), is_directory))
+			if (filter.Ignore (parent, Path.GetFileName (fragment == null ? path : fragment), is_directory))
 				return false;
 
 			return true;

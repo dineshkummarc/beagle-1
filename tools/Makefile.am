@@ -1,7 +1,6 @@
 # Warnings we don't want to see
-# 0169 = The private field is never used
 
-CSC = $(MCS) -debug -nowarn:0169
+CSC = $(MCS) -debug
 
 LOCAL_ASSEMBLIES =			\
 	../Util/Util.dll		\
@@ -104,7 +103,7 @@ $(CONFIG_WRAPPER): $(WRAPPER_IN)
 SETTINGS_TARGET    = Settings.exe
 SETTINGS_WRAPPER   = beagle-settings
 SETTINGS_CSFILES   = $(srcdir)/Settings.cs
-SETTINGS_RESOURCES = $(srcdir)/settings.glade
+SETTINGS_RESOURCES = $(srcdir)/settings.glade $(top_srcdir)/beagled/beagled-autostart.desktop $(top_srcdir)/search/beagle-search-autostart.desktop
 SETTINGS_RESOURCES_BUILD = $(foreach res,$(SETTINGS_RESOURCES), $(addprefix -resource:,$(srcdir)/$(res)),$(notdir $(res)))
 SETTINGS_ASSEMBLIES = $(BEAGLE_UI_LIBS) -r:../Util/UiUtil.dll -r:../images/Images.dll
 
@@ -196,7 +195,6 @@ uninstall-local:
 EXTRA_DIST =				\
 	$(WRAPPER_IN)			\
 	$(CRAWL_WRAPPER_IN)		\
-	$(CRAWL_WRAPPER_CRONTAB_IN)	\
 	$(INFO_CSFILES)			\
 	$(SHUTDOWN_CSFILES)		\
 	$(QUERY_CSFILES)		\
@@ -206,6 +204,7 @@ EXTRA_DIST =				\
 	$(SETTINGS_RESOURCES)		\
 	$(man_MANS)			\
 	$(CRAWL_RULES)			\
+	$(cron_SCRIPTS)			\
 	$(desktop_in_files)		\
 	$(desktop_DATA) 		\
 	beagle-index-info		\
@@ -219,7 +218,6 @@ CLEANFILES = 				\
 	$(TARGETS_MDB)			\
 	$(WRAPPERS)			\
 	$(CRAWL_WRAPPER)		\
-	$(CRAWL_WRAPPER_CRONTAB)	\
 	$(desktop_DATA)		 	\
 	$(desktop_h_files)		\
 	settings.glade.h

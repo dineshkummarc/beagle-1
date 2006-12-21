@@ -38,7 +38,7 @@ namespace Beagle.Daemon {
 		public delegate void StartedHandler (QueryResult source);
 		public event StartedHandler StartedEvent;
 
-		public delegate void HitsAddedHandler (QueryResult source, ICollection someHits);
+		public delegate void HitsAddedHandler (QueryResult source, ICollection someHits, int total_results);
 		public event HitsAddedHandler HitsAddedEvent;
 
 		public delegate void HitsSubtractedHandler (QueryResult source, ICollection someUris);
@@ -98,9 +98,14 @@ namespace Beagle.Daemon {
 			}
 		}
 
+		public void Add (ICollection some_hits)
+		{
+			Add (some_hits, -1);
+		}
+
 		// Note: some_hits is allowed to contain null.
 		// They are silently ignored.
-		public void Add (ICollection some_hits)
+		public void Add (ICollection some_hits, int total_results)
 		{
 			lock (this) {
 				if (cancelled)
@@ -113,7 +118,7 @@ namespace Beagle.Daemon {
 
 				if (IsIndexListener) {
 					if (HitsAddedEvent != null)
-						HitsAddedEvent (this, some_hits);
+						HitsAddedEvent (this, some_hits, total_results);
 					return;
 				}
 
@@ -122,13 +127,13 @@ namespace Beagle.Daemon {
 				hits_to_report = new ArrayList ();
 				foreach (Hit hit in some_hits) {
 					if (hit != null && ! uri_hash.Contains (hit.Uri)) {
-						uri_hash [hit.Uri] = hit;
+						uri_hash [hit.Uri] = hit.Uri;
 						hits_to_report.Add (hit);
 					}
 				}
 				
 				if (HitsAddedEvent != null && hits_to_report.Count > 0)
-					HitsAddedEvent (this, hits_to_report);
+					HitsAddedEvent (this, hits_to_report, total_results);
 			}
 		}
 
@@ -164,18 +169,6 @@ namespace Beagle.Daemon {
 				if (HitsSubtractedEvent != null && filtered_uris.Count > 0)
 					HitsSubtractedEvent (this, filtered_uris);
 			}
-		}
-
-		//////////////////////////////////
-
-		// Given the Uri of a Hit contained in the QueryResult, return that Hit.
-		public Hit GetHitFromUri (Uri uri)
-		{
-			return uri_hash [uri] as Hit;
-		}
-
-		public ICollection HitUris {
-			get { return uri_hash.Keys; }
 		}
 
 		//////////////////////////////////////////////////////////////////////////////////////
@@ -264,6 +257,8 @@ namespace Beagle.Daemon {
 
 				//DateTime then = (DateTime) per_worker_started_time [o];
 				//Logger.Log.Debug ("{0} finished in {1:0.00}s", o, (now - then).TotalSeconds);
+
+				per_worker_started_time.Remove (o);
 
 				if (workers == 0) {
 					finished_time = now;

@@ -1,7 +1,7 @@
 //
 // QueryDriver.cs
 //
-// Copyright (C) 2004 Novell, Inc.
+// Copyright (C) 2004-2006 Novell, Inc.
 //
 
 //
