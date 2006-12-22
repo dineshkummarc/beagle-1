@@ -1,4 +1,7 @@
 /*
+ * Authors:
+ *     Larry Ewing <lewing@novell.com>
+ *
  * Copyright (c) 2006 Novell Inc. 
  *
  * This program is free software; you can redistribute it and/or
