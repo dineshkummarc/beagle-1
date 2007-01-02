@@ -35,7 +35,7 @@ using Camel = Beagle.Util.Camel;
 
 namespace Beagle.Daemon.EvolutionMailQueryable {
 
-	[QueryableFlavor (Name="EvolutionMail", Domain=QueryDomain.Local, RequireInotify=false)]
+	[BackendFlavor (Name="EvolutionMail", Domain=QueryDomain.Local)]
 	public class EvolutionMailQueryable : LuceneQueryable {
 
 		public int polling_interval_in_seconds = 60;
@@ -58,7 +58,7 @@ namespace Beagle.Daemon.EvolutionMailQueryable {
 		// 5: No need for a separate sanitized version of email addresses.
 		private const int INDEX_VERSION = 5;
 
-		public EvolutionMailQueryable () : base ("EvolutionMailIndex", INDEX_VERSION)
+		public EvolutionMailQueryable () : base ("EvolutionMail", INDEX_VERSION)
 		{
 			this.local_path = Path.Combine (PathFinder.HomeDir, ".evolution/mail/local");
 			this.imap_path = Path.Combine (PathFinder.HomeDir, ".evolution/mail/imap");
