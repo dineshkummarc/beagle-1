@@ -107,11 +107,6 @@ namespace Beagle.Daemon {
 			}
 		}
 
-		public int GetItemCount ()
-		{
-			return driver.GetItemCount ();
-		}
-
 		public event IIndexerChangedHandler ChangedEvent;
 		public event IIndexerChildIndexableHandler ChildIndexableEvent;
 		public event IIndexerUrisFilteredHandler UrisFilteredEvent;

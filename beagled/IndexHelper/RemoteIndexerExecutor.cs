@@ -87,7 +87,6 @@ namespace Beagle.IndexHelper {
 			// Construct a response containing the item count and
 			// the receipts produced by the actual indexing.
 			RemoteIndexerResponse response = new RemoteIndexerResponse ();
-			response.ItemCount = indexer.GetItemCount ();
 			response.Receipts = receipts;
 
 			++Count;

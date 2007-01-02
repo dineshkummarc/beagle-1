@@ -42,7 +42,6 @@ namespace Beagle.Daemon {
 
 		string remote_source_name;
 		int remote_source_version = 0;
-		int last_item_count = -1;
 
 		static RemoteIndexer ()
 		{
@@ -96,28 +95,7 @@ namespace Beagle.Daemon {
 				return null;
 			}
 			
-			last_item_count = response.ItemCount;
-
 			return response.Receipts;
-		}
-
-		public int GetItemCount ()
-		{
-			if (last_item_count == -1) {
-				// Send an empty indexing request to cause the last item count to be
-				// initialized.
-				RemoteIndexerRequest request;
-				request = new RemoteIndexerRequest ();
-
-				RemoteIndexerResponse response;
-				response = SendRequest (request);
-				if (response != null)
-					last_item_count = response.ItemCount;
-				else
-					Logger.Log.Error ("Something terrible happened --- GetItemCount failed");
-			}
-
-			return last_item_count;
 		}
 
 		/////////////////////////////////////////////////////////

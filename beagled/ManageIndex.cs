@@ -269,7 +269,7 @@ namespace Beagle.Daemon
 		
 		static void ExecuteInfo ()
 		{
-			Console.WriteLine ("Total number of entries in index: {0}", driver.GetItemCount());
+			Console.WriteLine ("Total number of entries in index: {0}", driver.GetTotalIndexCount ());
 		}
 
 		/////////////////////////////////////////////////////////

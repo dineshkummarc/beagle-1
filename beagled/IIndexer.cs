@@ -31,8 +31,6 @@ namespace Beagle.Daemon {
 	
 	public interface IIndexer {
 
-		int GetItemCount ();
-		
 		IndexerReceipt [] Flush (IndexerRequest request);
 	}
 }

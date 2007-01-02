@@ -261,16 +261,8 @@ namespace Beagle.Daemon {
 
 				status.Name = this.Name;
 				status.ProgressPercent = this.ProgressPercent;
-
-				// XXX: Item counts are so very broken
-				// If we're in read-only mode, query the driver
-				// and not the indexer for the item count.
-				if (indexer == null)
-					status.ItemCount = driver.GetItemCount ();
-				else
-					status.ItemCount = indexer.GetItemCount ();
-
 				status.IsIndexing = this.IsIndexing;
+				status.ItemCount = driver.GetItemCount (this.Name);
 
 				return status;
 			}
@@ -766,9 +758,6 @@ namespace Beagle.Daemon {
 			// generate a receipt).  Also do nothing.
 			if (receipts.Length == 0)
 				return;
-
-			// Update the cached count of items in the driver
-			driver.SetItemCount (indexer.GetItemCount ());
 
 			// Something happened, so schedule an optimize just in case.
 			ScheduleOptimize ();

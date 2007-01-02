@@ -183,11 +183,6 @@ namespace Beagle.Daemon {
 				}
 			}
 
-			if (HaveItemCount)
-				AdjustItemCount (-delete_count);
-			else
-				SetItemCount (primary_reader);
-			
 			// Step #2: If we have are doing any property changes,
 			// we read in the current secondary documents and
 			// store them in a hash table for use later.  Then we
@@ -386,8 +381,6 @@ namespace Beagle.Daemon {
 					secondary_writer.AddDocument (secondary_doc);
 				}
 				
-				AdjustItemCount (1);
-
 				// Clean up any temporary files associated with filtering this indexable.
 				indexable.Cleanup ();
 			}

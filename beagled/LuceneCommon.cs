@@ -891,39 +891,39 @@ namespace Beagle.Daemon {
 		//////////////////////////////////////////////////////////////////////////////
 
 		//
-		// Handle the index's item count
+		// Handle the source's item count
 		//
 
-		public int GetItemCount ()
+		public int GetItemCount (string source)
 		{
-			if (last_item_count < 0) {
-				IndexReader reader;
-				reader = GetReader (PrimaryStore);
-				last_item_count = reader.NumDocs ();
-				ReleaseReader (reader);
-			}
-			return last_item_count;
+			// FIXME: The pre-singleton code cached the results
+			// here and invalidated them when data was flushed
+			// from the index helper.  Now we're just quering
+			// the index directly.  Maybe we should cache?
+			LNS.IndexSearcher primary_searcher = GetSearcher (PrimaryStore);
+
+			Log.Debug ("Looking for source {0}", source);
+
+			Term term = new Term ("Source", source);
+			LNS.TermQuery query = new LNS.TermQuery (term);
+			LNS.Hits hits = primary_searcher.Search (query);
+			int count = hits.Length ();
+
+			ReleaseSearcher (primary_searcher);
+
+			return count;
 		}
 
-		// We should set the cached count of index items when IndexReaders
-		// are open and available, so calls to GetItemCount will return immediately.
-
-		protected bool HaveItemCount { get { return last_item_count >= 0; } }
-		
-		protected void SetItemCount (IndexReader reader)
+		//
+		// Number of items in the Lucene index
+		//
+		public int GetTotalIndexCount ()
 		{
-			last_item_count = reader.NumDocs ();
-		}
+			IndexReader reader = GetReader (PrimaryStore);
+			int count = reader.NumDocs ();
+			ReleaseReader (reader);
 
-		public void SetItemCount (int count)
-		{
-			last_item_count = count;
-		}
-
-		protected void AdjustItemCount (int delta)
-		{
-			if (last_item_count >= 0)
-				last_item_count += delta;
+			return count;
 		}
 
 		//////////////////////////////////////////////////////////////////////////////
