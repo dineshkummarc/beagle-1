@@ -343,6 +343,10 @@ kabcqueryable = $(srcdir)/KAddressBookQueryable
 KABC_QUERYABLE_CSFILES =				\
 	$(kabcqueryable)/KabcQueryable.cs
 
+konversationqueryable = $(srcdir)/KonversationQueryable
+KONVERSATION_QUERYABLE_CSFILES =				\
+	$(konversationqueryable)/KonversationQueryable.cs
+
 indexingservicequeryable = $(srcdir)/IndexingServiceQueryable
 INDEXING_SERVICE_QUERYABLE_CSFILES =			\
 	$(indexingservicequeryable)/IndexingServiceQueryable.cs
@@ -363,6 +367,7 @@ DAEMON_DLL_CSFILES = 						\
 	$(KNOTES_QUERYABLE_CSFILES)				\
 	$(KABC_QUERYABLE_CSFILES)				\
 	$(KOPETE_QUERYABLE_CSFILES)				\
+	$(KONVERSATION_QUERYABLE_CSFILES)			\
 	$(srcdir)/AssemblyInfo.cs				\
 	$(srcdir)/FileAttributes.cs				\
 	$(srcdir)/FileAttributesStore.cs			\
@@ -461,6 +466,7 @@ evomailqueryable = $(srcdir)/EvolutionMailQueryable
 EVO_MAIL_QUERYABLE_CSFILES =					\
 	$(evomailqueryable)/EvolutionMailQueryable.cs		\
 	$(evomailqueryable)/EvolutionMailIndexableGenerator.cs	\
+	$(evomailqueryable)/EvolutionSummaryTracker.cs		\
 	$(evomailqueryable)/GConfThreadHelper.cs		\
 	$(evomailqueryable)/MailCrawler.cs
 
@@ -473,7 +479,7 @@ EVO_DLL_CSFILES = 					\
 EVO_DLL_ASSEMBLIES = $(BACKEND_ASSEMBLIES) $(EVO_LIBS)
 
 $(EVO_DLL_TARGET): $(EVO_DLL_CSFILES) $(DAEMON_DLL_LOCAL_ASSEMBLIES) $(DAEMON_DLL_TARGET)
-	$(CSC) -out:$@ $(EVO_DLL_CSFLAGS) $(EVO_DLL_CSFILES) -r:$(DAEMON_DLL_TARGET) $(EVO_DLL_ASSEMBLIES)
+	$(CSC) -out:$@ $(EVO_DLL_CSFLAGS) $(EVO_DLL_CSFILES) $(EVO_DLL_ASSEMBLIES)
 
 ############################################################
 
