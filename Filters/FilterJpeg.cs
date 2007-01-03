@@ -31,6 +31,8 @@ using System.Text;
 using Beagle.Util;
 using Beagle.Util.Exif;
 using Beagle.Util.Xmp;
+using Beagle.Util.Iptc;
+using Tiff = Beagle.Util.Tiff;
 using Beagle.Daemon;
 
 using SemWeb;
@@ -45,15 +47,15 @@ namespace Beagle.Filters {
 			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("image/jpeg"));
 		}
 
-		// FIXME: This is not particularly efficient
-		protected override void PullImageProperties ()
+		private void AddJfifProperties (JpegHeader header)
 		{
-			JpegHeader header = new JpegHeader (Stream);
-
 			string comment = header.GetJFIFComment ();
 			AddProperty (Beagle.Property.New ("jfif:Comment", comment));
 			AddProperty (Beagle.Property.NewUnstored ("fixme:comment", comment));
+		}
 
+		private void AddExifProperties (JpegHeader header)
+		{
 			ExifData exif = header.Exif;
 			if (exif == null)
 				return;
@@ -118,9 +120,54 @@ namespace Beagle.Filters {
 				}
 			}
 
+		}
+
+		private void AddXmpProperties (JpegHeader header)
+		{
 			XmpFile xmp = header.GetXmp ();
 			if (xmp != null)
 				AddXmpProperties (xmp);
+		}
+
+		private void AddIptcProperties (JpegHeader header)
+		{
+			IptcFile iptc = header.GetIptc ();
+			if (iptc == null)
+				return;
+
+			foreach (DataSet data in iptc.Sets) {
+				switch (data.ID) {
+
+				case DataSetID.ContentLocationName:
+					AddProperty (Beagle.Property.New ("iptc:location", data.XmpObject));
+					break;
+
+				case DataSetID.CaptionAbstract:
+					AddProperty (Beagle.Property.New ("iptc:caption", data.XmpObject));
+					AddProperty (Beagle.Property.NewUnstored ("fixme:comment", data.XmpObject));
+					break;
+
+				case DataSetID.Keywords:
+					AddProperty (Beagle.Property.NewKeyword ("iptc:keyword", data.XmpObject));
+					break;
+
+				default:
+					// FIXME: Anything else to index ?
+					//Log.Debug ("Ignoring {0} = [{1}]", data.ID, data.XmpObject);
+					break;
+				}
+			}
+		}
+
+		// FIXME: This is not particularly efficient
+		protected override void PullImageProperties ()
+		{
+			JpegHeader header = new JpegHeader (Stream);
+
+			AddJfifProperties (header);
+			AddExifProperties (header);
+			AddXmpProperties (header);
+			AddIptcProperties (header);
 
 			Finished (); // That's all folks...
 		}

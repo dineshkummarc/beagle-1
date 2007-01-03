@@ -890,9 +890,9 @@ namespace Beagle.Util.Tiff {
 		public void SelectDirectory (ImageDirectory dir, StatementSink sink)
 		{
 			foreach (DirectoryEntry e in dir.Entries) {
-//#if DEBUG_LOADER
-				System.Console.WriteLine ("=> {0}", e.Id);
-//#endif
+#if DEBUG_LOADER
+				System.Console.WriteLine ("{0}", e.Id);
+#endif
 				switch (e.Id) {
 				case TagId.IPTCNAA:
 					System.IO.Stream iptcstream = new System.IO.MemoryStream (e.RawData);

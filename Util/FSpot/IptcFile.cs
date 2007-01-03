@@ -376,6 +376,9 @@ namespace Beagle.Util.Iptc {
 	public class IptcFile : SemWeb.StatementSource
 	{
 		System.Collections.ArrayList sets = new System.Collections.ArrayList ();
+		public System.Collections.ArrayList Sets {
+			get { return sets; }
+		}
 
                 // False seems a safe default
                 public bool Distinct {
@@ -441,8 +444,8 @@ namespace Beagle.Util.Iptc {
 					//System.Console.WriteLine (e.ToString ());
 				}
 				//DataSetInfo info = DataSetInfo.FindInfo (data.ID);
-				System.Console.WriteLine ("{0}:{1} - {2} {3}", data.RecordNumber, data.DataSetNumber, 
-							  data.ID.ToString (), "hoo");
+				//System.Console.WriteLine ("{0}:{1} - {2} {3}", data.RecordNumber, data.DataSetNumber, 
+				//			  data.ID.ToString (), info.Description);
 				sets.Add (data);
 			}
 		}

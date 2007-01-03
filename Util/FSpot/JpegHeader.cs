@@ -3,6 +3,7 @@
  *     Larry Ewing <lewing@novell.com>
  *
  * Copyright (c) 2006 Novell Inc. 
+ * Copyright (c) 2007 Debajyoti Bera <dbera.web@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -376,6 +377,26 @@ public class JpegHeader : SemWeb.StatementSource {
 				bim.Select (sink);
 			}
 		}
+	}
+
+	public Iptc.IptcFile GetIptc ()
+	{
+		string name = PhotoshopSignature.Name;
+		JpegHeader.Marker marker = FindMarker (PhotoshopSignature);
+		if (marker != null) {
+			int len = name.Length;
+			using (System.IO.Stream bimstream = new System.IO.MemoryStream (marker.Data, len,
+											marker.Data.Length - len, false)) {
+
+				Bim.BimFile bim = new Bim.BimFile (bimstream);
+				// FIXME: What about EntryType.XMP ?
+				Bim.Entry iptc_entry = bim.FindEntry (Bim.EntryType.IPTCNAA);
+				System.IO.Stream iptcstream = new System.IO.MemoryStream (iptc_entry.Data);
+				Iptc.IptcFile iptc = new Iptc.IptcFile (iptcstream);
+				return iptc;
+			}
+		}
+		return null;
 	}
 
 	public Exif.ExifData Exif {
