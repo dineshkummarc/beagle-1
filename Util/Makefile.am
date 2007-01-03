@@ -57,6 +57,7 @@ UTIL_CSFILES = 			        	\
 	$(srcdir)/IoPriority.cs			\
 	$(srcdir)/KdeUtils.cs			\
 	$(srcdir)/KonqHistoryUtil.cs		\
+	$(srcdir)/LineReader.cs			\
 	$(srcdir)/Log.cs			\
 	$(srcdir)/Logger.cs             	\
 	$(srcdir)/Mozilla.cs	        	\
