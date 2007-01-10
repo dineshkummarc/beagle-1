@@ -1,7 +1,7 @@
 //
-// FilterHtml.cs
+// FilterRTF.cs
 //
-// Copyright (C) 2006 Debajyoti Bera <dbera.web@gmail.com>
+// Copyright (C) 2007 Debajyoti Bera <dbera.web@gmail.com>
 //
 
 //
@@ -62,10 +62,9 @@ namespace Beagle.Filters {
 			TextMap.SetupStandardTable(text_map.Table);
 		}
 
-		override protected void DoOpen (FileInfo file)
+		void Init ()
 		{
-			FileStream stream = new FileStream (file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read);
-			rtf = new RTF (stream);
+			rtf = new RTF (Stream);
 
 			sb = new StringBuilder ();
 			sb.Length = 0;
@@ -78,6 +77,8 @@ namespace Beagle.Filters {
 
 		override protected void DoPullProperties ()
 		{
+			Init ();
+
 			reading_properties = true;
 
 			rtf.ClassCallback [TokenClass.Control] = new ClassDelegate (HandleControl);
