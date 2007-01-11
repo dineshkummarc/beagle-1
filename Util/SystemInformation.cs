@@ -114,12 +114,13 @@ namespace Beagle.Util {
 		[DllImport ("libbeagleglue.so")]
 		extern static unsafe int screensaver_glue_init ();
 
+		/*
+		 * BeagleDaemon needs to monitor screensaver status
+		 * for faster scheduling when user is idle.
+		 * IndexHelper does not need to monitor screensaver status.
+		 * XssInit is only called from the BeagleDaemon.
+		 */
 		public static bool XssInit ()
-		{
-			return XssInit (false);
-		}
-
-		public static bool XssInit (bool actually_init_xss)
 		{
 			int has_xss = screensaver_glue_init ();
 			use_screensaver = (has_xss == 1);

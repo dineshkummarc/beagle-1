@@ -12,7 +12,7 @@ AM_INIT_AUTOMAKE(beagle, 0.2.14)
 ### Some dependencies
 ###
 
-MONO_REQUIRED=1.1.13.5
+MONO_REQUIRED=1.1.18
 GTK_SHARP_REQUIRED=2.4.0
 GMIME_SHARP_REQUIRED=2.2.0
 EVOLUTION_SHARP_REQUIRED=0.10.2
@@ -67,7 +67,7 @@ BEAGLE_DEFINES=""
 needed_dlls="Mono.Data.SqliteClient Mono.Posix System.Runtime.Remoting System.Web System.Web.Services ICSharpCode.SharpZipLib"
 for i in $needed_dlls; do
   AC_MSG_CHECKING([for $i.dll])
-  if test ! -e `$PKG_CONFIG --variable=prefix mono`/lib/mono/1.0/$i.dll; then
+  if test ! -e `$PKG_CONFIG --variable=prefix mono`/lib/mono/2.0/$i.dll; then
     AC_MSG_ERROR([missing required mono DLL: $i.dll])
   else
     AC_MSG_RESULT([found])
