@@ -101,6 +101,7 @@ CSFILES = 				\
 	$(srcdir)/FilterKAddressBook.cs \
 	$(srcdir)/FilterKCal.cs		\
 	$(srcdir)/FilterKNotes.cs	\
+	$(srcdir)/FilterKOrganizer.cs	\
 	$(srcdir)/FilterLabyrinth.cs	\
 	$(srcdir)/FilterScribus.cs
 
@@ -155,7 +156,7 @@ COND_CS_FILES = \
 	$(srcdir)/FilterChm.cs
 
 confdir = $(sysconfdir)/beagle
-conf_DATA = external-filters.xml
+conf_DATA = external-filters.xml.sample
 
 EXTRA_DIST =			\
 	$(CSFILES)		\

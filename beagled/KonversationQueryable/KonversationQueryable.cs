@@ -1,5 +1,5 @@
 //
-// KonversationLogQueryable.cs
+// KonversationQueryable.cs
 //
 // Copyright (C) 2007 Debajyoti Bera <dbera.web@gmail.com>
 //
@@ -158,6 +158,7 @@ namespace Beagle.Daemon.KonversationQueryable {
 
 				this.sb = new StringBuilder ();
 				this.session_begin_time = DateTime.MinValue;
+				Log.Debug ("Reading from file " + log_file);
 			}
 
 			public void PostFlushHook ()
@@ -180,6 +181,7 @@ namespace Beagle.Daemon.KonversationQueryable {
 					reader = new ReencodingLineReader (log_file, Encoding.Default);
 					reader.Position = session_begin_offset;
 					log_line = reader.ReadLine ();
+					Log.Debug ("Read line from {0}:[{1}]", log_file, log_line);
 				}
 
 				if (log_line == null) {
@@ -201,9 +203,10 @@ namespace Beagle.Daemon.KonversationQueryable {
 							break;
 					} catch {
 						// Any exceptions and we assume a malformed line
-						continue;
+						//continue;
 					}
 					log_line = reader.ReadLine ();
+					Log.Debug ("Reading more line from {0}:[{1}]", log_file, log_line);
 				}
 
 				// Check if there is new data to index
@@ -211,6 +214,7 @@ namespace Beagle.Daemon.KonversationQueryable {
 					return null;
 
 				Uri uri = new Uri (String.Format ("konversation://{0}@/{1}", session_begin_offset, log_file));
+				Log.Debug ("Creating indexable {0}", uri);
 				Indexable indexable = new Indexable (uri);
 				indexable.ParentUri = UriFu.PathToFileUri (log_file);
 				indexable.Timestamp = session_begin_time;
@@ -226,7 +230,6 @@ namespace Beagle.Daemon.KonversationQueryable {
 
 				StringReader data_reader = new StringReader (sb.ToString ());
 				indexable.SetTextReader (data_reader);
-
 
 				return indexable;
 			}
@@ -254,7 +257,7 @@ namespace Beagle.Daemon.KonversationQueryable {
 				bracket_end_index = log_line.IndexOf (']', bracket_begin_index + 1);
 				bracket_end_index = log_line.IndexOf ('[', bracket_end_index + 1);
 				bracket_end_index = log_line.IndexOf (']', bracket_end_index + 1);
-				line_dt = DateTime.ParseExact (log_line.Substring (0, bracket_end_index),
+				line_dt = DateTime.ParseExact (log_line.Substring (0, bracket_end_index + 1),
 								   LogTimeFormatString,
 								   CultureInfo.InvariantCulture,
 								   DateTimeStyles.AssumeLocal);

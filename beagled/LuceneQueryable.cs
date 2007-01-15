@@ -34,7 +34,7 @@ namespace Beagle.Daemon {
 
 	public abstract class LuceneQueryable : IQueryable {
 		
-		static public bool Debug = false;
+		static public bool Debug = true;
 		static public bool OptimizeRightAway = false;
 
 		public delegate IIndexer IndexerCreator (string name, int minor_version);
