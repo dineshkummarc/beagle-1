@@ -76,18 +76,18 @@ namespace Beagle.Daemon.KonversationQueryable {
 			if (Inotify.Enabled)
 				Inotify.Subscribe (log_dir, OnInotify,
 						    Inotify.EventType.Create |
-						    Inotify.EventType.Modify |
-						    Inotify.EventType.CloseWrite);
+						    Inotify.EventType.Modify);
 
 			int log_count = 0, index_count = 0;
 			foreach (FileInfo fi in DirectoryWalker.GetFileInfos (log_dir)) {
 				if (fi.Name == "konversation.log")
 					continue;
+
 				// FIXME: Handle "Excludes" from Conf
 
 				log_count ++;
 				if (IsUpToDate (fi.FullName)) {
-					PostFlushHook (fi.FullName);
+					PostFlushHook (fi.FullName, fi.Length);
 					continue;
 				}
 
@@ -118,36 +118,53 @@ namespace Beagle.Daemon.KonversationQueryable {
 			PostFlushHook (log_file, -1);
 		}
 
-		internal void PostFlushHook (string log_file, long session_end_position)
+		internal void PostFlushHook (string log_file, long session_start_position)
 		{
-			Log.Debug ("Asked to store offset for {0} = {1}", log_file, session_end_position);
+			//Log.Debug ("Asked to store offset for {0} = {1}", log_file, session_start_position);
 
 			if (! session_offset_table.ContainsKey (log_file))
-				session_offset_table [log_file] = session_end_position;
+				session_offset_table [log_file] = session_start_position;
 
 			long stored_pos = session_offset_table [log_file];
-			if (stored_pos < session_end_position)
-				session_offset_table [log_file] = session_end_position;
+			if (stored_pos < session_start_position)
+				session_offset_table [log_file] = session_start_position;
 		}
 
 		private void OnInotify (Inotify.Watch watch,
 					string path, string subitem, string srcpath,
 					Inotify.EventType type)
 		{
+			long offset = 0;
+			path = Path.Combine (path, subitem);
+			if (ThisScheduler.ContainsByTag (path)) {
+				Log.Debug ("Not adding task for already running task: {0}", path);
+				return;
+			}
+
+			if (session_offset_table.ContainsKey (path))
+				offset = session_offset_table [path];
+
+			LogIndexableGenerator generator = new LogIndexableGenerator (this, path, offset);
+			Scheduler.Task task = NewAddTask (generator);
+			task.Tag = path;
+			task.Source = this;
+			ThisScheduler.Add (task);
 		}
 
 		private class LogIndexableGenerator : IIndexableGenerator {
 			private KonversationQueryable queryable;
 			private string log_file;
 			private LineReader reader;
-			private string log_line;
-			private StringBuilder sb;
+			private StringBuilder log_line_as_sb;
+			private StringBuilder data_sb;
+			private Dictionary<string, bool> speakers; // list of speakers in the session
 			private string channel_name, speaking_to;
 
-			// Split log into 1 hour sessions or 5 lines, which ever is larger
+			// Split log into 6 hour sessions or 50 lines, which ever is larger
 			private DateTime session_begin_time;
 			private DateTime session_end_time;
 			private long session_begin_offset;
+			private long prev_line_offset; // stores the offset of the previous line read by reader
 			private long session_num_lines;
 
 			public LogIndexableGenerator (KonversationQueryable queryable, string log_file, long offset)
@@ -155,16 +172,20 @@ namespace Beagle.Daemon.KonversationQueryable {
 				this.queryable = queryable;
 				this.log_file = log_file;
 				this.session_begin_offset = offset;
+				this.prev_line_offset = offset;
 
-				this.sb = new StringBuilder ();
+				this.data_sb = new StringBuilder ();
+				this.log_line_as_sb = null;
 				this.session_begin_time = DateTime.MinValue;
-				Log.Debug ("Reading from file " + log_file);
+				this.speakers = new Dictionary<string, bool> (10); // rough default value
+
+				//Log.Debug ("Reading from file " + log_file);
 			}
 
 			public void PostFlushHook ()
 			{
-				Log.Debug ("Storing reader position {0}", reader.Position);
-				queryable.PostFlushHook (log_file, reader.Position);
+				//Log.Debug ("Storing reader position {0}", session_begin_offset);
+				queryable.PostFlushHook (log_file, session_begin_offset);
 			}
 
 			public string StatusName {
@@ -173,20 +194,24 @@ namespace Beagle.Daemon.KonversationQueryable {
 
 			public bool HasNextIndexable ()
 			{
-				sb.Length = 0;
+				data_sb.Length = 0;
 				session_num_lines = 0;
+				speakers.Clear ();
 
 				if (reader == null) {
 					// Log files are in system encoding
 					reader = new ReencodingLineReader (log_file, Encoding.Default);
 					reader.Position = session_begin_offset;
-					log_line = reader.ReadLine ();
-					Log.Debug ("Read line from {0}:[{1}]", log_file, log_line);
+					log_line_as_sb = reader.ReadLineAsStringBuilder ();
+					//Log.Debug ("Read line from {0}:[{1}]", log_file, log_line_as_sb);
 				}
 
-				if (log_line == null) {
+				if (log_line_as_sb == null) {
 					reader.Close ();
 					return false;
+				} else {
+					// Update session_begin_offset
+					session_begin_offset = prev_line_offset;
 				}
 
 				return true;
@@ -196,25 +221,22 @@ namespace Beagle.Daemon.KonversationQueryable {
 			{
 				DateTime line_dt = DateTime.MinValue;
 
-				while (log_line != null) {
-					try {
-						// FIXME: Switch to the unsafe ReadLineAsSB
-						if (! AppendLogText (log_line, out line_dt))
-							break;
-					} catch {
-						// Any exceptions and we assume a malformed line
-						//continue;
-					}
-					log_line = reader.ReadLine ();
-					Log.Debug ("Reading more line from {0}:[{1}]", log_file, log_line);
+				while (log_line_as_sb != null) {
+					bool in_session = AppendLogText (log_line_as_sb, out line_dt);
+					if (! in_session)
+						break;
+
+					prev_line_offset = reader.Position;
+					log_line_as_sb = reader.ReadLineAsStringBuilder ();
+					//Log.Debug ("Reading more line from {0}:[{1}]", log_file, log_line);
 				}
 
 				// Check if there is new data to index
-				if (sb.Length == 0)
+				if (data_sb.Length == 0)
 					return null;
 
-				Uri uri = new Uri (String.Format ("konversation://{0}@/{1}", session_begin_offset, log_file));
-				Log.Debug ("Creating indexable {0}", uri);
+				Uri uri = new Uri (String.Format ("konversation://{0}@dumb/{1}", session_begin_offset, log_file));
+				//Log.Debug ("Creating indexable {0}", uri);
 				Indexable indexable = new Indexable (uri);
 				indexable.ParentUri = UriFu.PathToFileUri (log_file);
 				indexable.Timestamp = session_begin_time;
@@ -222,13 +244,18 @@ namespace Beagle.Daemon.KonversationQueryable {
 				indexable.CacheContent = false;
 				indexable.Filtering = IndexableFiltering.AlreadyFiltered;
 
+				indexable.AddProperty (Beagle.Property.NewUnsearched ("fixme:session_begin_offset", session_begin_offset));
+				indexable.AddProperty (Beagle.Property.NewUnsearched ("fixme:session_end_offset", prev_line_offset));
 				indexable.AddProperty (Beagle.Property.NewDate ("fixme:starttime", session_begin_time));
 				indexable.AddProperty (Beagle.Property.NewUnsearched ("fixme:client", "Konversation"));
 				indexable.AddProperty (Beagle.Property.NewUnsearched ("fixme:protocol", "IRC"));
 
 				AddChannelInformation (indexable);
 
-				StringReader data_reader = new StringReader (sb.ToString ());
+				foreach (string speaker in speakers.Keys)
+					indexable.AddProperty (Beagle.Property.NewKeyword ("fixme:speaker", speaker));
+
+				StringReader data_reader = new StringReader (data_sb.ToString ());
 				indexable.SetTextReader (data_reader);
 
 				return indexable;
@@ -236,31 +263,58 @@ namespace Beagle.Daemon.KonversationQueryable {
 
 			const string LogTimeFormatString = "[ddd MMM d yyyy] [HH:mm:ss]";
 
+			private static int IndexOfSB (StringBuilder sb, char c, int begin_index)
+			{
+				int pos = -1;
+				for (int i = begin_index; i < sb.Length; ++i) {
+					if (sb [i] != c)
+						continue;
+					pos = i;
+					break;
+				}
+
+				return pos;
+			}
+
 			// Returns false if log_line belonged to next session and was not appended
 			// line_dt is set to the timestamp of the log_line
-			private bool AppendLogText (string log_line, out DateTime line_dt)
+			private bool AppendLogText (StringBuilder log_line_as_sb, out DateTime line_dt)
 			{
 				line_dt = DateTime.MinValue;
 
 				// Skip empty lines
-				if (log_line == String.Empty)
+				if (log_line_as_sb.Length == 0)
 					return true;
 
 				// Skip other lines
-				if (! log_line.StartsWith ("["))
+				if (log_line_as_sb [0] != '[')
+				//if (! log_line.StartsWith ("["))
 					return true;
 
 				// Proper log line looks like
 				//[Mon Nov 1 2005] [14:09:32] <dBera>    can yo...
 				int bracket_begin_index, bracket_end_index;
-				bracket_begin_index = log_line.IndexOf ('[');
-				bracket_end_index = log_line.IndexOf (']', bracket_begin_index + 1);
-				bracket_end_index = log_line.IndexOf ('[', bracket_end_index + 1);
-				bracket_end_index = log_line.IndexOf (']', bracket_end_index + 1);
-				line_dt = DateTime.ParseExact (log_line.Substring (0, bracket_end_index + 1),
-								   LogTimeFormatString,
-								   CultureInfo.InvariantCulture,
-								   DateTimeStyles.AssumeLocal);
+
+				//bracket_begin_index = log_line.IndexOf ('[');
+				bracket_begin_index = IndexOfSB (log_line_as_sb, '[', 0);
+
+				//bracket_end_index = log_line.IndexOf (']', bracket_begin_index + 1);
+				bracket_end_index = IndexOfSB (log_line_as_sb, ']', bracket_begin_index + 1);
+
+				//bracket_end_index = log_line.IndexOf ('[', bracket_end_index + 1);
+				bracket_end_index = IndexOfSB (log_line_as_sb, '[', bracket_end_index + 1);
+
+				//bracket_end_index = log_line.IndexOf (']', bracket_end_index + 1);
+				bracket_end_index = IndexOfSB (log_line_as_sb, ']', bracket_end_index + 1);
+
+				// Ignore lines like '[Tue Nov 8 2005] [17:53:14]   * joe nods'
+				if (log_line_as_sb [bracket_end_index + 2] != '<')
+					return true;
+
+				line_dt = DateTime.ParseExact (log_line_as_sb.ToString (0, bracket_end_index + 1),
+					LogTimeFormatString,
+					CultureInfo.InvariantCulture,
+					DateTimeStyles.AssumeLocal);
 
 				// On first scan, set the session_begin_time
 				if (session_begin_time == DateTime.MinValue) {
@@ -269,36 +323,40 @@ namespace Beagle.Daemon.KonversationQueryable {
 						line_dt.Month,
 						line_dt.Day,
 						line_dt.Hour,
-						0,
-						0);
-					session_end_time = session_begin_time;
-
-					bracket_begin_index = log_line.IndexOf ('<', bracket_end_index + 1);
-					bracket_end_index = log_line.IndexOf ('>', bracket_begin_index + 1);
-					Log.Debug ("Adding session begin time {0} for [{1}]", DateTimeUtil.ToString (session_begin_time), log_line.Substring (bracket_end_index + 1));
-					sb.Append (log_line.Substring (bracket_end_index + 1));
-					session_num_lines ++;
+						line_dt.Minute, // FIXME
+						line_dt.Second); // FIXME
+					session_end_time = line_dt;
+					//Log.Debug ("Adding session begin time {0}", DateTimeUtil.ToString (session_begin_time));
+					AddLine (log_line_as_sb, bracket_end_index + 1);
 
 					return true;
 				}
 
-				// If more than 5 useful lines were seen in this session
-				if (session_num_lines > 5) {
-					// Split session in 1 hour interval
+				// If more than 50 useful lines were seen in this session
+				if (session_num_lines > 50) {
+					// Split session in 6 hour = 360 min interval
 					TimeSpan ts = line_dt - session_begin_time;
-					if (ts.TotalMinutes > 60)
+					if (ts.TotalMinutes > 360)
 						return false;
 				}
 
-				bracket_begin_index = log_line.IndexOf ('<', bracket_end_index + 1);
-				bracket_end_index = log_line.IndexOf ('>', bracket_begin_index + 1);
+				AddLine (log_line_as_sb, bracket_end_index + 1);
 				session_end_time = line_dt;
-				Log.Debug ("Adding at {0} {1}]", DateTimeUtil.ToString (line_dt), log_line.Substring (bracket_end_index + 1));
-				sb.Append (log_line.Substring (bracket_end_index + 1));
-
-				session_num_lines ++;
 
 				return true;
+			}
+
+			private void AddLine (StringBuilder sb, int begin_index)
+			{
+				begin_index = IndexOfSB (sb, '<', begin_index);
+				int end_index = IndexOfSB (sb, '>', begin_index + 1);
+
+				//Log.Debug ("Adding [{0}]", sb.ToString (end_index + 1, sb.Length - end_index - 1));
+				data_sb.Append (sb.ToString (end_index + 1, sb.Length - end_index - 1));
+				data_sb.Append (' ');
+				session_num_lines ++;
+
+				speakers [sb.ToString (begin_index + 1, end_index - begin_index - 1)] = true;
 			}
 
 			private void AddChannelInformation (Indexable indexable)
