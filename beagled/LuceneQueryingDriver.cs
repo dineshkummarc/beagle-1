@@ -58,6 +58,7 @@ namespace Beagle.Daemon {
 		public LuceneQueryingDriver (string source_name, int source_version, bool read_only) 
 			: base (source_name)
 		{
+#if joe_wip
 			// FIXME: Maybe the LuceneQueryingDriver should never try to create the index?
 			if (Exists ())
 				Open (source_name, source_version, read_only);
@@ -69,6 +70,11 @@ namespace Beagle.Daemon {
 				// in QueryDriver.LoadStaticQueryable ()
 				throw new InvalidOperationException ();
 			}
+#else
+			// XXX
+			LuceneContainer container = new LuceneContainer (source_name, read_only);
+			container.AttachQueryingDriver (this);
+#endif
 
 			// Initialize the user text cache only if we're not in
 			// read-only mode.  StaticQueryables instantiate their
@@ -144,7 +150,7 @@ namespace Beagle.Daemon {
 
 		////////////////////////////////////////////////////////////////
 
-		public void RegisterHitFilter (string source, HitFilter hit_filter)
+		public void RegisterSourceHitFilter (string source, HitFilter hit_filter)
 		{
 			source_hit_filters.Add (new SourceHitFilter (source, hit_filter).HitFilter);
 		}

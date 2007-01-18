@@ -86,7 +86,7 @@ namespace Beagle.Daemon {
 			this.source_name = source_name;
 
 			driver = BuildLuceneQueryingDriver (source_name, source_version, read_only_mode);
-			driver.RegisterHitFilter (source_name, this.HitFilter);
+			driver.RegisterSourceHitFilter (source_name, this.HitFilter);
 
 			// If the queryable is in read-only more, don't 
 			// instantiate an indexer for it.

@@ -57,10 +57,12 @@ namespace Beagle.Daemon {
 		public LuceneIndexingDriver (string source_name, int source_version, bool build_usercache) 
 			: base (source_name)
 		{
+#if joe_wip
 			if (Exists ())
 				Open (source_name, source_version);
 			else
 				Create (source_name, source_version);
+#endif
 
 			if (build_usercache)
 				text_cache = TextCache.UserCache;

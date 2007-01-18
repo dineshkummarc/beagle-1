@@ -386,6 +386,7 @@ DAEMON_DLL_CSFILES = 						\
 	$(srcdir)/IQueryable.cs					\
 	$(srcdir)/LuceneBitArray.cs				\
 	$(srcdir)/LuceneCommon.cs				\
+	$(srcdir)/LuceneContainer.cs				\
 	$(srcdir)/LuceneIndexingDriver.cs			\
 	$(srcdir)/LuceneQueryingDriver.cs			\
 	$(srcdir)/LuceneFileQueryable.cs			\

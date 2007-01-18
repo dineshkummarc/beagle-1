@@ -42,20 +42,27 @@ namespace Beagle.IndexHelper {
 
 		static public int Count = 0;
 
-		LuceneIndexingDriver indexer;
+		static LuceneContainer container;
+		static LuceneIndexingDriver indexer;
 
 		Indexable[] child_indexables;
 		FilteredStatus[] uris_filtered;
 
 		public RemoteIndexerExecutor ()
 		{
-			indexer = LuceneIndexingDriver.Singleton;
+			if (indexer == null) {
+				indexer = LuceneIndexingDriver.Singleton;
 
-			indexer.FileFilterNotifier += delegate (Uri display_uri, Filter filter) {
-				IndexHelperTool.ReportActivity ();
-				IndexHelperTool.CurrentUri = display_uri;
-				IndexHelperTool.CurrentFilter = filter;
-			};
+				// XXX
+				LuceneContainer container = new LuceneContainer ("Singleton");
+				container.AttachIndexingDriver (indexer);
+
+				indexer.FileFilterNotifier += delegate (Uri display_uri, Filter filter) {
+					IndexHelperTool.ReportActivity ();
+					IndexHelperTool.CurrentUri = display_uri;
+					IndexHelperTool.CurrentFilter = filter;
+				};
+			}
 		}
 
 		public override ResponseMessage Execute (RequestMessage raw_request)

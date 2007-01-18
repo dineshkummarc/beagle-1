@@ -46,41 +46,10 @@ using Stopwatch = Beagle.Util.Stopwatch;
 
 namespace Beagle.Daemon {
 
+	// For lack of a better place to put this...
+	public delegate bool HitFilter (Hit hit);
+
 	public class LuceneCommon {
-
-		public delegate bool HitFilter (Hit hit);
-
-		// VERSION HISTORY
-		// ---------------
-		//
-		//  1: Original
-		//  2: Changed format of timestamp strings
-		//  3: Schema changed to be more Dashboard-Match-like
-		//  4: Schema changed for files to include _Directory property
-		//  5: Changed analyzer to support stemming.  Bumped version # to
-		//     force everyone to re-index.
-		//  6: lots of schema changes as part of the general refactoring
-		//  7: incremented to force a re-index after our upgrade to lucene 1.4
-		//     (in theory the file formats are compatible, we are seeing 'term
-		//     out of order' exceptions in some cases)
-		//  8: another forced re-index, this time because of massive changes
-		//     in the file system backend (it would be nice to have per-backend
-		//     versioning so that we didn't have to purge all indexes just
-		//     because one changed)
-		//  9: changed the way properties are stored, changed in conjunction
-		//     with sane handling of multiple properties on hits.
-		// 10: changed to support typed and mutable properties
-		// 11: moved mime type and hit type into properties
-		// 12: added year-month and year-month-day resolutions for all
-		//     date properties
-		// 13: moved source into a property
-		// 14: allow wildcard queries to also match keywords
-		// 15: analyze PropertyKeyword field, and store all properties as
-		//     lower case so that we're truly case insensitive.
-		// 16: add inverted timestamp to make querying substantially faster
-		// 17: add boolean property to denote a child indexable
-		// 18: add source to secondary index when used
-		private const int INDEX_VERSION = 18;
 
 		private string index_name;
 		private string top_dir;
@@ -109,9 +78,15 @@ namespace Beagle.Daemon {
 
 		public string IndexName { get { return index_name; } }
 
-		public Lucene.Net.Store.Directory PrimaryStore { get { return primary_store; } }
+		public Lucene.Net.Store.Directory PrimaryStore {
+			get { if (primary_store == null) throw new ArgumentNullException (); else return primary_store; } 
+			set { primary_store = value; }
+		}
 
-		public Lucene.Net.Store.Directory SecondaryStore { get { return secondary_store; } }
+		public Lucene.Net.Store.Directory SecondaryStore {
+			get { return secondary_store; }
+			set { secondary_store = value; }
+		}
 
 		public string Fingerprint { get { return fingerprint; } }
 
@@ -128,159 +103,14 @@ namespace Beagle.Daemon {
 
 		//////////////////////////////////////////////////////////////////////////////
 
-		private string VersionFile {
-			get { return Path.Combine (top_dir, "version"); }
-		}
-
-		private string FingerprintFile {
-			get { return Path.Combine (top_dir, "fingerprint"); }
-		}
-
-		// Shouldn't really be public
-		public string PrimaryIndexDirectory {
-			get { return Path.Combine (top_dir, "PrimaryIndex"); }
-		}
-
-		// Shouldn't really be public
-		public string SecondaryIndexDirectory {
-			get { return Path.Combine (top_dir, "SecondaryIndex"); }
-		}
-
-		public string LockDirectory {
-			get { return Path.Combine (top_dir, "Locks"); }
-		}
-
-		//////////////////////////////////////////////////////////////////////////////
-
-		// Deal with dangling locks
-
-		private bool IsDanglingLock (FileInfo info)
-		{
-			Log.Debug ("Checking for dangling locks...");
-
-			// It isn't even a lock file
-			if (! info.Name.EndsWith (".lock"))
-				return false;
-
-			StreamReader reader;
-			string pid = null;
-
-			try {
-				reader = new StreamReader (info.FullName);
-				pid = reader.ReadLine ();
-				reader.Close ();
-
-			} catch {
-				// We couldn't read the lockfile, so it probably went away.
-				return false;
-			}
-
-			
-			if (pid == null) {
-				// Looks like the lock file was empty, which really
-				// shouldn't happen.  It should contain the PID of
-				// the process which locked it.  Lets be on the safe
-				// side and assume it's a dangling lock.
-				Log.Warn ("Found an empty lock file, that shouldn't happen: {0}", info.FullName);
-				return true;
-			}
-
-			string cmdline_file;
-			cmdline_file = String.Format ("/proc/{0}/cmdline", pid);
-			
-			string cmdline = "";
-			try {
-				reader = new StreamReader (cmdline_file);
-				cmdline = reader.ReadLine ();
-				reader.Close ();
-			} catch {
-				// If we can't open that file, either:
-				// (1) The process doesn't exist
-				// (2) It does exist, but it doesn't belong to us.
-				//     Thus it isn't an IndexHelper
-				// In either case, the lock is dangling --- if it
-				// still exists.
-				return info.Exists;
-			}
-
-			// The process exists, but isn't an IndexHelper.
-			// If the lock file is still there, it is dangling.
-			// FIXME: During one run of bludgeon I got a null reference
-			// exception here, so I added the cmdline == null check.
-			// Why exactly would that happen?  Is this logic correct
-			// in that (odd and presumably rare) case?
-			if (cmdline == null || cmdline.IndexOf ("IndexHelper.exe") == -1)
-				return info.Exists;
-			
-			// If we reach this point, we know:
-			// (1) The process still exists
-			// (2) We own it
-			// (3) It is an IndexHelper process
-			// Thus it almost certainly isn't a dangling lock.
-			// The process might be wedged, but that is
-			// another issue...
-			return false;
-		}
-		
-		protected bool Exists ()
-		{
-			if (! (Directory.Exists (top_dir)
-			       && File.Exists (VersionFile)
-			       && File.Exists (FingerprintFile)
-			       && Directory.Exists (PrimaryIndexDirectory)
-			       && IndexReader.IndexExists (PrimaryIndexDirectory)
-			       && Directory.Exists (SecondaryIndexDirectory)
-			       && IndexReader.IndexExists (SecondaryIndexDirectory)
-			       && Directory.Exists (LockDirectory)))
-				return false;
-
-			// Check the index's version number.  If it is wrong,
-			// declare the index non-existent.
-
-			StreamReader version_reader;
-			string version_str;
-			version_reader = new StreamReader (VersionFile);
-			version_str = version_reader.ReadLine ();
-			version_reader.Close ();
-
-			int current_version = -1;
-
-			try {
-				current_version = Convert.ToInt32 (version_str);
-			} catch (FormatException) {
-				// This is an old major.minor file and doesn't parse.
-				// That's ok, it means it's out of date.
-			}
-
-			if (current_version != INDEX_VERSION) {
-				Logger.Log.Debug ("Version mismatch in {0}", index_name);
-				Logger.Log.Debug ("Index has version {0}, expected {1}",
-						  current_version, INDEX_VERSION);
-				return false;
-			}
-
-			// Check the lock directory: If there is a dangling write lock,
-			// assume that the index is corrupted and declare it non-existent.
-			DirectoryInfo lock_dir_info;
-			lock_dir_info = new DirectoryInfo (LockDirectory);
-			foreach (FileInfo info in lock_dir_info.GetFiles ()) {
-				if (IsDanglingLock (info)) {
-					Logger.Log.Warn ("Found a dangling index lock on {0}", info.FullName);
-					return false;
-				}
-			}
-
-			return true;
-		}
-
-		private Lucene.Net.Store.Directory CreateIndex (string path)
+		static public Lucene.Net.Store.Directory CreateIndex (string path, string lock_dir)
 		{
 			// Create a directory to put the index in.
 			Directory.CreateDirectory (path);
 
 			// Create a new store.
 			Lucene.Net.Store.Directory store;
-			store = Lucene.Net.Store.FSDirectory.GetDirectory (path, LockDirectory, true);
+			store = Lucene.Net.Store.FSDirectory.GetDirectory (path, lock_dir, true);
 
 			// Create an empty index in that store.
 			IndexWriter writer;
@@ -290,101 +120,39 @@ namespace Beagle.Daemon {
 			return store;
 		}
 
-		// Create will kill your index dead.  Use it with care.
-		// You don't need to call Open after calling Create.
-		protected void Create (string source_name, int source_version)
+		static public void CreateIndexes (string path, string lock_dir)
 		{
-			// Purge any existing directories.
-			if (Directory.Exists (top_dir)) {
-				Logger.Log.Debug ("Purging {0}", top_dir);
-				Directory.Delete (top_dir, true);
-			}
+			string primary_dir, secondary_dir;
 
-			// Create any necessary directories.
-			Directory.CreateDirectory (top_dir);
-			Directory.CreateDirectory (LockDirectory);
-			
-			// Create the indexes.
-			primary_store = CreateIndex (PrimaryIndexDirectory);
-			secondary_store = CreateIndex (SecondaryIndexDirectory);
+			primary_dir = Path.Combine (path, "PrimaryIndex");
+			secondary_dir = Path.Combine (path, "SecondaryIndex");
 
-			// Generate and store the index fingerprint.
-			fingerprint = GuidFu.ToShortString (Guid.NewGuid ());
-			TextWriter writer;
-			writer = new StreamWriter (FingerprintFile, false);
-			writer.WriteLine (fingerprint);
+			// Create the index directories
+			Directory.CreateDirectory (primary_dir);
+			Directory.CreateDirectory (secondary_dir);
+
+			// Create empty indexes.
+			Lucene.Net.Store.Directory store;
+			IndexWriter writer;
+
+			store = Lucene.Net.Store.FSDirectory.GetDirectory (primary_dir, lock_dir, true);
+			writer = new IndexWriter (store, null, true);
 			writer.Close ();
 
-			// Store our index version information.
-			writer = new StreamWriter (VersionFile, false);
-			writer.WriteLine (INDEX_VERSION);
-			writer.Close ();
-
-			// Store the source version information.
-			WriteSourceVersionFile (source_name, source_version);
-		}
-
-		protected void Open (string source_name, int source_version)
-		{
-			Open (source_name, source_version, false);
-		}
-
-		protected void Open (string source_name, int source_version, bool read_only_mode)
-		{
-			// Read our index fingerprint.
-			TextReader reader;
-			reader = new StreamReader (FingerprintFile);
-			fingerprint = reader.ReadLine ();
-			reader.Close ();
-
-			// Create stores for our indexes.
-			primary_store = Lucene.Net.Store.FSDirectory.GetDirectory (PrimaryIndexDirectory, LockDirectory, false, read_only_mode);
-			secondary_store = Lucene.Net.Store.FSDirectory.GetDirectory (SecondaryIndexDirectory, LockDirectory, false, read_only_mode);
-
-			bool source_version_write_needed = true;
-
-			// Check to see if our source version matches.
-			string version_file = GetSourceVersionFile (source_name);
-			if (File.Exists (version_file)) {
-				reader = new StreamReader (version_file);
-				string version_str = reader.ReadLine ();
-				reader.Close ();
-
-				int current_version = Convert.ToInt32 (version_str);
-
-				if (current_version != source_version) {
-					File.Delete (version_file);
-					PurgeSource (source_name);
-				} else
-					source_version_write_needed = false;
-			}
-
-			if (source_version_write_needed)
-				WriteSourceVersionFile (source_name, source_version);
-		}
-
-		private void WriteSourceVersionFile (string source_name, int source_version)
-		{
-			string version_file = GetSourceVersionFile (source_name);
-			StreamWriter writer = new StreamWriter (version_file);
-			writer.WriteLine (source_version);
+			store = Lucene.Net.Store.FSDirectory.GetDirectory (secondary_dir, lock_dir, true);
+			writer = new IndexWriter (store, null, true);
 			writer.Close ();
 		}
 
-		private string GetSourceVersionFile (string source_name)
-		{
-			return Path.Combine (top_dir, "version-" + source_name);
-		}
-
-		private void PurgeSource (string source_name)
+		public static void PurgeSource (string source_name, Lucene.Net.Store.Directory primary_store, Lucene.Net.Store.Directory secondary_store)
 		{
 			Log.Debug ("Purging items from source '{0}'", source_name);
 
 			Stopwatch w = new Stopwatch ();
 			w.Start ();
 
-			IndexReader primary_reader = GetReader (PrimaryStore);
-			IndexReader secondary_reader = GetReader (SecondaryStore);
+			IndexReader primary_reader = GetReader (primary_store);
+			IndexReader secondary_reader = GetReader (secondary_store);
 
 			Term term = new Term ("Source", source_name);
 			int count = primary_reader.Delete (term);
@@ -1560,27 +1328,6 @@ namespace Beagle.Daemon {
 			}
 
 			return top_query;
-		}
-
-		///////////////////////////////////////////////////////////////////////////////////
-
-		public int SegmentCount {
-			get {
-				DirectoryInfo dir_info;
-				int p_count = 0, s_count = 0;
-
-				dir_info = new DirectoryInfo (PrimaryIndexDirectory);
-				foreach (FileInfo file_info in dir_info.GetFiles ())
-					if (file_info.Extension == ".cfs")
-						++p_count;
-
-				dir_info = new DirectoryInfo (SecondaryIndexDirectory);
-				foreach (FileInfo file_info in dir_info.GetFiles ())
-					if (file_info.Extension == ".cfs")
-						++s_count;
-
-				return p_count > s_count ? p_count : s_count;
-			}
 		}
 
 		///////////////////////////////////////////////////////////////////////////////////
