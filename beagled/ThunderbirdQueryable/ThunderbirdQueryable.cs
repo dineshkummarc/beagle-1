@@ -91,7 +91,8 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 			StartWorker ();
 			return false;
 		}
-		
+
+#if joe_wip		
 		// We need this in order to perform custom queries to the lucene database
 		override protected LuceneQueryingDriver BuildLuceneQueryingDriver (string index_name,
 										   int    minor_version,
@@ -99,6 +100,7 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 		{
 			return new LuceneAccess (index_name, minor_version, read_only_mode);
 		}
+#endif
 		
 		/////////////////////////////////////////////////////////////////////////////////////
 		

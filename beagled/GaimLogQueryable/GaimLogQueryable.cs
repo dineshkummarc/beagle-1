@@ -316,11 +316,6 @@ namespace Beagle.Daemon.GaimLogQueryable {
 			ThisScheduler.Add (task);
 		}
 
-		override protected double RelevancyMultiplier (Hit hit)
-		{
-			return HalfLifeMultiplierFromProperty (hit, 0.25, "fixme:endtime", "fixme:starttime");
-		}
-
 		override protected bool HitFilter (Hit hit) 
 		{
 			// If the protocol isn't set (because maybe we got an

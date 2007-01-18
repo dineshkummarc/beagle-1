@@ -64,7 +64,7 @@ namespace Beagle.Daemon {
 
 		private string source_name;
 
-		private LuceneQueryingDriver driver;
+		private LuceneContainer container;
 		private IIndexer indexer = null;
 
 		private Scheduler.Task our_final_flush_task = null;
@@ -85,8 +85,9 @@ namespace Beagle.Daemon {
 		{
 			this.source_name = source_name;
 
-			driver = BuildLuceneQueryingDriver (source_name, source_version, read_only_mode);
-			driver.RegisterSourceHitFilter (source_name, this.HitFilter);
+			// XXX
+			container = BuildLuceneContainer (source_name, source_version, read_only_mode);
+			container.Driver.RegisterSourceHitFilter (source_name, this.HitFilter);
 
 			// If the queryable is in read-only more, don't 
 			// instantiate an indexer for it.
@@ -117,11 +118,11 @@ namespace Beagle.Daemon {
 		}
 
 		public string IndexDirectory {
-			get { return driver.TopDirectory; }
+			get { return container.TopDirectory; }
 		}
 
 		protected string IndexFingerprint {
-			get { return driver.Fingerprint; }
+			get { return container.Fingerprint; }
 		}
 
 		protected string SourceDataDir {
@@ -129,7 +130,7 @@ namespace Beagle.Daemon {
 		}
 
 		protected LuceneQueryingDriver Driver {
-			get { return driver; }
+			get { Log.Debug ("hmm"); return container.Driver; }
 		}
 
 		public Scheduler ThisScheduler {
@@ -144,7 +145,7 @@ namespace Beagle.Daemon {
 		}
 
 		public override IQueryable Queryable {
-			get { return driver; }
+			get { return container.Driver; }
 		}
 
 		/////////////////////////////////////////
@@ -171,59 +172,6 @@ namespace Beagle.Daemon {
 		virtual protected bool HitFilter (Hit hit)
 		{
 			return true;
-		}
-
-		/////////////////////////////////////////
-
-		// DEPRECATED: This does nothing, since everything is now
-		// time-based.
-		virtual protected double RelevancyMultiplier (Hit hit)
-		{
-			return 1.0;
-		}
-
-		static protected double HalfLifeMultiplier (DateTime dt, int half_life_days)
-		{
-			double days = Math.Abs ((DateTime.Now - dt).TotalDays);
-			if (days < 0)
-				return 1.0f;
-			return Math.Pow (0.5, days / (double) half_life_days);
-		}
-
-		// FIXME: A decaying half-life is a little sketchy, since data
-		// will eventually decay beyond the epsilon and be dropped
-		// from the results entirely, which is almost never what we
-		// want, particularly in searches with a few number of
-		// results.  But with a default half-life of 6 months, it'll
-		// take over 13 years to fully decay outside the epsilon on
-		// this multiplier alone.
-		static protected double HalfLifeMultiplier (DateTime time)
-		{
-			// Default relevancy half-life is six months.
-			return HalfLifeMultiplier (time, 182);
-		}
-
-		static protected double HalfLifeMultiplierFromProperty (Hit hit,
-									double default_multiplier,
-									params object [] properties)
-		{
-			double best_m = -1.0;
-
-			foreach (object obj in properties) {
-				string key = obj as string;
-				string val = hit [key];
-				if (val != null) {
-					DateTime dt = StringFu.StringToDateTime (val);
-					double this_m;
-					this_m = HalfLifeMultiplier (dt, 182);  /* 182 days == six months */
-					if (this_m > best_m)
-						best_m = this_m;
-				}
-			}
-
-			if (best_m < 0)
-				best_m = default_multiplier;
-			return best_m;
 		}
 
 		/////////////////////////////////////////
@@ -262,7 +210,7 @@ namespace Beagle.Daemon {
 				status.Name = this.Name;
 				status.ProgressPercent = this.ProgressPercent;
 				status.IsIndexing = this.IsIndexing;
-				status.ItemCount = driver.GetItemCount (this.Name);
+				status.ItemCount = container.Driver.GetItemCount (this.Name);
 
 				return status;
 			}
@@ -512,7 +460,7 @@ namespace Beagle.Daemon {
 
 		public Scheduler.Task NewRemoveByPropertyTask (Property prop)
 		{
-			PropertyRemovalGenerator prg = new PropertyRemovalGenerator (driver, prop);
+			PropertyRemovalGenerator prg = new PropertyRemovalGenerator (container.Driver, prop);
 
 			return NewAddTask (prg);
 		}
@@ -926,7 +874,7 @@ namespace Beagle.Daemon {
 
 			// Propagate the change notification to any open queries.
 			if (added_uris.Count > 0 || removed_uris.Count > 0)
-				driver.QueryableChanged (added_uris, removed_uris);
+				container.Driver.QueryableChanged (added_uris, removed_uris);
 		}
 
 		private void HandleAddReceipt (IndexerAddedReceipt r,
@@ -1046,12 +994,11 @@ namespace Beagle.Daemon {
 
 		//////////////////////////////////////////////////////////////////////////////////
 
-		virtual protected LuceneQueryingDriver BuildLuceneQueryingDriver (string source_name,
-										  int    source_version,
-										  bool   read_only_mode)
+		virtual protected LuceneContainer BuildLuceneContainer (string source_name,
+									int    source_version,
+									bool   read_only_mode)
 		{
-			//return new LuceneQueryingDriver (source_name, source_version, read_only_mode);
-			return LuceneQueryingDriver.Singleton;
+			return LuceneContainer.Singleton;
 		}
 	}
 }

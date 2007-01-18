@@ -70,10 +70,6 @@ namespace Beagle.Daemon {
 				// in QueryDriver.LoadStaticQueryable ()
 				throw new InvalidOperationException ();
 			}
-#else
-			// XXX
-			LuceneContainer container = new LuceneContainer (source_name, read_only);
-			container.AttachQueryingDriver (this);
 #endif
 
 			// Initialize the user text cache only if we're not in

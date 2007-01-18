@@ -77,9 +77,26 @@ namespace Beagle.Daemon {
 		private LuceneQueryingDriver[] drivers = new LuceneQueryingDriver [NUM_BUCKETS];
 		private IIndexer indexer = null;
 #else
+		private LuceneQueryingDriver driver = null;
+
 		private Lucene.Net.Store.Directory primary_store;
 		private Lucene.Net.Store.Directory secondary_store;
 #endif
+
+		///////////////////////////////////////////////////////////////
+
+		private static LuceneContainer singleton_container = null;
+
+		public static LuceneContainer Singleton {
+			get {
+				if (singleton_container != null)
+					return singleton_container;
+
+				singleton_container = new LuceneContainer ("Singleton", false);
+				
+				return singleton_container;
+			}
+		}
 
 		///////////////////////////////////////////////////////////////
 
@@ -90,6 +107,10 @@ namespace Beagle.Daemon {
 #if joe_wip
 		public LuceneQueryingDriver[] Drivers {
 			get { return drivers; }
+		}
+#else
+		public LuceneQueryingDriver Driver {
+			get { return driver; }
 		}
 #endif
 
@@ -227,6 +248,11 @@ namespace Beagle.Daemon {
 
 			// Store the source version information.
 			WriteSourceVersionFile (source_name, source_version);
+
+			// XXX
+			driver = new LuceneQueryingDriver (source_name, source_version, false);
+			driver.PrimaryStore = primary_store;
+			driver.SecondaryStore = secondary_store;
 		}
 
 		private void Open (string source_name, int source_version)
@@ -266,6 +292,11 @@ namespace Beagle.Daemon {
 
 			if (source_version_write_needed)
 				WriteSourceVersionFile (source_name, source_version);
+
+			// XXX
+			driver = new LuceneQueryingDriver (source_name, source_version, read_only_mode);
+			driver.PrimaryStore = primary_store;
+			driver.SecondaryStore = secondary_store;
 		}
 
 		private void WriteSourceVersionFile (string source_name, int source_version)
@@ -457,17 +488,6 @@ namespace Beagle.Daemon {
 
 			indexer.PrimaryStore = primary_store;
 			indexer.SecondaryStore = secondary_store;
-		}
-
-		public void AttachQueryingDriver (LuceneQueryingDriver driver)
-		{
-			Log.Debug ("Attaching querying driver to container.");
-
-			if (primary_store == null)
-				Log.Debug ("store is null!");
-
-			driver.PrimaryStore = primary_store;
-			driver.SecondaryStore = secondary_store;
 		}
 	}
 }

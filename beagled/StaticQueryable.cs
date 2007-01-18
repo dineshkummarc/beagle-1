@@ -56,11 +56,11 @@ namespace Beagle.Daemon {
 			}
 		}
 
-		override protected LuceneQueryingDriver BuildLuceneQueryingDriver (string source_name, int source_version, bool read_only_mode)
+		override protected LuceneContainer BuildLuceneContainer (string source_name, int source_version, bool read_only_mode)
 		{
-			// Return a new querying driver for static backends
-			// instead of the normal singleton.
-			return new LuceneQueryingDriver (source_name, source_version, read_only_mode);
+			// Return a new containerfor static backends instead
+			// of the normal singleton.
+			return new LuceneContainer (source_name, read_only_mode);
 		}
 
 		override public string GetSnippet (string[] query_terms, Hit hit) 
