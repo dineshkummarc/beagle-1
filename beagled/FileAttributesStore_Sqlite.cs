@@ -35,162 +35,89 @@ using Beagle.Util;
 
 namespace Beagle.Daemon {
 
-	public class FileAttributesStore_Sqlite : IFileAttributesStore {
+	public class FileAttributesStore_Sqlite : SqliteStore, IFileAttributesStore {
 
 		// Version history:
 		// 1: Original version
 		// 2: Replaced LastIndexedTime with LastAttrTime
 		const int VERSION = 2;
 
-		private SqliteConnection connection;
-		private BitArray path_flags;
-		private int transaction_count = 0;
-
-		enum TransactionState {
-			None,
-			Requested,
-			Started
-		}
-		private TransactionState transaction_state;
-
-		public FileAttributesStore_Sqlite (string directory, string index_fingerprint)
+		public FileAttributesStore_Sqlite (string directory, string index_fingerprint) :
+			base (directory, index_fingerprint)
 		{
-			bool create_new_db = false;
-			path_flags = new BitArray (65536);
+		}
 
-			if (! File.Exists (GetDbPath (directory))) {
-				create_new_db = true;
-			} else {
-				
-				// Funky logic here to deal with sqlite versions.
-				//
-				// When sqlite 3 tries to open an sqlite 2 database,
-				// it will throw an SqliteException with SqliteError
-				// NOTADB when trying to execute a command.
-				//
-				// When sqlite 2 tries to open an sqlite 3 database,
-				// it will throw an ApplicationException when it
-				// tries to open the database.
+		protected override bool CheckVersion (int version) {
+			return VERSION == version;
+		}
 
-				try {
-					connection = Open (directory);
-				} catch (ApplicationException) {
-					Logger.Log.Warn ("Likely sqlite database version mismatch trying to open {0}.  Purging.", GetDbPath (directory));
-					create_new_db = true;
-				}
+		protected override void CreateTables (string index_fingerprint) {
+			SqliteUtils.DoNonQuery (connection,
+						"CREATE TABLE db_info (             " +
+						"  version       INTEGER NOT NULL,  " +
+						"  fingerprint   STRING NOT NULL    " +
+						")");
 
-				if (! create_new_db) {
-					SqliteCommand command;
-					SqliteDataReader reader = null;
-					int stored_version = 0;
-					string stored_fingerprint = null;
+			SqliteUtils.DoNonQuery (connection,
+						"INSERT INTO db_info (version, fingerprint) VALUES ({0}, '{1}')",
+						VERSION, index_fingerprint);
 
+			SqliteUtils.DoNonQuery (connection,
+						"CREATE TABLE file_attributes (           " +
+						"  unique_id      STRING UNIQUE,          " +
+						"  directory      STRING NOT NULL,        " +
+						"  filename       STRING NOT NULL,        " +
+						"  last_mtime     STRING NOT NULL,        " +
+						"  last_attrtime  STRING NOT NULL,        " +
+						"  filter_name    STRING NOT NULL,        " +
+						"  filter_version STRING NOT NULL         " +
+						")");
 
-					command = new SqliteCommand ();
-					command.Connection = connection;
-					command.CommandText =
-						"SELECT version, fingerprint FROM db_info";
-					try {
-						reader = SqliteUtils.ExecuteReaderOrWait (command);
-					} catch (Exception ex) {
-						Logger.Log.Warn ("Likely sqlite database version mismatch trying to read from {0}.  Purging.", GetDbPath (directory));
-						create_new_db = true;
-					}
-					if (reader != null && ! create_new_db) {
-						if (SqliteUtils.ReadOrWait (reader)) {
-							stored_version = reader.GetInt32 (0);
-							stored_fingerprint = reader.GetString (1);
-						}
-						reader.Close ();
-					}
-					command.Dispose ();
+			SqliteUtils.DoNonQuery (connection,
+						"CREATE INDEX file_path on file_attributes (" +
+						"  directory,      " +
+						"  filename        " +
+						")");
+		}
+		
+		protected override void LoadRecords (string directory)
+	       	{
+			SqliteCommand command;
+			SqliteDataReader reader;
+			int count = 0;
 
-					if (VERSION != stored_version
-					    || (index_fingerprint != null && index_fingerprint != stored_fingerprint))
-						create_new_db = true;
-				}
+			DateTime dt1 = DateTime.Now;
+
+			// Select all of the files and use them to populate our bit-vector.
+			command = new SqliteCommand ();
+			command.Connection = connection;
+			command.CommandText = "SELECT directory, filename FROM file_attributes";
+
+			reader = SqliteUtils.ExecuteReaderOrWait (command);
+
+			while (SqliteUtils.ReadOrWait (reader)) {
+
+				string dir = reader.GetString (0);
+				string file = reader.GetString (1);
+				string path = Path.Combine (dir, file);
+				SetPathFlag (path);
+				++count;
 			}
 
-			if (create_new_db) {
-				if (connection != null)
-					connection.Dispose ();
-				File.Delete (GetDbPath (directory));
-				connection = Open (directory);
+			reader.Close ();
+			command.Dispose ();
 
-				SqliteUtils.DoNonQuery (connection,
-							"CREATE TABLE db_info (             " +
-							"  version       INTEGER NOT NULL,  " +
-							"  fingerprint   STRING NOT NULL    " +
-							")");
+			DateTime dt2 = DateTime.Now;
 
-				SqliteUtils.DoNonQuery (connection,
-							"INSERT INTO db_info (version, fingerprint) VALUES ({0}, '{1}')",
-							VERSION, index_fingerprint);
-
-				SqliteUtils.DoNonQuery (connection,
-							"CREATE TABLE file_attributes (           " +
-							"  unique_id      STRING UNIQUE,          " +
-							"  directory      STRING NOT NULL,        " +
-							"  filename       STRING NOT NULL,        " +
-							"  last_mtime     STRING NOT NULL,        " +
-							"  last_attrtime  STRING NOT NULL,        " +
-							"  filter_name    STRING NOT NULL,        " +
-							"  filter_version STRING NOT NULL         " +
-							")");
-
-				SqliteUtils.DoNonQuery (connection,
-							"CREATE INDEX file_path on file_attributes (" +
-							"  directory,      " +
-							"  filename        " +
-							")");
-			} else {
-				SqliteCommand command;
-				SqliteDataReader reader;
-				int count = 0;
-
-				DateTime dt1 = DateTime.Now;
-
-				// Select all of the files and use them to populate our bit-vector.
-				command = new SqliteCommand ();
-				command.Connection = connection;
-				command.CommandText = "SELECT directory, filename FROM file_attributes";
-
-				reader = SqliteUtils.ExecuteReaderOrWait (command);
-
-				while (SqliteUtils.ReadOrWait (reader)) {
-
-					string dir = reader.GetString (0);
-					string file = reader.GetString (1);
-					string path = Path.Combine (dir, file);
-					SetPathFlag (path);
-					++count;
-				}
-
-				reader.Close ();
-				command.Dispose ();
-
-				DateTime dt2 = DateTime.Now;
-
-				Logger.Log.Debug ("Loaded {0} records from {1} in {2:0.000}s", 
-						 count, GetDbPath (directory), (dt2 - dt1).TotalSeconds);
-			}
+			Logger.Log.Debug ("Loaded {0} records from {1} in {2:0.000}s", 
+					 count, GetDbPath (directory), (dt2 - dt1).TotalSeconds);
 		}
 
 		///////////////////////////////////////////////////////////////////
 
-		private string GetDbPath (string directory)
+		protected override string GetDbPath (string directory)
 		{
 			return Path.Combine (directory, "FileAttributesStore.db");
-		}
-
-		private SqliteConnection Open (string directory)
-		{
-			SqliteConnection c;			
-			c = new SqliteConnection ();
-			c.ConnectionString = "version=" + ExternalStringsHack.SqliteVersion
-				+ ",encoding=UTF-8,URI=file:" + GetDbPath (directory);
-			c.Open ();
-			return c;
 		}
 
 		private FileAttributes GetFromReader (SqliteDataReader reader)
@@ -339,40 +266,6 @@ namespace Beagle.Daemon {
 				SqliteUtils.DoNonQuery (connection,
 							"DELETE FROM file_attributes WHERE directory='{0}' AND filename='{1}'",
 							directory, filename);
-			}
-		}
-
-		private void MaybeStartTransaction ()
-		{
-			if (transaction_state == TransactionState.Requested) {
-				SqliteUtils.DoNonQuery (connection, "BEGIN");
-				transaction_state = TransactionState.Started;
-			}
-		}
-
-		public void BeginTransaction ()
-		{
-			if (transaction_state == TransactionState.None)
-				transaction_state = TransactionState.Requested;
-		}
-
-		public void CommitTransaction ()
-		{
-			if (transaction_state == TransactionState.Started) {
-				lock (connection)
-					SqliteUtils.DoNonQuery (connection, "COMMIT");
-			}
-			transaction_state = TransactionState.None;
-		}
-
-		public void Flush ()
-		{
-			lock (connection) {
-				if (transaction_count > 0) {
-					Logger.Log.Debug ("Flushing requested -- committing sqlite transaction");
-					SqliteUtils.DoNonQuery (connection, "COMMIT");
-					transaction_count = 0;
-				}
 			}
 		}
 

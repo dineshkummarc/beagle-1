@@ -48,6 +48,7 @@ namespace Beagle {
 		bool         is_searched;
 		bool         is_mutable;
 		bool	     is_stored;
+		string 		 referes_to;
 
 		// Commonly used property keys
 		public const string PrivateNamespace = "_private:";
@@ -104,6 +105,12 @@ namespace Beagle {
 			set { is_stored = value; }
 		}
 
+		[XmlAttribute]
+		public string RefersTo {
+			get { return referes_to; }
+			set { referes_to = value; }
+		}
+	
 		/////////////////////////////////////
 
 		public Property () { }

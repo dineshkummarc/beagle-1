@@ -63,11 +63,12 @@ namespace Beagle.Util {
 					Thread.Sleep (50);
 				}
 			}
+			return ret;
 		}
 
-		public static void DoNonQuery (SqliteConnection connection, string format, params object [] args)
+		public static int DoNonQuery (SqliteConnection connection, string format, params object [] args)
 		{
-			DoNonQuery (connection, String.Format (format, args));
+			return DoNonQuery (connection, String.Format (format, args));
 		}
 
 
@@ -96,7 +97,6 @@ namespace Beagle.Util {
 			
 			id = command.LastInsertRowID ();
 			return id;
-			return ret;
 		}
 			
 		public static int DoInsertQuery (SqliteConnection connection, string format, params object [] args)
