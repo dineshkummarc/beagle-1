@@ -273,6 +273,26 @@ SQLITE_CSFILES =					\
 
 ############################################################
 
+sqlmetadir = $(srcdir)/SqlMeta
+
+SQLMETA_CSFILES =				\
+	$(sqlmetadir)/EntityStore.cs		\
+	$(sqlmetadir)/SqlMetadata.cs		\
+	$(sqlmetadir)/SqlMetaModel.cs	
+
+############################################################
+
+sqlmetatestdir = $(sqlmetadir)/SqlMetaTests
+
+SQLMETATEST_CSFILES =			\
+	$(sqlmetatestdir)/TestSqlMeta.cs	\
+	$(sqlmetatestdir)/TestEntityStoreBasics.cs 
+
+
+############################################################
+
+
+
 DAEMON_DLL_TARGET = BeagleDaemonLib.dll
 
 DAEMON_DLL_CSFLAGS = -target:library $(BEAGLE_DEFINES)
@@ -373,6 +393,7 @@ DAEMON_DLL_CSFILES = 						\
 	$(KABC_QUERYABLE_CSFILES)				\
 	$(KOPETE_QUERYABLE_CSFILES)				\
 	$(KONVERSATION_QUERYABLE_CSFILES)			\
+	$(SQLMETA_CSFILES)						\
 	$(srcdir)/AssemblyInfo.cs				\
 	$(srcdir)/FileAttributes.cs				\
 	$(srcdir)/FileAttributesStore.cs			\
@@ -382,6 +403,7 @@ DAEMON_DLL_CSFILES = 						\
 	$(srcdir)/FilterFactory.cs				\
 	$(srcdir)/IFileAttributesStore.cs			\
 	$(srcdir)/IIndexer.cs					\
+	$(srcdir)/IMetadata.cs					\
 	$(srcdir)/IndexSynchronization.cs			\
 	$(srcdir)/IndexerReceipts.cs				\
 	$(srcdir)/IndexerRequest.cs				\
@@ -410,6 +432,7 @@ DAEMON_DLL_CSFILES = 						\
 	$(srcdir)/Shutdown.cs					\
 	$(srcdir)/SnippetExecutor.cs				\
 	$(srcdir)/SnippetFu.cs					\
+	$(srcdir)/SqliteStore.cs				\
 	$(srcdir)/SqliteUtils.cs				\
 	$(srcdir)/StaticQueryable.cs				\
 	$(srcdir)/TextCache.cs
