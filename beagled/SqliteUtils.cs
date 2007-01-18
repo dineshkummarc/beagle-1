@@ -31,6 +31,17 @@ using Mono.Data.SqliteClient;
 
 namespace Beagle.Util {
 
+	
+	public class NoRowsException : ApplicationException {
+		public NoRowsException(string message) : base(message) { }
+		public NoRowsException(string message, Exception cause) : base(message, cause) { }
+	}
+
+	public class MultipleRowsException : ApplicationException {
+		public MultipleRowsException(string message) : base(message) { }
+		public MultipleRowsException(string message, Exception cause) : base(message, cause) { }
+	}
+
 	public class SqliteUtils {
 
 		// static class
@@ -48,18 +59,49 @@ namespace Beagle.Util {
 				try {
 					ret = command.ExecuteNonQuery ();
 					break;
-				} catch (SqliteBusyException ex) {
+				} catch (SqliteBusyException) {
 					Thread.Sleep (50);
 				}
 			}
+		}
 
+		public static void DoNonQuery (SqliteConnection connection, string format, params object [] args)
+		{
+			DoNonQuery (connection, String.Format (format, args));
+		}
+
+
+		public static int DoInsertQuery (SqliteConnection connection, string command_text)
+		{
+			int rows;
+			int id;
+			SqliteCommand command;
+			command = new SqliteCommand ();
+			command.Connection = connection;
+			command.CommandText = command_text;
+			while (true) {
+				try {
+					rows = command.ExecuteNonQuery ();
+					break;
+				} catch (SqliteBusyException) {
+					Thread.Sleep (50);
+				}
+			}
 			command.Dispose ();
+			if (rows==0)
+				throw new NoRowsException ("No rows affected!");
+			if (rows>1)
+				throw new MultipleRowsException (
+					String.Format ("{0} Rows affected.", rows));
+			
+			id = command.LastInsertRowID ();
+			return id;
 			return ret;
 		}
 			
-		public static int DoNonQuery (SqliteConnection connection, string format, params object [] args)
+		public static int DoInsertQuery (SqliteConnection connection, string format, params object [] args)
 		{
-			return DoNonQuery (connection, String.Format (format, args));
+			return DoInsertQuery (connection, String.Format (format, args));
 		}
 
 		public static SqliteCommand QueryCommand (SqliteConnection connection, string where_format, params object [] where_args)
@@ -80,7 +122,7 @@ namespace Beagle.Util {
 			while (reader == null) {
 				try {
 					reader = command.ExecuteReader ();
-				} catch (SqliteBusyException ex) {
+				} catch (SqliteBusyException) {
 					Thread.Sleep (50);
 				}
 			}
@@ -92,7 +134,7 @@ namespace Beagle.Util {
 			while (true) {
 				try {
 					return reader.Read ();
-				} catch (SqliteBusyException ex) {
+				} catch (SqliteBusyException) {
 					Thread.Sleep (50);
 				}
 			}

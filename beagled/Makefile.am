@@ -273,7 +273,7 @@ SQLITE_CSFILES =					\
 
 ############################################################
 
-sqlmetadir = $(srcdir)/SqlMeta
+sqlmetadir = $(srcdir)/SqliteMetadata
 
 SQLMETA_CSFILES =				\
 	$(sqlmetadir)/EntityStore.cs		\
