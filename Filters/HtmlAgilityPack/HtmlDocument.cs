@@ -36,6 +36,10 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.XPath;
 
+
+// Legend: SLIM=Comment added describing changes to original HtmlAgilityPack
+//		to reduce memory consumption
+// Once the parser is free of bugs, the comments will be taken out
 namespace HtmlAgilityPack
 {
 	/// <summary>
@@ -164,11 +168,209 @@ namespace HtmlAgilityPack
 		}
 	}
 	
+
+	abstract class StreamAsArray {
+		public abstract bool Eof (int index);
+		public abstract char this [int index] { get;}
+		public abstract string Substring (int startindex, int length);
+		public abstract int FullLength { get;}
+	}
+		
+	// SLIM: creating this class to wrap around a textreader
+	//	 to emulate ReadToEnd () behaviour
+	class ImplStreamAsArray : StreamAsArray {
+		private StreamReader _reader;
+		private int _length;
+		private int _position;
+		private bool _eof;
+		private char[] _buf_previous; // could have used only one array
+		private char[] _buf_current; // but, this is cleaner
+		private int _block_size;
+		
+		public ImplStreamAsArray (StreamReader r)
+		{
+			_reader = r;
+			_length = 0;
+			_position = 0;
+			_eof = false;
+
+			_block_size = 1024;
+			_buf_previous = new char [_block_size];
+			_buf_current = new char [_block_size];
+
+			Read (true);
+		}
+		
+		private void Read (bool initial)
+		{
+			if ( !initial) {
+				Array.Copy (_buf_current, _buf_previous, _block_size);
+				_position += _block_size;
+			}
+			HtmlDocument.Debug ("Debug: Read in buffer at:" + _position);
+
+			int num_read = _reader.Read (_buf_current, 0, _block_size);
+			if (num_read < _block_size) {
+				_eof = true;
+				_length = _position + num_read;
+			}
+			HtmlDocument.Debug ("[" + new string (_buf_current, 0, num_read) + "]");
+		}
+		
+		public override bool Eof (int index) {
+			if (_eof)
+				return (index == _length);
+			else {
+				if (index >= _position + _block_size &&
+				    index < _position + _block_size + _block_size)
+					Read (false);
+				if (_eof)
+					return (index == _length);
+				else
+					return false;
+			}
+		}
+		
+		public override char this[int index] {
+			get {
+				if (index >= _position && 
+				    index < _position + _block_size)
+					return _buf_current [index % _block_size];
+				if (index >= _position - _block_size && 
+				    index < _position)
+					return _buf_previous [ index % _block_size];
+				if (index >= _position + _block_size &&
+				    index < _position + _block_size + _block_size) {
+					Read (false);
+					return _buf_current [index % _block_size];
+				}
+				return OutOfBandRead (index, 1) [0];
+			}
+		}
+
+		// evil function ... you get what you pay for!
+		private string OutOfBandRead (int startindex, int length)
+		{
+			HtmlDocument.Debug ("Out of band read! From " + startindex + " to " + (startindex + length - 1));
+			ResetPosition (startindex);
+			// ahh.. now we are at the correct place
+			// create a buffer of required length
+			// who cares if the buffer size does not align well
+			// with page boundary
+			char[] temp_buf = new char [length];
+			int num_read = _reader.Read (temp_buf, 0, length);
+			if (num_read < length) {
+				// Shouldnt occur!!!
+				_eof = true;
+				_length = startindex + num_read;
+			}
+			// discard data and reset stream position
+			int t = (_eof ? _length :_position + _block_size);
+			ResetPosition (t);
+			return new String (temp_buf);
+		}
+
+		// streamreader does not allow seeking
+		// seek on its basestream does not reflect the position
+		// of the reader - it is governed by the buffer size
+		// of the underlying stream
+		// :( so, read character by character from beginning ...
+		private void ResetPosition (int pos)
+		{
+			_reader.DiscardBufferedData ();
+			_reader.BaseStream.Position = 0;
+			// read in chunks of block_size
+			int n1 = pos / _block_size;
+			int n2 = pos % _block_size;
+			char[] tmp = new char [_block_size];
+			// yo ho... start reading till we have reach pos
+			// hopefully, reader will buffer itself, so we can be mean and get one char at a time
+			for (int i = 0; i < n1; ++i)
+				_reader.Read (tmp, 0, _block_size);
+			for (int i = 0; i < n2; ++i)
+				_reader.Read ();
+			tmp = null;
+		}
+
+		public override string Substring (int startindex, int length)
+		{
+			if (length == 0) {
+				HtmlDocument.Debug ("substring:" + startindex + " " + length + " " + _position + ":");
+				return String.Empty;
+			}
+			if (length > _block_size || startindex < _position - _block_size) {
+				return OutOfBandRead (startindex, length);
+			}
+			while (startindex + length - 1 >= _position + _block_size) {
+				Read (false);
+			}
+			string substr;
+			if (startindex < _position) {
+				int len_1 = _position - startindex;
+				if (length < len_1)
+					substr = new String (_buf_previous, _block_size - len_1, length);
+				else {
+					substr = new String (_buf_previous, _block_size - len_1, len_1);
+					substr += new String (_buf_current, 0, length - len_1);
+				}
+			} else {
+				substr = new String (_buf_current, startindex - _position, length);
+			}
+			return substr;
+		}
+
+		// FIXME: Is this costly ?
+		public override int FullLength {
+			get {
+				return (int)_reader.BaseStream.Length;
+			}
+		}
+	}
+
+	// A dummy StreamAsArray wrapper around a string
+	class DummyStreamAsArray : StreamAsArray {
+		private string _base_string;
+		private int _length;
+
+		public DummyStreamAsArray(string str)
+		{
+			_base_string = str;
+			_length = str.Length;
+		}
+
+		public override bool Eof(int index)
+		{
+			return (index >= _length);
+		}
+
+		public new char this[int index] {
+			get { return _base_string [index]; }
+		}
+
+		public override string Substring (int startindex, int length)
+		{
+			return _base_string.Substring (startindex, length);
+		}
+
+		public override int FullLength {
+			get { return _length; }
+		}
+	}
+
 	/// <summary>
 	/// Represents a complete HTML document.
 	/// </summary>
 	public class HtmlDocument: IXPathNavigable
 	{
+		// SLIM: Make the parser event driven
+		// callback for FilterHtml
+		// return value is a way for the callback to signal to continue or stop parsing
+		public delegate bool NodeHandler (HtmlNode node);
+		public NodeHandler ReportNode;
+		// misnomer ... should be called event_driven_mode
+		private bool _streammode = false;
+		private bool _stop_parsing = false;
+
 		internal static readonly string HtmlExceptionRefNotChild = "Reference node must be a child of this node";
 		internal static readonly string HtmlExceptionUseIdAttributeFalse = "You need to set UseIdAttribute property to true to enable this feature";
 
@@ -176,7 +378,8 @@ namespace HtmlAgilityPack
 		internal Hashtable _lastnodes = new Hashtable();
 		internal Hashtable _nodesid;
 		private HtmlNode _documentnode;
-		internal string _text;
+		//SLIM: internal string _text;
+		internal StreamAsArray _text;
 		private HtmlNode _currentnode;
 		private HtmlNode _lastparentnode;
 		private HtmlAttribute _currentattribute;
@@ -191,6 +394,14 @@ namespace HtmlAgilityPack
 		private ParseState _state, _oldstate;
 		private Crc32 _crc32 = null;
 		private bool _onlyDetectEncoding = false;
+		private int _pcdata_quote_char = '\0';
+
+		private static bool _debug = false;
+		internal static void Debug (string s)
+		{
+			if (_debug)
+				Console.WriteLine (s);
+		}
 
 		// public props
 
@@ -268,7 +479,11 @@ namespace HtmlAgilityPack
 		/// <summary>
 		/// Defines the default stream encoding to use. Default is System.Text.Encoding.Default.
 		/// </summary>
-		public System.Text.Encoding OptionDefaultStreamEncoding = System.Text.Encoding.Default;
+		// From http://www.w3.org/TR/REC-html40/charset.html
+		// The HTTP protocol ([RFC2616], section 3.7.1) mentions ISO-8859-1 as a default character encoding when the "charset" parameter is absent from the "Content-Type" header field.
+		// So, however we are still using UTF-8 for some unknown reason
+		//FIXME: Fix the default encoding!
+		public System.Text.Encoding OptionDefaultStreamEncoding = Encoding.UTF8;
 
 		/// <summary>
 		/// Gets a list of parse errors found in the document.
@@ -427,14 +642,17 @@ namespace HtmlAgilityPack
 			if (sr != null)
 			{
 				_streamencoding = sr.CurrentEncoding;
+				_text = new ImplStreamAsArray (sr);
 			}
 			else
 			{
 				_streamencoding = null;
+				// Expensive, but cannot avoid since TextReader doesnt have any length of the underlying data
+				_text = new DummyStreamAsArray (reader.ReadToEnd());
 			}
 			_declaredencoding = null;
 
-			_text = reader.ReadToEnd();
+			// SLIM: _text = reader.ReadToEnd();
 			_documentnode = CreateNode(HtmlNodeType.Document, 0);
 
 			// this is a hack, but it allows us not to muck with the original parsing code
@@ -444,6 +662,7 @@ namespace HtmlAgilityPack
 			}
 			catch(EncodingFoundException ex)
 			{
+				_lastnodes.Clear();
 				return ex.Encoding;
 			}
 			return null;
@@ -695,14 +914,17 @@ namespace HtmlAgilityPack
 				    // void on purpose
 				}
 				_streamencoding = sr.CurrentEncoding;
+				_text = new ImplStreamAsArray (sr);
 			}
 			else
 			{
 				_streamencoding = null;
+				// Expensive, but cannot avoid since TextReader doesnt have any length of the underlying data
+				_text = new DummyStreamAsArray (reader.ReadToEnd());
 			}
 			_declaredencoding = null;
 
-			_text = reader.ReadToEnd();
+			// SLIM: _text = reader.ReadToEnd();
 			_documentnode = CreateNode(HtmlNodeType.Document, 0);
 			Parse();
 
@@ -1064,6 +1286,18 @@ namespace HtmlAgilityPack
 			}
 		}
 
+		public bool StreamMode
+		{
+			get
+			{
+				return _streammode;
+			}
+			set
+			{
+				_streammode = value;
+			}
+		}
+
 		private HtmlParseError AddError(
 				HtmlParseErrorCode code,
 				int line,
@@ -1091,6 +1325,7 @@ namespace HtmlAgilityPack
 			Comment,
 			QuotedAttributeValue,
 			ServerSideCode,
+			PcDataQuote,
 			PcData
 		}
 
@@ -1147,8 +1382,8 @@ namespace HtmlAgilityPack
 
 			_state = ParseState.Text;
 			_oldstate = _state;
-			_documentnode._innerlength = _text.Length;
-			_documentnode._outerlength = _text.Length;
+			_documentnode._innerlength = _text.FullLength;
+			_documentnode._outerlength = _text.FullLength;
 
 			_lastparentnode = _documentnode;
 			_currentnode = CreateNode(HtmlNodeType.Text, 0);
@@ -1156,7 +1391,8 @@ namespace HtmlAgilityPack
 
 			_index = 0;
 			PushNodeStart(HtmlNodeType.Text, 0);
-			while (_index<_text.Length)
+			// SLIM: while (_index<_text.Length)
+			while (! _stop_parsing && ! _text.Eof (_index))
 			{
 				_c = _text[_index];
 				IncrementPosition();
@@ -1370,7 +1606,8 @@ namespace HtmlAgilityPack
 						}
 						if (_c == '<')
 						{
-							if (_index<_text.Length)
+							//SLIM: if (_index<_text.Length)
+							if (!_text.Eof (_index))
 							{
 								if (_text[_index] == '%')
 								{
@@ -1403,7 +1640,8 @@ namespace HtmlAgilityPack
 					case ParseState.ServerSideCode:
 						if (_c == '%')
 						{
-							if (_index<_text.Length)
+							//SLIM: if (_index<_text.Length)
+							if (! _text.Eof (_index))
 							{
 								if (_text[_index] == '>')
 								{
@@ -1428,11 +1666,26 @@ namespace HtmlAgilityPack
 						}
 						break;
 
+					// handle <script>a="</script>"</script>
+					case ParseState.PcDataQuote:
+						if ((_c == _pcdata_quote_char) && (_text [_index - 2] != '\\')) {
+							_pcdata_quote_char = '\0';
+							_state = ParseState.PcData;
+						}
+						break;
+
 					case ParseState.PcData:
+						Debug ("PCDATA " + _currentnode.Name + " " + _text.Substring(_index-1,  _currentnode._namelength+2));
+						if (_c == '\"' || _c == '\''){
+							_pcdata_quote_char = _c;
+							_state = ParseState.PcDataQuote;
+							break;
+						}
 						// look for </tag + 1 char
 
 						// check buffer end
-						if ((_currentnode._namelength+3)<=(_text.Length-(_index-1)))
+						//SLIM: if ((_currentnode._namelength+3)<=(_text.Length-(_index-1)))
+						if (! _text.Eof (_currentnode._namelength + _index + 1))  
 						{
 							if (string.Compare(_text.Substring(_index-1, _currentnode._namelength+2),
 								"</" + _currentnode.Name, true) == 0)
@@ -1444,8 +1697,11 @@ namespace HtmlAgilityPack
 									HtmlNode script = CreateNode(HtmlNodeType.Text,
 										_currentnode._outerstartindex + _currentnode._outerlength);
 									script._outerlength = _index-1 - script._outerstartindex;
-									_currentnode.AppendChild(script);
-
+									if (_streammode && ReportNode != null)
+										_stop_parsing = ! ReportNode (script);
+									else
+										_currentnode.AppendChild(script);
+									Debug ("Found script: [" + script.InnerText + "]");
 
 									PushNodeStart(HtmlNodeType.Element, _index-1);
 									PushNodeNameStart(false, _index-1 +2);
@@ -1475,7 +1731,8 @@ namespace HtmlAgilityPack
 			{
 				return false;
 			}
-			if (_index<_text.Length)
+			//SLIM: if (_index<_text.Length)
+			if (! _text.Eof (_index))
 			{
 				if (_text[_index] == '%')
 				{
@@ -1502,7 +1759,8 @@ namespace HtmlAgilityPack
 
 			PushNodeEnd(_index-1, true);
 			_state = ParseState.WhichTag;
-			if ((_index-1) <= (_text.Length-2))
+			//SLIM: if ((_index-1) <= (_text.Length-2))
+			if (!_text.Eof (_index))
 			{
 				if (_text[_index] == '!')
 				{
@@ -1510,7 +1768,8 @@ namespace HtmlAgilityPack
 					PushNodeNameStart(true, _index);
 					PushNodeNameEnd(_index+1);
 					_state = ParseState.Comment;
-					if (_index<(_text.Length-2))
+					//SLIM: if (_index<(_text.Length-2))
+					if (! _text.Eof (_index + 2))
 					{
 						if ((_text[_index+1] == '-') &&
 							(_text[_index+2] == '-'))
@@ -1539,7 +1798,23 @@ namespace HtmlAgilityPack
 			// when we append a child, we are in node end, so attributes are already populated
 			if (node._namelength == 4)	// quick check, avoids string alloc
 			{
-				if (node.Name == "meta") // all nodes names are lowercase
+				// only these nodes can occur before meta
+				// if we started seeing any other node, we will never see a meta node
+				if (node.NodeType == HtmlNodeType.Element &&
+					     (node.Name != "head" && node.Name != "script" &&
+					      node.Name != "style" && node.Name != "title" &&
+					      node.Name != "head" && node.Name != "link" &&
+					      node.Name != "html" && node.Name != "meta")) {
+					    _declaredencoding = null;
+					    if (_onlyDetectEncoding)
+						    throw new EncodingFoundException (null);
+					    else
+						    return;
+					    // FIXME: Should also handle declaredencoding mismatch with detected
+					    // encoding, as done below. None of the current filters run in error
+					    // detection mode currently, so its not needed now.
+				}
+				else if (node.Name == "meta") // all nodes names are lowercase
 				{
 					HtmlAttribute att = node.Attributes["http-equiv"];
 					if (att != null)
@@ -1619,6 +1894,16 @@ namespace HtmlAgilityPack
 		{
 			_currentnode._outerlength = index - _currentnode._outerstartindex;
 
+			//SLIM: inform caller
+			if (_streammode && ReportNode != null)
+				_stop_parsing = ! ReportNode (_currentnode);
+
+			if (_debug) {
+				if (_currentnode._nodetype == HtmlNodeType.Text)
+					Debug ("Text:" + _currentnode.InnerText);
+				else
+					Debug ((_currentnode.StartTag ? "Start-" : "End-") + _currentnode.Name);
+			}
 			if ((_currentnode._nodetype == HtmlNodeType.Text) ||
 				(_currentnode._nodetype == HtmlNodeType.Comment))
 			{
@@ -1627,9 +1912,11 @@ namespace HtmlAgilityPack
 				{
 					_currentnode._innerlength = _currentnode._outerlength;
 					_currentnode._innerstartindex = _currentnode._outerstartindex;
-					if (_lastparentnode != null)
+					// SLIM: no need to append child in stream mode
+					// SLIM: whatever the caller needs to do, tell it to do now
+					if (!_streammode && _lastparentnode != null)
 					{
-						_lastparentnode.AppendChild(_currentnode);
+					   _lastparentnode.AppendChild(_currentnode);
 					}
 				}
 			}
@@ -1638,14 +1925,17 @@ namespace HtmlAgilityPack
 				if ((_currentnode._starttag) && (_lastparentnode != _currentnode))
 				{
 					// add to parent node
-					if (_lastparentnode != null)
+					// SLIM: no need to append child in stream mode
+					// SLIM: whatever the caller needs to do, tell it to do now
+					if (!_streammode && _lastparentnode != null)
 					{
-						_lastparentnode.AppendChild(_currentnode);
+					   _lastparentnode.AppendChild(_currentnode);
 					}
 
 					ReadDocumentEncoding(_currentnode);
 
 					// remember last node of this kind
+					// SLIM: we still to store _currentnode to help other tags in the same level
 					HtmlNode prev = (HtmlNode)_lastnodes[_currentnode.Name];
 					_currentnode._prevwithsamename = prev;
 					_lastnodes[_currentnode.Name] = _currentnode;
@@ -1674,6 +1964,9 @@ namespace HtmlAgilityPack
 			if ((close) || (!_currentnode._starttag))
 			{
 				CloseCurrentNode();
+				if ((_currentnode._nodetype == HtmlNodeType.Text) || 
+				    (_currentnode._nodetype == HtmlNodeType.Comment))
+					_currentnode = null;
 			}
 		}
 
