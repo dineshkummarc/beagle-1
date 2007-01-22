@@ -1,7 +1,7 @@
 //
 // LuceneQueryingDriver.cs
 //
-// Copyright (C) 2004-2005 Novell, Inc.
+// Copyright (C) 2004-2007 Novell, Inc.
 //
 
 //
@@ -55,29 +55,8 @@ namespace Beagle.Daemon {
 
 		private OrHitFilter source_hit_filters = new OrHitFilter ();
 
-		public LuceneQueryingDriver (string source_name, int source_version, bool read_only) 
-			: base (source_name)
+		public LuceneQueryingDriver (LuceneContainer container) : base (container)
 		{
-#if joe_wip
-			// FIXME: Maybe the LuceneQueryingDriver should never try to create the index?
-			if (Exists ())
-				Open (source_name, source_version, read_only);
-			else if (!read_only)
-				Create (source_name, source_version);
-			else {
-				// We're in read-only mode, but we can't create an index.
-				// Maybe a different exception would be better?  This one is caught
-				// in QueryDriver.LoadStaticQueryable ()
-				throw new InvalidOperationException ();
-			}
-#endif
-
-			// Initialize the user text cache only if we're not in
-			// read-only mode.  StaticQueryables instantiate their
-			// own text caches that are stored in a separate
-			// location.
-			if (!read_only)
-				text_cache = TextCache.UserCache;
 		}
 
 		////////////////////////////////////////////////////////////////
@@ -89,7 +68,7 @@ namespace Beagle.Daemon {
 				if (singleton_driver != null)
 					return singleton_driver;
 
-				singleton_driver = new LuceneQueryingDriver ("Singleton", -1, false);
+				singleton_driver = new LuceneQueryingDriver (LuceneContainer.Singleton);
 
 				return singleton_driver;
 			}
@@ -252,7 +231,7 @@ namespace Beagle.Daemon {
 				     OrHitFilter         source_hit_filters)
 		{
 			if (Debug)
-				Logger.Log.Debug ("###### {0}: Starting low-level queries", IndexName);
+				Logger.Log.Debug ("###### Starting low-level queries");
 
 			Stopwatch sw;
 			sw = new Stopwatch ();
@@ -431,7 +410,7 @@ namespace Beagle.Daemon {
 
 			sw.Stop ();
 			if (Debug)
-				Logger.Log.Debug ("###### {0}: Finished low-level queries in {1}", IndexName, sw);
+				Logger.Log.Debug ("###### Finished low-level queries in {0}", sw);
 			sw.Reset ();
 			sw.Start ();
 
@@ -444,8 +423,7 @@ namespace Beagle.Daemon {
 						      result,
 						      term_list,
 						      query.MaxHits,
-						      new HitFilter (all_hit_filters.HitFilter),
-						      IndexName);
+						      new HitFilter (all_hit_filters.HitFilter));
 			}
 
 			//
@@ -462,7 +440,7 @@ namespace Beagle.Daemon {
 
 			sw.Stop ();
 			if (Debug)
-				Logger.Log.Debug ("###### {0}: Processed query in {1}", IndexName, sw);
+				Logger.Log.Debug ("###### Processed query in {0}", sw);
 
 		}
 
@@ -690,22 +668,21 @@ namespace Beagle.Daemon {
 							  IQueryResult      result,
 							  ICollection       query_term_list,
 							  int               max_results,
-							  HitFilter         hit_filter,
-							  string            source_name)
+							  HitFilter         hit_filter)
 		{
 			TopScores top_docs = null;
 			ArrayList all_docs = null;
 
 			if (Debug)
-				Logger.Log.Debug (">>> {0}: Initially handed {1} matches", source_name, primary_matches.TrueCount);
+				Logger.Log.Debug (">>> Initially handed {0} matches", primary_matches.TrueCount);
 
 			if (primary_matches.TrueCount <= max_results) {
 				if (Debug)
-					Logger.Log.Debug (">>> {0}: Initial count is within our limit of {1}", source_name, max_results);
+					Logger.Log.Debug (">>> Initial count is within our limit of {0}", max_results);
 				all_docs = new ArrayList ();
 			} else {
 				if (Debug)
-					Logger.Log.Debug (">>> {0}: Number of hits is capped at {1}", source_name, max_results);
+					Logger.Log.Debug (">>> Number of hits is capped at {0}", max_results);
 				top_docs = new TopScores (max_results);
 			}
 
@@ -788,10 +765,10 @@ namespace Beagle.Daemon {
 
 				a.Stop ();
 				if (Debug) {
-					Log.Debug (">>> {0}: Walked {1} items, populated an enum with {2} items", source_name, docs_walked, docs_found, a);
+					Log.Debug (">>> Walked {0} items, populated an enum with {1} items", docs_walked, docs_found, a);
 					
 					if (docs_found == max_results)
-						Log.Debug (">>> {0}: Successfully short circuited timestamp ordering!", source_name);
+						Log.Debug (">>> Successfully short circuited timestamp ordering!");
 				}
 			}
 
@@ -839,7 +816,7 @@ namespace Beagle.Daemon {
 			}
 
 			if (Debug)
-				Log.Debug (">>> {0}: Processed roughly {1} documents", source_name, count);
+				Log.Debug (">>> Processed roughly {0} documents", count);
 
 			b.Stop ();
 
@@ -872,7 +849,7 @@ namespace Beagle.Daemon {
 			} else {
 
 				if (Debug)
-					Logger.Log.Debug (">>> {0}: Performing cross-index Hit reunification", source_name);
+					Logger.Log.Debug (">>> Performing cross-index Hit reunification");
 
 				Hashtable hits_by_uri;
 				hits_by_uri = UriFu.NewHashtable ();
@@ -971,12 +948,12 @@ namespace Beagle.Daemon {
 			total.Stop ();
 
 			if (Debug) {
-				Logger.Log.Debug (">>> {0}: GenerateQueryResults time statistics:", source_name);
-				Logger.Log.Debug (">>> {0}: Short circuit {1,6} ({2:0.0}%)", source_name, a == null ? "N/A" : a.ToString (), a == null ? 0.0 : 100 * a.ElapsedTime / total.ElapsedTime);
-				Logger.Log.Debug (">>> {0}:    First pass {1,6} ({2:0.0}%)", source_name, b, 100 * b.ElapsedTime / total.ElapsedTime);
-				Logger.Log.Debug (">>> {0}:  Hit assembly {1,6} ({2:0.0}%)", source_name, c, 100 * c.ElapsedTime / total.ElapsedTime);
-				Logger.Log.Debug (">>> {0}:    Final pass {1,6} ({2:0.0}%)", source_name, d, 100 * d.ElapsedTime / total.ElapsedTime);
-				Logger.Log.Debug (">>> {0}:         TOTAL {1,6}", source_name, total);
+				Logger.Log.Debug (">>> GenerateQueryResults time statistics:");
+				Logger.Log.Debug (">>> Short circuit {0,6} ({1:0.0}%)", a == null ? "N/A" : a.ToString (), a == null ? 0.0 : 100 * a.ElapsedTime / total.ElapsedTime);
+				Logger.Log.Debug (">>>    First pass {0,6} ({1:0.0}%)", b, 100 * b.ElapsedTime / total.ElapsedTime);
+				Logger.Log.Debug (">>>  Hit assembly {0,6} ({1:0.0}%)", c, 100 * c.ElapsedTime / total.ElapsedTime);
+				Logger.Log.Debug (">>>    Final pass {0,6} ({1:0.0}%)", d, 100 * d.ElapsedTime / total.ElapsedTime);
+				Logger.Log.Debug (">>>         TOTAL {0,6}", total);
 			}
 		}
 

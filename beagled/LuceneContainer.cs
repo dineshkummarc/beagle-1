@@ -81,6 +81,14 @@ namespace Beagle.Daemon {
 
 		private Lucene.Net.Store.Directory primary_store;
 		private Lucene.Net.Store.Directory secondary_store;
+
+		internal Lucene.Net.Store.Directory PrimaryStore {
+			get { return primary_store; }
+		}
+
+		internal Lucene.Net.Store.Directory SecondaryStore {
+			get { return secondary_store; }
+		}
 #endif
 
 		///////////////////////////////////////////////////////////////
@@ -141,9 +149,22 @@ namespace Beagle.Daemon {
 
 		///////////////////////////////////////////////////////////////
 
+		private TextCache text_cache = null;
+
+		public TextCache TextCache {
+			get { return text_cache; }
+			//set { text_cache = value; }
+		}
+
+		///////////////////////////////////////////////////////////////
+
 		public LuceneContainer (string index_path) : this (index_path, false) { }
 
-		public LuceneContainer (string index_path, bool read_only)
+		// XXX FIXME: This will create the text cache, which we probably
+		// don't want to do if we're in read-only mode.
+		public LuceneContainer (string index_path, bool read_only) : this (index_path, TextCache.UserCache, false) { }
+
+		public LuceneContainer (string index_path, TextCache text_cache, bool read_only)
 		{
 			if (Path.IsPathRooted (index_path))
 				top_dir = index_path;
@@ -163,6 +184,8 @@ namespace Beagle.Daemon {
 			else
 				Create (index_path, -1);
 #endif
+
+			this.text_cache = text_cache;
 		}
 
 		private bool ExistsAndValid ()
@@ -250,9 +273,7 @@ namespace Beagle.Daemon {
 			WriteSourceVersionFile (source_name, source_version);
 
 			// XXX
-			driver = new LuceneQueryingDriver (source_name, source_version, false);
-			driver.PrimaryStore = primary_store;
-			driver.SecondaryStore = secondary_store;
+			driver = new LuceneQueryingDriver (this);
 		}
 
 		private void Open (string source_name, int source_version)
@@ -294,9 +315,7 @@ namespace Beagle.Daemon {
 				WriteSourceVersionFile (source_name, source_version);
 
 			// XXX
-			driver = new LuceneQueryingDriver (source_name, source_version, read_only_mode);
-			driver.PrimaryStore = primary_store;
-			driver.SecondaryStore = secondary_store;
+			driver = new LuceneQueryingDriver (this);
 		}
 
 		private void WriteSourceVersionFile (string source_name, int source_version)
@@ -477,17 +496,6 @@ namespace Beagle.Daemon {
 			// The process might be wedged, but that is
 			// another issue...
 			return false;
-		}
-
-		public void AttachIndexingDriver (LuceneIndexingDriver indexer)
-		{
-			Log.Debug ("Attaching indexing driver to container.");
-
-			if (primary_store == null)
-				Log.Debug ("store is null!");
-
-			indexer.PrimaryStore = primary_store;
-			indexer.SecondaryStore = secondary_store;
 		}
 	}
 }

@@ -1,7 +1,7 @@
 //
 // LuceneQueryable.cs
 //
-// Copyright (C) 2004-2005 Novell, Inc.
+// Copyright (C) 2004-2007 Novell, Inc.
 //
 
 //
@@ -85,8 +85,7 @@ namespace Beagle.Daemon {
 		{
 			this.source_name = source_name;
 
-			// XXX
-			container = BuildLuceneContainer (source_name, source_version, read_only_mode);
+			container = BuildLuceneContainer (source_name, read_only_mode);
 			container.Driver.RegisterSourceHitFilter (source_name, this.HitFilter);
 
 			// If the queryable is in read-only more, don't 
@@ -182,7 +181,7 @@ namespace Beagle.Daemon {
 			// use the cached version to generate a snippet.
 
 			TextReader reader;
-			reader = TextCache.UserCache.GetReader (uri);
+			reader = container.TextCache.GetReader (uri);
 			if (reader == null)
 				return null;
 
@@ -921,7 +920,7 @@ namespace Beagle.Daemon {
 						  ArrayList removed_uris)
 		{
 			// Drop the removed item from the text cache
-			TextCache.UserCache.Delete (r.Uri);
+			container.TextCache.Delete (r.Uri);
 			
 			// Call the appropriate hook
 			try {
@@ -995,7 +994,6 @@ namespace Beagle.Daemon {
 		//////////////////////////////////////////////////////////////////////////////////
 
 		virtual protected LuceneContainer BuildLuceneContainer (string source_name,
-									int    source_version,
 									bool   read_only_mode)
 		{
 			return LuceneContainer.Singleton;

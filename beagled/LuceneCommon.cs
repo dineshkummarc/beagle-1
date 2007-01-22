@@ -1,7 +1,7 @@
 //
 // LuceneCommon.cs
 //
-// Copyright (C) 2004-2005 Novell, Inc.
+// Copyright (C) 2004-2007 Novell, Inc.
 //
 
 //
@@ -51,10 +51,6 @@ namespace Beagle.Daemon {
 
 	public class LuceneCommon {
 
-		private string index_name;
-		private string top_dir;
-
-		private string fingerprint;
 		private int last_item_count = -1;
 
 		// This is the big index, containing document full-texts and
@@ -67,38 +63,26 @@ namespace Beagle.Daemon {
 
 		//////////////////////////////////////////////////////////////////////////////
 
-		protected LuceneCommon (string index_name)
+		protected LuceneCommon (LuceneContainer container)
 		{
-			this.index_name = index_name;
-
-			this.top_dir = (Path.IsPathRooted (index_name)) ? index_name : Path.Combine (PathFinder.IndexDir, index_name);
+			primary_store = container.PrimaryStore;
+			secondary_store = container.SecondaryStore;
 		}
 
 		//////////////////////////////////////////////////////////////////////////////
 
-		public string IndexName { get { return index_name; } }
-
 		public Lucene.Net.Store.Directory PrimaryStore {
-			get { if (primary_store == null) throw new ArgumentNullException (); else return primary_store; } 
-			set { primary_store = value; }
+			get {
+				// XXX
+				if (primary_store == null)
+					throw new ArgumentNullException ("BROKEN!");
+				else
+					return primary_store;
+			} 
 		}
 
 		public Lucene.Net.Store.Directory SecondaryStore {
 			get { return secondary_store; }
-			set { secondary_store = value; }
-		}
-
-		public string Fingerprint { get { return fingerprint; } }
-
-		public string TopDirectory { get { return top_dir; } }
-
-		//////////////////////////////////////////////////////////////////////////////
-
-		protected TextCache text_cache = null;
-
-		public TextCache TextCache {
-			get { return text_cache; }
-			set { text_cache = value; }
 		}
 
 		//////////////////////////////////////////////////////////////////////////////

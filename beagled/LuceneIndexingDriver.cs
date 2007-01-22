@@ -1,7 +1,7 @@
 //
 // LuceneIndexingDriver.cs
 //
-// Copyright (C) 2004-2005 Novell, Inc.
+// Copyright (C) 2004-2007 Novell, Inc.
 //
 
 //
@@ -22,11 +22,6 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
-//
-
-//
-// This should be the only piece of source code that knows anything
-// about Lucene's internals.
 //
 
 using System;
@@ -53,29 +48,12 @@ namespace Beagle.Daemon {
 	public class LuceneIndexingDriver : LuceneCommon, IIndexer {
 
 		object flush_lock = new object ();
+		LuceneContainer container;
 
-		public LuceneIndexingDriver (string source_name, int source_version, bool build_usercache) 
-			: base (source_name)
+		public LuceneIndexingDriver (LuceneContainer container) : base (container)
 		{
-#if joe_wip
-			if (Exists ())
-				Open (source_name, source_version);
-			else
-				Create (source_name, source_version);
-#endif
-
-			if (build_usercache)
-				text_cache = TextCache.UserCache;
+			this.container = container;
 		}
-
-		public LuceneIndexingDriver (string index_name, int minor_version)
-			: this (index_name, minor_version, true) { }
-		
-		public LuceneIndexingDriver (string index_name, bool build_usercache)
-			: this (index_name, -1, build_usercache) { }
-
-		public LuceneIndexingDriver (string index_name) 
-			: this (index_name, -1, true) { }
 	
 		////////////////////////////////////////////////////////////////
 
@@ -86,7 +64,7 @@ namespace Beagle.Daemon {
 				if (singleton_driver != null)
 					return singleton_driver;
 
-				singleton_driver = new LuceneIndexingDriver ("Singleton", -1);
+				singleton_driver = new LuceneIndexingDriver (LuceneContainer.Singleton);
 
 				return singleton_driver;
 			}
@@ -267,8 +245,8 @@ namespace Beagle.Daemon {
 			// Step #3: Make another pass across our list of indexables
 			// and write out any new documents.
 
-			if (text_cache != null)
-				text_cache.BeginTransaction ();
+			if (container.TextCache != null)
+				container.TextCache.BeginTransaction ();
 				
 			IndexWriter primary_writer, secondary_writer;
 			primary_writer = new IndexWriter (PrimaryStore, IndexingAnalyzer, false);
@@ -323,7 +301,7 @@ namespace Beagle.Daemon {
 				// If we have content, try to find a filter
 				// which we can use to process the indexable.
 				try {
-					FilterFactory.FilterIndexable (indexable, text_cache, out filter);
+					FilterFactory.FilterIndexable (indexable, container.TextCache, out filter);
 				} catch (Exception e) {
 					Logger.Log.Error (e, "Unable to filter {0} (mimetype={1})", indexable.DisplayUri, indexable.MimeType);
 					indexable.NoContent = true;
@@ -387,19 +365,19 @@ namespace Beagle.Daemon {
 				indexable.Cleanup ();
 			}
 
-			if (text_cache != null)
-				text_cache.CommitTransaction ();
+			if (container.TextCache != null)
+				container.TextCache.CommitTransaction ();
 
 			if (request.OptimizeIndex) {
 				Stopwatch watch = new Stopwatch ();
-				Logger.Log.Debug ("Optimizing {0}", IndexName);
+				Logger.Log.Debug ("Optimizing {0}", "index"); // XXX: IndexName);
 				watch.Start ();
 				primary_writer.Optimize ();
 				if (secondary_writer == null)
 					secondary_writer = new IndexWriter (SecondaryStore, IndexingAnalyzer, false);
 				secondary_writer.Optimize ();
 				watch.Stop ();
-				Logger.Log.Debug ("{0} optimized in {1}", IndexName, watch);
+				Logger.Log.Debug ("{0} optimized in {1}", "Index", watch); // XXX: IndexName, watch);
 			}
 			
 			// Step #4. Close our writers and return the events to

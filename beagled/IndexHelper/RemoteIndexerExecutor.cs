@@ -1,7 +1,7 @@
 //
 // RemoteIndexerExecutor.cs
 //
-// Copyright (C) 2005 Novell, Inc.
+// Copyright (C) 2005-2007 Novell, Inc.
 //
 
 //
@@ -52,10 +52,6 @@ namespace Beagle.IndexHelper {
 		{
 			if (indexer == null) {
 				indexer = LuceneIndexingDriver.Singleton;
-
-				// XXX
-				LuceneContainer container = new LuceneContainer ("Singleton");
-				container.AttachIndexingDriver (indexer);
 
 				indexer.FileFilterNotifier += delegate (Uri display_uri, Filter filter) {
 					IndexHelperTool.ReportActivity ();

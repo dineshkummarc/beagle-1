@@ -1,7 +1,7 @@
 //
 // StaticQueryable.cs
 //
-// Copyright (C) 2005 Novell, Inc.
+// Copyright (C) 2005-2007 Novell, Inc.
 //
 
 //
@@ -41,42 +41,27 @@ namespace Beagle.Daemon {
 
 	public class StaticQueryable : LuceneQueryable 	{
 		
-		protected TextCache text_cache;
-		
 		public StaticQueryable (string index_path) : base (index_path, true)
 		{
 			Logger.Log.Debug ("Initializing static queryable: {0}", index_path);
+		}
 
-			if (Directory.Exists (Path.Combine (index_path, "TextCache"))) {
+		override protected LuceneContainer BuildLuceneContainer (string source_name, bool read_only_mode)
+		{
+			// Return a new container for static backends instead
+			// of the normal singleton.
+
+			TextCache text_cache = null;
+
+			if (Directory.Exists (Path.Combine (source_name, "TextCache"))) {
 				try {
-					text_cache = new TextCache (index_path, true);
+					text_cache = new TextCache (source_name, true);
 				} catch (UnauthorizedAccessException) {
-					Logger.Log.Warn ("Unable to purge static queryable text cache in {0}.  Will run without it.", index_path);
+					Logger.Log.Warn ("Unable to purge static queryable text cache in {0}.  Will run without it.", source_name);
 				}
 			}
-		}
 
-		override protected LuceneContainer BuildLuceneContainer (string source_name, int source_version, bool read_only_mode)
-		{
-			// Return a new containerfor static backends instead
-			// of the normal singleton.
-			return new LuceneContainer (source_name, read_only_mode);
-		}
-
-		override public string GetSnippet (string[] query_terms, Hit hit) 
-		{
-			if (text_cache == null)
-				return null;
-
-			// Look up the hit in our local text cache.
-			TextReader reader = text_cache.GetReader (hit.Uri);
-			if (reader == null)
-				return null;
-			
-			string snippet = SnippetFu.GetSnippet (query_terms, reader);
-			reader.Close ();
-			
-			return snippet;
+			return new LuceneContainer (source_name, text_cache, read_only_mode);
 		}
 
 		override protected bool HitFilter (Hit hit)
