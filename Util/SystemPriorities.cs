@@ -1,7 +1,7 @@
 //
-// IoPriority.cs
+// SystemPriorities.cs
 //
-// Copyright (C) 2005 Novell, Inc.
+// Copyright (C) 2005-2007 Novell, Inc.
 //
 
 //
@@ -29,9 +29,10 @@ using System.Runtime.InteropServices;
 
 namespace Beagle.Util {
 	
-	public class IoPriority {
+	public static class SystemPriorities {
 
-		private IoPriority () {} // Static class
+		//////////////////////////////////////////////////////////////
+		// IO priorities
 
 		[DllImport ("libbeagleglue")]
 		static extern int set_io_priority_idle ();
@@ -54,5 +55,72 @@ namespace Beagle.Util {
 			else
 				Log.Warn ("Unable to set IO priority class to idle or IO priority within best effort class to 7");
 		}
+
+		//////////////////////////////////////////////////////////////
+		// Nice values
+
+		static public void Renice (int nice)
+		{
+			int prio = Mono.Unix.Native.Syscall.nice (nice);
+
+			if (prio < 0)
+				Log.Warn ("Unable to renice process to {0}", nice);
+			else if (prio == nice)
+				Log.Debug ("Reniced process to {0}", nice);
+			else
+				Log.Debug ("Process was already niced to {0}, not renicing to {1}", prio, nice);
+		}
+
+		//////////////////////////////////////////////////////////////
+		// Scheduler policies
+
+		[DllImport ("libbeagleglue")]
+		static extern int set_scheduler_policy_batch ();
+
+		[DllImport ("libbeagleglue")]
+		static extern int set_scheduler_policy_other ();
+
+		static public bool SetSchedulerPolicyBatch ()
+		{
+			int rc = set_scheduler_policy_batch ();
+
+			if (rc < 0)
+				Log.Warn ("Unable to set scheduler policy to SCHED_BATCH");
+
+			return rc >= 0;
+		}
+
+		static public bool SetSchedulerPolicyOther ()
+		{
+			int rc = set_scheduler_policy_other ();
+
+			if (rc < 0)
+				Log.Warn ("Unable to set scheduler policy to SCHED_OTHER");
+
+			return rc >= 0;
+		}
+
+		//////////////////////////////////////////////////////////////
+		// Process limits (rlimit)
+
+		[DllImport ("libbeagleglue")]
+		static extern int set_rlimit (Resource resource, int limit);
+
+		// If you change these, you also have to deal with them in
+		// glue/rlimit-glue.c!  For more descriptions, look at the
+		// setrlimit(2) man page.
+		public enum Resource {
+			Cpu          = 0, // Seconds of CPU time
+			AddressSpace = 1  // Addressed memory (VmSize)
+		}
+
+		static public void SetResourceLimit (Resource resource, int limit)
+		{
+			int rc = set_rlimit (resource, limit);
+
+			if (rc < 0)
+				Log.Warn ("Unable to set resource limit ({0} to {1})", resource, limit);
+		}
+
 	}
 }

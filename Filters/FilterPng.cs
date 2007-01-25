@@ -29,6 +29,7 @@ using System.IO;
 
 using Beagle.Util;
 using Beagle.Daemon;
+using Beagle.Util.Xmp;
 
 using SemWeb;
 
@@ -37,6 +38,10 @@ namespace Beagle.Filters {
 	public class FilterPng : FilterImage {
 
 		public FilterPng () : base ()
+		{
+		}
+
+		protected override void RegisterSupportedTypes ()
 		{
 			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("image/png"));
 		}
@@ -73,7 +78,7 @@ namespace Beagle.Filters {
 						colorType = "Greyscale";
 						hasAlpha = true;
 						break;
-					case PngHeader.ColorType.RgbAlpha:
+					case PngHeader.ColorType.RgbA:
 						colorType = "Truecolor";
 						hasAlpha = true;
 						break;

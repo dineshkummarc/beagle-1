@@ -40,17 +40,21 @@ using HtmlAgilityPack;
 namespace Beagle.Filters {
 
 	public class FilterHtml : Beagle.Daemon.Filter {
+
 		// When see <b> push "b" in the stack
 		// When see </b> pop from the stack
 		// For good error checking, we should compare
 		// current element with what was popped
-		// Currently, we just pop, this might allow
-		// unmatched elements to pass through
-		private Stack hot_stack;
-		private Stack ignore_stack;
+		// Currently, we just count the start and end tags using HotUp and HotDown
+		// This allows unmatched elements to pass through
+
+		// Do similar thing for ignore elements
+		private int ignore_level;
+
 		private bool building_text;
 		private StringBuilder builder;
 		protected Encoding enc;
+		private HtmlDocument doc;
 
 		// delegate types
 		public delegate int AppendTextCallback (string s);
@@ -60,6 +64,7 @@ namespace Beagle.Filters {
 
 		// delegates
 		private new AppendTextCallback AppendText;
+		private new AppendTextCallback AppendWord;
 		private new AddPropertyCallback AddProperty;
 		private new AppendSpaceCallback AppendWhiteSpace;
 		private new AppendSpaceCallback AppendStructuralBreak;
@@ -71,10 +76,10 @@ namespace Beagle.Filters {
 			if (register_filter) {
 				// 1: Add meta keyword fields as meta:key
 				SetVersion (1);
-				RegisterSupportedTypes ();
 				SnippetMode = true;
 
 				AppendText = new AppendTextCallback (base.AppendText);
+				AppendWord = new AppendTextCallback (base.AppendWord);
 				AddProperty = new AddPropertyCallback (base.AddProperty);
 				AppendWhiteSpace = new AppendSpaceCallback (base.AppendWhiteSpace);
 				AppendStructuralBreak = new AppendSpaceCallback (base.AppendStructuralBreak);
@@ -82,26 +87,13 @@ namespace Beagle.Filters {
 				HotDown = new HotCallback (base.HotDown);
 			}
 
-			hot_stack = new Stack ();
-			ignore_stack = new Stack ();
+			ignore_level = 0;
 			building_text = false;
 			builder = new StringBuilder ();
 		}
 
 		public FilterHtml () : this (true) {}
 
-		// Safeguard against spurious stack pop ups...
-		// caused by mismatched tags in bad html files
-		// FIXME: If matching elements is not required
-		// and if HtmlAgilityPack matches elements itself,
-		// then we can just use a counter hot_stack_depth
-		// instead of the hot_stack
-		private void SafePop (Stack st)
-		{
-			if (st != null && st.Count != 0)
-				st.Pop ();
-		}
-		
 		protected bool NodeIsHot (String nodeName) 
 		{
 			return nodeName == "b"
@@ -146,6 +138,171 @@ namespace Beagle.Filters {
 				|| nodeName == "style";
 		}
 
+		protected static bool NodeIsNonBody (string nodeName)
+		{
+			return nodeName == "html"
+				|| nodeName == "head"
+				|| nodeName == "meta"
+				|| nodeName == "style"
+				|| nodeName == "title"
+				|| nodeName == "link"
+				|| nodeName == "script";
+		}
+
+		protected static bool NodeIsInBody (string nodeName)
+		{
+			return (nodeName == "script" || (! NodeIsNonBody (nodeName)));
+		}
+
+		protected void HandleTitleNode (HtmlNode node)
+		{
+			if (node.StartTag) {
+				builder.Length = 0;
+				building_text = true;
+			} else {
+				String title = HtmlEntity.DeEntitize (builder.ToString ());
+				AddProperty (Beagle.Property.New ("dc:title", title));
+				builder.Length = 0;
+				building_text = false;
+			}
+		}
+
+		protected void HandleMetaNode (HtmlNode node)
+		{
+	   		string name = node.GetAttributeValue ("name", String.Empty);
+           		string content = node.GetAttributeValue ("content", String.Empty);
+			if (name != String.Empty)
+				AddProperty (Beagle.Property.New ("meta:" + name, content));
+		}
+
+		protected void HandleContentFreeNode (HtmlNode node)
+		{
+			// so node is a content-free node
+			// ignore contents of such node
+			if (node.StartTag)
+				ignore_level ++;
+			else
+				ignore_level = (ignore_level > 1 ? ignore_level - 1 : 0);
+		}
+
+		protected void HandleContentRichNode (HtmlNode node)
+		{
+			bool isHot = NodeIsHot (node.Name);
+			bool breaksText = NodeBreaksText (node.Name);
+			bool breaksStructure = NodeBreaksStructure (node.Name);
+
+			if (breaksText)
+				AppendWhiteSpace ();
+
+			if (node.StartTag) {
+				if (isHot) {
+					HotUp ();
+				}
+				if (node.Name == "img") {
+					string attr = node.GetAttributeValue ("alt", String.Empty);
+					if (attr != String.Empty) {
+						string s = HtmlEntity.DeEntitize (attr);
+						AppendWord (s);
+						AppendWhiteSpace ();
+						added_text_count += (s.Length + 1);
+					}
+				} else if (node.Name == "a") {
+					string attr = node.GetAttributeValue ("href", String.Empty);
+					if (attr != String.Empty) {
+						string s = HtmlEntity.DeEntitize (
+							    SW.HttpUtility.UrlDecode (attr, enc));
+						AppendWord (s);
+						AppendWhiteSpace ();
+						added_text_count += (s.Length + 1);
+					}
+				}
+			} else { // (! node.StartTag)
+				if (isHot) {
+					HotDown ();
+				}	
+				if (breaksStructure)
+					AppendStructuralBreak ();
+			}
+
+			if (breaksText)
+				AppendWhiteSpace ();
+		}
+
+		int added_text_count = 0;
+
+		protected void HandleTextNode (HtmlNode node)
+		{
+			// FIXME Do we need to trim the text ?
+			String text = ((HtmlTextNode)node).Text;
+			if (ignore_level != 0)
+				return; // still ignoring ...
+			if (building_text)
+				builder.Append (text);
+			else {
+				string s = HtmlEntity.DeEntitize (text);
+				AppendText (s);
+				added_text_count += s.Length;
+			}
+			//if (hot_stack.Count != 0)
+			//Console.WriteLine (" TEXT:" + text + " ignore=" + ignore_level);
+		}
+
+		protected bool HandleNodeEventHead (HtmlNode node)
+		{
+			//Log.Debug ("HandleNodeEventBody (<{0}{1}>)", (node.StartTag ? "" : "/"), node.Name);
+			switch (node.NodeType) {
+				
+			case HtmlNodeType.Document:
+			case HtmlNodeType.Element:
+				if (! NodeIsNonBody (node.Name)) {
+					doc.PauseLoad ();
+				} else if (node.Name == "title") {
+					HandleTitleNode (node);
+				} else if (node.Name == "meta") {
+					HandleMetaNode (node);
+				} else if (NodeIsContentFree (node.Name)) {
+					HandleContentFreeNode (node);
+				}
+				break;
+				
+			case HtmlNodeType.Text:
+				HandleTextNode (node);
+				break;
+			}
+
+			return true;
+		}
+
+		protected bool HandleNodeEventBody (HtmlNode node)
+		{
+			//Log.Debug ("HandleNodeEventBody (<{0}{1}>)", (node.StartTag ? "" : "/"), node.Name);
+			switch (node.NodeType) {
+				
+			case HtmlNodeType.Document:
+			case HtmlNodeType.Element:
+				if (! NodeIsInBody (node.Name)) {
+					break;
+				} else if (! NodeIsContentFree (node.Name)) {
+					HandleContentRichNode (node);
+				} else {
+					HandleContentFreeNode (node);
+				}
+				break;
+				
+			case HtmlNodeType.Text:
+				HandleTextNode (node);
+				break;
+			}
+
+			if (added_text_count > 2048) {
+				added_text_count = 0;
+				doc.PauseLoad ();
+			}
+
+			return true;
+		}
+
+		// Combined handler when you do not need separate head and body events
 		protected bool HandleNodeEvent (HtmlNode node)
 		{
 			switch (node.NodeType) {
@@ -153,90 +310,29 @@ namespace Beagle.Filters {
 			case HtmlNodeType.Document:
 			case HtmlNodeType.Element:
 				if (node.Name == "title") {
-					if (node.StartTag) {
-						builder.Length = 0;
-						building_text = true;
-					} else {
-						String title = HtmlEntity.DeEntitize (builder.ToString ().Trim ());
-						AddProperty (Beagle.Property.New ("dc:title", title));
-						builder.Length = 0;
-						building_text = false;
-					}
+					HandleTitleNode (node);
 				} else if (node.Name == "meta") {
-	   				string name = node.GetAttributeValue ("name", String.Empty);
-           				string content = node.GetAttributeValue ("content", String.Empty);
-					if (name != String.Empty)
-						AddProperty (Beagle.Property.New ("meta:" + name, content));
+					HandleMetaNode (node);
 				} else if (! NodeIsContentFree (node.Name)) {
-					bool isHot = NodeIsHot (node.Name);
-					bool breaksText = NodeBreaksText (node.Name);
-					bool breaksStructure = NodeBreaksStructure (node.Name);
-
-					if (breaksText)
-						AppendWhiteSpace ();
-
-					if (node.StartTag) {
-						if (isHot) {
-							if (hot_stack.Count == 0)
-								HotUp ();
-							hot_stack.Push (node.Name);
-						}
-						if (node.Name == "img") {
-							string attr = node.GetAttributeValue ("alt", String.Empty);
-							if (attr != String.Empty) {
-								AppendText (HtmlEntity.DeEntitize (attr));
-								AppendWhiteSpace ();
-							}
-						} else if (node.Name == "a") {
-							string attr = node.GetAttributeValue ("href", String.Empty);
-							if (attr != String.Empty) {
-								AppendText (HtmlEntity.DeEntitize (
-									    SW.HttpUtility.UrlDecode (attr, enc)));
-								AppendWhiteSpace ();
-							}
-						}
-					} else { // (! node.StartTag)
-						if (isHot) {
-							SafePop (hot_stack);
-							if (hot_stack.Count == 0)
-								HotDown ();
-						}	
-						if (breaksStructure)
-							AppendStructuralBreak ();
-					}
-
-					if (breaksText)
-						AppendWhiteSpace ();
+					HandleContentRichNode (node);
 				} else {
-					// so node is a content-free node
-					// ignore contents of such node
-					if (node.StartTag)
-						ignore_stack.Push (node.Name);
-					else
-						SafePop (ignore_stack);
+					HandleContentFreeNode (node);
 				}
 				break;
 				
 			case HtmlNodeType.Text:
-				// FIXME Do we need to trim the text ?
-				String text = ((HtmlTextNode)node).Text;
-				if (ignore_stack.Count != 0)
-					break; // still ignoring ...
-				if (building_text)
-					builder.Append (text);
-				else
-					AppendText (HtmlEntity.DeEntitize (text));
-				//if (hot_stack.Count != 0)
-				//Console.WriteLine (" TEXT:" + text + " ignore=" + ignore_stack.Count);
+				HandleTextNode (node);
 				break;
 			}
 
+			// HandleNodeEvent() does not use pause/resume parsing
+			// So, check if more words are allowed to be extracted
 			if (! AllowMoreWords ())
 				return false;
 			return true;
 		}
 
-		override protected void DoOpen (FileInfo info)
+		override protected void DoPullProperties ()
 		{
 			enc = null;
 
@@ -268,8 +364,8 @@ namespace Beagle.Filters {
 				Stream.Seek (0, SeekOrigin.Begin);
 			}
 
-			HtmlDocument doc = new HtmlDocument ();
-			doc.ReportNode += HandleNodeEvent;
+			doc = new HtmlDocument ();
+			doc.ReportNode += HandleNodeEventHead;
 			doc.StreamMode = true;
 			// we already determined encoding
 			doc.OptionReadEncoding = false;
@@ -283,10 +379,22 @@ namespace Beagle.Filters {
 				enc = Encoding.ASCII;
 				doc.Load (Stream, enc);
 			} catch (Exception e) {
-				Log.Debug (e, "Exception while filtering HTML file " + info.FullName);
+				Log.Debug (e, "Exception while filtering HTML file " +FileInfo.FullName);
 			}
+		}
 
-			Finished ();
+		override protected void DoPullSetup ()
+		{
+			doc.ReportNode -= HandleNodeEventHead;
+			doc.ReportNode += HandleNodeEventBody;
+		}
+
+		override protected void DoPull ()
+		{
+			doc.ResumeLoad ();
+
+			if (doc.DoneParsing)
+				Finished ();
 		}
 
 		public void ExtractText (string html_string,
@@ -298,6 +406,7 @@ namespace Beagle.Filters {
 					 HotCallback hot_down_cb)
 		{
 			AppendText = append_text_cb;
+			AppendWord = append_text_cb;
 			AddProperty = add_prop_cb;
 			AppendWhiteSpace = append_white_cb;
 			AppendStructuralBreak = append_break_cb;
@@ -306,6 +415,7 @@ namespace Beagle.Filters {
 
 			HtmlDocument doc = new HtmlDocument ();
 			doc.ReportNode += HandleNodeEvent;
+
 			doc.StreamMode = true;
 	
 			try {
@@ -316,7 +426,7 @@ namespace Beagle.Filters {
 
 		}
 
-		virtual protected void RegisterSupportedTypes () 
+		override protected void RegisterSupportedTypes () 
 		{
 			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("text/html"));
 		}

@@ -75,14 +75,17 @@ namespace Beagle.Filters {
 
 		public FilterMPlayerVideo ()
 		{
+			PreLoad = false;
+		}
+
+		protected override void RegisterSupportedTypes ()
+		{
 			foreach (string s in mime_types) {
 				FilterFlavor flavor = FilterFlavor.NewFromMimeType (s);
 				flavor.Priority = -1; // Prefer Totem over this one
 
 				AddSupportedFlavor (flavor);
 			}
-
-			PreLoad = false;
 		}
 		
 		private string AspectString(float aspect) {
@@ -111,6 +114,16 @@ namespace Beagle.Filters {
 			pc.Arguments = new string [] { "mplayer", "-vo", "null", "-ao", "null", "-frames", "0", "-identify", FileInfo.FullName };
 			pc.RedirectStandardOutput = true;
 			pc.RedirectStandardError = true;
+
+			// Runs inside the child process after fork() but before exec()
+			pc.ChildProcessSetup += delegate {
+				// Let mplayer run for 10 seconds, max.
+				SystemPriorities.SetResourceLimit (SystemPriorities.Resource.Cpu, 10);
+
+				// There have been reports of mplayer eating
+				// tons of memory.  So limit it to 100 megs.
+				SystemPriorities.SetResourceLimit (SystemPriorities.Resource.AddressSpace, 100*1024*1024);
+			};
 
 			try {
 				pc.Start ();

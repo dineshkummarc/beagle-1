@@ -36,7 +36,6 @@ $(EXTSTR): $(EXTSTR_IN)
 UTIL_CSFILES = 			        	\
 	$(srcdir)/ArrayFu.cs              	\
 	$(srcdir)/BetterBitArray.cs		\
-	$(srcdir)/EndianConverter.cs		\
 	$(srcdir)/camel.cs              	\
 	$(srcdir)/CommandLineFu.cs		\
 	$(srcdir)/Conf.cs			\
@@ -46,7 +45,6 @@ UTIL_CSFILES = 			        	\
 	$(srcdir)/DirectoryWalker.cs		\
 	$(srcdir)/Evolution.cs			\
 	$(srcdir)/ExceptionHandlingThread.cs	\
-	$(srcdir)/ExifData.cs			\
 	$(srcdir)/ExtendedAttribute.cs  	\
 	$(srcdir)/FileAdvise.cs			\
 	$(srcdir)/FileSystem.cs			\
@@ -57,19 +55,15 @@ UTIL_CSFILES = 			        	\
 	$(srcdir)/ImBuddy.cs              	\
 	$(srcdir)/ImLog.cs              	\
 	$(srcdir)/Inotify.cs			\
-	$(srcdir)/IoPriority.cs			\
-	$(srcdir)/JpegHeader.cs			\
 	$(srcdir)/KdeUtils.cs			\
 	$(srcdir)/KonqHistoryUtil.cs		\
 	$(srcdir)/LineReader.cs			\
 	$(srcdir)/Log.cs			\
 	$(srcdir)/Logger.cs             	\
-	$(srcdir)/MetadataStore.cs		\
 	$(srcdir)/MultiReader.cs        	\
 	$(srcdir)/NautilusTools.cs      	\
 	$(srcdir)/Note.cs               	\
 	$(srcdir)/PathFinder.cs			\
-	$(srcdir)/PngHeader.cs			\
 	$(srcdir)/PullingReader.cs      	\
 	$(srcdir)/ReflectionFu.cs		\
 	$(srcdir)/SafeProcess.cs		\
@@ -79,9 +73,9 @@ UTIL_CSFILES = 			        	\
 	$(srcdir)/StringFu.cs           	\
 	$(srcdir)/StringMatcher.cs		\
 	$(srcdir)/SystemInformation.cs		\
+	$(srcdir)/SystemPriorities.cs		\
 	$(srcdir)/TeeTextWriter.cs		\
 	$(srcdir)/ThreadPond.cs			\
-	$(srcdir)/Tiff.cs			\
 	$(srcdir)/Timeline.cs			\
 	$(srcdir)/TopScores.cs			\
 	$(srcdir)/TypeCacheAttribute.cs		\
@@ -89,29 +83,39 @@ UTIL_CSFILES = 			        	\
 	$(srcdir)/UriFu.cs			\
 	$(srcdir)/XdgMime.cs			\
 	$(srcdir)/XmlFu.cs			\
-	$(srcdir)/XmpFile.cs			\
-	$(srcdir)/SemWeb/ForwardLogic.cs		\
-	$(srcdir)/SemWeb/KnowledgeModel.cs		\
-	$(srcdir)/SemWeb/MemoryStore.cs		\
-	$(srcdir)/SemWeb/N3Parser.cs			\
-	$(srcdir)/SemWeb/N3Writer.cs			\
-	$(srcdir)/SemWeb/NamespaceManager.cs		\
-	$(srcdir)/SemWeb/Query.cs			\
-	$(srcdir)/SemWeb/RdfParser.cs			\
-	$(srcdir)/SemWeb/RdfWriter.cs			\
-	$(srcdir)/SemWeb/Reasoning.cs			\
-	$(srcdir)/SemWeb/Resource.cs			\
-	$(srcdir)/SemWeb/RSquary.cs			\
-	$(srcdir)/SemWeb/RSquaryFilters.cs		\
-	$(srcdir)/SemWeb/Sparql.cs			\
-	$(srcdir)/SemWeb/SQLStore.cs			\
-	$(srcdir)/SemWeb/Statement.cs			\
-	$(srcdir)/SemWeb/Store.cs			\
-	$(srcdir)/SemWeb/UriMap.cs			\
-	$(srcdir)/SemWeb/Util.cs			\
-	$(srcdir)/SemWeb/XmlParser.cs			\
-	$(srcdir)/SemWeb/XmlWriter.cs			\
-	$(srcdir)/SemWeb/XPathSemWebNavigator.cs	\
+	$(srcdir)/F-Spot/Bim.cs			\
+	$(srcdir)/F-Spot/BitConverter.cs		\
+	$(srcdir)/F-Spot/Exif.cs			\
+	$(srcdir)/F-Spot/IptcFile.cs		\
+	$(srcdir)/F-Spot/JpegHeader.cs		\
+	$(srcdir)/F-Spot/MetadataStore.cs	\
+	$(srcdir)/F-Spot/PngFile.cs		\
+	$(srcdir)/F-Spot/PixbufUtils.cs		\
+	$(srcdir)/F-Spot/Tiff.cs			\
+	$(srcdir)/F-Spot/XmpFile.cs		\
+	$(srcdir)/SemWeb/AssemblyInfo.cs        \
+	$(srcdir)/SemWeb/NamespaceManager.cs    \
+	$(srcdir)/SemWeb/Util.cs                \
+	$(srcdir)/SemWeb/UriMap.cs              \
+	$(srcdir)/SemWeb/Resource.cs            \
+	$(srcdir)/SemWeb/Statement.cs           \
+	$(srcdir)/SemWeb/Store.cs               \
+	$(srcdir)/SemWeb/MemoryStore.cs         \
+	$(srcdir)/SemWeb/SQLStore.cs            \
+	$(srcdir)/SemWeb/RdfReader.cs           \
+	$(srcdir)/SemWeb/RdfXmlReader.cs        \
+	$(srcdir)/SemWeb/N3Reader.cs            \
+	$(srcdir)/SemWeb/RdfWriter.cs           \
+	$(srcdir)/SemWeb/RdfXmlWriter.cs        \
+	$(srcdir)/SemWeb/N3Writer.cs            \
+	$(srcdir)/SemWeb/RSquary.cs             \
+	$(srcdir)/SemWeb/LiteralFilters.cs      \
+	$(srcdir)/SemWeb/Query.cs               \
+	$(srcdir)/SemWeb/Inference.cs           \
+	$(srcdir)/SemWeb/RDFS.cs                \
+	$(srcdir)/SemWeb/Algos.cs               \
+	$(srcdir)/SemWeb/Remote.cs              \
+	$(srcdir)/SemWeb/XPathSemWebNavigator.cs\
 	$(srcdir)/PropertyKeywordAttribute.cs
 
 if ENABLE_THUNDERBIRD
@@ -127,7 +131,6 @@ endif
 
 UTIL_ASSEMBLIES =				\
 	$(BEAGLED_LIBS)				\
-	-r:System.Web.Services			\
 	-r:System.Data				\
 	-r:Mono.Data.SqliteClient		\
 	-r:Mono.Posix				\

@@ -22,6 +22,12 @@ endif
 IOPRIO_GLUE_SOURCES =	\
 	ioprio-glue.c
 
+RLIMIT_GLUE_SOURCES =	\
+	rlimit-glue.c
+
+SCHEDULER_GLUE_SOURCES =	\
+	scheduler-glue.c
+
 SYSINFO_GLUE_SOURCES =		\
 	mono-glue.c		\
 	screensaver-glue.c	\
@@ -87,6 +93,8 @@ endif
 libbeagleglue_la_SOURCES = 		\
 	$(BEAGLED_GLUE_SOURCES)		\
 	$(IOPRIO_GLUE_SOURCES)		\
+	$(RLIMIT_GLUE_SOURCES)		\
+	$(SCHEDULER_GLUE_SOURCES)	\
 	$(SYSINFO_GLUE_SOURCES)		\
 	$(XDGMIME_GLUE_SOURCES)		\
 	$(EXTRA_GLUE_SOURCES)

@@ -89,7 +89,10 @@ namespace Beagle.Filters {
 				// Something else wrong with the XML
 				Logger.Log.Error (ex, "Unable to parse {0}", path);
 			}
+		}
 
+		protected override void RegisterSupportedTypes ()
+		{
 			if (this.filters == null)
 				return;
 
@@ -172,6 +175,12 @@ namespace Beagle.Filters {
 			SafeProcess pc = new SafeProcess ();
 			pc.Arguments = argv;
 			pc.RedirectStandardOutput = true;
+
+			// Runs inside the child process after fork() but before exec()
+			pc.ChildProcessSetup += delegate {
+				// Let the external filter run for 2 minutes, max.
+				SystemPriorities.SetResourceLimit (SystemPriorities.Resource.Cpu, 120);
+			};
 
 			try {
 				pc.Start ();
