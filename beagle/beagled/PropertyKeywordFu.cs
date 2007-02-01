@@ -87,7 +87,6 @@ namespace Beagle.Daemon {
 			
 			// Mapping between human query keywords and beagle index property keywords
 			// These are some of the standard mapping which is available to all backends and filters.
-			
 			property_table.Add ("title",
 					    new PropertyDetail (PropertyType.Text, "dc:title", "Title"));
 			
@@ -96,6 +95,8 @@ namespace Beagle.Daemon {
 
 			property_table.Add ("author",
 					    new PropertyDetail (PropertyType.Text, "dc:creator", "Author of the content"));
+			property_table.Add ("language",
+					    new PropertyDetail (PropertyType.Text, "dc:language", "Language of the content"));
 		}
 
 		public static void RegisterMapping (PropertyKeywordMapping mapping)

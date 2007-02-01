@@ -91,7 +91,7 @@ namespace Beagle.Daemon {
 						or_list.Add (query_part);
 					}
 
-					m = next.NextMatch();
+					m = next.NextMatch ();
 					continue;
 				}
 
@@ -214,10 +214,11 @@ namespace Beagle.Daemon {
 
 			QueryPart_Property query_part_prop = new QueryPart_Property ();
 			query_part_prop.Key = prop_string;
-			query_part_prop.Value = text;
+			query_part_prop.Value = (prop_string == "dc:language" ? 
+						TextCategorizer.GetLocaleCode (text) : text);
 			query_part_prop.Type = prop_type;
 			query_part_prop.Logic = (IsProhibited ? QueryPartLogic.Prohibited : QueryPartLogic.Required);
-
+			
 			Logger.Log.Debug ("Parsed query '"	    + query + 
 					  "' as prop query:key="    + query_part_prop.Key +
 					  ", value="		    + query_part_prop.Value +

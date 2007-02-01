@@ -40,6 +40,10 @@ namespace Beagle.Util {
 		       get { return "@prefix@/share/locale"; }
 		}
 
+		static public string LangFPDir {
+			get { return "@langfpdir@"; }
+		}
+
 		static public string KdePrefix {
 			get { return "@KDE_PREFIX@"; }
 		}

@@ -1,0 +1,146 @@
+Vikipedijos projektas anglų kalba pradėtas 2001 m. sausio 15 d. kaip priedas ekspertų kuriamam Nupedia projektui. Vikipedijos administravimą koordinuoja nepelno organizacija 'Wikimedia Foundation', įsikūrusi JAV. Vėliau buvo sukurti atitinkami projektai kitomis kalbomis, o 2003 m. vasarį pradėtas Vikipedijos projektas lietuvių kalba.
+
+2006 m. projektas kuriamas 230 pasaulio kalbų. 2006 m. Vikipedijoje buvo daugiau nei 4,13 mln. straipsnių (per 1 120 000 straipsnių vien tik angliškoje versijoje), per 911 000 iliustracijų.
+
+2006 m. gegužės mėn. duomenimis, Vikipedijoje buvo atlikta per 120 mln. pataisymų ir papildymų (edits), tvarka bei administravimu, medžiagos sisteminimu rūpinosi 2 620 administratoriai, buvo užregistruota daugiau nei 2 500 000 dalyvių, susikūrusių savo naudotojo (User) vardą.
+
+Plačiau žiūrėkite straipsnį Vikipedijos istorija.
+
+ Tikslai
+
+Vikipedijos siekis - struktūriškai ir sistemiškai pateikti žmonijos sukauptas žinias enciklopedijos forma. Kokiomis temomis rašoma ir kaip, sprendžiama Vikipedijos bendruomenėje - tarpusavio sutarimu. Siekiama, kad vien tik statistiniai duomenys ar šiaip įdomi medžiaga neturėtų būti beatodairiškai talpinami enciklopedijoje. Visa tai turi būti struktūruojama, pateikiant apibrėžimą, atskirus faktus siejant į vieningą visumą ir nurodant tarpusavio ryšius bei sąsajas, priklausomybes ir panašumus.
+
+ Autorinės teisės ir licencija
+
+Enciklopedijos straipsniuose pateikta informacija yra laisvai prieinama. Ją galima ne tik skaityti, bet ir kopijuoti, platinti pagal GFDL licenciją. Vikipedija neturi apibrėžto autorių rato, siekiama kuo daugiau žmonių įtraukti į bendrą darbą. Todėl jai taikomos apribotos autorinės teisės. Niekas negali savintis Vikipedijos autorinių teisių.
+
+ Vikipedijos privalumai
+
+ Kompaktiškumas
+
+Elektroninė enciklopedijos forma leidžia greitai surasti reikiamą informaciją, pereiti prie kitų temų straipsnių, perskaityti internetinėse nuorodose pateikiamą medžiagą, susijusią su straipsniu. Spausdintinėse enciklopedijose informacija pateikiama keliolikoje tomų, kurių sklaidymas ir vartymas nėra toks patogus.
+
+
+    * Elektroninė forma:
+
+Elektroninė forma leidžia greitai ieškoti reikiamos informacijos. Tačiau ne kiekvienoje elektroninėje enciklopedijoje pateikiama informacija gali būti greitai nukopijuota į tekstinę programą, kuria gali būti kuriamas naujas kūrinys (pavyzdžiui, informacijos, rastos el. enciklopedijoje, pagrindu).
+
+Vikipedijoje esančią medžiagą skaityti, jos ieškoti ir ją kopijuoti yra visai paprasta. Spausdintinės enciklopedijos medžiagą tokiu atveju reikėtų skenuoti arba suvesti informaciją kliaviatūra, kas užimtų tikrai daug laiko.
+
+    *
+          o Prisijungus prie interneto
+
+Šiuo metu Vikipedija greičiausiai prieinama yra internete (adresu http://lt.wikipedia.org). Vikipedija pastaruoju metu naudojamasi kone taip pat dažnai kaip ir populiariomis paieškos svetainėmis (kaip Google, Yahoo ir kitomis).
+
+    *
+          o Neprisijungus prie interneto
+
+Vikipediją įmanoma gauti taip pat ir DVD ar CD forma, ją galima nusikopijuoti kaip vientisą dokumentą arba išsisaugoti asmeniniame kompiuteryje.
+
+    * Spausdintinė versija
+
+Vikipedija Vokietijoje pasiekiama ne tik virtualiesiems skaitytojams
+Enlarge
+Vikipedija Vokietijoje pasiekiama ne tik virtualiesiems skaitytojams
+
+Kadangi kompiuteriais (o tuo labiau internetu) šiuo metu negali naudotis didžioji dalis Trečiojo pasaulio šalių gyventojų, Vikipediją planuojama spausdinti kaip tradicinę ("popierinę") enciklopediją.
+
+Atskiri Laisvosios enciklopedijos straipsnių rinkiniai platinami įvairiose šalyse (paprastai už simbolinę kainą). Visa Vikipedija ruošiama spausdinti kol kas tik vokiečių kalba (100 tomų). Ji bus išleista per 5 metus (2006-2010 metais).
+
+Plačiau apie Vikipedijos vokiečių k. leidimą skaitykite Vikinaujienose.
+
+    * Garsinė įrašų forma (Audiopedija)
+
+Ateityje bus siekiama sukurti tokią Atvirąją enciklopediją, kurioje esančią informaciją bus galima gauti įvairių jutimo organų pagalba. Vikipedija jau dabar neapsiriboja vien tik elektronine ar spausdintine forma. Jau kuriama ir Audiopedija - Atviroji enciklopedija, skirta nemokantiems (ar neturintiems laiko) skaityti, kuri taip pat prieinama neregiams arba silpnaregiams. Šiuo metu "audiopedizuojami" pavyzdiniai bei rinktiniai straipsniai, kurie turėtų sulaukti ir didesnio plačiosios visuomenės dėmesio.
+
+ Aktualumas
+
+Vikipedija yra viena aktualiausiai informaciją pateikiančių enciklopedinių leidinių. Joje svarbūs įvykiai ir aktualijos kartais aprašomos kone įvykio atsiradimo dieną (ar net valandą). Tai, pavyzdžiui, buvo 2005 m. pabaigoje, kai kone kas valandą (angliškoje Vikipedijoje) buvo atnaujinamos žinios apie potvynio JAV mastus ir aukas. Atviroji enciklopedija taip pat netrunka pranešti apie asmenybių gyvenimo įvykius, vingius ar informuoti apie mirtį.
+
+Analogiškoje spausdintoje enciklopedijoje aktualūs pasaulinės reikšmės įvykiai lieka neišbaigti, neaprašyti dėl informacijos trūkumo. Taip pat dažnai neaišku, ar solidaus amžiaus sulaukę asmenys, minimi enciklopedijoje, dar gyvi. Elektroninėje - priešingai: niekada nevėlu atnaujinti informaciją. Ir tai daroma be didelių sąnaudų, kadangi nereikia naujai leisti visos enciklopedijos kaip yra spausdintinių enciklopedijų atveju.
+
+ Išsamumas ir teisingumas
+
+Vikipedija savo straipsnių kokybe bei pateikiamos informacijos išsamumu sparčiai vejasi tradicines ir garsiausias pasaulio enciklopedijas. Tačiau reikia atminti, kad Laisvosios enciklopedijos projektas yra kuriamas dar tik 5 metus, todėl Vikipedija negali prilygti joje pateikiamo turinio teisingumu, išsamumu ir detalumu analogiškiems spausdintiems leidiniams, nes Vikipedija yra nuolat kuriama, taisoma, tobulinama bei redaguojama.
+
+ Apimtis
+
+Vikipedija savo apimtimi keleriopai lenkia analogiškas komercines enciklopedijas. Pavyzdžiui, angliška Vikipedija 2006 m. turėjo daugiau nei 1 140 000 straipsnių - 10 kartų daugiau nei Britanika.
+
+ Nuorodos, sąsajos
+Vikipedijos augimas - eksponentinis
+Enlarge
+Vikipedijos augimas - eksponentinis
+
+Greta straipsnyje minimų sąvokų, kurias pasiekti galima tiesiog paspaudus ant jų, Vikipedija pateikia sąvokos aprašą, kontekstą bei priskiria ją tam tikrai kategorijai. Panaršius ten (ją pasiekus per teksto apačioje minimą kategoriją), galima rasti daugiau ieškomos susijusios informacijos.
+
+Be to tokie įrankiai kaip "susiję straipsniai" bei "susiję keitimai", straipsnio istorijoje minimi autoriai bei jų sukurti straipsniai (įrankis "naudotojo indėlis") gali atvesti prie ieškomos tematikos šaltinių ir kitų nurodų. Netgi jei straipsnis dar nėra sukurtas, pasinaudojimas funkcija "susiję straipsniai", galima atrasti su ieškomo straipsnio tematika susijusią medžiagą.
+
+Spausdintinėse enciklopedijose nėra tiek daug nuorodų, dažniausiai apsiribojama literatūros sąrašu arba terminais, esančiais kituose tomuose; be to pasiekti tokią medžiagą (vien dėl fizinių kliūčių) nėra taip paprasta: reikia ieškoti bibliotekoje, gauti ir vartyti kitas knygas, kurios ne kiekvienam yra taip lengvai pasiekiamos kaip elektronine forma pateikiama informacija, esanti Vikipedijoje.
+
+ Prieinamumas
+
+Vikipedija yra laisvai prieinama iš bet kurio kompiuterio, turinčio interneto prieigą. Online versija yra nuolat atnaujinama, todėl ja naudotis yra geriausia.
+
+Neturint interneto prieigos taip pat yra galimybių naudotis elektronine enciklopedija offline. Komercinės enciklopedijos platinamos CD, DVD diskuose, už kuriuos reikia mokėti nemažus pinigus. Vikipedijos atveju - yra galimybių keleto spustelėjimų dėka išsisaugoti aktualiausią Laisvosios enciklopedijos versiją (pavyzdžiui, anglų, vokiečių, o artimiausiu metu - ir lietuvių kalba).
+
+ Daugiakalbystė
+VIkipedijos portalas http://www.wikipedia.org. Jame reprezentuojamos didžiausios Pasaulio Vikipedijos
+Enlarge
+VIkipedijos portalas http://www.wikipedia.org. Jame reprezentuojamos didžiausios Pasaulio Vikipedijos
+
+Vikipedijoje tą pačią informaciją galima rasti keliomis kalbomis. Tai kartu ir savotiškas žinių patikimumo garantas, kadangi galima palyginti pateiktą informaciją įvairiose Vikipedijose, sužinoti atitinkamų terminų atitikmenis užsienio kalba. Tokiu atveju Atviroji enciklopedija gali būti pagrįstai vadinama ir enciklopediniu žodynu, kadangi be dalykinės inormacijos joje pateikiama ir nemažai atitinkamos srities sąvokų, padedančių orientuotis žinių okeane.
+
+ Rašyba užsienio kalbomis
+
+Vikipedija pateikia vietovardžius, pavardes, vardus (tikrinius daiktavardžius) originalo kalba. Nežinant kokios nors sostinės (pvz., Paryžiaus) pavadinimo kuria nors kalba (pvz., prancūzų), jį galima rasti, pasinaudojant tarpkalbinėmis nuorodomis (pvz., prancūziškoji Vikipedija pateikiama Paris straipsnio versija, be to greta jos yra aprašymas ar susijusi medžiaga, randama, spaudžiant įrankius "susiję straipsniai", esančius kairėje puslapio pusėje).
+
+ Galimybė skaityti kitomis kalbomis
+Vikipedija hebrajų kalba (joje rašoma iš dešinės į kairę)
+Enlarge
+Vikipedija hebrajų kalba (joje rašoma iš dešinės į kairę)
+
+Elektroninė enciklopedijos forma leidžia nukopijuoti nesuprantamo kitakalbės Vikipedijos teksto dalį ir pasinaudoti internete esančiomis kompiuterinėmis vertimų programomis, kuriomis galima tą patį tekstą, interneto svetainę išversti į anglų, prancūzų, vokiečių, italų, ispanų, japonų kalbas. Pavyzdžiui, naudojantis Google pateikiamais įrankiais.
+
+ Nuomonių įvairovė
+
+Vikipedija neatstovauja kuriai nors žmonių grupei. Joje siekiama pateikti įvairiapusišką informaciją, argumentuotas nuomones, iškilus ginčams. Tai leidžia apžvelgti įvairias temas daug plačiau bei giliau (nei įprastinėse enciklopedijose).
+
+ Nemokamas naudojimasis
+
+Naudojimasis elektronine Vikipedija - nemokamas. Straipsnius galima kopijuoti, naudoti juose pateikiamą medžiagą - tekstą, statistiką, iliustracijas, nuotraukas, garso ir vaizdo įrašus.
+
+Naudojimosi salygas nustato GNU Laisvos dokumentacijos licencija, todėl būtina laikytis joje numatytų sąlygų, nes joje apibrėžiamos neatlygintino naudojimo taisyklės. Tradicines enciklopedijas nemokamai galima paskaityti nebent bibliotekoje ar pas pažįstamus, o norint ją įsigyti, kad būtų galima nuolat naudotis, reikia mokėti nemažus pinigus.
+
+Norint naudoti komercinės enciklopedijos straipsnius, leidžiama juos nebent tik cituoti. Apie jų atkūrimą ar paskelbimą be autoriaus sutikimo negali būti ir kalbos. Gavus leidimą, straipsnių naudojimasis paprastai turi būti atlyginamas honoraru - užmokesčiu enciklopedijos autoriams, leidėjams. Vikipedijos atveju- naudojimasis Laisvąja enciklopedija yra nemokamas, jei nepažeidžiama GNU licencijos sąlygos.
+
+ Vikipedijos kritika
+
+Visiems prieinama enciklopedija turi ir trūkumų. Vikipedijos kritikai teigia, esą ji pasmerkta nesėkmei. Dažniausiai yra minimos Klaidos ir netikslumai, sielvartaujama dėl vandalizmų, politinio ir tautinio korektiškumo, neutralumo, nuomonių konfliktų bei jų gausos, dėl dažno straipsnių keitimo.
+
+Pirmieji gyventojai Škotijoje atsirado apie 8 000 m. pr. m. e. Pirmosios nuolatinės gyvenvietės datuojamos 6000 m. Pirmieji gyventojai buvo mezolitinių, o nuo maždaug 4000 m. pr. m. e. neolitinių kultūrų medžiotojai ir žvejai. Anksčiausi archeologiniai radiniai patvirtinantys žmonių gyvenviečių ir kulto vietų egzistavimą yra iš maždaug 6000 m. pr. m. e.
+
+Rašytinė Škotijos istorija prasideda romėnų užkariavimų laikotarpiu, kai buvo užkariautos ir Britanijos pavadinimą gavo dabartinė Anglija ir Velsas. 82-208 mūsų eros metais romėnai buvo keletą kartų įžengę į regioną. Dalis pietinės Škotijos kurį laiką buvo patekusi netiesioginei Romos valdžiai, tačiau romėnai čia ilgesnį laiką neišsilaikė. 122-128 m. tarp Taino ir Solway upių buvo pastatyta Adriano siena, kuri atribojo nuo Škotijos romėnų Britaniją.
+
+503 m. dabartinės škotijos vakaruose išsikėlė skotai, keltų gentis iš Airijos.
+
+Istoriškai, vėliausiai nuo XIV a. Škotijoje ėmė išsiskirti du kultūriniai regionai - daugiausia škotiškai, o vėliau angliškai kalbantys Lowlands (Žemutinė Škotija) ir daugiausia gėliškai kalbantys Highlands (Hailandas, Aukštutinė Škotija). Žemutinė Škotija labiau buvo įtakojama Anglijos, ji buvo labiau pažeidžiama puolimo sausuma iš pietų atveju, be to labiau perėmė Anglijos įtaką dėl geografinio artumo ir prekybinių santykių su pietiniais kaimynais, nors Škotija turėjo stiprius prekybinius ryšius ir su kontinentine Europa. Nepaisant to gėlų kalba atskirose Žemutinės Škotijos dalyse išliko gana ilgai, Galloway ir Carrick regionuose iki pat XVIII a. ar net XIX a. Yra užfiksuota, kad Dunblane ir Auchterarder regionuose gėlų kalba buvo šnekama dar ir po reformacijos. Skirtingai nei paprastai manoma, Žemutinės ir Aukštutinės Škotijos riba nebuvo statiška, keitėsi keletą kartų.
+
+Išskirtinis Aukštutinės Škotijos bruožas buvo iki XVIII a. gyvavusi klanų sistema. Žinomiausi klanai buvo Campbell, McGregor, McDonald, McKenzie, McKay, McLeod, Robertson, Grant ir kiti. Žemutinei Škotijai buvo būdingas feodalinės sistemos variantas susifomavęs po normanų užkaiavimo Anglijoje, žymiausios giminės iš kurių kilo dauguma monarchų buvo Stuart, Bruce, Douglas, Porteous ir Murray arba Moray. Hailandas ilgą laiką išliko katalikybės bastionu, net ir po to, kai Žemutinėje Škotijoje tvirtai įsigalėjo kalvinizmas.
+
+Škotijos nepriklausomybės karų metu (maždaug 1290 - 1363 m.) škotai sukilo prieš Anglijos įtaką ir kišimąsi į škotų reikalus. Šiems karams vadovavo seras William Wallace, o vėliau Robert the Bruce, kuris laimėjo lemiamą Bannockburn mūšį prieš anglus 1314 m.
+
+Nepriklausoma Škotijos karalystė 1603 m. sudarė personalinę uniją su Anglija, kai Škotijos karalius Džeimsas VI po Elžbietos I mirties paveldėjo ir Anglijos sostą. Ši unija buvo formaliai įteisinta 1707 m. gegužės 1 d. Unijos Aktu, kurį sudarė Anglijos ir Škotijos parlamentai. Škotijoje unija buvo labai nepopuliari, nes ji buvo sudaryta dėl Škotijos ekonominio silpnumo ir anglų tarifų spaudimo. Įgyvendinant sutartį buvo panaikinti Anglijos ir Škotijos parlamentai, o jų galios perleistos naujam parlamentui, kuris posėdžiavo Londone ir tapo Jungtinės Karalystės parlamentu. Taip pat įgyvendinta muitų ir monetarinė sąjunga. Kai kurios Škotijos institucijos liko savarankiškos, ypatingai iš teisines sistemos. 1800 m. Škotija kartu su Anglija, Velsu ir Airija tapo Jungtinės Karalystės dalimi. Galiausiai nauja valstybė tapo Jungtine Didžiosios Britanijos ir Šiaures Airijos Karalyste.
+
+1979 m. gegužės 1 d. referendumu atmesta vidaus savivalda. 1997 m. rugsėjo 11 d. referendumo metu didžioji dalis Škotijos gyventojų pritarė idėjai sukurti Škotijos parlamentą, nepriklausomą nuo Londono. 1999 m. buvo išrinktas Škotijos parlamentas, kuris liepos 1 d. pradėjo darbą. Tai buvo pirmasis Škotijos parlamento susirinkimas nuo 1707 m. Naujasis Škotijos parlamentas gavo teises spręsti specifinius Škotijos reikalus ir ribotą galimybę keisti mokesčius
+
+Škotija yra šiaurinėje Didžiosios Britanijos salos dalyje ir užima apie trečdalį jos teritorijos. Be pagrindinės šalies teritorijos Škotiją sudaro keletas salynų, tarp jų Šetlando, Orknio ir Hebridų salos (skirstomos į Vidinius Hebridus ir Išorinius Hebridus). Pagrindinėje teritorijoje galima išskirti tris geografines ir geologines zonas, žiūrint iš šiaurės į pietus: kalnuotoji Hailandas (Highlands), Central Belt žemuma ir kalvota Southern Uplands. Didžioji dalis škotų gyvena centrinėje žemumoje, kurioje yra ir trys iš šešių didžiausių šalies miestų (Edinburgas, Glazgas ir Sterlingas) bei daug kitų didelių miestų. Iš likusiųjų gyvenotojų dauguma gyvena šiaurės rytų Žemutinėje Škotijoje (North-East Lowlands)., kur yra du iš likusių trijų didžiausių miestų (Aberdinas ir Dandis).
+
+Svarbiausi ežerai: Lomondas, Nesas, Loch Lochy, Loch Maree, Loch Tay
+
+izika (graikiškai φυσικός (physikos): natūralus, φύσις (physis): Gamta) - mokslas, tiriantis visas materijos formas, nuo sub-mikroskopinių dalelių, iš kurių sudarytos visos įprastinės medžiagos (dalelių fizika), iki visos materialios Visatos elgesio (kosmologija).
+
+Kai kurios fizikos studijuojamos savybės yra bendros visoms materialioms sistemoms, pavyzdžiui, energijos tvermės dėsnis. Tokios savybės kartais yra vadinamos dėsniais. Taip pat fizika kartais vadinama „fundamentaliuoju mokslu“, nes visi kiti gamtos mokslai - (biologija, chemija, geologija ir pan.) - tiria tam tikras materialias sistemas, kurios savo ruožtu paklūsta fizikos dėsniams. Pavyzdžiui, chemija yra molekulių ir chemikalų, kurios tos molekulės sudaro, mokslas. Tų molekulių chemines savybes apibrėžia atitinkamos fizikinės savybės, tokios kaip kvantinės mechanikos, termodinamikos ir elektromagnetizmo.
+
+Fizika yra artimai susijusi su matematika. Fizikos teorijos praktiškai visuomet aprašomos matematikos lygtimis. Kaip taisyklė, matematinis fizikos modelis yra sudėtingesnis nei kitus gamtos mokslus aprašantis matematinis modelis. Esminis skirtumas tarp fizikos ir matematikos yra tas, kad fizikos tyrimų objektas yra materialus pasaulis, kai tuo tarpu matematika tiria abstrakčius dėsnius, nepriklausomai nuo to ar jie turi prasmę materialiam pasaulyje. Tačiau skirtumas nėra visuomet aiškus. Didelė tyrimų dalis yra tarpinė, vadinama matematine fizika, kuri tiria matematinę fizikinių teorijų struktūrą.
+

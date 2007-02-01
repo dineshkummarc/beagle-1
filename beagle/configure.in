@@ -689,6 +689,7 @@ dnl ----------------------------------------------
 AC_OUTPUT([
 Makefile
 Util/Makefile
+Util/Snowball/Makefile
 Util/Util.dll.config
 images/Makefile
 glue/Makefile

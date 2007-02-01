@@ -95,6 +95,12 @@ namespace Beagle.Daemon {
 		// expect to have change.  Canonical example: file names.
 		private Lucene.Net.Store.Directory secondary_store = null;
 
+
+		// These handle discerning the language of a block of text.
+		// If it cannot be initialized, it's not used
+		private static TextCategorizer lang_table = null;
+		private static bool lang_table_started = false;
+
 		//////////////////////////////////////////////////////////////////////////////
 
 		protected LuceneCommon (string index_name, int minor_version)
@@ -627,6 +633,19 @@ namespace Beagle.Daemon {
 					       Field.Store.YES, Field.Index.NO_NORMS);
 				primary_doc.Add (f);
 			}
+
+			// Lazy initialize the text categorizer
+			if (lang_table == null && lang_table_started == false) {
+				lang_table = new TextCategorizer ();
+				try {
+					lang_table.LoadAll (ExternalStringsHack.LangFPDir);
+				}
+				catch (Exception ex) {
+					Logger.Log.Warn (ex, "Couldn't load language fingerprints!");
+					lang_table = null;
+				}
+			}
+			lang_table_started = true;
 			
 			if (indexable.ValidTimestamp) {
 				// Note that we also want to search in the
@@ -682,6 +701,20 @@ namespace Beagle.Daemon {
 				if (reader != null) {
 					f = new Field ("Text", reader);
 					primary_doc.Add (f);
+					
+					// Add the language if we can get it
+					if (lang_table != null) {
+				                reader = indexable.GetTextReader ();
+						string lang = lang_table.GetTextLanguage (reader);
+				                reader.Close (); reader = null;
+						if (lang != null) { 
+							Logger.Log.Debug ("Language is " + lang);
+							Property prop = Property.New ("dc:language", lang);
+							AddPropertyToDocument (prop, primary_doc);
+						}
+						else
+							Logger.Log.Debug ("Couldn't get language");
+					}
 				}
 			
 				reader = indexable.GetHotTextReader ();
