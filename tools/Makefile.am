@@ -29,21 +29,31 @@ WRAPPER_SED = sed 					\
 CRAWL_WRAPPER = beagle-crawl-system
 CRAWL_WRAPPER_IN = $(CRAWL_WRAPPER).in
 
-$(CRAWL_WRAPPER) : $(CRAWL_WRAPPER_IN)
+$(CRAWL_WRAPPER): $(CRAWL_WRAPPER_IN)
 	$(WRAPPER_SED) < $(srcdir)/$(CRAWL_WRAPPER_IN) > $@
 	chmod +x $(CRAWL_WRAPPER)
+
+crondir = $(sysconfdir)/cron.daily
 
 CRAWL_RULES = \
 	$(srcdir)/crawl-rules/crawl-windows		\
 	$(srcdir)/crawl-rules/crawl-applications	\
 	$(srcdir)/crawl-rules/crawl-documentation
 
-crondir = $(sysconfdir)/cron.daily
-cron_SCRIPTS = $(CRAWL_WRAPPER)
-
 # FIXME: Per-distribution specific crawl rules
 configdir = $(sysconfdir)/beagle
 config_DATA = $(CRAWL_RULES)
+
+DOC_EXTRACTOR_TARGET  = DocExtractor.exe
+DOC_EXTRACTOR_WRAPPER = beagle-doc-extractor
+DOC_EXTRACTOR_CSFILES = $(srcdir)/DocExtractor.cs
+
+$(DOC_EXTRACTOR_TARGET): $(DOC_EXTRACTOR_CSFILES)
+	$(CSC) -out:$@ $(CSFLAGS) $(DOC_EXTRACTOR_CSFILES) $(ASSEMBLIES)
+
+$(DOC_EXTRACTOR_WRAPPER): $(WRAPPER_IN)
+	$(WRAPPER_SED) -e "s|\@target\@|$(DOC_EXTRACTOR_TARGET)|g" < $(srcdir)/$(WRAPPER_IN) > $@
+	chmod +x $(DOC_EXTRACTOR_WRAPPER)
 
 INFO_TARGET  = Info.exe
 INFO_WRAPPER = beagle-info
@@ -125,9 +135,13 @@ if ENABLE_GUI
 TARGETS += $(SETTINGS_TARGET)
 endif
 
+if ENABLE_WV1
+TARGETS += $(DOC_EXTRACTOR_TARGET)
+endif
+
 TARGETS_MDB = $(TARGETS:%=%.mdb)
 
-WRAPPERS = 				\
+BUILT_WRAPPERS = 			\
 	$(INFO_WRAPPER)			\
 	$(SHUTDOWN_WRAPPER)		\
 	$(QUERY_WRAPPER)		\
@@ -135,7 +149,11 @@ WRAPPERS = 				\
 	$(CONFIG_WRAPPER)
 
 if ENABLE_GUI
-WRAPPERS += $(SETTINGS_WRAPPER)
+BUILT_WRAPPERS += $(SETTINGS_WRAPPER)
+endif
+
+if ENABLE_WV1
+BUILT_WRAPPERS += $(DOC_EXTRACTOR_WRAPPER)
 endif
 
 PREBUILT_WRAPPERS =		\
@@ -143,9 +161,11 @@ PREBUILT_WRAPPERS =		\
 	beagle-ping		\
 	beagle-status
 
-BIN_WRAPPERS = 			\
-	$(WRAPPERS)		\
-	$(PREBUILT_WRAPPERS)
+BIN_WRAPPERS = $(BUILT_WRAPPERS) $(PREBUILT_WRAPPERS)
+
+WRAPPERS =			\
+	$(BIN_WRAPPERS)		\
+	$(CRAWL_WRAPPER)
 
 man_MANS = 			\
 	beagle-query.1		\
@@ -165,12 +185,13 @@ endif
 
 all: $(TARGETS) $(WRAPPERS)
 
-install-data-local: $(TARGETS)
-	$(mkinstalldirs) $(DESTDIR)$(bindir)
+install-data-local: $(TARGETS) $(WRAPPERS)
 	$(mkinstalldirs) $(DESTDIR)$(pkglibdir)
 	$(INSTALL_DATA) $(TARGETS) $(TARGETS_MDB) $(DESTDIR)$(pkglibdir)
 
-	@for i in $(WRAPPERS); do						\
+	$(mkinstalldirs) $(DESTDIR)$(bindir)
+
+	@for i in $(BUILT_WRAPPERS); do						\
 		sed -e "s|\#installed=1|installed=1|" < $$i > $$i.tmp;		\
 		echo "$(INSTALL_SCRIPT) $$i.tmp $(DESTDIR)$(bindir)/$$i";	\
 		$(INSTALL_SCRIPT) $$i.tmp $(DESTDIR)$(bindir)/$$i || exit 1;	\
@@ -184,6 +205,9 @@ install-data-local: $(TARGETS)
 		rm -f $$i.tmp;							\
 	done
 
+	$(mkinstalldirs) $(DESTDIR)$(crondir)
+	$(INSTALL_SCRIPT) $(CRAWL_WRAPPER) $(DESTDIR)$(crondir)
+
 uninstall-local:
 	cd $(DESTDIR)$(pkglibdir) && rm -f $(TARGETS) && rm -f $(TARGETS_MDB)
 
@@ -192,9 +216,12 @@ uninstall-local:
 		rm -f $(DESTDIR)$(bindir)/$$i || exit 1;	\
 	done
 
+	cd $(DESTDIR)$(crondir) && rm -f $(CRAWL_WRAPPER)
+
 EXTRA_DIST =				\
 	$(WRAPPER_IN)			\
 	$(CRAWL_WRAPPER_IN)		\
+	$(DOC_EXTRACTOR_CSFILES)	\
 	$(INFO_CSFILES)			\
 	$(SHUTDOWN_CSFILES)		\
 	$(QUERY_CSFILES)		\
@@ -216,7 +243,7 @@ EXTRA_DIST =				\
 CLEANFILES = 				\
 	$(TARGETS)			\
 	$(TARGETS_MDB)			\
-	$(WRAPPERS)			\
+	$(BUILT_WRAPPERS)		\
 	$(CRAWL_WRAPPER)		\
 	$(desktop_DATA)		 	\
 	$(desktop_h_files)		\
