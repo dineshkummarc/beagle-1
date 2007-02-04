@@ -321,13 +321,14 @@ namespace Beagle.Daemon
 					}
 				}
 			}
-
 		}
 
 		protected void DoBuildIndex ()
 		{
-			// Set the IO priority so we don't slow down the system
-			IoPriority.ReduceIoPriority ();
+			// Set system priorities so we don't slow down the system
+			SystemPriorities.ReduceIoPriority ();
+			SystemPriorities.SetSchedulerPolicyBatch ();
+			SystemPriorities.Renice (19);
 			
 			driver = new LuceneIndexingDriver (arg_output, false);
 			driver.TextCache = (arg_cache_text) ? new TextCache (arg_output) : null;

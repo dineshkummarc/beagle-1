@@ -96,8 +96,37 @@ namespace Beagle.IndexHelper {
 					LogLevel.Debug,
 					run_by_hand || log_in_fg);
 
+			Log.Always ("Starting Index Helper process (version {0})", ExternalStringsHack.Version);
+			Log.Always ("Running on {0}", SystemInformation.MonoRuntimeVersion);
+			Log.Always ("Using sqlite version {0}", ExternalStringsHack.SqliteVersion);
+			Log.Always ("Extended attributes are {0}", ExtendedAttribute.Supported ? "supported" : "not supported");
+			Log.Always ("Command Line: {0}",
+				    Environment.CommandLine != null ? Environment.CommandLine : "(null)");
+
 			// Initialize GObject type system
 			g_type_init ();
+
+			// Set the IO priority to idle, nice ourselves, and set
+			// a batch scheduling policy so we that we play nice
+			// on the system
+			if (Environment.GetEnvironmentVariable ("BEAGLE_EXERCISE_THE_DOG") == null) {
+				SystemPriorities.ReduceIoPriority ();
+
+				int nice_to_set;
+				
+				// We set different nice values because the
+				// internal implementation of SCHED_BATCH
+				// unconditionally imposes a +5 penalty on
+				// processes, and we want to be at nice +17,
+				// because it has a nice timeslice.
+				if (SystemPriorities.SetSchedulerPolicyBatch ())
+					nice_to_set = 12;
+				else
+					nice_to_set = 17;
+
+				SystemPriorities.Renice (nice_to_set);
+			} else
+				Log.Always ("BEAGLE_EXERCISE_THE_DOG is set");
 
 			Server.Init ();
 
@@ -109,7 +138,7 @@ namespace Beagle.IndexHelper {
 			Shutdown.RegisterMainLoop (main_loop);
 
 			// Start the server
-			Log.Always ("Starting messaging server");
+			Log.Debug ("Starting messaging server");
 			bool server_has_been_started = false;
 			try {
 				server = new Server ("socket-helper");
@@ -120,21 +149,6 @@ namespace Beagle.IndexHelper {
 			}
 
 			if (server_has_been_started) {
-				// Set the IO priority to idle so we don't slow down the system
-				if (Environment.GetEnvironmentVariable ("BEAGLE_EXERCISE_THE_DOG") == null) {
-					IoPriority.ReduceIoPriority ();
-
-					int prio = Mono.Unix.Native.Syscall.nice (15);
-
-					if (prio < 0)
-						Log.Warn ("Unable to renice helper to +15");
-					else if (prio == 15)
-						Log.Debug ("Reniced helper to +15");
-					else
-						Log.Debug ("Helper was already niced to {0}, not renicing to +15", prio);
-				} else
-					Log.Always ("BEAGLE_EXERCISE_THE_DOG is set");
-				
 				// Start the monitor thread, which keeps an eye on memory usage and idle time.
 				ExceptionHandlingThread.Start (new ThreadStart (MemoryAndIdleMonitorWorker));
 

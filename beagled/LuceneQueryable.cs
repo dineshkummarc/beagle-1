@@ -388,6 +388,7 @@ namespace Beagle.Daemon {
 			return status;
 		}
 
+		// Reports whether the backend is performing the initial crawling and indexing
 		protected virtual bool IsIndexing {
 			get { return false; }
 		}
@@ -559,6 +560,7 @@ namespace Beagle.Daemon {
 				// to spin tightly in a loop here if we're not actually indexing
 				// things.
 				int misfires = 0;
+				bool flushed = false;
 
 				do {
 					if (! generator.HasNextIndexable ()) {
@@ -589,7 +591,10 @@ namespace Beagle.Daemon {
 						generated.Cleanup ();
 					
 					// We keep adding indexables until a flush goes through.
-				} while (! queryable.ConditionalFlush ());
+				} while (! (flushed = queryable.ConditionalFlush ()));
+
+				if (! flushed)
+					queryable.Flush ();
 
 				generator.PostFlushHook ();
 			}

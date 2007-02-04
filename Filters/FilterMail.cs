@@ -55,8 +55,12 @@ namespace Beagle.Filters {
 			//    for eaching for parts of an email address.
 			// 2: No need to separately add sanitized version of emails.
 			//    BeagleAnalyzer uses a tokenfilter taking care of this.
-			SetVersion (2);
+			// 3: Add standard file properties to attachments.
+			SetVersion (3);
+		}
 
+		protected override void RegisterSupportedTypes ()
+		{
 			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("message/rfc822"));
 		}
 
@@ -339,7 +343,14 @@ namespace Beagle.Filters {
 							child.MimeType = mime_type;
 							child.CacheContent = false;
 
-							child.AddProperty (Property.NewKeyword ("fixme:attachment_title", ((GMime.Part)part).Filename));
+							string filename = ((GMime.Part) part).Filename;
+
+							if (! String.IsNullOrEmpty (filename)) {
+								child.AddProperty (Property.NewKeyword ("fixme:attachment_title", filename));
+
+								foreach (Property prop in Property.StandardFileProperties (filename, false))
+									child.AddProperty (prop);
+							}
 
 							if (part.ContentType.Type.ToLower () == "text")
 								child.SetTextReader (new StreamReader (stream));

@@ -332,6 +332,12 @@ namespace Beagle.Util {
 
 		override public void Read ()
 		{
+			// Ignore empty files
+			FileInfo fi = new FileInfo (buddyListPath);
+			if (fi.Length == 0)
+				return;
+			fi = null;
+
 			// If the file hasn't changed, don't do anything.
 			DateTime last_write = File.GetLastWriteTime (buddyListPath);
 			if (last_write == buddyListLastWriteTime)
@@ -349,7 +355,7 @@ namespace Beagle.Util {
 				foreach (XmlNode contact in accounts.SelectNodes ("//meta-contact"))
 					AddContact (contact);
 			} catch (Exception ex) {
-				Logger.Log.Error (ex, "Caught exception while trying to parse Kopete contact list:");
+				Logger.Log.Error (ex, "Ignoring malformed Kopete contact list:");
 			}
 		}
 

@@ -41,6 +41,10 @@ namespace Beagle.Filters {
 		public FilterSpreadsheet () 
 		{
 			SnippetMode = true;
+		}
+
+		protected override void RegisterSupportedTypes ()
+		{
 			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("application/x-gnumeric"));
 			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("application/csv"));
 			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("application/tab-separated-values"));
@@ -78,6 +82,9 @@ namespace Beagle.Filters {
 			SafeProcess pc = new SafeProcess ();
 			pc.Arguments = new string [] { "ssindex", "-i", FileInfo.FullName };
 			pc.RedirectStandardOutput = true;
+
+			// Let ssindex run for 10 seconds, max.
+			pc.CpuLimit = 10;
 
 			try {
 				pc.Start ();

@@ -250,8 +250,17 @@ namespace Search {
 				tray.Clicked += OnTrayActivated;
 				tray.Search += OnTraySearch;
 
-				// Attach the hide/show keybinding
-				keybinder.Bind (Conf.Searching.ShowSearchWindowBinding.ToString (), OnTrayActivated);
+				string binding = Conf.Searching.ShowSearchWindowBinding.ToString ();
+				string tip_text = Catalog.GetString ("Desktop Search");
+
+				if (binding != String.Empty) {
+					tip_text += String.Format (" ({0})", binding);
+
+					// Attach the hide/show keybinding
+					keybinder.Bind (Conf.Searching.ShowSearchWindowBinding.ToString (), OnTrayActivated);
+				}
+
+				tray.TooltipText = tip_text;
 			} else {
 				ShowAll ();
 			}
@@ -277,9 +286,9 @@ namespace Search {
 					int tile_count = view.TileCount;
 
 					if (tile_count == this.total_matches)
-						message = String.Format (Catalog.GetString ("Showing all {0} matches"), this.total_matches);
+						message = String.Format (Catalog.GetPluralString ("Showing {0} match", "Showing all {0} matches", this.total_matches), this.total_matches);
 					else
-						message = String.Format (Catalog.GetString ("Showing the top {0} of {1} total matches"), view.TileCount, this.total_matches);
+						message = String.Format (Catalog.GetPluralString ("Showing the top {0} of {1} total matches", "Showing the top {0} of {1} total matches", this.total_matches), view.TileCount, this.total_matches);
 
 					this.statusbar.Push (0, message);
 				}

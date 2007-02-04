@@ -41,7 +41,8 @@ namespace Beagle.Filters {
 		int		skip_width;
 		int		skip_count;
 
-		TextMap text_map = null;
+		static TextMap text_map = null;
+
 		StringBuilder sb;
 
 		Stack<bool> group_stack = null;
@@ -55,18 +56,24 @@ namespace Beagle.Filters {
 
 		public FilterRTF ()
 		{
-			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("application/rtf"));
 			SnippetMode = true;
 			// 1: Modified filter based on System.Windows.Forms.RTF
 			SetVersion (1);
+		}
 
-			text_map = new TextMap ();
-			TextMap.SetupStandardTable(text_map.Table);
+		protected override void RegisterSupportedTypes ()
+		{
+			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("application/rtf"));
 		}
 
 		void Init ()
 		{
 			rtf = new RTF (Stream);
+
+			if (text_map == null) {
+				text_map = new TextMap ();
+				TextMap.SetupStandardTable(text_map.Table);
+			}
 
 			sb = new StringBuilder ();
 			sb.Length = 0;

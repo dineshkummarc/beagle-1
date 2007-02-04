@@ -42,37 +42,65 @@ namespace Beagle.Util {
 		public const string UnindexedNamespace = "_unindexed:";
 
 		private const String TimeFormat = "yyyyMMddHHmmss";
-		// FIXME: Fix all the UTC and timezone hack when switching to .Net-2.0
-		private const String LocalTimeFormat = "yyyyMMddHHmmsszz";
+
+		public static DateTime MinValueUtc = new DateTime (0, DateTimeKind.Utc);
+		public static DateTime MaxValueUtc = new DateTime (DateTime.MaxValue.Ticks, DateTimeKind.Utc);
+
+		// We use this instead of DateTime.ToUniversalTime() because
+		// we want to assume DateTimeKind.Unspecified dates are UTC
+		static private DateTime ToUniversalTime (DateTime dt)
+		{
+			switch (dt.Kind) {
+
+			case DateTimeKind.Utc:
+				return dt;
+
+			case DateTimeKind.Local:
+				return dt.ToUniversalTime ();
+
+			case DateTimeKind.Unspecified:
+				// FIXME: We should fix all the instances of unspecified
+				// DateTimes to avoid any potential comparison issues.
+				//Log.Warn ("Possibly incorrect unspecified date ({0}): {1}", dt, new System.Diagnostics.StackTrace (true).ToString ());
+				return dt;
+			}
+
+			// We'll never hit this, but otherwise the compiler
+			// complains about not all codepaths returning...
+			throw new Exception ("Unreachable code reached");
+		}
 
 		static public string DateTimeToString (DateTime dt)
 		{
-			return dt.ToString (TimeFormat);
+			return ToUniversalTime (dt).ToString (TimeFormat);
 		}
 
 		static public string DateTimeToYearMonthString (DateTime dt)
 		{
-			return dt.ToString ("yyyyMM");
+			return ToUniversalTime (dt).ToString ("yyyyMM");
 		}
 
 		static public string DateTimeToDayString (DateTime dt)
 		{
-			return dt.ToString ("dd");
+			return ToUniversalTime (dt).ToString ("dd");
 		}
 
                 static public DateTime StringToDateTime (string str)
                 {
-			if (str == null || str == "")
+			if (str == null || str == String.Empty)
 				return new DateTime ();
 
-			str = string.Concat (str, "+00");
-			// Uncomment next 3 lines to see what how 20061107173446 (which is stored in UTC)
-			// used to be parsed as 2006-11-07T17:34:46.0000000-05:00
-			//DateTime dt = DateTime.ParseExact (str, LocalTimeFormat, CultureInfo.InvariantCulture);
-			//Console.WriteLine ("Parsed {0} as {1},{2}", str, dt, dt.ToString("yyyy-MM-ddTHH:mm:ss.fffffffzzz", CultureInfo.InvariantCulture));
-			//return dt;
-			// If no timezone is present, parse_exact uses local time zone
-			return DateTime.ParseExact (str, LocalTimeFormat, CultureInfo.InvariantCulture);
+			// FIXME: Workaround for http://bugzilla.ximian.com/show_bug.cgi?id=80320
+			// ArgumentOutOfRangeException is incorrectly thrown for
+			// DateTime.MinValue.ToLocalTime() in timezones with a negative offset
+			// from UTC, and DateTime.MinValue.ToUniversalTime() in timezones with a
+			// positive offset from UTC.  Note that Mono works correctly for going
+			// beyond MaxValue, so we only need to deal with the lower bound.
+			try {
+				return DateTime.ParseExact (str, TimeFormat, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+			} catch (ArgumentOutOfRangeException) {
+				return DateTime.MinValue;
+			}
                 }
 
 		static public string DateTimeToFuzzy (DateTime dt)
@@ -122,10 +150,13 @@ namespace Beagle.Util {
 					/* To translators: {0} is the time of the day, eg. 13:45 */
 					return String.Format (Catalog.GetString ("Yesterday, {0}"), short_time);
 				} else if (date.DayOfYear > now.DayOfYear - 6 && date.DayOfYear < now.DayOfYear) {
+					int days = now.DayOfYear - date.DayOfYear;
+
 					/* To translators: {0} is the number of days that have passed, {1} is the time of the day, eg. 13:45 */
-					return String.Format (Catalog.GetString ("{0} days ago, {1}"),
-							      now.DayOfYear - date.DayOfYear,
-							      short_time);
+					return String.Format (Catalog.GetPluralString ("{0} day ago, {1}",
+										       "{0} days ago, {1}",
+										       days),
+							      days, short_time);
 				} else {
 					/* Translators: Example output: January 3, 3:45 PM */
 					return date.ToString (Catalog.GetString ("MMMM d, h:mm tt"));
@@ -184,7 +215,7 @@ namespace Beagle.Util {
 
 			if (len < 1024)
 				/* Translators: {0} is a file size in bytes */
-				return String.Format (Catalog.GetString ("{0} bytes"), len);
+				return String.Format (Catalog.GetPluralString ("{0} byte", "{0} bytes", (int) len), len);
 
 			if (len < oneMb)
 				/* Translators: {0} is a file size in kilobytes */

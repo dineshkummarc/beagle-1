@@ -63,6 +63,10 @@ namespace Beagle.Filters {
 
 		public FilterRPM ()
 		{
+		}
+
+		protected override void RegisterSupportedTypes ()
+		{
 			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("application/x-rpm"));
 		}
 
@@ -71,7 +75,9 @@ namespace Beagle.Filters {
 			SafeProcess pc = new SafeProcess ();
 			pc.Arguments = new string [] { "rpm", "-qp", "--queryformat", "[%{*:xml}\n]", FileInfo.FullName };
 			pc.RedirectStandardOutput = true;
-			pc.RedirectStandardError = true;
+
+			// Let rpm run for 90 seconds, max.
+			pc.CpuLimit = 90;
 			
 			try {
 				pc.Start ();

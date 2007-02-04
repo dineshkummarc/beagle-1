@@ -20,8 +20,12 @@ namespace Beagle.Filters {
 
 		public FilterPdf ()
 		{
-			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("application/pdf"));
 			SnippetMode = true;
+		}
+
+		protected override void RegisterSupportedTypes ()
+		{
+			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("application/pdf"));
 		}
 
 		// FIXME: we should have a reasonable failure mode if pdftotext is
@@ -37,6 +41,9 @@ namespace Beagle.Filters {
 			pc.Arguments = new string [] { "pdfinfo", FileInfo.FullName };
 			pc.RedirectStandardOutput = true;
 			pc.RedirectStandardError = true;
+
+			// Let pdfinfo run for 10 CPU seconds, max.
+			pc.CpuLimit = 90;
 
 			try {
 				pc.Start ();
@@ -106,7 +113,16 @@ namespace Beagle.Filters {
 			pc = new SafeProcess ();
 			pc.Arguments = new string [] { "pdftotext", "-q", "-nopgbrk", "-enc", "UTF-8", FileInfo.FullName, "-" };
 			pc.RedirectStandardOutput = true;
-			pc.RedirectStandardError = true;
+
+			// FIXME: This should really be true, and we should
+			// process the output.  But we can deadlock when
+			// pdftotext is blocked writing to stderr because of a
+			// full buffer and we're blocking while reading from
+			// stdout.
+			pc.RedirectStandardError = false;
+
+			// Let pdftotext run for 90 CPU seconds, max.
+			pc.CpuLimit = 90;
 
 			try {
 				pc.Start ();
@@ -125,21 +141,33 @@ namespace Beagle.Filters {
 
 		protected override void DoPull ()
 		{
+			// InitDoPull() calls Error() if it fails
 			if (! pull_started && ! InitDoPull ())
 				return;
 
-			// FIXME:  I don't think this is really required
-			// Line by line parsing, however, we have to make
-			// sure, that "pdftotext" doesn't output any "New-lines".
-			string str = pout.ReadLine ();
-			if (str == null) {
-				Finished ();
-				return;
-			}
+			int n = 0;
 
-			AppendLine (str);
-			if (! AllowMoreWords ())
-				Finished ();
+			// Using internal information: Lucene currently asks for char[2048] data
+			while (n <= 2048) {
+
+				// FIXME:  I don't think this is really required
+				// Line by line parsing, however, we have to make
+				// sure, that "pdftotext" doesn't output any "New-lines".
+				string str = pout.ReadLine ();
+				if (str == null) {
+					Finished ();
+					return;
+				} else {
+					AppendLine (str);
+					AppendStructuralBreak ();
+					// If we have added 2048 chars, stop
+					// DoPull is called repeatedly till the buffer is full,
+					// so stop after the buffer is full (and possibly overflown)
+					// to reduce number of function calls
+					n += str.Length;
+					n ++; // for the structural break
+				}
+			}
 		}
 
 		override protected void DoClose ()
@@ -148,6 +176,8 @@ namespace Beagle.Filters {
 				return;
 
 			pout.Close ();
+#if false
+			// FIXME: See FIXME above.
 			pout = new StreamReader (pc.StandardError);
 
 			string str;
@@ -155,6 +185,7 @@ namespace Beagle.Filters {
 				Log.Warn ("pdftotext [{0}]: {1}", Uri, str);
 
 			pout.Close ();
+#endif
 			pc.Close ();
 		}
 	}

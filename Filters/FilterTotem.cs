@@ -41,6 +41,11 @@ namespace Beagle.Filters {
 
 		public FilterTotem ()
 		{
+			PreLoad = false;
+		}
+
+		protected override void RegisterSupportedTypes ()
+		{
 			// Get the list of mime-types from the totem-video-indexer
 
 			SafeProcess pc = new SafeProcess ();
@@ -69,8 +74,6 @@ namespace Beagle.Filters {
 
 			pout.Close ();
 			pc.Close ();
-
-			PreLoad = false;
 		}
 
 		protected override void DoPullProperties ()
@@ -79,6 +82,9 @@ namespace Beagle.Filters {
 			pc.Arguments = new string [] { "totem-video-indexer", UriFu.UriToEscapedString (this.Uri) };
 			pc.RedirectStandardOutput = true;
 			pc.RedirectStandardError = true;
+
+			// Let totem run for 10 seconds, max.
+			pc.CpuLimit = 10;
 
 			try {
 				pc.Start ();

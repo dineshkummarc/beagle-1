@@ -38,6 +38,7 @@ namespace Beagle.Daemon {
 	public class Filter {
 
 		static private bool Debug = false;
+
 		// Lucene fields allow a maximum of 10000 words
 		// Some of the words will be stop words... so a failsafe maximum of 40000 words
 		// Dont accept more words than that
@@ -49,15 +50,29 @@ namespace Beagle.Daemon {
 
 		//////////////////////////
 
-		private ArrayList supported_flavors = new ArrayList ();
+		private ArrayList supported_flavors = null;
 		
 		protected void AddSupportedFlavor (FilterFlavor flavor) 
 		{
+			// Add flavor only when called from RegisterSupportedTypes
+			if (supported_flavors == null)
+				throw new Exception ("AddSupportedFlavor() should be only called from RegisterSupportedTypes()");
+
 			supported_flavors.Add (flavor);
 		}
 
 		public ICollection SupportedFlavors {
-			get { return supported_flavors; }
+			get {
+				if (supported_flavors == null) {
+					supported_flavors = new ArrayList ();
+					RegisterSupportedTypes ();
+				}
+				return supported_flavors;
+			}
+		}
+
+		protected virtual void RegisterSupportedTypes ()
+		{
 		}
 		
 		//////////////////////////
@@ -335,6 +350,7 @@ namespace Beagle.Daemon {
 
 			if (IsHot) {
 				hotPool.Add (words);
+				hotPool.Add (WHITESPACE);
 				hotword_count += StringFu.CountWords (words, 3, -1);
 			}
 

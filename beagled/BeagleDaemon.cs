@@ -50,6 +50,7 @@ namespace Beagle.Daemon {
 		private static bool arg_disable_scheduler = false;
 		private static bool arg_indexing_test_mode = false;
 		private static bool arg_heap_shot = false;
+		private static bool arg_heap_shot_snapshots = true;
 
 		private static bool cache_text = true;
 		public static bool CacheText {
@@ -121,7 +122,7 @@ namespace Beagle.Daemon {
 
 				int vm_rss = SystemInformation.VmRss;
 
-				if (arg_heap_shot)
+				if (arg_heap_shot && arg_heap_shot_snapshots)
 					MaybeSendSigprof (vm_rss, GC.GetTotalMemory (false));
 
 				if (vm_rss > 300 * 1024) {
@@ -319,6 +320,10 @@ namespace Beagle.Daemon {
 					arg_heap_shot = true;
 					arg_debug = true;
 					arg_debug_memory = true;
+					break;
+
+				case "--no-shapshots":
+					arg_heap_shot_snapshots = false;
 					break;
 
 				case "--heap-buddy":

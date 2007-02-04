@@ -42,9 +42,13 @@ namespace Beagle.Daemon.KonversationQueryable {
 	public class KonversationQueryable : LuceneFileQueryable {
 		private string log_dir;
 		private Dictionary<string, long> session_offset_table;
+		private ArrayList initial_log_files;
+		private bool initial_indexing;
 
 		public KonversationQueryable () : base ("KonversationIndex")
 		{
+			initial_indexing = false;
+
 			log_dir = Path.Combine (PathFinder.HomeDir, ".kde");
 			log_dir = Path.Combine (log_dir, "share");
 			log_dir = Path.Combine (log_dir, "apps");
@@ -70,55 +74,40 @@ namespace Beagle.Daemon.KonversationQueryable {
 
 			session_offset_table = new Dictionary<string, long> ();
 
-			Stopwatch stopwatch = new Stopwatch ();
-			stopwatch.Start ();
-
 			if (Inotify.Enabled)
 				Inotify.Subscribe (log_dir, OnInotify,
 						    Inotify.EventType.Create |
 						    Inotify.EventType.Modify);
 
-			int log_count = 0, index_count = 0;
-			foreach (FileInfo fi in DirectoryWalker.GetFileInfos (log_dir)) {
-				if (fi.Name == "konversation.log")
-					continue;
+			initial_log_files = new ArrayList (Directory.GetFiles (log_dir));
+			Log.Debug ("Konversation backend: found {0} log files", initial_log_files.Count);
 
-				// FIXME: Handle "Excludes" from Conf
-
-				log_count ++;
-				if (IsUpToDate (fi.FullName)) {
-					PostFlushHook (fi.FullName, fi.Length);
-					continue;
-				}
-
-				index_count ++;
-
-				LogIndexableGenerator generator = new LogIndexableGenerator (this, fi.FullName, 0);
-				Scheduler.Task task = NewAddTask (generator);
-				task.Tag = fi.FullName;
-				task.Source = this;
-				ThisScheduler.Add (task);
-			}
-
-			stopwatch.Stop ();
-			Log.Info ("Konversation backend: Scanned {0} log files in {2}, will index {1}", log_count, index_count, stopwatch);
+			initial_indexing = true;
+			LogIndexableGenerator generator = new LogIndexableGenerator (this, log_dir);
+			Scheduler.Task task = NewAddTask (generator);
+			task.Tag = log_dir;
+			task.Source = this;
+			ThisScheduler.Add (task);
 		}
 
 		protected override bool IsIndexing {
 			// FIXME: Set proper value
-			get { return true; }
+			get { return initial_indexing; }
 		}
 
 		// FIXME: Improve this by storing the data on disk. Then scan the data on startup
 		// and compare with the last modified time or file length to determine if a complete
 		// rescan is needed.
-		private void PostFlushHook (string log_file)
+		private void UpdateLogOffset (string log_file)
 		{
-			// FIXME!!!
-			PostFlushHook (log_file, -1);
+			FileInfo fi = new FileInfo (log_file);
+			UpdateLogOffset (log_file, fi.Length);
+			lock (initial_log_files) {
+				initial_log_files.Remove (log_file);
+			}
 		}
 
-		internal void PostFlushHook (string log_file, long session_start_position)
+		internal void UpdateLogOffset (string log_file, long session_start_position)
 		{
 			//Log.Debug ("Asked to store offset for {0} = {1}", log_file, session_start_position);
 
@@ -141,17 +130,110 @@ namespace Beagle.Daemon.KonversationQueryable {
 				return;
 			}
 
+			lock (initial_log_files) {
+				if (initial_log_files.Contains (path)) {
+					Log.Debug ("{0} is already scheduled for initial indexing", path);
+					return;
+				}
+			}
+
 			if (session_offset_table.ContainsKey (path))
 				offset = session_offset_table [path];
 
-			LogIndexableGenerator generator = new LogIndexableGenerator (this, path, offset);
+			SessionIndexableGenerator generator = new SessionIndexableGenerator (this, path, offset);
 			Scheduler.Task task = NewAddTask (generator);
 			task.Tag = path;
 			task.Source = this;
 			ThisScheduler.Add (task);
 		}
 
+		// To balance system load, use a nested IIndexableGenerator
+		// LogIndexableGenerator iterates over the log files,
+		// and then for each log file, it schedules the sessions one after another
+		// This will take a while to index, but your machine will be happy.
 		private class LogIndexableGenerator : IIndexableGenerator {
+			private KonversationQueryable queryable;
+			private SessionIndexableGenerator generator;
+			private string[] files;
+			private int file_index;
+			private string log_dir;
+
+			public LogIndexableGenerator (KonversationQueryable q, string log_dir)
+			{
+				this.queryable = q;
+				this.files = Directory.GetFiles (log_dir);
+				this.file_index = 0;
+				this.log_dir = log_dir;
+				this.generator = null;
+				if (MoveToNextFile ())
+					generator = new SessionIndexableGenerator (queryable, files [file_index], 0);
+			}
+
+			private bool MoveToNextFile ()
+			{
+				while (file_index < files.Length) {
+					if (files [file_index] != "konversation.log") {
+						if (! queryable.IsUpToDate (files [file_index]))
+							break;
+						else
+							queryable.UpdateLogOffset (files [file_index]);
+					}
+					file_index ++;
+				}
+
+				if (file_index == files.Length)
+					return false;
+
+				return true;
+			}
+
+			public bool HasNextIndexable ()
+			{
+				if (generator == null) {
+					queryable.initial_indexing = false;
+					return false;
+				}
+
+				if (generator.HasNextIndexable ())
+					return true;
+
+				// Move to the next file
+				if (! MoveToNextFile ()) {
+					queryable.initial_indexing = false;
+					return false;
+				}
+
+				generator = new SessionIndexableGenerator (queryable, files [file_index], 0);
+				file_index ++;
+				if (! generator.HasNextIndexable ()) {
+					queryable.initial_indexing = false;
+					return false;
+				}
+
+				return true;
+			}
+
+			public Indexable GetNextIndexable ()
+			{
+				return generator.GetNextIndexable ();
+			}
+
+			public void PostFlushHook ()
+			{
+				generator.PostFlushHook ();
+			}
+
+			public string StatusName {
+				get {
+					if (generator == null)
+						return log_dir;
+					else
+						return generator.StatusName;
+				}
+			}
+		}
+
+		private class SessionIndexableGenerator : IIndexableGenerator {
 			private KonversationQueryable queryable;
 			private string log_file;
 			private LineReader reader;
@@ -167,7 +249,7 @@ namespace Beagle.Daemon.KonversationQueryable {
 			private long prev_line_offset; // stores the offset of the previous line read by reader
 			private long session_num_lines;
 
-			public LogIndexableGenerator (KonversationQueryable queryable, string log_file, long offset)
+			public SessionIndexableGenerator (KonversationQueryable queryable, string log_file, long offset)
 			{
 				this.queryable = queryable;
 				this.log_file = log_file;
@@ -176,16 +258,17 @@ namespace Beagle.Daemon.KonversationQueryable {
 
 				this.data_sb = new StringBuilder ();
 				this.log_line_as_sb = null;
+				this.reader = null;
 				this.session_begin_time = DateTime.MinValue;
 				this.speakers = new Dictionary<string, bool> (10); // rough default value
 
-				//Log.Debug ("Reading from file " + log_file);
+				Log.Debug ("Reading from konversation log " + log_file);
 			}
 
 			public void PostFlushHook ()
 			{
 				//Log.Debug ("Storing reader position {0}", session_begin_offset);
-				queryable.PostFlushHook (log_file, session_begin_offset);
+				queryable.UpdateLogOffset (log_file, session_begin_offset);
 			}
 
 			public string StatusName {
@@ -222,21 +305,23 @@ namespace Beagle.Daemon.KonversationQueryable {
 				DateTime line_dt = DateTime.MinValue;
 
 				while (log_line_as_sb != null) {
+					//Log.Debug ("Checking line from {0}:[{1}]", log_file, log_line_as_sb);
 					bool in_session = AppendLogText (log_line_as_sb, out line_dt);
 					if (! in_session)
 						break;
 
 					prev_line_offset = reader.Position;
 					log_line_as_sb = reader.ReadLineAsStringBuilder ();
-					//Log.Debug ("Reading more line from {0}:[{1}]", log_file, log_line);
 				}
 
 				// Check if there is new data to index
-				if (data_sb.Length == 0)
+				if (data_sb.Length == 0) {
+					session_begin_time = line_dt;
 					return null;
+				}
 
 				Uri uri = new Uri (String.Format ("konversation://{0}@dumb/{1}", session_begin_offset, log_file));
-				//Log.Debug ("Creating indexable {0}", uri);
+				Log.Debug ("Creating indexable {0}", uri);
 				Indexable indexable = new Indexable (uri);
 				indexable.ParentUri = UriFu.PathToFileUri (log_file);
 				indexable.Timestamp = session_begin_time;
@@ -253,27 +338,15 @@ namespace Beagle.Daemon.KonversationQueryable {
 				AddChannelInformation (indexable);
 
 				foreach (string speaker in speakers.Keys)
-					indexable.AddProperty (Beagle.Property.NewKeyword ("fixme:speaker", speaker));
+					indexable.AddProperty (Beagle.Property.NewUnstored ("fixme:speaker", speaker));
 
 				StringReader data_reader = new StringReader (data_sb.ToString ());
 				indexable.SetTextReader (data_reader);
 
+				// update session begin time to the date of the current line which is not in this session
+				session_begin_time = line_dt;
+
 				return indexable;
-			}
-
-			const string LogTimeFormatString = "[ddd MMM d yyyy] [HH:mm:ss]";
-
-			private static int IndexOfSB (StringBuilder sb, char c, int begin_index)
-			{
-				int pos = -1;
-				for (int i = begin_index; i < sb.Length; ++i) {
-					if (sb [i] != c)
-						continue;
-					pos = i;
-					break;
-				}
-
-				return pos;
 			}
 
 			// Returns false if log_line belonged to next session and was not appended
@@ -282,39 +355,24 @@ namespace Beagle.Daemon.KonversationQueryable {
 			{
 				line_dt = DateTime.MinValue;
 
-				// Skip empty lines
-				if (log_line_as_sb.Length == 0)
+				string dt_string, text;
+				string speaker = String.Empty;
+				bool is_good_line = KonversationLog.ProcessLine (log_line_as_sb, out text, out dt_string, ref speaker);
+
+				if (! is_good_line)
 					return true;
 
-				// Skip other lines
-				if (log_line_as_sb [0] != '[')
-				//if (! log_line.StartsWith ("["))
+				try {
+					line_dt = DateTime.ParseExact (
+						dt_string,
+						KonversationLog.LogTimeFormatString,
+						CultureInfo.InvariantCulture,
+						DateTimeStyles.AssumeLocal);
+				} catch (FormatException) {
+					// Old log files had date strings as
+					// [11:05:08] <berkus>  ...
 					return true;
-
-				// Proper log line looks like
-				//[Mon Nov 1 2005] [14:09:32] <dBera>    can yo...
-				int bracket_begin_index, bracket_end_index;
-
-				//bracket_begin_index = log_line.IndexOf ('[');
-				bracket_begin_index = IndexOfSB (log_line_as_sb, '[', 0);
-
-				//bracket_end_index = log_line.IndexOf (']', bracket_begin_index + 1);
-				bracket_end_index = IndexOfSB (log_line_as_sb, ']', bracket_begin_index + 1);
-
-				//bracket_end_index = log_line.IndexOf ('[', bracket_end_index + 1);
-				bracket_end_index = IndexOfSB (log_line_as_sb, '[', bracket_end_index + 1);
-
-				//bracket_end_index = log_line.IndexOf (']', bracket_end_index + 1);
-				bracket_end_index = IndexOfSB (log_line_as_sb, ']', bracket_end_index + 1);
-
-				// Ignore lines like '[Tue Nov 8 2005] [17:53:14]   * joe nods'
-				if (log_line_as_sb [bracket_end_index + 2] != '<')
-					return true;
-
-				line_dt = DateTime.ParseExact (log_line_as_sb.ToString (0, bracket_end_index + 1),
-					LogTimeFormatString,
-					CultureInfo.InvariantCulture,
-					DateTimeStyles.AssumeLocal);
+				}
 
 				// On first scan, set the session_begin_time
 				if (session_begin_time == DateTime.MinValue) {
@@ -323,40 +381,39 @@ namespace Beagle.Daemon.KonversationQueryable {
 						line_dt.Month,
 						line_dt.Day,
 						line_dt.Hour,
-						line_dt.Minute, // FIXME
-						line_dt.Second); // FIXME
+						0,
+						0);
 					session_end_time = line_dt;
 					//Log.Debug ("Adding session begin time {0}", DateTimeUtil.ToString (session_begin_time));
-					AddLine (log_line_as_sb, bracket_end_index + 1);
-
+					AddLine (text, speaker);
 					return true;
 				}
 
-				// If more than 50 useful lines were seen in this session
-				if (session_num_lines > 50) {
+				// If we are on a different day then make a new session
+				if (session_begin_time.Day != line_dt.Day)
+					return false;
+				// or if more than 50 useful lines were seen in this session
+				else if (session_num_lines > 50) {
 					// Split session in 6 hour = 360 min interval
 					TimeSpan ts = line_dt - session_begin_time;
 					if (ts.TotalMinutes > 360)
 						return false;
 				}
 
-				AddLine (log_line_as_sb, bracket_end_index + 1);
+				AddLine (text, speaker);
 				session_end_time = line_dt;
 
 				return true;
 			}
 
-			private void AddLine (StringBuilder sb, int begin_index)
+			private void AddLine (string text, string speaker)
 			{
-				begin_index = IndexOfSB (sb, '<', begin_index);
-				int end_index = IndexOfSB (sb, '>', begin_index + 1);
-
-				//Log.Debug ("Adding [{0}]", sb.ToString (end_index + 1, sb.Length - end_index - 1));
-				data_sb.Append (sb.ToString (end_index + 1, sb.Length - end_index - 1));
+				//Log.Debug ("Adding [{0}]", text);
+				data_sb.Append (text);
 				data_sb.Append (' ');
 				session_num_lines ++;
 
-				speakers [sb.ToString (begin_index + 1, end_index - begin_index - 1)] = true;
+				speakers [speaker] = true;
 			}
 
 			private void AddChannelInformation (Indexable indexable)
@@ -384,6 +441,66 @@ namespace Beagle.Daemon.KonversationQueryable {
 			return false;
 		}
 
+		override public string GetSnippet (string [] query_terms, Hit hit)
+		{
+			if (hit.ParentUri == null)
+				return null;
+
+			string path = hit.ParentUri.LocalPath;
+
+			string snippet = null;
+			long begin_offset = Convert.ToInt64 (hit ["fixme:session_begin_offset"]);
+			long end_offset = Convert.ToInt64 (hit ["fixme:session_end_offset"]);
+
+			try {
+				LineTextReader reader;
+				reader = new LineTextReader (path, begin_offset, end_offset);
+
+				snippet = SnippetFu.GetSnippet (query_terms, reader);
+				reader.Close ();
+			} catch {
+				return null;
+			}
+
+			return snippet;
+		}
+
+		internal class LineTextReader : TextReader {
+			private LineReader reader;
+			private long end_offset;
+			private StringBuilder sb;
+	    
+			public LineTextReader (string path, long begin_offset, long end_offset)
+			{
+				this.reader = new ReencodingLineReader (path);
+				this.end_offset = end_offset;
+				this.reader.Position = begin_offset;
+			}
+
+			public override string ReadLine ()
+			{
+				if (reader.Position >= end_offset)
+					return null;
+
+				string dt_string, speaker = String.Empty, text = null;
+				bool good_line = false;
+
+				while (! good_line) {
+					sb = reader.ReadLineAsStringBuilder ();
+					if (sb == null)
+						return null;
+
+					good_line = KonversationLog.ProcessLine (sb, out text, out dt_string, ref speaker);
+				}
+
+				return String.Format ("[{0}] {1}", speaker, text);
+			}
+
+			public override void Close ()
+			{
+				reader.Close ();
+			}
+		}
 	}
 }
 

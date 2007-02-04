@@ -26,6 +26,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 
@@ -57,12 +58,12 @@ namespace Beagle.Daemon {
 		{
 			Hashtable matched_filters_by_flavor = FilterFlavor.NewHashtable ();
 			
-			foreach (FilterFlavor flavor in filter_types_by_flavor.Keys) {
+			foreach (FilterFlavor flavor in FilterFlavor.Flavors) {
 				if (flavor.IsMatch (uri, extension, mime_type)) {
 					Filter matched_filter = null;
 
 					try {
-						matched_filter = (Filter) Activator.CreateInstance ((Type) filter_types_by_flavor [flavor]);
+						matched_filter = (Filter) Activator.CreateInstance ((Type) FilterFlavor.FilterTable [flavor]);
 
 						if (flavor.MimeType != null)
 							matched_filter.MimeType = flavor.MimeType;
@@ -90,8 +91,8 @@ namespace Beagle.Daemon {
 
 		static public int GetFilterVersion (string filter_name) 
 		{
-			if (filter_versions_by_name.Contains (filter_name)) {
-				return (int) filter_versions_by_name [filter_name];
+			if (filter_versions_by_name.ContainsKey (filter_name)) {
+				return filter_versions_by_name [filter_name];
 			} else {
 				return -1;
 			}
@@ -176,26 +177,32 @@ namespace Beagle.Daemon {
 			if (indexable.ContentUri.IsFile) {
 				path = indexable.ContentUri.LocalPath;
 
-				// Otherwise sniff the mime-type from the file
-				if (indexable.MimeType == null)
-					indexable.MimeType = XdgMime.GetMimeType (path);
-
-				if (filters == null || filters.Count == 0) {
-					filters = CreateFiltersFromIndexable (indexable);
-				}
-
+				// Otherwise, set the mime type for a directory,
+				// or sniff it from the file.
 				if (Directory.Exists (path)) {
 					indexable.MimeType = "inode/directory";
 					indexable.NoContent = true;
-					if (! indexable.ValidTimestamp && indexable.IsNonTransient)
-						indexable.Timestamp = Directory.GetLastWriteTimeUtc (path);
 				} else if (File.Exists (path)) {
-					// Set the timestamp to the best possible estimate (if no timestamp was set by the backend)
-					if (! indexable.ValidTimestamp && indexable.IsNonTransient)
-						indexable.Timestamp = File.GetLastWriteTimeUtc (path);
+					indexable.MimeType = XdgMime.GetMimeType (path);
 				} else {
-					Logger.Log.Warn ("No such file: {0}", path);
+					Log.Warn ("Unable to filter {0}.  {1} not found.", indexable.DisplayUri, path);
 					return false;
+				}
+
+				// Set the timestamp to the last write time, if it isn't
+				// set by the backend.
+				if (! indexable.ValidTimestamp && indexable.IsNonTransient)
+					indexable.Timestamp = FileSystem.GetLastWriteTimeUtc (path);
+
+				// Check the timestamp to make sure the file hasn't
+				// disappeared from underneath us.
+				if (! FileSystem.ExistsByDateTime (indexable.Timestamp)) {
+					Log.Warn ("Unable to filter {0}.  {1} appears to have disappeared from underneath us", indexable.DisplayUri, path);
+					return false;
+				}
+
+				if (filters == null || filters.Count == 0) {
+					filters = CreateFiltersFromIndexable (indexable);
 				}
 			}
 
@@ -288,8 +295,7 @@ namespace Beagle.Daemon {
 
 		/////////////////////////////////////////////////////////////////////////
 
-		private static Hashtable filter_types_by_flavor = new Hashtable ();
-		private static Hashtable filter_versions_by_name = new Hashtable ();
+		private static Dictionary<string, int> filter_versions_by_name = new Dictionary<string, int> ();
 
 		static private int ScanAssemblyForFilters (Assembly assembly)
 		{
@@ -309,10 +315,8 @@ namespace Beagle.Daemon {
 
 				filter_versions_by_name [t.ToString ()] = filter.Version;
 
-				foreach (FilterFlavor flavor in filter.SupportedFlavors) {
-					filter_types_by_flavor [flavor] = t;
-					FilterFlavor.Flavors.Add (flavor);
-				}
+				foreach (FilterFlavor flavor in filter.SupportedFlavors)
+					FilterFlavor.FilterTable [flavor] = t;
 
 				++count;
 			}
