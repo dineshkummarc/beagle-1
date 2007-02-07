@@ -51,7 +51,7 @@ public class EntityStore : SqliteStore {
 			SqliteUtils.DoNonQuery (connection,
 						"CREATE TABLE db_info (             " +
 						"  version       INTEGER NOT NULL,  " +
-						"  fingerprint   STRING NOT NULL    " +
+						"  fingerprint   TEXT NOT NULL    " +
 						")");
 
 			SqliteUtils.DoNonQuery (connection,
@@ -61,19 +61,19 @@ public class EntityStore : SqliteStore {
 			SqliteUtils.DoNonQuery (connection,
 						"CREATE TABLE first_class (           " +
 						"  id			INTEGER PRIMARY KEY AUTOINCREMENT," +
-						"  class_name   STRING UNIQUE NOT NULL  " +
+						"  class_name   TEXT UNIQUE NOT NULL  " +
 						")");
 			
 			SqliteUtils.DoNonQuery (connection,
 						"CREATE TABLE second_class (           " +
 						"  id			INTEGER PRIMARY KEY AUTOINCREMENT," +
-						"  class_name     STRING UNIQUE NOT NULL  " +
+						"  class_name     TEXT UNIQUE NOT NULL  " +
 						")");
 
 			SqliteUtils.DoNonQuery (connection,
 						"CREATE TABLE objects (		" +
 						" id		INTEGER PRIMARY KEY AUTOINCREMENT," +
-						" value_string	STRING )");
+						" value_string	TEXT )");
 			
 			SqliteUtils.DoNonQuery (connection,
 						"CREATE UNIQUE INDEX object_idx on objects (" +
@@ -82,7 +82,7 @@ public class EntityStore : SqliteStore {
 			SqliteUtils.DoNonQuery (connection,
 						"CREATE TABLE attributes (           " +
 						"  id		  INTEGER PRIMARY KEY AUTOINCREMENT," +
-						"  name       STRING NOT NULL,        " +
+						"  name       TEXT NOT NULL,        " +
 						"  for_class  INTEGER REFERENCES first_class,  " +
 						"  value_type INTEGER REFERENCES second_class, " +
 						"  refers_to  INTEGER REFERENCES first_class,  " +
@@ -98,9 +98,9 @@ public class EntityStore : SqliteStore {
 			SqliteUtils.DoNonQuery (connection,
 						"CREATE TABLE instances (           " +
 						"  id		  INTEGER PRIMARY KEY AUTOINCREMENT," +
-						"  uri            STRING NOT NULL, " +
+						"  uri            TEXT NOT NULL, " +
 						"  class_id       INTEGER REFERENCES first_class, " +
-						"  indexed        STRING NOT NULL,       " +
+						"  indexed        TEXT NOT NULL,       " +
 						"  flags		INTEGER NOT NULL DEFAULT 0 " +
 						")");
 
