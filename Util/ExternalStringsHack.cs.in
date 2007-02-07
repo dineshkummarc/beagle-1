@@ -1,0 +1,49 @@
+//
+// ExternalStringsHack.cs is generated from ExternalStringsHack.cs.in
+//
+
+using System;
+
+namespace Beagle.Util {
+
+	  public class ExternalStringsHack {
+
+		static public string Version {
+		       get { return "@VERSION@"; }
+		}
+
+		static public string Prefix {
+			get { return "@prefix@"; }
+		}
+
+		static public string SysConfDir {
+			get { return "@sysconfdir@"; }
+		}
+
+		static public string PkgLibDir {
+			get { return "@pkglibdir@"; }
+		}
+
+		static public string PkgDataDir {
+			get { return "@pkgdatadir@"; }
+		}
+
+		static public string LocalStateDir {
+			get { return "@localstatedir@"; }
+		}
+
+		static public string GnomePrefix {
+			get { return "@GNOME_PREFIX@"; }
+		}
+
+		static public string LocaleDir {
+		       get { return "@prefix@/share/locale"; }
+		}
+
+		static public string KdePrefix {
+			get { return "@KDE_PREFIX@"; }
+		}
+
+		public const string SqliteVersion = "@SQLITE_MAJ_VER@";
+	}
+}
