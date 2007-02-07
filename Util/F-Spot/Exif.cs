@@ -267,8 +267,16 @@ namespace Beagle.Util.Exif {
 			string delimiters = " :";
 			string[] dt_data = dt.Split ( delimiters.ToCharArray(), 6 );
 			DateTime result;
-			result = new DateTime (Int32.Parse(dt_data[0]), Int32.Parse(dt_data[1]), Int32.Parse(dt_data[2]),
-					       Int32.Parse(dt_data[3]), Int32.Parse(dt_data[4]), Int32.Parse(dt_data[5]));
+			try {
+				result = new DateTime (Int32.Parse(dt_data[0]),
+					Int32.Parse(dt_data[1]),
+					Int32.Parse(dt_data[2]),
+					Int32.Parse(dt_data[3]),
+					Int32.Parse(dt_data[4]),
+					Int32.Parse(dt_data[5]));
+			} catch (FormatException) {
+				result = DateTime.MinValue;
+			}
 			
 			return result;
 		}	
@@ -597,7 +605,7 @@ namespace Beagle.Util.Exif {
 			byte [] tmp = new byte [len + 1];
 			System.Text.Encoding.UTF8.GetBytes (value, 0, value.Length, tmp, 0);
 			tmp[len] = 0;
-			System.Console.WriteLine ("value = {0} len = {1}", value, len);
+			//System.Console.WriteLine ("value = {0} len = {1}", value, len);
 			SetData (tmp, 1);
 		}
 
@@ -817,7 +825,7 @@ namespace Beagle.Util.Exif {
 				free (data);
 			}
 				
-			System.Console.WriteLine ("Saved {0} bytes", content.Length);
+			//System.Console.WriteLine ("Saved {0} bytes", content.Length);
 			return content;
 		}
 		

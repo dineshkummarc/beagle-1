@@ -42,11 +42,8 @@ namespace Beagle.Filters {
 			pc.RedirectStandardOutput = true;
 			pc.RedirectStandardError = true;
 
-			// Runs inside the child process after form() but before exec()
-			pc.ChildProcessSetup += delegate {
-				// Let pdfinfo run for 10 CPU seconds, max.
-				SystemPriorities.SetResourceLimit (SystemPriorities.Resource.Cpu, 10);
-			};
+			// Let pdfinfo run for 10 CPU seconds, max.
+			pc.CpuLimit = 90;
 
 			try {
 				pc.Start ();
@@ -114,15 +111,18 @@ namespace Beagle.Filters {
 		{
 			// create new external process
 			pc = new SafeProcess ();
-			pc.Arguments = new string [] { "pdftotext", "-nopgbrk", "-enc", "UTF-8", FileInfo.FullName, "-" };
+			pc.Arguments = new string [] { "pdftotext", "-q", "-nopgbrk", "-enc", "UTF-8", FileInfo.FullName, "-" };
 			pc.RedirectStandardOutput = true;
-			pc.RedirectStandardError = true;
 
-			// Runs inside the child process after form() but before exec()
-			pc.ChildProcessSetup += delegate {
-				// Let pdftotext run for 90 CPU seconds, max.
-				SystemPriorities.SetResourceLimit (SystemPriorities.Resource.Cpu, 90);
-			};
+			// FIXME: This should really be true, and we should
+			// process the output.  But we can deadlock when
+			// pdftotext is blocked writing to stderr because of a
+			// full buffer and we're blocking while reading from
+			// stdout.
+			pc.RedirectStandardError = false;
+
+			// Let pdftotext run for 90 CPU seconds, max.
+			pc.CpuLimit = 90;
 
 			try {
 				pc.Start ();
@@ -176,6 +176,8 @@ namespace Beagle.Filters {
 				return;
 
 			pout.Close ();
+#if false
+			// FIXME: See FIXME above.
 			pout = new StreamReader (pc.StandardError);
 
 			string str;
@@ -183,6 +185,7 @@ namespace Beagle.Filters {
 				Log.Warn ("pdftotext [{0}]: {1}", Uri, str);
 
 			pout.Close ();
+#endif
 			pc.Close ();
 		}
 	}

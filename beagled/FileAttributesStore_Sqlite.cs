@@ -40,7 +40,8 @@ namespace Beagle.Daemon {
 		// Version history:
 		// 1: Original version
 		// 2: Replaced LastIndexedTime with LastAttrTime
-		const int VERSION = 2;
+		// 3: Changed TEXT to TEXT
+		const int VERSION = 3;
 
 		public FileAttributesStore_Sqlite (string directory, string index_fingerprint) :
 			base (directory, index_fingerprint)
@@ -55,7 +56,7 @@ namespace Beagle.Daemon {
 			SqliteUtils.DoNonQuery (connection,
 						"CREATE TABLE db_info (             " +
 						"  version       INTEGER NOT NULL,  " +
-						"  fingerprint   STRING NOT NULL    " +
+						"  fingerprint   TEXT NOT NULL    " +
 						")");
 
 			SqliteUtils.DoNonQuery (connection,
@@ -64,13 +65,13 @@ namespace Beagle.Daemon {
 
 			SqliteUtils.DoNonQuery (connection,
 						"CREATE TABLE file_attributes (           " +
-						"  unique_id      STRING UNIQUE,          " +
-						"  directory      STRING NOT NULL,        " +
-						"  filename       STRING NOT NULL,        " +
-						"  last_mtime     STRING NOT NULL,        " +
-						"  last_attrtime  STRING NOT NULL,        " +
-						"  filter_name    STRING NOT NULL,        " +
-						"  filter_version STRING NOT NULL         " +
+						"  unique_id      TEXT UNIQUE,          " +
+						"  directory      TEXT NOT NULL,        " +
+						"  filename       TEXT NOT NULL,        " +
+						"  last_mtime     TEXT NOT NULL,        " +
+						"  last_attrtime  TEXT NOT NULL,        " +
+						"  filter_name    TEXT NOT NULL,        " +
+						"  filter_version TEXT NOT NULL         " +
 						")");
 
 			SqliteUtils.DoNonQuery (connection,
@@ -81,7 +82,7 @@ namespace Beagle.Daemon {
 		}
 		
 		protected override void LoadRecords (string directory)
-	       	{
+	    {
 			SqliteCommand command;
 			SqliteDataReader reader;
 			int count = 0;
@@ -110,7 +111,7 @@ namespace Beagle.Daemon {
 			DateTime dt2 = DateTime.Now;
 
 			Logger.Log.Debug ("Loaded {0} records from {1} in {2:0.000}s", 
-					 count, GetDbPath (directory), (dt2 - dt1).TotalSeconds);
+						 count, GetDbPath (directory), (dt2 - dt1).TotalSeconds);
 		}
 
 		///////////////////////////////////////////////////////////////////
@@ -175,7 +176,6 @@ namespace Beagle.Daemon {
 				return null;
 
 			FileAttributes attr = null;
-			bool found_too_many = false;
 
 			// We need to quote any 's that appear in the strings
 			// (int particular, in the path)
@@ -187,26 +187,11 @@ namespace Beagle.Daemon {
 								    directory, filename);
 				reader = SqliteUtils.ExecuteReaderOrWait (command);
 				
-				if (SqliteUtils.ReadOrWait (reader)) {
+				if (SqliteUtils.ReadOrWait (reader))
 					attr = GetFromReader (reader);
 					
-					if (SqliteUtils.ReadOrWait (reader))
-						found_too_many = true;
-				}
 				reader.Close ();
 				command.Dispose ();
-
-				// If we found more than one matching record for a given
-				// directory and filename, something has gone wrong.
-				// Since we have no way of knowing which one is correct
-				// and which isn't, we delete them all and return
-				// null.  (Which in most cases will force a re-index.
-				if (found_too_many) {
-					SqliteUtils.DoNonQuery (connection,
-								"DELETE FROM file_attributes WHERE directory='{0}' AND filename='{1}'",
-								directory, filename);
-					attr = null;
-				}
 			}
 
 			return attr;

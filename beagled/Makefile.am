@@ -202,7 +202,6 @@ LUCENE_1_9_CSFILES =							\
 	$(lucenedir)/Search/QueryTermVector.cs	\
 	$(lucenedir)/Search/RangeFilter.cs	\
 	$(lucenedir)/Search/RangeQuery.cs	\
-	$(lucenedir)/Search/RemoteSearchable.cs	\
 	$(lucenedir)/Search/ReqExclScorer.cs	\
 	$(lucenedir)/Search/ReqOptSumScorer.cs	\
 	$(lucenedir)/Search/ScoreDoc.cs	\
@@ -249,6 +248,11 @@ LUCENE_1_9_CSFILES =							\
 	$(lucenedir)/LucenePackage.cs	\
 	$(lucenedir)/SharpZipLibAdapter.cs	\
 	$(lucenedir)/SupportClass.cs
+
+# Stuff we don't build because we don't use it and it
+# introduces additional library dependencies.
+IGNORED_LUCENE_CSFILES =			\
+        $(lucenedir)/Search/RemoteSearchable.cs
 
 LUCENE_CSFILES = $(LUCENE_1_9_CSFILES)
 
@@ -375,6 +379,12 @@ indexingservicequeryable = $(srcdir)/IndexingServiceQueryable
 INDEXING_SERVICE_QUERYABLE_CSFILES =			\
 	$(indexingservicequeryable)/IndexingServiceQueryable.cs
 
+operaqueryable = $(srcdir)/OperaQueryable
+OPERA_QUERYABLE_CSFILES =				\
+	$(operaqueryable)/OperaIndexableGenerator.cs	\
+	$(operaqueryable)/OperaIndexer.cs		\
+	$(operaqueryable)/OperaQueryable.cs
+
 DAEMON_DLL_CSFILES = 						\
 	$(LUCENE_CSFILES)					\
 	$(KMAIL_QUERYABLE_CSFILES)				\
@@ -393,6 +403,7 @@ DAEMON_DLL_CSFILES = 						\
 	$(KABC_QUERYABLE_CSFILES)				\
 	$(KOPETE_QUERYABLE_CSFILES)				\
 	$(KONVERSATION_QUERYABLE_CSFILES)			\
+	$(OPERA_QUERYABLE_CSFILES)			\
 	$(SQLMETA_CSFILES)						\
 	$(srcdir)/AssemblyInfo.cs				\
 	$(srcdir)/FileAttributes.cs				\
@@ -447,9 +458,7 @@ DAEMON_DLL_ASSEMBLIES = 			\
 	$(DAEMON_DLL_LOCAL_ASSEMBLIES:%=-r:%)	\
 	$(SHARPZIPLIB_LIBS)		\
 	-r:Mono.Data.SqliteClient		\
-	-r:Mono.Posix				\
-	-r:System.Runtime.Remoting		\
-	-r:System.Web
+	-r:Mono.Posix
 
 if USE_LOCAL_SQLITE
 DAEMON_DLL_CSFILES += $(SQLITE_CSFILES)
@@ -477,6 +486,8 @@ BACKEND_ASSEMBLIES =				\
 	$(SHARPZIPLIB_LIBS)			\
 	$(BACKEND_LOCAL_ASSEMBLIES:%=-r:%)	\
 	-r:Mono.Posix
+
+############################################################
 
 ###
 ### Evolution backend
@@ -511,6 +522,44 @@ $(EVO_DLL_TARGET): $(EVO_DLL_CSFILES) $(DAEMON_DLL_LOCAL_ASSEMBLIES) $(DAEMON_DL
 
 ############################################################
 
+###
+### Thunderbird backend
+###
+
+THUNDERBIRD_DIR = $(srcdir)/ThunderbirdQueryable
+
+THUNDERBIRD_TARGET = ThunderbirdBackends.dll
+
+THUNDERBIRD_CSFLAGS = $(BACKEND_CSFLAGS)
+
+THUNDERBIRD_CSFILES =						\
+	$(THUNDERBIRD_DIR)/LuceneAccess.cs			\
+	$(THUNDERBIRD_DIR)/ThunderbirdIndexer.cs   		\
+	$(THUNDERBIRD_DIR)/ThunderbirdIndexableGenerator.cs	\
+	$(THUNDERBIRD_DIR)/ThunderbirdQueryable.cs		\
+	$(THUNDERBIRD_DIR)/ThunderbirdInotify.cs		\
+	$(THUNDERBIRD_DIR)/Mail.cs				\
+	$(THUNDERBIRD_DIR)/Contact.cs				\
+	$(THUNDERBIRD_DIR)/Rss.cs				\
+	$(THUNDERBIRD_DIR)/Nntp.cs				\
+	$(THUNDERBIRD_DIR)/MoveMail.cs
+
+THUNDERBIRD_LOCAL_ASSEMBLIES =		\
+	../Util/Util.dll		\
+	../BeagleClient/Beagle.dll	\
+	./BeagleDaemonLib.dll
+
+THUNDERBIRD_ASSEMBLIES =				\
+	-r:Mono.Posix				\
+	$(BEAGLED_LIBS)                 	\
+	$(THUNDERBIRD_LOCAL_ASSEMBLIES:%=-r:%)
+
+
+$(THUNDERBIRD_TARGET): $(THUNDERBIRD_CSFILES) $(THUNDERBIRD_LOCAL_ASSEMBLIES)
+	$(CSC) -out:$@ $(THUNDERBIRD_CSFLAGS) $(THUNDERBIRD_CSFILES) $(THUNDERBIRD_ASSEMBLIES)
+
+############################################################
+
 DAEMON_WRAPPER = beagled
 DAEMON_WRAPPER_IN = beagled.in
 DAEMON_TARGET = BeagleDaemon.exe
@@ -541,41 +590,6 @@ DAEMON_ASSEMBLIES =				\
 
 $(DAEMON_TARGET): $(DAEMON_CSFILES) $(DAEMON_LOCAL_ASSEMBLIES)
 	$(CSC) -out:$@ $(DAEMON_CSFLAGS) $(DAEMON_CSFILES) $(DAEMON_ASSEMBLIES)
-
-if ENABLE_THUNDERBIRD	
-THUNDERBIRD_DIR = $(srcdir)/ThunderbirdQueryable
-
-THUNDERBIRD_TARGET = ThunderbirdBackends.dll
-
-THUNDERBIRD_CSFLAGS = -target:library
-
-
-THUNDERBIRD_CSFILES =						\
-	$(THUNDERBIRD_DIR)/LuceneAccess.cs			\
-	$(THUNDERBIRD_DIR)/ThunderbirdIndexer.cs   		\
-	$(THUNDERBIRD_DIR)/ThunderbirdIndexableGenerator.cs	\
-	$(THUNDERBIRD_DIR)/ThunderbirdQueryable.cs		\
-	$(THUNDERBIRD_DIR)/ThunderbirdInotify.cs		\
-	$(THUNDERBIRD_DIR)/Mail.cs				\
-	$(THUNDERBIRD_DIR)/Contact.cs				\
-	$(THUNDERBIRD_DIR)/Rss.cs				\
-	$(THUNDERBIRD_DIR)/Nntp.cs				\
-	$(THUNDERBIRD_DIR)/MoveMail.cs
-
-THUNDERBIRD_LOCAL_ASSEMBLIES =		\
-	../Util/Util.dll		\
-	../BeagleClient/Beagle.dll	\
-	./BeagleDaemonLib.dll
-
-THUNDERBIRD_ASSEMBLIES =				\
-	-r:Mono.Posix				\
-	$(BEAGLED_LIBS)                 	\
-	$(THUNDERBIRD_LOCAL_ASSEMBLIES:%=-r:%)
-
-
-$(THUNDERBIRD_TARGET): $(THUNDERBIRD_CSFILES) $(THUNDERBIRD_LOCAL_ASSEMBLIES)
-	$(CSC) -out:$@ $(THUNDERBIRD_CSFLAGS) $(THUNDERBIRD_CSFILES) $(THUNDERBIRD_ASSEMBLIES)
-endif
 
 ############################################################
 ############################################################
@@ -611,8 +625,7 @@ INDEX_HELPER_ASSEMBLIES = \
 	$(BEAGLED_LIBS)				\
 	$(SHARPZIPLIB_LIBS)			\
 	$(INDEX_HELPER_LOCAL_ASSEMBLIES:%=-r:%)	\
-	-r:Mono.Posix				\
-	-r:System.Runtime.Remoting
+	-r:Mono.Posix
 
 $(INDEX_HELPER_TARGET): $(INDEX_HELPER_CSFILES) $(INDEX_HELPER_LOCAL_ASSEMBLIES)
 	$(CSC) -out:$@ $(INDEX_HELPER_CSFLAGS) $(INDEX_HELPER_CSFILES) $(INDEX_HELPER_ASSEMBLIES)
@@ -643,8 +656,7 @@ EXTRACT_CONTENT_ASSEMBLIES = \
 	$(BEAGLED_LIBS)				\
 	$(SHARPZIPLIB_LIBS)			\
 	$(DAEMON_LOCAL_ASSEMBLIES:%=-r:%)	\
-	-r:Mono.Posix				\
-	-r:System.Runtime.Remoting
+	-r:Mono.Posix
 
 $(EXTRACT_CONTENT_TARGET): $(EXTRACT_CONTENT_CSFILES) $(EXTRACT_CONTENT_LOCAL_ASSEMBLIES)
 	$(CSC) -out:$@ $(EXTRACT_CONTENT_CSFLAGS) $(EXTRACT_CONTENT_CSFILES) $(EXTRACT_CONTENT_ASSEMBLIES)
@@ -674,8 +686,7 @@ DUMP_INDEX_ASSEMBLIES = \
 	$(BEAGLED_LIBS)				\
 	$(SHARPZIPLIB_LIBS)			\
 	$(DAEMON_LOCAL_ASSEMBLIES:%=-r:%)	\
-	-r:Mono.Posix				\
-	-r:System.Runtime.Remoting
+	-r:Mono.Posix
 
 $(DUMP_INDEX_TARGET): $(DUMP_INDEX_CSFILES) $(DUMP_INDEX_LOCAL_ASSEMBLIES)
 	$(CSC) -out:$@ $(DUMP_INDEX_CSFLAGS) $(DUMP_INDEX_CSFILES) $(DUMP_INDEX_ASSEMBLIES)
@@ -734,8 +745,7 @@ MASTER_DELETE_ASSEMBLIES = \
 	$(BEAGLED_LIBS)				\
 	$(SHARPZIPLIB_LIBS)			\
 	$(DAEMON_LOCAL_ASSEMBLIES:%=-r:%)	\
-	-r:Mono.Posix				\
-	-r:System.Runtime.Remoting
+	-r:Mono.Posix
 
 $(MASTER_DELETE_TARGET): $(MASTER_DELETE_CSFILES) $(MASTER_DELETE_LOCAL_ASSEMBLIES)
 	$(CSC) -out:$@ $(MASTER_DELETE_CSFLAGS) $(MASTER_DELETE_CSFILES) $(MASTER_DELETE_ASSEMBLIES)
@@ -765,8 +775,7 @@ SNIPPET_TEST_ASSEMBLIES = \
 	$(BEAGLED_LIBS)				\
 	$(SHARPZIPLIB_LIBS)			\
 	$(DAEMON_LOCAL_ASSEMBLIES:%=-r:%)	\
-	-r:Mono.Posix				\
-	-r:System.Runtime.Remoting
+	-r:Mono.Posix
 
 $(SNIPPET_TEST_TARGET): $(SNIPPET_TEST_CSFILES) $(SNIPPET_TEST_LOCAL_ASSEMBLIES)
 	$(CSC) -out:$@ $(SNIPPET_TEST_CSFLAGS) $(SNIPPET_TEST_CSFILES) $(SNIPPET_TEST_ASSEMBLIES)
@@ -796,8 +805,7 @@ TERM_STATS_ASSEMBLIES = \
 	$(BEAGLED_LIBS)				\
 	$(SHARPZIPLIB_LIBS)			\
 	$(DAEMON_LOCAL_ASSEMBLIES:%=-r:%)	\
-	-r:Mono.Posix				\
-	-r:System.Runtime.Remoting
+	-r:Mono.Posix
 
 $(TERM_STATS_TARGET): $(TERM_STATS_CSFILES) $(TERM_STATS_LOCAL_ASSEMBLIES)
 	$(CSC) -out:$@ $(TERM_STATS_CSFLAGS) $(TERM_STATS_CSFILES) $(TERM_STATS_ASSEMBLIES)
@@ -827,8 +835,7 @@ NAME_INDEX_ASSEMBLIES = \
 	$(BEAGLED_LIBS)				\
 	$(SHARPZIPLIB_LIBS)			\
 	$(DAEMON_LOCAL_ASSEMBLIES:%=-r:%)	\
-	-r:Mono.Posix				\
-	-r:System.Runtime.Remoting
+	-r:Mono.Posix
 
 $(NAME_INDEX_TARGET): $(NAME_INDEX_CSFILES) $(NAME_INDEX_LOCAL_ASSEMBLIES)
 	$(CSC) -out:$@ $(NAME_INDEX_CSFLAGS) $(NAME_INDEX_CSFILES) $(NAME_INDEX_ASSEMBLIES)
@@ -858,8 +865,7 @@ FS_SANITY_CHECK_ASSEMBLIES = \
 	$(BEAGLED_LIBS)				\
 	$(SHARPZIPLIB_LIBS)			\
 	$(DAEMON_LOCAL_ASSEMBLIES:%=-r:%)	\
-	-r:Mono.Posix				\
-	-r:System.Runtime.Remoting
+	-r:Mono.Posix
 
 $(FS_SANITY_CHECK_TARGET): $(FS_SANITY_CHECK_CSFILES) $(FS_SANITY_CHECK_LOCAL_ASSEMBLIES)
 	$(CSC) -out:$@ $(FS_SANITY_CHECK_CSFLAGS) $(FS_SANITY_CHECK_CSFILES) $(FS_SANITY_CHECK_ASSEMBLIES)

@@ -31,6 +31,8 @@ using Beagle.Util;
 namespace Beagle.Daemon {
 
 	public class FileAttributesStore {
+		
+		private static bool Debug = false;
 
 		private IFileAttributesStore ifas;
 
@@ -42,7 +44,15 @@ namespace Beagle.Daemon {
 		public FileAttributes Read (string path)
 		{
 			lock (ifas) {
-				return ifas.Read (path);
+				if (Debug)
+					Log.Debug ("Reading attr for {0}", path);
+
+				FileAttributes attr = ifas.Read (path);
+
+				if (Debug)
+					Log.Debug ("  attr is {0}null", attr != null ? "non-" : "");
+
+				return attr;
 			}
 		}
 
@@ -50,6 +60,9 @@ namespace Beagle.Daemon {
 		{
 			lock (ifas) {
 				created = false;
+
+				if (Debug)
+					Log.Debug ("Reading or creating attr for {0}", path);
 
 				FileAttributes attr = ifas.Read (path);
 				// If we pass in a Guid that doesn't match the one we found in the
@@ -70,6 +83,10 @@ namespace Beagle.Daemon {
 					//ifas.Write (attr);
 					created = true;
 				}
+
+				if (Debug)
+					Log.Debug ("  {0} attr for {1}", created ? "Created" : "Read existing", path);
+
 				return attr;
 			}
 		}
@@ -88,14 +105,26 @@ namespace Beagle.Daemon {
 		public bool Write (FileAttributes attr)
 		{
 			lock (ifas) {
+				if (Debug)
+					Log.Debug ("Writing attr for {0}", attr.Path);
+
 				attr.LastAttrTime = DateTime.UtcNow;
-				return ifas.Write (attr);
+
+				bool success = ifas.Write (attr);
+
+				if (Debug)
+					Log.Debug ("  write {0}", success ? "succeeded" : "FAILED");
+
+				return success;
 			}
 		}
 
 		public void Drop (string path)
 		{
 			lock (ifas) {
+				if (Debug)
+					Log.Debug ("Dropping attr for {0}", path);
+
 				ifas.Drop (path);
 			}
 		}
@@ -104,7 +133,6 @@ namespace Beagle.Daemon {
 		{
 			lock (ifas)
 				ifas.BeginTransaction ();
-
 		}
 
 		public void CommitTransaction ()
@@ -120,8 +148,7 @@ namespace Beagle.Daemon {
 			if (attr == null)
 				return false;
 
-			// FIXME:.Net-2.0 DateTime - Compare attr.LastWriteTime without converting to UTC
-			return (attr.LastWriteTime.ToUniversalTime () >= FileSystem.GetLastWriteTimeUtc (path));
+			return (attr.LastWriteTime >= FileSystem.GetLastWriteTimeUtc (path));
 		}
 
 		public bool IsUpToDate (string path, Filter filter)
@@ -132,16 +159,15 @@ namespace Beagle.Daemon {
 
 			// If there are no attributes set on the file, there is no
 			// way that we can be up-to-date.
-			if (attr == null)
+			// Also, if attribute has no filter information, try once
+			// again.
+			if (attr == null || ! attr.HasFilterInfo)
 				return false;
 
 			// Note that when filter is set to null, we ignore
 			// any existing filter data.  That might not be the
 			// expected behavior...
 			if (filter != null) {
-
-				if (! attr.HasFilterInfo)
-					return false;
 
 				if (attr.FilterName != filter.Name)
 					return false;

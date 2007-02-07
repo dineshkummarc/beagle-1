@@ -95,7 +95,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 				event_backend = new NullFileEventBackend ();
                         }
 
-			tree_crawl_task = new TreeCrawlTask (new TreeCrawlTask.Handler (AddDirectory));
+			tree_crawl_task = new TreeCrawlTask (this, new TreeCrawlTask.Handler (AddDirectory));
 			tree_crawl_task.Source = this;
 
 			file_crawl_task = new FileCrawlTask (this);
@@ -178,16 +178,16 @@ namespace Beagle.Daemon.FileSystemQueryable {
 							      DirectoryModel parent)
 		{
 			Indexable indexable;
-			try {
-				indexable = new Indexable (IndexableType.Add, GuidFu.ToUri (id));
-				indexable.MimeType = "inode/directory";
-				indexable.NoContent = true;
-				indexable.DisplayUri = UriFu.PathToFileUri (path);
-				indexable.Timestamp = Directory.GetLastWriteTimeUtc (path);
-			} catch (IOException) {
-				// Looks like the directory was deleted.
+			indexable = new Indexable (IndexableType.Add, GuidFu.ToUri (id));
+			indexable.Timestamp = Directory.GetLastWriteTimeUtc (path);
+
+			// If the directory was deleted, we'll bail out.
+			if (! FileSystem.ExistsByDateTime (indexable.Timestamp))
 				return null;
-			}
+
+			indexable.MimeType = "inode/directory";
+			indexable.NoContent = true;
+			indexable.DisplayUri = UriFu.PathToFileUri (path);
 
 			string name;
 			if (parent == null)
@@ -213,17 +213,17 @@ namespace Beagle.Daemon.FileSystemQueryable {
 		{
 			Indexable indexable;
 
-			try {
-				indexable = new Indexable (IndexableType.Add, GuidFu.ToUri (id));
-				indexable.Timestamp = File.GetLastWriteTimeUtc (path);
-				indexable.ContentUri = UriFu.PathToFileUri (path);
-				indexable.DisplayUri = UriFu.PathToFileUri (path);
-				indexable.Crawled = crawl_mode;
-				indexable.Filtering = Beagle.IndexableFiltering.Always;
-			} catch (IOException) {
-				// Looks like the file was deleted.
+			indexable = new Indexable (IndexableType.Add, GuidFu.ToUri (id));
+			indexable.Timestamp = File.GetLastWriteTimeUtc (path);
+
+			// If the file was deleted, bail out.
+			if (! FileSystem.ExistsByDateTime (indexable.Timestamp))
 				return null;
-			}
+
+			indexable.ContentUri = UriFu.PathToFileUri (path);
+			indexable.DisplayUri = UriFu.PathToFileUri (path);
+			indexable.Crawled = crawl_mode;
+			indexable.Filtering = Beagle.IndexableFiltering.Always;
 
 			AddStandardPropertiesToIndexable (indexable, Path.GetFileName (path), parent, true);
 
@@ -479,6 +479,10 @@ namespace Beagle.Daemon.FileSystemQueryable {
 				return;
 			}
 
+			// If we're adding a root, this is probably a
+			// long-running indexing task.  Set IsIndexing.
+			IsIndexing = true;
+
 			// We need to have the path key in the roots hashtable
 			// for the filtering to work as we'd like before the root 
 			// is actually added.
@@ -553,11 +557,9 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			if (Debug)
 				Logger.Log.Debug ("Registered directory '{0}' ({1})", path, attr.UniqueId);
 
-			DateTime mtime;
+			DateTime mtime = Directory.GetLastWriteTimeUtc (path);
 
-			try {
-				mtime = Directory.GetLastWriteTimeUtc (path);
-			} catch (IOException) {
+			if (! FileSystem.ExistsByDateTime (mtime)) {
 				Log.Debug ("Directory '{0}' ({1}) appears to have gone away", path, attr.UniqueId);
 				return false;
 			}
@@ -732,9 +734,13 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			FileAttributes attr;
 			attr = FileAttributesStore.Read (dir.FullName);
 
-			// Don't mark ourselves; let the crawler redo us
-			if (attr == null)
+			// We couldn't read our attribute back in for some
+			// reason.  Complain loudly.
+			if (attr == null) {
+				Log.Error ("Unable to read attributes for recently crawled directory {0}", dir.FullName);
+				dir.MarkAsClean ();
 				return;
+			}
 
 			// We don't have to be super-careful about this since
 			// we only use the FileAttributes mtime on a directory
@@ -872,6 +878,10 @@ namespace Beagle.Daemon.FileSystemQueryable {
 					Logger.Log.Debug ("*** Index it: File has no attributes");
 				return RequiredAction.Index;
 			}
+
+			// If this was not indexed before, try again
+			if (! attr.HasFilterInfo)
+				return RequiredAction.Index;
 
 			// FIXME: This does not take in to account that we might have a better matching filter to use now
 			// That, however, is kind of expensive to figure out since we'd have to do mime-sniffing and shit.
@@ -1183,17 +1193,31 @@ namespace Beagle.Daemon.FileSystemQueryable {
 
 		//////////////////////////////////////////////////////////////////////////
 
+		public void UpdateIsIndexing ()
+		{
+			// If IsIndexing is false, then the indexing had
+			// finished previously and we don't really care about
+			// this call anymore.  It can be reset to true if a new
+			// root is added, however.
+			if (this.IsIndexing == false)
+				return;
+
+			DirectoryModel next_dir = GetNextDirectoryToCrawl ();
+
+			// If there are any "dirty" directories left, we're
+			// still indexing.  If not, check our crawl tasks to
+			// see if we're still working on the queue.
+			if (next_dir != null)
+				this.IsIndexing = (next_dir.State > DirectoryState.PossiblyClean);
+			else
+				this.IsIndexing = (file_crawl_task.IsActive || tree_crawl_task.IsActive);
+		}
+
+		//////////////////////////////////////////////////////////////////////////
+
 		//
 		// Our magic LuceneQueryable hooks
 		//
-
-		override protected bool IsIndexing {
-			// FIXME: There is a small race window here, between the starting
-			// of the backend and when either of these tasks first starts
-			// running.  In reality it doesn't come up much, so it's not
-			// urgent to fix.
-			get { return file_crawl_task.IsActive || tree_crawl_task.IsActive; }
-		}
 
 		override protected void PostAddHook (Indexable indexable, IndexerAddedReceipt receipt)
 		{
@@ -1250,7 +1274,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			string path;
 			path = (string) indexable.LocalState ["Path"];
 			if (Debug)
-				Log.Debug ("PostChildrenIndexedHook for {0} ({1}) and receipt uri={2}", indexable.Uri, path, receipt.Uri);
+				Log.Debug ("PostChildrenIndexedHook for {0} ({1}) and receipt uri={2}, (filter={3},{4})", indexable.Uri, path, receipt.Uri, receipt.FilterName, receipt.FilterVersion);
 
 			ForgetId (path);
 

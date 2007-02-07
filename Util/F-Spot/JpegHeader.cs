@@ -249,7 +249,7 @@ public class JpegHeader : SemWeb.StatementSource {
 	}
 
 	public static Signature JfifSignature = new Signature (JpegMarker.App0, "JFIF\0");
-	public static Signature ComSignature = new Signature (JpegMarker.Com, "COM\0");
+	public static Signature ComSignature = new Signature (JpegMarker.Com, null);
 	public static Signature JfxxSignature = new Signature (JpegMarker.App0, "JFXX\0");
 	public static Signature XmpSignature = new Signature (JpegMarker.App1, "http://ns.adobe.com/xap/1.0/\0");
 	public static Signature ExifSignature = new Signature (JpegMarker.App1, "Exif\0\0");
@@ -388,12 +388,23 @@ public class JpegHeader : SemWeb.StatementSource {
 			using (System.IO.Stream bimstream = new System.IO.MemoryStream (marker.Data, len,
 											marker.Data.Length - len, false)) {
 
-				Bim.BimFile bim = new Bim.BimFile (bimstream);
+				Bim.BimFile bim;
+				try {
+					bim = new Bim.BimFile (bimstream);
+				} catch {
+					// Bim entry with marker "PHUT" is not handled by Bim.cs
+					return null;
+				}
+
 				// FIXME: What about EntryType.XMP ?
 				Bim.Entry iptc_entry = bim.FindEntry (Bim.EntryType.IPTCNAA);
-				System.IO.Stream iptcstream = new System.IO.MemoryStream (iptc_entry.Data);
-				Iptc.IptcFile iptc = new Iptc.IptcFile (iptcstream);
-				return iptc;
+				if (iptc_entry == null)
+					return null;
+
+				using (System.IO.Stream iptcstream = new System.IO.MemoryStream (iptc_entry.Data)) {
+					Iptc.IptcFile iptc = new Iptc.IptcFile (iptcstream);
+					return iptc;
+				}
 			}
 		}
 		return null;
@@ -493,7 +504,7 @@ public class JpegHeader : SemWeb.StatementSource {
 		bool at_image = false;
 
 		Marker marker = Marker.Load (stream);
-		if (marker.Type != JpegMarker.Soi)
+		if (marker == null || marker.Type != JpegMarker.Soi)
 			throw new System.Exception ("This doesn't appear to be a jpeg stream");
 		
 		this.Markers.Add (marker);

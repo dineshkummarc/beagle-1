@@ -46,6 +46,7 @@ namespace Beagle.Daemon.KonversationQueryable {
 
 		public KonversationQueryable () : base ("KonversationIndex")
 		{
+			//log_dir = Path.Combine (PathFinder.HomeDir, "konv");
 			log_dir = Path.Combine (PathFinder.HomeDir, ".kde");
 			log_dir = Path.Combine (log_dir, "share");
 			log_dir = Path.Combine (log_dir, "apps");
@@ -77,18 +78,14 @@ namespace Beagle.Daemon.KonversationQueryable {
 						    Inotify.EventType.Modify);
 
 			initial_log_files = new ArrayList (Directory.GetFiles (log_dir));
-			Log.Debug ("Will scan {0} log files", initial_log_files.Count);
+			Log.Debug ("Konversation backend: found {0} log files", initial_log_files.Count);
 
+			IsIndexing = true;
 			LogIndexableGenerator generator = new LogIndexableGenerator (this, log_dir);
 			Scheduler.Task task = NewAddTask (generator);
 			task.Tag = log_dir;
 			task.Source = this;
 			ThisScheduler.Add (task);
-		}
-
-		protected override bool IsIndexing {
-			// FIXME: Set proper value
-			get { return true; }
 		}
 
 		// FIXME: Improve this by storing the data on disk. Then scan the data on startup
@@ -161,8 +158,6 @@ namespace Beagle.Daemon.KonversationQueryable {
 				this.file_index = 0;
 				this.log_dir = log_dir;
 				this.generator = null;
-				if (MoveToNextFile ())
-					generator = new SessionIndexableGenerator (queryable, files [file_index], 0);
 			}
 
 			private bool MoveToNextFile ()
@@ -185,20 +180,24 @@ namespace Beagle.Daemon.KonversationQueryable {
 
 			public bool HasNextIndexable ()
 			{
-				if (generator == null)
-					return false;
-
-				if (generator.HasNextIndexable ())
+				if (generator != null && generator.HasNextIndexable ())
 					return true;
 
 				// Move to the next file
-				if (! MoveToNextFile ())
+				if (! MoveToNextFile ()) {
+					queryable.IsIndexing = false;
 					return false;
+				}
 
 				generator = new SessionIndexableGenerator (queryable, files [file_index], 0);
 				file_index ++;
-				return generator.HasNextIndexable ();
-			}	
+				if (! generator.HasNextIndexable ()) {
+					queryable.IsIndexing = false;
+					return false;
+				}
+
+				return true;
+			}
 
 			public Indexable GetNextIndexable ()
 			{
@@ -227,7 +226,7 @@ namespace Beagle.Daemon.KonversationQueryable {
 			private StringBuilder log_line_as_sb;
 			private StringBuilder data_sb;
 			private Dictionary<string, bool> speakers; // list of speakers in the session
-			private string channel_name, speaking_to;
+			private string server_name, speaking_to;
 
 			// Split log into 6 hour sessions or 50 lines, which ever is larger
 			private DateTime session_begin_time;
@@ -249,7 +248,8 @@ namespace Beagle.Daemon.KonversationQueryable {
 				this.session_begin_time = DateTime.MinValue;
 				this.speakers = new Dictionary<string, bool> (10); // rough default value
 
-				Log.Debug ("Reading from konversation log " + log_file);
+				KonversationLog.ParseFilename (Path.GetFileName (log_file), out server_name, out speaking_to);
+				Log.Debug ("Reading from konversation log {0} (server={1}, channel={1})", log_file, server_name, speaking_to);
 			}
 
 			public void PostFlushHook ()
@@ -349,11 +349,17 @@ namespace Beagle.Daemon.KonversationQueryable {
 				if (! is_good_line)
 					return true;
 
-				line_dt = DateTime.ParseExact (
-					dt_string,
-					KonversationLog.LogTimeFormatString,
-					CultureInfo.InvariantCulture,
-					DateTimeStyles.AssumeLocal);
+				try {
+					line_dt = DateTime.ParseExact (
+						dt_string,
+						KonversationLog.LogTimeFormatString,
+						CultureInfo.InvariantCulture,
+						DateTimeStyles.AssumeLocal);
+				} catch (FormatException) {
+					// Old log files had date strings as
+					// [11:05:08] <berkus>  ...
+					return true;
+				}
 
 				// On first scan, set the session_begin_time
 				if (session_begin_time == DateTime.MinValue) {
@@ -399,16 +405,12 @@ namespace Beagle.Daemon.KonversationQueryable {
 
 			private void AddChannelInformation (Indexable indexable)
 			{
-				// Parse identity information from konversation .config file
+				// FIXME: Parse identity information from konversation .config file
 				//AddProperty (Beagle.Property.NewUnsearched ("fixme:identity", log.Identity));
 
 				// Get server name, channel name from the filename and add it here
-				//indexable.AddProperty (Beagle.Property.NewKeyword ("fixme:server", server_name));
-
-				if (channel_name != null)
-					indexable.AddProperty (Beagle.Property.NewKeyword ("fixme:channel", channel_name));
-				if (speaking_to != null)
-					indexable.AddProperty (Beagle.Property.NewKeyword ("fixme:speakingto", speaking_to));
+				indexable.AddProperty (Beagle.Property.NewKeyword ("fixme:server", server_name));
+				indexable.AddProperty (Beagle.Property.NewKeyword ("fixme:speakingto", speaking_to));
 			}
 		}
 
