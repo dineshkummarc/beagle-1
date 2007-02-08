@@ -39,7 +39,8 @@ namespace Beagle.Daemon {
 
 		void DoQuery (Query query,
 			      IQueryResult result,
-			      IQueryableChangeData data);
+			      IQueryableChangeData data,
+			      IMetadata meta_handle);
 
 		string GetSnippet (string[] query_terms, Hit hit);
 

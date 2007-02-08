@@ -53,8 +53,8 @@ namespace Beagle.Daemon {
 		public delegate bool UriFilter (Uri uri);
 		public delegate double RelevancyMultiplier (Hit hit);
 
-		public LuceneQueryingDriver (string index_name, int minor_version, bool read_only) 
-			: base (index_name, minor_version)
+		public LuceneQueryingDriver (string IndexName, int minor_version, bool read_only) 
+			: base (IndexName, minor_version)
 		{
 			// FIXME: Maybe the LuceneQueryingDriver should never try to create the index?
 			if (Exists ())
@@ -117,7 +117,8 @@ namespace Beagle.Daemon {
 				     IQueryResult        result,
 				     ICollection         search_subset_uris, // should be internal uris
 				     UriFilter           uri_filter,
-				     HitFilter           hit_filter)
+				     HitFilter           hit_filter,
+				     IMetadata		 meta_handle)
 		{
 			if (Debug)
 				Logger.Log.Debug ("###### {0}: Starting low-level queries", IndexName);
@@ -315,7 +316,8 @@ namespace Beagle.Daemon {
 						      query.MaxHits,
 						      uri_filter,
 						      new HitFilter (all_hit_filters.HitFilter),
-						      IndexName);
+						      meta_handle,
+							  IndexName);
 			}
 
 			//
@@ -562,7 +564,8 @@ namespace Beagle.Daemon {
 							  int               max_results,
 							  UriFilter         uri_filter,
 							  HitFilter         hit_filter,
-							  string            index_name)
+							  IMetadata	    	meta_handle,
+							  string			index_name)
 		{
 			TopScores top_docs = null;
 			ArrayList all_docs = null;
@@ -743,7 +746,7 @@ namespace Beagle.Daemon {
 
 				foreach (DocAndId doc_and_id in final_list_of_docs) {
 					Hit hit;
-					hit = DocumentToHit (doc_and_id.Doc);
+					hit = DocumentToHit (doc_and_id.Doc, meta_handle);
 					hits_by_id [doc_and_id.Id] = hit;
 					final_list_of_hits.Add (hit);
 				}
@@ -761,7 +764,7 @@ namespace Beagle.Daemon {
 
 				foreach (DocAndId doc_and_id in final_list_of_docs) {
 					Hit hit;
-					hit = DocumentToHit (doc_and_id.Doc);
+					hit = DocumentToHit (doc_and_id.Doc, meta_handle);
 					hits_by_id [doc_and_id.Id] = hit;
 					hits_by_uri [hit.Uri] = hit;
 					secondary_matches.AddUri (hit.Uri);
@@ -787,7 +790,7 @@ namespace Beagle.Daemon {
 					Hit hit;
 					hit = hits_by_uri [uri] as Hit;
 
-					AddPropertiesToHit (hit, secondary_doc, false);
+					AddPropertiesToHit (hit, secondary_doc, meta_handle);
 
 					final_list_of_hits.Add (hit);
 				}

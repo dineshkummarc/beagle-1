@@ -74,9 +74,8 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			bool have_parent_id = false;
 			bool have_is_dir = false;
 
-			foreach (Field f in doc.Fields ()) {
-				Property prop;
-				prop = GetPropertyFromDocument (f, doc, false);
+			ArrayList props = meta.GetProperties (str);
+			foreach (Property prop in props) {
 				if (prop == null)
 					continue;
 

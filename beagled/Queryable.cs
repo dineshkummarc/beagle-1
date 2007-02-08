@@ -67,10 +67,10 @@ namespace Beagle.Daemon {
 				&& iqueryable.AcceptQuery (query);
 		}
 				    
-		public void DoQuery (Query query, IQueryResult result, IQueryableChangeData change_data)
+		public void DoQuery (Query query, IQueryResult result, IQueryableChangeData change_data, IMetadata meta_handle)
 		{
 			try {
-				iqueryable.DoQuery (query, result, change_data);
+				iqueryable.DoQuery (query, result, change_data, meta_handle);
 			} catch (Exception ex) {
 				Logger.Log.Warn (ex, "Caught exception calling DoQuery on '{0}'", Name);
 			}

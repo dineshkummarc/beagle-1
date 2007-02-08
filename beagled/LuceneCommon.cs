@@ -95,6 +95,10 @@ namespace Beagle.Daemon {
 		// expect to have change.  Canonical example: file names.
 		private Lucene.Net.Store.Directory secondary_store = null;
 
+		// This is the Metadata storage
+		protected IMetadata meta = null;
+		
+		
 		//////////////////////////////////////////////////////////////////////////////
 
 		protected LuceneCommon (string index_name, int minor_version)
@@ -298,6 +302,8 @@ namespace Beagle.Daemon {
 		// You don't need to call Open after calling Create.
 		protected void Create ()
 		{
+			meta = new SqlMetadata (PathFinder.StorageDir);
+
 			if (minor_version < 0)
 				minor_version = 0;
 
@@ -334,7 +340,7 @@ namespace Beagle.Daemon {
 		}
 
 		protected void Open (bool read_only_mode)
-		{
+		{	
 			// Read our index fingerprint.
 			TextReader reader;
 			reader = new StreamReader (FingerprintFile);
@@ -344,6 +350,8 @@ namespace Beagle.Daemon {
 			// Create stores for our indexes.
 			primary_store = Lucene.Net.Store.FSDirectory.GetDirectory (PrimaryIndexDirectory, LockDirectory, false, read_only_mode);
 			secondary_store = Lucene.Net.Store.FSDirectory.GetDirectory (SecondaryIndexDirectory, LockDirectory, false, read_only_mode);
+
+			meta = new SqlMetadata (PathFinder.StorageDir);
 		}
 
 		////////////////////////////////////////////////////////////////
@@ -524,7 +532,7 @@ namespace Beagle.Daemon {
 			doc.Add (f);
 		}
 
-		static protected void AddPropertyToDocument (Property prop, Document doc)
+		static protected void AddPropertyToDocument (Property prop, Document doc, string subject, string type, IMetadata metastore)
 		{
 			if (prop == null || prop.Value == null)
 				return;
@@ -535,6 +543,15 @@ namespace Beagle.Daemon {
 				return;
 
 			Field f;
+
+
+			// Searched fields go into Lucene, stored fields go into
+			// the metastore - i am not sure if this is exactly what we want.
+			// FIXME: Will have to implement direct searching stored properties with
+			//     key:value
+			// in the metadata store.
+			// This leaves us with nice issues for the join of complex queries like:
+			// key:value "something else"
 
 			if (prop.IsSearched) {
 				string wildcard_field = TypeToWildcardField (prop.Type);
@@ -553,55 +570,23 @@ namespace Beagle.Daemon {
 
 				if (prop.Type == PropertyType.Date)
 					AddDateFields (wildcard_field, prop, doc);
-			}
+			
+				string field_name = PropertyToFieldName (prop.Type, prop.Key);
 
-			string coded_value;
-			coded_value = String.Format ("{0}:{1}",
-						     prop.IsSearched ? 's' : '_',
-						     prop.Value);
-
-			string field_name = PropertyToFieldName (prop.Type, prop.Key);
-
-			f = new Field (field_name,
-				       coded_value,
+				f = new Field (field_name,
+				       prop.Value,
 				       prop.IsStored ? Field.Store.YES : Field.Store.NO,
 				       Field.Index.TOKENIZED);
 			doc.Add (f);
+			}
+		
+			if (prop.IsStored) {
+				metastore.AddnVerify (subject, prop);
+			}
 
-			if (prop.Type == PropertyType.Date)
-				AddDateFields (field_name, prop, doc);
+
 		}
 
-		static protected Property GetPropertyFromDocument (Field f, Document doc, bool from_primary_index)
-		{
-			// Note: we don't use the document that we pass in,
-			// but in theory we could.  At some later point we
-			// might need to split a property's data across two or
-			// more fields in the document.
-
-			if (f == null)
-				return null;
-
-			string field_name;
-			field_name = f.Name ();
-			if (field_name.Length < 7
-			    || ! field_name.StartsWith ("prop:"))
-				return null;
-
-			string field_value;
-			field_value = f.StringValue ();
-
-			Property prop;
-			prop = new Property ();
-			prop.Type = CodeToType (field_name [5]);
-			prop.Key = field_name.Substring (7);
-			prop.Value = field_value.Substring (2);
-			prop.IsSearched = (field_value [0] == 's');
-			prop.IsMutable = ! from_primary_index;
-			prop.IsStored = f.IsStored ();
-
-			return prop;
-		}
 
 		//////////////////////////////////////////////////////////////////////////////
 
@@ -611,21 +596,25 @@ namespace Beagle.Daemon {
 
 		static protected void BuildDocuments (Indexable indexable,
 						      out Document primary_doc,
-						      out Document secondary_doc)
+						      out Document secondary_doc,
+						      IMetadata metastore)
 		{
 			primary_doc = new Document ();
 			secondary_doc = null;
+		
+			string subject = UriFu.UriToEscapedString (indexable.Uri);
+			string type = indexable.HitType;
+			metastore.New (subject, "meta:" + type);
 
 			Field f;
-
-			f = new Field ("Uri", UriFu.UriToEscapedString (indexable.Uri),
+			f = new Field ("Uri", subject,
 				       Field.Store.YES, Field.Index.NO_NORMS);
 			primary_doc.Add (f);
-
+			
 			if (indexable.ParentUri != null) {
-				f = new Field ("ParentUri", UriFu.UriToEscapedString (indexable.ParentUri),
-					       Field.Store.YES, Field.Index.NO_NORMS);
-				primary_doc.Add (f);
+				// we only store the Parent uri in the metadata store because it is unlikely to 
+				// appear as a search term.
+				metastore.AddnVerify(subject, "fixme:Parent", UriFu.UriToEscapedString (indexable.ParentUri));
 			}
 			
 			if (indexable.ValidTimestamp) {
@@ -649,6 +638,8 @@ namespace Beagle.Daemon {
 					       Field.Store.NO, Field.Index.NO_NORMS);
 				primary_doc.Add (f);
 
+				metastore.AddnVerifyDateTime (subject, "Timestamp", indexable.Timestamp);
+				
 				str = StringFu.DateTimeToYearMonthString (indexable.Timestamp);
 				f = new Field ("YM:Timestamp", str, Field.Store.YES, Field.Index.NO_NORMS);
 				primary_doc.Add (f);
@@ -667,10 +658,8 @@ namespace Beagle.Daemon {
 			if (indexable.NoContent) {
 				// If there is no content, make a note of that
 				// in a special property.
-				Property prop;
-				prop = Property.NewBool ("beagle:NoContent", true);
-				AddPropertyToDocument (prop, primary_doc);
-				
+				metastore.AddnVerify(subject, "beagle:NoContent", "bool:true");
+				 
 			} else {
 
 				// Since we might have content, add our text
@@ -693,30 +682,15 @@ namespace Beagle.Daemon {
 
 			// Store the Type and MimeType in special properties
 
-			if (indexable.HitType != null) {
-				Property prop;
-				prop = Property.NewUnsearched ("beagle:HitType", indexable.HitType);
-				AddPropertyToDocument (prop, primary_doc);
-			}
+			if (indexable.HitType != null) 
+				metastore.AddnVerify(subject, "beagle:HitType", type);
 
-			if (indexable.MimeType != null) {
-				Property prop;
-				prop = Property.NewUnsearched ("beagle:MimeType", indexable.MimeType);
-				AddPropertyToDocument (prop, primary_doc);
-			}
-
-			if (indexable.Source != null) {
-				Property prop;
-				prop = Property.NewUnsearched ("beagle:Source", indexable.Source);
-				AddPropertyToDocument (prop, primary_doc);
-			}
-
-			{
-				Property prop;
-				prop = Property.NewBool (Property.IsChildPropKey, indexable.IsChild);
-				AddPropertyToDocument (prop, primary_doc);
-			}
-
+			if (indexable.MimeType != null) 
+				metastore.AddnVerify(subject, "beagle:MimeType", indexable.MimeType);
+			
+			if (indexable.Source != null) 
+				metastore.AddnVerify(subject, "beagle:Source", indexable.Source);
+			
 			// Store the other properties
 				
 			foreach (Property prop in indexable.Properties) {
@@ -727,8 +701,9 @@ namespace Beagle.Daemon {
 
 					target_doc = secondary_doc;
 				}
-					
-				AddPropertyToDocument (prop, target_doc);
+
+				AddPropertyToDocument (prop, target_doc, subject, type, metastore);
+				
 			}
 		}
 
@@ -749,18 +724,21 @@ namespace Beagle.Daemon {
 		}
 
 		static protected Document RewriteDocument (Document old_secondary_doc,
-							   Indexable prop_only_indexable)
+							   Indexable prop_only_indexable,
+							   IMetadata metastore)
 		{
+			Logger.Log.Debug ("RewriteDocument called...");
 			Hashtable seen_props;
 			seen_props = new Hashtable ();
 
 			Document new_doc;
 			new_doc = new Document ();
-
+			//FIXME: Should check for new Uri here !
+			string subject = UriFu.UriToEscapedString (prop_only_indexable.Uri);
 			Field uri_f;
-			uri_f = new Field ("Uri", UriFu.UriToEscapedString (prop_only_indexable.Uri), Field.Store.YES, Field.Index.NO_NORMS);
+			uri_f = new Field ("Uri", subject, Field.Store.YES, Field.Index.NO_NORMS);
 			new_doc.Add (uri_f);
-
+			
 			Logger.Log.Debug ("Rewriting {0}", prop_only_indexable.DisplayUri);
 
 			if (prop_only_indexable.ParentUri != null) {
@@ -776,20 +754,23 @@ namespace Beagle.Daemon {
 			// return w/o doing anything.
 			foreach (Property prop in prop_only_indexable.Properties) {
 				seen_props [prop.Key] = prop;
-				AddPropertyToDocument (prop, new_doc);
+				AddPropertyToDocument (prop, new_doc, subject, prop_only_indexable.HitType, metastore);
 				Logger.Log.Debug ("New prop '{0}' = '{1}'", prop.Key, prop.Value);
 			}
 
-			// Copy the other properties from the old document to the
-			// new one, skipping any properties that we got new values
-			// for out of the Indexable.
+			// We don't have to copy the other properties from the old document to the
+			// new one, because they will just stay in the Metadata database.
+			// FIXME: But we have to make sure to replace old properties that don't count anymore...
+			// This might be helpful:
+			
+			ArrayList props = metastore.GetProperties (subject);
 			if (old_secondary_doc != null) {
-				foreach (Field f in old_secondary_doc.Fields ()) {
-					Property prop;
-					prop = GetPropertyFromDocument (f, old_secondary_doc, false);
-					if (prop != null && ! seen_props.Contains (prop.Key)) {
-						Logger.Log.Debug ("Old prop '{0}' = '{1}'", prop.Key, prop.Value);
-						AddPropertyToDocument (prop, new_doc);
+				foreach (Property prop in props) {
+					if (prop != null && seen_props.Contains (prop.Key)) {
+						Logger.Log.Debug ("Old prop '{0}' = '{1}' might conflict", prop.Key, prop.Value);
+						//FIXME: would have to remove property if key it's not multiple. 
+						//Otherwise increase count.
+						//Maybe we can already do that in AddPropertyToDocument
 					}
 				}
 			}
@@ -806,7 +787,7 @@ namespace Beagle.Daemon {
 			return UriFu.EscapedStringToUri (uri);
 		}
 
-		static protected Hit DocumentToHit (Document doc)
+		static protected Hit DocumentToHit (Document doc, IMetadata meta_handle)
 		{
 			Hit hit;
 			hit = new Hit ();
@@ -820,7 +801,7 @@ namespace Beagle.Daemon {
 			
 			hit.Timestamp = StringFu.StringToDateTime (doc.Get ("Timestamp"));
 
-			AddPropertiesToHit (hit, doc, true);
+			AddPropertiesToHit (hit, doc, meta_handle);
 
 			// Get the Type and MimeType from the properties.
 			hit.Type = hit.GetFirstProperty ("beagle:HitType");
@@ -830,14 +811,11 @@ namespace Beagle.Daemon {
 			return hit;
 		}
 
-		static protected void AddPropertiesToHit (Hit hit, Document doc, bool from_primary_index)
+		static protected void AddPropertiesToHit (Hit hit, Document doc, IMetadata meta_handle)
 		{
-			foreach (Field f in doc.Fields ()) {
-				Property prop;
-				prop = GetPropertyFromDocument (f, doc, from_primary_index);
-				if (prop != null)
-					hit.AddProperty (prop);
-			}
+			ArrayList props = meta_handle.GetProperties (UriFu.UriToEscapedString (hit.Uri));
+			if (props.Count != 0)
+				hit.AddProperty (props);
 		}
 
 
@@ -1704,9 +1682,9 @@ namespace Beagle.Daemon {
 				secondary_doc = secondary_docs [uri] as Document;
 
 				Hit hit;
-				hit = DocumentToHit (primary_doc);
+				hit = DocumentToHit (primary_doc, meta);
 				if (secondary_doc != null)
-					AddPropertiesToHit (hit, secondary_doc, false);
+					AddPropertiesToHit (hit, secondary_doc, meta);
 				
 				block_of_hits [j] = hit;
 				++j;
@@ -1746,7 +1724,7 @@ namespace Beagle.Daemon {
 				doc = primary_reader.Document (i);
 
 				Hit hit;
-				hit = DocumentToHit (doc);
+				hit = DocumentToHit (doc, meta);
 				all_hits [hit.Uri] = hit;
 			}
 
@@ -1767,7 +1745,7 @@ namespace Beagle.Daemon {
 					Hit hit;
 					hit = (Hit) all_hits [uri];
 					if (hit != null)
-						AddPropertiesToHit (hit, doc, false);
+						AddPropertiesToHit (hit, doc, meta);
 				}
 			}
 
@@ -1795,7 +1773,7 @@ namespace Beagle.Daemon {
 
 				Uri u = GetUriFromDocument (doc);
 
-				Hit hit = DocumentToHit (doc);
+				Hit hit = DocumentToHit (doc, meta);
 				hits_by_uri [hit.Uri] = hit;
 			}
 
@@ -1808,7 +1786,7 @@ namespace Beagle.Daemon {
 					Uri uri = GetUriFromDocument (doc);
 					Hit hit = (Hit) hits_by_uri [uri];
 					if (hit != null)
-						AddPropertiesToHit (hit, doc, false);
+						AddPropertiesToHit (hit, doc, meta);
 				}
 			}
 

@@ -57,8 +57,9 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 
 			info.Uri = GetUriFromDocument (doc);
 
-			foreach (Field f in doc.Fields ()) {
-				Property prop = GetPropertyFromDocument (f, doc, false);
+			ArrayList props = meta.GetProperties (info.Uri.ToString ());
+			
+			foreach (Property prop in props) {
 				if (prop == null)
 					continue;
 

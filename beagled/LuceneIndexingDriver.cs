@@ -71,10 +71,10 @@ namespace Beagle.Daemon {
 			: this (index_name, minor_version, true) { }
 		
 		public LuceneIndexingDriver (string index_name, bool build_usercache)
-			: this (index_name, -1, build_usercache) { }
+			: this (index_name, 0, build_usercache) { }
 
 		public LuceneIndexingDriver (string index_name) 
-			: this (index_name, -1, true) { }
+			: this (index_name, 0, true) { }
 	
 		////////////////////////////////////////////////////////////////
 
@@ -93,6 +93,7 @@ namespace Beagle.Daemon {
 
 		public IndexerReceipt [] Flush (IndexerRequest request)
 		{
+			Logger.Log.Debug ("Flush Indexer");
 			// This is just to keep a big block of code from being
 			// indented an extra eight spaces.
 			lock (flush_lock)
@@ -101,6 +102,8 @@ namespace Beagle.Daemon {
 
 		private IndexerReceipt [] Flush_Unlocked (IndexerRequest request)
 		{
+			Stopwatch s = new Stopwatch ();
+			s.Start ();
 			ArrayList receipt_queue;
 			receipt_queue = new ArrayList ();
 
@@ -281,7 +284,7 @@ namespace Beagle.Daemon {
 					doc = prop_change_docs [indexable.Uri] as Document;
 
 					Document new_doc;
-					new_doc = RewriteDocument (doc, indexable);
+					new_doc = RewriteDocument (doc, indexable, meta);
 
 					// Write out the new document...
 					if (secondary_writer == null)
@@ -324,7 +327,7 @@ namespace Beagle.Daemon {
 				Document primary_doc = null, secondary_doc = null;
 
 				try {
-					BuildDocuments (indexable, out primary_doc, out secondary_doc);
+					BuildDocuments (indexable, out primary_doc, out secondary_doc, meta);
 					primary_writer.AddDocument (primary_doc);
 				} catch (Exception ex) {
 					
@@ -338,7 +341,7 @@ namespace Beagle.Daemon {
 					indexable.NoContent = true;
 						
 					try {
-						BuildDocuments (indexable, out primary_doc, out secondary_doc);
+						BuildDocuments (indexable, out primary_doc, out secondary_doc, meta);
 						primary_writer.AddDocument (primary_doc);
 					} catch (Exception ex2) {
 						Logger.Log.Debug (ex2, "Second attempt to index {0} failed, giving up...", indexable.DisplayUri);
@@ -395,7 +398,10 @@ namespace Beagle.Daemon {
 			
 			// Step #4. Close our writers and return the events to
 			// indicate what has happened.
-				
+			// Flush the metadata.
+			
+			meta.Flush ();
+			
 			primary_writer.Close ();
 			if (secondary_writer != null)
 				secondary_writer.Close ();
@@ -404,7 +410,8 @@ namespace Beagle.Daemon {
 			receipt_array = new IndexerReceipt [receipt_queue.Count];
 			for (int i = 0; i < receipt_queue.Count; ++i)
 				receipt_array [i] = (IndexerReceipt) receipt_queue [i];
-			
+			s.Stop ();
+			Console.WriteLine ("Flush took: {0}",s);
 			return receipt_array;
 		}
 

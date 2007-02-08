@@ -46,6 +46,8 @@ namespace Beagle.Daemon {
 		static bool to_read_conf = true; // read backends from conf if true
 		static bool done_reading_conf = false;
 
+		static IMetadata metastore;
+
 		static private void ReadBackendsFromConf ()
 		{
 			if (! to_read_conf || done_reading_conf)
@@ -134,6 +136,7 @@ namespace Beagle.Daemon {
 		static ArrayList queryables = new ArrayList ();
 		static Hashtable iqueryable_to_queryable = new Hashtable ();
 
+		// Find the types in the assembly that
 		// (1) register themselves in AssemblyInfo.cs:IQueryableTypes and
 		// (2) has a QueryableFlavor attribute attached
 		// assemble a Queryable object and stick it into our list of queryables.
@@ -314,6 +317,7 @@ namespace Beagle.Daemon {
 		{
 			ReadBackendsFromConf ();
 			assemblies = ReflectionFu.ScanEnvironmentForAssemblies ("BEAGLE_BACKEND_PATH", PathFinder.BackendDir);
+			metastore = new SqlMetadata (PathFinder.StorageDir);
 		}
 
 		private static bool queryables_started = false;
@@ -429,21 +433,24 @@ namespace Beagle.Daemon {
 			Query query;
 			IQueryResult result;
 			IQueryableChangeData change_data;
+			IMetadata meta_handle;
 			
 			public QueryClosure (Queryable            queryable,
 					     Query                query,
 					     QueryResult          result,
-					     IQueryableChangeData change_data)
+					     IQueryableChangeData change_data,
+					     IMetadata		  meta_handle)
 			{
 				this.queryable = queryable;
 				this.query = query;
 				this.result = result;
 				this.change_data = change_data;
+				this.meta_handle = meta_handle;
 			}
 
 			public void DoWork ()
 			{
-				queryable.DoQuery (query, result, change_data);
+				queryable.DoQuery (query, result, change_data, meta_handle);
 			}
 		}
 
@@ -453,7 +460,8 @@ namespace Beagle.Daemon {
 					       IQueryableChangeData change_data)
 		{
 			if (queryable.AcceptQuery (query)) {
-				QueryClosure qc = new QueryClosure (queryable, query, result, change_data);
+				IMetadata meta_handle = new SqlMetadata((SqlMetadata) metastore);
+				QueryClosure qc = new QueryClosure (queryable, query, result, change_data, meta_handle);
 				result.AttachWorker (qc);
 			}
 		}

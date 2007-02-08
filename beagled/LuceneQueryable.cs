@@ -269,7 +269,8 @@ namespace Beagle.Daemon {
 
 		public void DoQuery (Query                query,
 				     IQueryResult         query_result,
-				     IQueryableChangeData i_change_data)
+				     IQueryableChangeData i_change_data,
+				     IMetadata		  meta_handle)
 		{
 			ChangeData change_data = (ChangeData) i_change_data;
 			
@@ -338,7 +339,8 @@ namespace Beagle.Daemon {
 					query_result,
 					added_uris,
 					our_uri_filter,
-					our_hit_filter);
+					our_hit_filter,
+					meta_handle);
 		}
 
 		/////////////////////////////////////////
