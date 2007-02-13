@@ -504,7 +504,7 @@ namespace Beagle.Daemon
 
 		Indexable FileToIndexable (FileInfo file)
 		{
-			if (!file.Exists || Ignore (file))
+			if (!file.Exists || Ignore (file) || fa_store.IsUpToDateAndFiltered (file.FullName))
 				return null;
 
 			Uri uri = UriFu.PathToFileUri (file.FullName);

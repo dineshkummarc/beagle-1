@@ -159,6 +159,8 @@ namespace Beagle.Daemon {
 
 			// If there are no attributes set on the file, there is no
 			// way that we can be up-to-date.
+			// Also, if attribute has no filter information, try once
+			// again.
 			if (attr == null)
 				return false;
 
@@ -180,6 +182,20 @@ namespace Beagle.Daemon {
 				if (attr.FilterVersion != filter.Version)
 					return false;
 			} 
+
+			return IsUpToDate (path, attr);
+		}
+
+		public bool IsUpToDateAndFiltered (string path)
+		{
+			FileAttributes attr;
+
+			attr = Read (path);
+
+			// If there are no attributes set on the file, there is no
+			// way that we can be up-to-date.
+			if (attr == null || ! attr.HasFilterInfo)
+				return false;
 
 			return IsUpToDate (path, attr);
 		}

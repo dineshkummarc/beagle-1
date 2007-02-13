@@ -61,6 +61,8 @@ namespace Beagle.IndexHelper {
 					indexer = new LuceneIndexingDriver (remote_request.RemoteIndexName,
 									    remote_request.RemoteIndexMinorVersion,
 									    IndexHelperTool.CacheText);
+					indexer.DisableTextCache = IndexHelperTool.DisableTextCache;
+
 					indexer_table [remote_request.RemoteIndexName] = indexer;
 
 					indexer.FileFilterNotifier += delegate (Uri display_uri, Filter filter) {
@@ -78,7 +80,7 @@ namespace Beagle.IndexHelper {
 			// Child indexables probably have streams
 			// associated with them.  We need to store them before
 			// sending them back to the daemon.
-			if (receipts != null) {
+			if (receipts != null && ! Shutdown.ShutdownRequested) {
 				foreach (IndexerReceipt r in receipts) {
 					IndexerChildIndexablesReceipt cir;
 					cir = r as IndexerChildIndexablesReceipt;

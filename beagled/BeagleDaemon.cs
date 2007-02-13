@@ -52,9 +52,10 @@ namespace Beagle.Daemon {
 		private static bool arg_heap_shot = false;
 		private static bool arg_heap_shot_snapshots = true;
 
-		private static bool cache_text = true;
-		public static bool CacheText {
-			get { return cache_text; }
+		private static bool disable_textcache = false;
+		public static bool DisableTextCache {
+			get { return disable_textcache; }
+			set { disable_textcache = value; }
 		}
 
 		public static bool StartServer ()
@@ -139,7 +140,7 @@ namespace Beagle.Daemon {
 			string usage =
 				"beagled: The daemon to the Beagle search system.\n" +
 				"Web page: http://beagle-project.org\n" +
-				"Copyright (C) 2004-2006 Novell, Inc.\n\n";
+				"Copyright (C) 2004-2007 Novell, Inc.\n\n";
 
 			usage +=
 				"Usage: beagled [OPTIONS]\n\n" +
@@ -160,6 +161,9 @@ namespace Beagle.Daemon {
 				"  --list-backends\tList all the available backends.\n" +
 				"  --add-static-backend\tAdd a static backend by path.\n" + 
 				"  --disable-scheduler\tDisable the use of the scheduler.\n" +
+				"  --version\tShow version of daemon, Mono, and Sqlite.\n" +
+				// FIXME: Expose this to the user ?
+				//"  --disable-textcache\tDisable the use of the text cache used to provide snippets
 				"  --help\t\tPrint this usage message.\n";
 
 			Console.WriteLine (usage);
@@ -363,6 +367,7 @@ namespace Beagle.Daemon {
 					break;
 				
 				case "--allow-backend":
+					// FIXME: This option is deprecated and will be removed in a future release.
 					// --allow-backend is deprecated, use --backends 'name' instead
 					// it will disable reading the list of enabled/disabled backends
 					// from conf and start the backend given
@@ -372,6 +377,7 @@ namespace Beagle.Daemon {
 					break;
 					
 				case "--deny-backend":
+					// FIXME: This option is deprecated and will be removed in a future release.
 					// deprecated: use --backends -'name' instead
 					if (next_arg != null)
 						QueryDriver.Deny (next_arg);
@@ -405,8 +411,15 @@ namespace Beagle.Daemon {
 					// FIXME: This option is deprecated and will be removed in a future release.
 					break;
 
-				case "--no-textcache":
-					cache_text = false;
+				case "--disable-textcache":
+					disable_textcache = true;
+					break;
+				
+				case "--version":
+					Console.WriteLine ("Beagle: " + ExternalStringsHack.Version);
+					Console.WriteLine ("Mono: " + SystemInformation.MonoRuntimeVersion);
+					Console.WriteLine ("Sqlite: " + ExternalStringsHack.SqliteVersion);
+					Environment.Exit (0);
 					break;
 
 				default:
@@ -466,6 +479,11 @@ namespace Beagle.Daemon {
 			if (! ExtendedAttribute.Supported) {
 				Logger.Log.Warn ("Extended attributes are not supported on this filesystem.  " +
 						 "Performance will suffer as a result.");
+			}
+
+			if (disable_textcache) {
+				Log.Warn ("Running with text-cache disabled!");
+				Log.Warn ("*** Snippets will not be returned for documents indexed in this session.");
 			}
 
 			// Start our memory-logging thread

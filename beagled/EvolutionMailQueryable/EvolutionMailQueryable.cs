@@ -130,7 +130,7 @@ namespace Beagle.Daemon.EvolutionMailQueryable {
 			get { return "EvolutionMail"; }
 		}
 
-		public void IndexSummary (FileInfo summaryInfo)
+		public void IndexSummary (FileInfo summaryInfo, bool inotify_event)
 		{
 			// If there's already a task running for this folder,
 			// don't interrupt it.
@@ -146,10 +146,10 @@ namespace Beagle.Daemon.EvolutionMailQueryable {
 			task.Tag = summaryInfo.FullName;
 			ThisScheduler.Add (task);
 
-			AddGenerator (generator);
+			AddGenerator (generator, inotify_event);
 		}
 
-		public void IndexMbox (FileInfo mboxInfo)
+		public void IndexMbox (FileInfo mboxInfo, bool inotify_event)
 		{
 			// If there's already a task running for this mbox,
 			// don't interrupt it.
@@ -165,21 +165,23 @@ namespace Beagle.Daemon.EvolutionMailQueryable {
 			task.Tag = mboxInfo.FullName;
 			ThisScheduler.Add (task);
 
-			AddGenerator (generator);
+			AddGenerator (generator, inotify_event);
 		}
 
-		internal void AddGenerator (EvolutionMailIndexableGenerator generator)
+		internal void AddGenerator (EvolutionMailIndexableGenerator generator, bool inotify_event)
 		{
 			running_generators.Add (generator);
+
+			if (! inotify_event)
+				IsIndexing = true;
 		}
 
 		internal void RemoveGenerator (EvolutionMailIndexableGenerator generator)
 		{
 			running_generators.Remove (generator);
-		}
 
-		protected override bool IsIndexing {
-			get { return running_generators.Count > 0; }
+			if (running_generators.Count == 0)
+				IsIndexing = false;
 		}
 
 		protected override int ProgressPercent {

@@ -28,25 +28,28 @@
 using System;
 using System.Xml.Serialization;
 
+using Beagle.Util;
+
 namespace Beagle {
 
 	public class Versioned {
 
-		protected DateTime timestamp = new DateTime (0);
+		protected DateTime timestamp = DateTime.MinValue;
 
 		public bool ValidTimestamp {
 			get { return timestamp.Ticks > 0; }
 		}
 
-		[XmlAttribute]
+		[XmlIgnore]
 		public DateTime Timestamp {
 			get { return timestamp; }
 			set { timestamp = value; }
 		}
 
-		[XmlIgnore]
-		public double DaysSinceTimestamp {
-			get { return (DateTime.Now - timestamp).TotalDays; }
+		[XmlAttribute ("Timestamp")]
+		public string TimestampAsString {
+			get { return StringFu.DateTimeToString (timestamp); }
+			set { timestamp = StringFu.StringToDateTime (value); }
 		}
 
 		public bool IsObsoletedBy (DateTime timestamp)
