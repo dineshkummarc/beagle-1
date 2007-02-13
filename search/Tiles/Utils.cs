@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using Mono.Unix;
+using Beagle.Util;
 
 namespace Search.Tiles {
 
@@ -102,18 +103,6 @@ namespace Search.Tiles {
 				return hit.GetFirstProperty ("parent:" + prop);
 		}
 
-		public static DateTime ParseTimestamp (string timestamp)
-		{
-			DateTime dt;
-			dt = new DateTime (Int32.Parse (timestamp.Substring (0, 4)),
-					   Int32.Parse (timestamp.Substring (4, 2)),
-					   Int32.Parse (timestamp.Substring (6, 2)),
-					   Int32.Parse (timestamp.Substring (8, 2)),
-					   Int32.Parse (timestamp.Substring (10, 2)),
-					   Int32.Parse (timestamp.Substring (12, 2)));
-			return dt;
-		}
-
 		private static DateTimeFormatInfo DateTimeFormat = CultureInfo.CurrentCulture.DateTimeFormat;
 		private static string ShortMonthDayPattern = DateTimeFormat.MonthDayPattern.Replace ("MMMM", "MMM");
 		private static string ShortYearMonthPattern = DateTimeFormat.YearMonthPattern.Replace ("MMMM", "MMM");
@@ -156,7 +145,7 @@ namespace Search.Tiles {
 			DateTime dt;
 
 			try {
-				dt = ParseTimestamp (timestamp);
+				dt = StringFu.StringToDateTime (timestamp);
 			} catch {
 				return "";
 			}
@@ -175,7 +164,7 @@ namespace Search.Tiles {
 			DateTime dt;
 
 			try {
-				dt = ParseTimestamp (timestamp);
+				dt = StringFu.StringToDateTime (timestamp);
 			} catch {
 				return "";
 			}
@@ -194,7 +183,7 @@ namespace Search.Tiles {
 			DateTime dt;
 
 			try {
-				dt = ParseTimestamp (timestamp);
+				dt = StringFu.StringToDateTime (timestamp);
 			} catch {
 				return "";
 			}
