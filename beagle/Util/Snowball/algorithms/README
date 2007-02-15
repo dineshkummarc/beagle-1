@@ -1,0 +1,9 @@
+These are the Snowball programs that stem various languages. These are included
+verbatim from the original Snowball code. The langcode_mapping file maps which
+programs Beagle actually uses to stem the particular language. Note that this
+file is only used at build time, at runtime Reflection is used to figure out
+which code to use.
+
+It's as simple as it can get, '<langcode> <path-to-program>'. It's important
+that a language code is only included ONCE, or else death-by-Automake will
+occur; the easiest way is to just keep the file in alphabetical order.
