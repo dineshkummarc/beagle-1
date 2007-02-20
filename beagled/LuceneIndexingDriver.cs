@@ -50,7 +50,7 @@ namespace Beagle.Daemon {
 		object flush_lock = new object ();
 		LuceneContainer container;
 
-		public LuceneIndexingDriver (LuceneContainer container) : base (container)
+		public LuceneIndexingDriver (LuceneContainer container) : base ()
 		{
 			this.container = container;
 		}
@@ -98,9 +98,16 @@ namespace Beagle.Daemon {
 			ArrayList receipt_queue;
 			receipt_queue = new ArrayList ();
 
+#if joe_wip
 			IndexReader primary_reader, secondary_reader;
 			primary_reader = IndexReader.Open (PrimaryStore);
 			secondary_reader = IndexReader.Open (SecondaryStore);
+#else
+			IndexReader[] primary_readers = new IndexReader [LuceneContainer.NUM_BUCKETS];
+			IndexReader[] secondary_readers = new IndexReader [LuceneContainer.NUM_BUCKETS];
+			ArrayList prop_change_indexables = new ArrayList ();
+
+#endif
 
 			// Step #1: Make our first pass over the list of
 			// indexables that make up our request.  For each add
@@ -125,13 +132,23 @@ namespace Beagle.Daemon {
 					string uri_str;
 					uri_str = UriFu.UriToEscapedString (indexable.Uri);
 
+					int bucket = container.GetBucket (indexable.Uri);
+
+					if (primary_readers [bucket] == null) {
+						primary_readers [bucket] = IndexReader.Open (container.GetPrimaryStore (bucket));
+						secondary_readers [bucket] = IndexReader.Open (container.GetSecondaryStore (bucket));
+					}
+
 					Logger.Log.Debug ("-{0}", indexable.DisplayUri);
 					
 					Term term;
 					term = new Term ("Uri", uri_str);
-					delete_count += primary_reader.Delete (term);
-					if (secondary_reader != null)
-						secondary_reader.Delete (term);
+					delete_count += primary_readers [bucket].Delete (term);
+					if (secondary_readers [bucket] != null)
+						secondary_readers [bucket].Delete (term);
+
+#if joe_wip
+					// XXX: I need to figure out how to do this effectively.
 
 					// When we delete an indexable, also delete any children.
 					// FIXME: Shouldn't we also delete any children of children, etc.?
@@ -139,6 +156,7 @@ namespace Beagle.Daemon {
 					delete_count += primary_reader.Delete (term);
 					if (secondary_reader != null)
 						secondary_reader.Delete (term);
+#endif
 
 					// If this is a strict removal (and not a deletion that
 					// we are doing in anticipation of adding something back),
@@ -172,36 +190,41 @@ namespace Beagle.Daemon {
 			if (prop_change_query != null) {
 				prop_change_docs = UriFu.NewHashtable ();
 
-				LNS.IndexSearcher secondary_searcher;
-				secondary_searcher = new LNS.IndexSearcher (secondary_reader);
-
-				LNS.Hits hits;
-				hits = secondary_searcher.Search (prop_change_query);
-
 				ArrayList delete_terms;
 				delete_terms = new ArrayList ();
 
-				int N = hits.Length ();
-				Document doc;
-				for (int i = 0; i < N; ++i) {
-					doc = hits.Doc (i);
-					
-					string uri_str;
-					uri_str = doc.Get ("Uri");
+				for (int bucket = 0; bucket < LuceneContainer.NUM_BUCKETS; bucket++) {
+					LNS.IndexSearcher secondary_searcher;
+					secondary_searcher = new LNS.IndexSearcher (secondary_readers [bucket]);
 
-					Uri uri;
-					uri = UriFu.EscapedStringToUri (uri_str);
-					prop_change_docs [uri] = doc;
+					LNS.Hits hits;
+					hits = secondary_searcher.Search (prop_change_query);
+
+					int N = hits.Length ();
+					Document doc;
+					for (int i = 0; i < N; ++i) {
+						doc = hits.Doc (i);
+					
+						string uri_str;
+						uri_str = doc.Get ("Uri");
+
+						Uri uri;
+						uri = UriFu.EscapedStringToUri (uri_str);
+						prop_change_docs [uri] = doc;
 						
-					Term term;
-					term = new Term ("Uri", uri_str);
-					delete_terms.Add (term);
+						Term term;
+						term = new Term ("Uri", uri_str);
+						delete_terms.Add (term);
+					}
+
+					secondary_searcher.Close ();
+
+					foreach (Term term in delete_terms)
+						secondary_readers [bucket].Delete (term);
 				}
 
-				secondary_searcher.Close ();
-
-				foreach (Term term in delete_terms)
-					secondary_reader.Delete (term);
+#if joe_wip
+				// XXX: Really need to find an efficient way to do this
 
 				// Step #2.5: Find all child indexables for this document
 				// Store them to send them later as IndexerChildIndexablesReceipts
@@ -221,22 +244,28 @@ namespace Beagle.Daemon {
 					uri = UriFu.EscapedStringToUri (uri_str);
 					parent_uri = UriFu.EscapedStringToUri (parent_uri_str);
 
-					if (! prop_change_children_docs.Contains (parent_uri)) {
-						ArrayList c_list = new ArrayList ();
-						prop_change_children_docs [parent_uri] = c_list;
-					}
+					if (! prop_change_children_docs.Contains (parent_uri))
+						prop_change_children_docs [parent_uri] = new ArrayList ();
 
 					ArrayList children_list = (ArrayList) prop_change_children_docs [parent_uri];
 					children_list.Add (uri);
 				}
 
 				secondary_searcher.Close ();
-
+#endif
 			}
 
 			// We are now done with the readers, so we close them.
-			primary_reader.Close ();
-			secondary_reader.Close ();
+			for (int i = 0; i < LuceneContainer.NUM_BUCKETS; i++) {
+				if (primary_readers [i] != null)
+					primary_readers [i].Close ();
+
+				if (secondary_readers [i] != null)
+					secondary_readers [i].Close ();
+			}
+			
+			primary_readers = null;
+			secondary_readers = null;
 
 			// FIXME: If we crash at exactly this point, we are in
 			// trouble.  Items will have been dropped from the index
@@ -247,15 +276,22 @@ namespace Beagle.Daemon {
 
 			if (container.TextCache != null)
 				container.TextCache.BeginTransaction ();
-				
+
+			IndexWriter [] primary_writers = new IndexWriter [LuceneContainer.NUM_BUCKETS];
+			IndexWriter [] secondary_writers = new IndexWriter [LuceneContainer.NUM_BUCKETS];
+
+#if joe_wip			
 			IndexWriter primary_writer, secondary_writer;
 			primary_writer = new IndexWriter (PrimaryStore, IndexingAnalyzer, false);
 			secondary_writer = null;
+#endif
 
 			foreach (Indexable indexable in request_indexables) {
 				
 				if (indexable.Type == IndexableType.Remove)
 					continue;
+
+				int bucket = container.GetBucket (indexable.Uri);
 
 				IndexerAddedReceipt r;
 				r = new IndexerAddedReceipt (indexable.Uri);
@@ -273,9 +309,9 @@ namespace Beagle.Daemon {
 					new_doc = RewriteDocument (doc, indexable);
 
 					// Write out the new document...
-					if (secondary_writer == null)
-						secondary_writer = new IndexWriter (SecondaryStore, IndexingAnalyzer, false);
-					secondary_writer.AddDocument (new_doc);
+					if (secondary_writers [bucket] == null)
+						secondary_writers [bucket] = new IndexWriter (container.GetSecondaryStore (bucket), IndexingAnalyzer, false);
+					secondary_writers [bucket].AddDocument (new_doc);
 
 					// Add children property change indexables...
 					AddChildrenPropertyChange (
@@ -312,9 +348,12 @@ namespace Beagle.Daemon {
 					
 				Document primary_doc = null, secondary_doc = null;
 
+				if (primary_writers [bucket] == null)
+					primary_writers [bucket] = new IndexWriter (container.GetPrimaryStore (bucket), IndexingAnalyzer, false);
+
 				try {
 					BuildDocuments (indexable, out primary_doc, out secondary_doc);
-					primary_writer.AddDocument (primary_doc);
+					primary_writers [bucket].AddDocument (primary_doc);
 				} catch (Exception ex) {
 					
 					// If an exception was thrown, something bad probably happened
@@ -328,7 +367,7 @@ namespace Beagle.Daemon {
 						
 					try {
 						BuildDocuments (indexable, out primary_doc, out secondary_doc);
-						primary_writer.AddDocument (primary_doc);
+						primary_writers [bucket].AddDocument (primary_doc);
 					} catch (Exception ex2) {
 						Logger.Log.Debug (ex2, "Second attempt to index {0} failed, giving up...", indexable.DisplayUri);
 					}
@@ -355,10 +394,10 @@ namespace Beagle.Daemon {
 					FileFilterNotifier (null, null); // reset
 				
 				if (secondary_doc != null) {
-					if (secondary_writer == null)
-						secondary_writer = new IndexWriter (SecondaryStore, IndexingAnalyzer, false);
+					if (secondary_writers [bucket] == null)
+						secondary_writers [bucket] = new IndexWriter (container.GetSecondaryStore (bucket), IndexingAnalyzer, false);
 					
-					secondary_writer.AddDocument (secondary_doc);
+					secondary_writers [bucket].AddDocument (secondary_doc);
 				}
 				
 				// Clean up any temporary files associated with filtering this indexable.
@@ -368,24 +407,30 @@ namespace Beagle.Daemon {
 			if (container.TextCache != null)
 				container.TextCache.CommitTransaction ();
 
+#if joe_wip
 			if (request.OptimizeIndex) {
 				Stopwatch watch = new Stopwatch ();
-				Logger.Log.Debug ("Optimizing {0}", "index"); // XXX: IndexName);
+				Logger.Log.Debug ("Optimizing {0}", IndexName);
 				watch.Start ();
 				primary_writer.Optimize ();
 				if (secondary_writer == null)
 					secondary_writer = new IndexWriter (SecondaryStore, IndexingAnalyzer, false);
 				secondary_writer.Optimize ();
 				watch.Stop ();
-				Logger.Log.Debug ("{0} optimized in {1}", "Index", watch); // XXX: IndexName, watch);
+				Logger.Log.Debug ("{0} optimized in {1}", IndexName, watch);
 			}
+#endif
 			
 			// Step #4. Close our writers and return the events to
 			// indicate what has happened.
-				
-			primary_writer.Close ();
-			if (secondary_writer != null)
-				secondary_writer.Close ();
+
+			for (int i = 0; i < LuceneContainer.NUM_BUCKETS; i++) {
+				if (primary_writers [i] != null)
+					primary_writers [i].Close ();
+
+				if (secondary_writers [i] != null)
+					secondary_writers [i].Close ();
+			}
 			
 			IndexerReceipt [] receipt_array;
 			receipt_array = new IndexerReceipt [receipt_queue.Count];
@@ -440,7 +485,6 @@ namespace Beagle.Daemon {
 				writer.Close ();
 			}
 		}
-
 		
 		public void Merge (LuceneCommon index_to_merge)
 		{

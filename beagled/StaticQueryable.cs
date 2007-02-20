@@ -46,7 +46,7 @@ namespace Beagle.Daemon {
 			Logger.Log.Debug ("Initializing static queryable: {0}", index_path);
 		}
 
-		override protected LuceneContainer BuildLuceneContainer (string source_name, bool read_only_mode)
+		override protected LuceneContainer GetLuceneContainer (string source_name, int source_version, bool read_only_mode)
 		{
 			// Return a new container for static backends instead
 			// of the normal singleton.

@@ -85,7 +85,7 @@ namespace Beagle.Daemon {
 		{
 			this.source_name = source_name;
 
-			container = BuildLuceneContainer (source_name, read_only_mode);
+			container = GetLuceneContainer (source_name, source_version, read_only_mode);
 			container.Driver.RegisterSourceHitFilter (source_name, this.HitFilter);
 
 			// If the queryable is in read-only more, don't 
@@ -993,10 +993,20 @@ namespace Beagle.Daemon {
 
 		//////////////////////////////////////////////////////////////////////////////////
 
-		virtual protected LuceneContainer BuildLuceneContainer (string source_name,
-									bool   read_only_mode)
+		virtual protected LuceneContainer GetLuceneContainer (string source_name,
+								      int    source_version,
+								      bool   read_only_mode)
 		{
-			return LuceneContainer.Singleton;
+			LuceneContainer container = LuceneContainer.Singleton;
+
+			if (! container.CheckSourceVersion (source_name, source_version)) {
+				if (! read_only_mode)
+					container.PurgeSource (source_name, source_version);
+				else
+					return null;
+			}
+
+			return container;
 		}
 	}
 }

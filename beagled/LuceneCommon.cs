@@ -63,10 +63,8 @@ namespace Beagle.Daemon {
 
 		//////////////////////////////////////////////////////////////////////////////
 
-		protected LuceneCommon (LuceneContainer container)
+		protected LuceneCommon ()
 		{
-			primary_store = container.PrimaryStore;
-			secondary_store = container.SecondaryStore;
 		}
 
 		//////////////////////////////////////////////////////////////////////////////
@@ -79,10 +77,13 @@ namespace Beagle.Daemon {
 				else
 					return primary_store;
 			} 
+
+			set { primary_store = value; }
 		}
 
 		public Lucene.Net.Store.Directory SecondaryStore {
 			get { return secondary_store; }
+			set { secondary_store = value; }
 		}
 
 		//////////////////////////////////////////////////////////////////////////////

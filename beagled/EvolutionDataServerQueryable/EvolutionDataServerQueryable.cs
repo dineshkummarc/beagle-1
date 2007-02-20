@@ -102,8 +102,8 @@ namespace Beagle.Daemon.EvolutionDataServerQueryable {
 			// DllNotFoundException and bail out if things go
 			// badly.
 			try {
-				new SourcesHandler ("/apps/evolution/addressbook/sources", typeof (BookContainer), this, Driver.Fingerprint);
-				new SourcesHandler ("/apps/evolution/calendar/sources", typeof (CalContainer), this, Driver.Fingerprint);
+				new SourcesHandler ("/apps/evolution/addressbook/sources", typeof (BookContainer), this, IndexFingerprint);
+				new SourcesHandler ("/apps/evolution/calendar/sources", typeof (CalContainer), this, IndexFingerprint);
 				success = true;
 			} catch (DllNotFoundException ex) {
 				Logger.Log.Error (ex, "Unable to start EvolutionDataServer backend: Unable to find or open libraries:");

@@ -66,7 +66,7 @@ namespace Beagle.Daemon {
 		// 18: add source to secondary index when used
 		private const int INDEX_VERSION = 18;
 		
-		private const int NUM_BUCKETS = 16;
+		public const int NUM_BUCKETS = 16;
 
 		private string top_dir;
 		private string fingerprint;
@@ -75,7 +75,6 @@ namespace Beagle.Daemon {
 
 #if joe_wip
 		private LuceneQueryingDriver[] drivers = new LuceneQueryingDriver [NUM_BUCKETS];
-		private IIndexer indexer = null;
 #else
 		private LuceneQueryingDriver driver = null;
 
@@ -90,6 +89,30 @@ namespace Beagle.Daemon {
 			get { return secondary_store; }
 		}
 #endif
+
+		private Lucene.Net.Store.Directory[] primary_stores = new Lucene.Net.Store.Directory [NUM_BUCKETS];
+		private Lucene.Net.Store.Directory[] secondary_stores = new Lucene.Net.Store.Directory [NUM_BUCKETS];
+
+		public Lucene.Net.Store.Directory GetPrimaryStore (int bucket)
+		{
+			if (primary_stores [bucket] == null) {
+				Log.Debug ("Getting directory for bucket {0}", bucket);
+				primary_stores [bucket] = Lucene.Net.Store.FSDirectory.GetDirectory (Path.Combine (PrimaryIndexDirectory, bucket.ToString ()),
+												     LockDirectory, false, read_only);
+			}
+
+			return primary_stores [bucket];
+		}
+
+		public Lucene.Net.Store.Directory GetSecondaryStore (int bucket)
+		{
+			if (secondary_stores [bucket] == null) {
+				secondary_stores [bucket] = Lucene.Net.Store.FSDirectory.GetDirectory (Path.Combine (SecondaryIndexDirectory, bucket.ToString ()),
+												       LockDirectory, false, read_only);
+			}
+
+			return secondary_stores [bucket];
+		}
 
 		///////////////////////////////////////////////////////////////
 
@@ -149,6 +172,20 @@ namespace Beagle.Daemon {
 
 		///////////////////////////////////////////////////////////////
 
+		public int GetBucket (Uri uri)
+		{
+			return Math.Abs (UriFu.UriToEscapedString (uri).GetHashCode ()) % NUM_BUCKETS;
+		}
+
+#if false
+		public int GetBucket (string uri)
+		{
+			return Math.Abs (uri.GetHashCode ()) % NUM_BUCKETS;
+		}
+#endif
+
+		///////////////////////////////////////////////////////////////
+
 		private TextCache text_cache = null;
 
 		public TextCache TextCache {
@@ -171,19 +208,12 @@ namespace Beagle.Daemon {
 			else
 				top_dir = Path.Combine (PathFinder.IndexDir, index_path);
 
-#if joe_wip
 			if (ExistsAndValid ())
-				Open (index_path, read_only);
+				Open ();
 			else if (! read_only)
-				Create (index_path);
+				Create ();
 			else
-				throw new InvalidOperationException ("Index is out of date, but is read only");
-#else
-			if (ExistsAndValid ())
-				Open (index_path, -1);
-			else
-				Create (index_path, -1);
-#endif
+				throw new InvalidOperationException ("Index is out of date, but is read-only");
 
 			this.text_cache = text_cache;
 		}
@@ -194,9 +224,7 @@ namespace Beagle.Daemon {
 			       && File.Exists (VersionFile)
 			       && File.Exists (FingerprintFile)
 			       && Directory.Exists (PrimaryIndexDirectory)
-			       //&& IndexReader.IndexExists (PrimaryIndexDirectory)
 			       && Directory.Exists (SecondaryIndexDirectory)
-			       //&& IndexReader.IndexExists (SecondaryIndexDirectory)
 			       && Directory.Exists (LockDirectory)))
 				return false;
 
@@ -241,7 +269,7 @@ namespace Beagle.Daemon {
 
 		// Create will kill your index dead.  Use it with care.
 		// You don't need to call Open after calling Create.
-		private void Create (string source_name, int source_version)
+		private void Create ()
 		{
 			// Purge any existing directories.
 			if (Directory.Exists (top_dir)) {
@@ -254,8 +282,16 @@ namespace Beagle.Daemon {
 			Directory.CreateDirectory (LockDirectory);
 			
 			// Create the indexes.
-			primary_store = LuceneCommon.CreateIndex (PrimaryIndexDirectory, LockDirectory);
-			secondary_store = LuceneCommon.CreateIndex (SecondaryIndexDirectory, LockDirectory);
+			for (int i = 0; i < NUM_BUCKETS; i++) {
+				string path;
+				Lucene.Net.Store.Directory primary_store, secondary_store;
+
+				path = Path.Combine (PrimaryIndexDirectory, i.ToString ());
+				primary_store = LuceneCommon.CreateIndex (path, LockDirectory);
+
+				path = Path.Combine (SecondaryIndexDirectory, i.ToString ());
+				secondary_store = LuceneCommon.CreateIndex (path, LockDirectory);
+			}
 
 			// Generate and store the index fingerprint.
 			fingerprint = GuidFu.ToShortString (Guid.NewGuid ());
@@ -269,19 +305,16 @@ namespace Beagle.Daemon {
 			writer.WriteLine (INDEX_VERSION);
 			writer.Close ();
 
-			// Store the source version information.
-			WriteSourceVersionFile (source_name, source_version);
-
 			// XXX
-			driver = new LuceneQueryingDriver (this);
+			driver = new LuceneQueryingDriver ();
 		}
 
-		private void Open (string source_name, int source_version)
+		private void Open ()
 		{
-			Open (source_name, source_version, false);
+			Open (false);
 		}
 
-		private void Open (string source_name, int source_version, bool read_only_mode)
+		private void Open (bool read_only_mode)
 		{
 			// Read our index fingerprint.
 			TextReader reader;
@@ -293,141 +326,44 @@ namespace Beagle.Daemon {
 			primary_store = Lucene.Net.Store.FSDirectory.GetDirectory (PrimaryIndexDirectory, LockDirectory, false, read_only_mode);
 			secondary_store = Lucene.Net.Store.FSDirectory.GetDirectory (SecondaryIndexDirectory, LockDirectory, false, read_only_mode);
 
-			bool source_version_write_needed = true;
+			// XXX
+			driver = new LuceneQueryingDriver ();
+		}
 
-			// Check to see if our source version matches.
-			string version_file = GetSourceVersionFile (source_name);
-			if (File.Exists (version_file)) {
-				reader = new StreamReader (version_file);
-				string version_str = reader.ReadLine ();
-				reader.Close ();
+		public bool CheckSourceVersion (string source_name, int source_version)
+		{
+			string version_file = Path.Combine (top_dir, "version-" + source_name);
 
-				int current_version = Convert.ToInt32 (version_str);
-
-				if (current_version != source_version) {
-					File.Delete (version_file);
-					LuceneCommon.PurgeSource (source_name, primary_store, secondary_store);
-				} else
-					source_version_write_needed = false;
+			// If the file doesn't exist, we don't have any
+			// documents from this source in the index, and we're
+			// ok.
+			if (! File.Exists (version_file)) {
+				WriteSourceVersionFile (source_name, source_version);
+				return true;
 			}
 
-			if (source_version_write_needed)
-				WriteSourceVersionFile (source_name, source_version);
+			StreamReader reader = new StreamReader (version_file);
+			string version_str = reader.ReadLine ();
+			reader.Close ();
 
-			// XXX
-			driver = new LuceneQueryingDriver (this);
+			int current_version = Convert.ToInt32 (version_str);
+
+			return (current_version == source_version);
+		}
+
+		public void PurgeSource (string source_name, int source_version)
+		{
+			LuceneCommon.PurgeSource (source_name, PrimaryStore, SecondaryStore);
+			WriteSourceVersionFile (source_name, source_version);
 		}
 
 		private void WriteSourceVersionFile (string source_name, int source_version)
 		{
-			string version_file = GetSourceVersionFile (source_name);
+			string version_file = Path.Combine (top_dir, "version-" + source_name);
 			StreamWriter writer = new StreamWriter (version_file);
 			writer.WriteLine (source_version);
 			writer.Close ();
 		}
-
-		private string GetSourceVersionFile (string source_name)
-		{
-			return Path.Combine (top_dir, "version-" + source_name);
-		}
-
-
-
-#if joe_wip
-		public void Open (string index_path, bool read_only)
-		{
-			// Read our index fingerprint.
-			using (TextReader reader = new StreamReader (FingerprintFile))
-				fingerprint = reader.ReadLine ();
-
-			for (int i = 0; i < NUM_BUCKETS; i++) {
-				// XXX
-				//drivers [i] = new LuceneQueryingDriver (GetBucketDirectory (i), LockDirectory, read_only);
-			}
-		}
-
-		// Create will kill your index dead.  Use it with care.
-		// You don't need to call OPen after calling Create.
-		private void Create (string index_path)
-		{
-			// Purge any existing directories.
-			if (Directory.Exists (top_dir)) {
-				Log.Debug ("Purging {0}", top_dir);
-				Directory.Delete (top_dir, true);
-			}
-
-			// Create necessary directories.
-			Directory.CreateDirectory (top_dir);
-			Directory.CreateDirectory (LockDirectory);
-
-			// Generate and store the index fingerprint.
-			fingerprint = GuidFu.ToShortString (Guid.NewGuid ());
-			TextWriter writer = new StreamWriter (FingerprintFile, false);
-			writer.WriteLine (fingerprint);
-			writer.Close ();
-
-			// Store the index version information.
-			writer = new StreamWriter (VersionFile, false);
-			writer.WriteLine (INDEX_VERSION);
-			writer.Close ();
-
-			// Create the indexes.
-			for (int i = 0; i < NUM_BUCKETS; i++) {
-				string bucket_dir = GetBucketDirectory (i);
-
-				Directory.CreateDirectory (bucket_dir);
-				LuceneCommon.CreateIndexes (bucket_dir, LockDirectory);
-				// XXX
-				//drivers [i] = new LuceneQueryingDriver (bucket_dir, LockDirectory, read_only);
-			}
-		}
-
-		private bool ExistsAndValid ()
-		{
-			if (! (Directory.Exists (top_dir)
-			       && File.Exists (VersionFile)
-			       && File.Exists (FingerprintFile)
-			       && Directory.Exists (LockDirectory)))
-				return false;
-
-			// Check the version number.  If it's wrong, this
-			// isn't a valid index.
-			StreamReader version_reader;
-			string version_str;
-			version_reader = new StreamReader (VersionFile);
-			version_str = version_reader.ReadLine ();
-			version_reader.Close ();
-
-			int current_version = -1;
-
-			try {
-				current_version = Convert.ToInt32 (version_str);
-			} catch (FormatException) {
-				// This is an old major.minor file and doesn't parse.
-				// That's ok, it means it's out of date.
-			}
-
-			if (current_version != INDEX_VERSION) {
-				Logger.Log.Debug ("Version mismatch in {0}", top_dir);
-				Logger.Log.Debug ("Index has version {0}, expected {1}",
-						  current_version, INDEX_VERSION);
-				return false;
-			}
-
-			// Check the lock directory.  If there is a dangling write lock,
-			// assume the index is corrupted and declare it invalid.
-			DirectoryInfo lock_dir_info;
-			lock_dir_info = new DirectoryInfo (LockDirectory);
-			foreach (FileInfo info in lock_dir_info.GetFiles ()) {
-				if (IsDanglingLock (info)) {
-					Logger.Log.Warn ("Found a dangling index lock on {0}", info.FullName);
-					return false;
-				}
-			}
-
-			return true;
-		}
-#endif
 
 		// Deal with dangling locks
 		private bool IsDanglingLock (FileInfo info)

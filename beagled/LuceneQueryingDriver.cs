@@ -55,10 +55,6 @@ namespace Beagle.Daemon {
 
 		private OrHitFilter source_hit_filters = new OrHitFilter ();
 
-		public LuceneQueryingDriver (LuceneContainer container) : base (container)
-		{
-		}
-
 		////////////////////////////////////////////////////////////////
 
 		private static LuceneQueryingDriver singleton_driver = null;
@@ -68,7 +64,7 @@ namespace Beagle.Daemon {
 				if (singleton_driver != null)
 					return singleton_driver;
 
-				singleton_driver = new LuceneQueryingDriver (LuceneContainer.Singleton);
+				singleton_driver = new LuceneQueryingDriver ();
 
 				return singleton_driver;
 			}
