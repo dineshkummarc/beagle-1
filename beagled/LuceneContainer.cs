@@ -66,7 +66,7 @@ namespace Beagle.Daemon {
 		// 18: add source to secondary index when used
 		private const int INDEX_VERSION = 18;
 		
-		public const int NUM_BUCKETS = 16;
+		public const int NUM_BUCKETS = 8;
 
 		private string top_dir;
 		private string fingerprint;

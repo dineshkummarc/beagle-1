@@ -98,16 +98,9 @@ namespace Beagle.Daemon {
 			ArrayList receipt_queue;
 			receipt_queue = new ArrayList ();
 
-#if joe_wip
-			IndexReader primary_reader, secondary_reader;
-			primary_reader = IndexReader.Open (PrimaryStore);
-			secondary_reader = IndexReader.Open (SecondaryStore);
-#else
-			IndexReader[] primary_readers = new IndexReader [LuceneContainer.NUM_BUCKETS];
-			IndexReader[] secondary_readers = new IndexReader [LuceneContainer.NUM_BUCKETS];
+			IndexReader[] primary_readers = null;
+			IndexReader[] secondary_readers = null;
 			ArrayList prop_change_indexables = new ArrayList ();
-
-#endif
 
 			// Step #1: Make our first pass over the list of
 			// indexables that make up our request.  For each add
@@ -129,34 +122,39 @@ namespace Beagle.Daemon {
 				case IndexableType.Add:
 				case IndexableType.Remove:
 
+					if (primary_readers == null) {
+						primary_readers = new IndexReader [LuceneContainer.NUM_BUCKETS];
+						secondary_readers = new IndexReader [LuceneContainer.NUM_BUCKETS];
+
+						for (int i = 0; i < LuceneContainer.NUM_BUCKETS; i++) {
+							primary_readers [i] = IndexReader.Open (container.GetPrimaryStore (i));
+							secondary_readers [i] = IndexReader.Open (container.GetSecondaryStore (i));
+						}
+					}
+
 					string uri_str;
 					uri_str = UriFu.UriToEscapedString (indexable.Uri);
 
 					int bucket = container.GetBucket (indexable.Uri);
-
-					if (primary_readers [bucket] == null) {
-						primary_readers [bucket] = IndexReader.Open (container.GetPrimaryStore (bucket));
-						secondary_readers [bucket] = IndexReader.Open (container.GetSecondaryStore (bucket));
-					}
 
 					Logger.Log.Debug ("-{0}", indexable.DisplayUri);
 					
 					Term term;
 					term = new Term ("Uri", uri_str);
 					delete_count += primary_readers [bucket].Delete (term);
-					if (secondary_readers [bucket] != null)
-						secondary_readers [bucket].Delete (term);
-
-#if joe_wip
-					// XXX: I need to figure out how to do this effectively.
+					secondary_readers [bucket].Delete (term);
 
 					// When we delete an indexable, also delete any children.
 					// FIXME: Shouldn't we also delete any children of children, etc.?
 					term = new Term ("ParentUri", uri_str);
-					delete_count += primary_reader.Delete (term);
-					if (secondary_reader != null)
-						secondary_reader.Delete (term);
-#endif
+					for (int i = 0; i < LuceneContainer.NUM_BUCKETS; i++) {
+						int our_count = primary_readers [i].Delete (term);
+
+						if (our_count > 0)
+							secondary_readers [i].Delete (term);
+
+						delete_count += our_count;
+					}
 
 					// If this is a strict removal (and not a deletion that
 					// we are doing in anticipation of adding something back),
@@ -223,36 +221,40 @@ namespace Beagle.Daemon {
 						secondary_readers [bucket].Delete (term);
 				}
 
-#if joe_wip
-				// XXX: Really need to find an efficient way to do this
-
 				// Step #2.5: Find all child indexables for this document
 				// Store them to send them later as IndexerChildIndexablesReceipts
 				prop_change_children_docs = UriFu.NewHashtable ();
 
-				hits = secondary_searcher.Search (prop_change_children_query);
-				N = hits.Length ();
+				for (int bucket = 0; bucket < LuceneContainer.NUM_BUCKETS; bucket++) {
+					LNS.IndexSearcher secondary_searcher;
+					secondary_searcher = new LNS.IndexSearcher (secondary_readers [bucket]);
 
-				for (int i = 0; i < N; ++i) {
-					doc = hits.Doc (i);
+					LNS.Hits hits;
+					hits = secondary_searcher.Search (prop_change_children_query);
+
+					int N = hits.Length ();
+					Document doc;
+
+					for (int i = 0; i < N; ++i) {
+						doc = hits.Doc (i);
 					
-					string uri_str, parent_uri_str;
-					uri_str = doc.Get ("Uri");
-					parent_uri_str = doc.Get ("ParentUri");
+						string uri_str, parent_uri_str;
+						uri_str = doc.Get ("Uri");
+						parent_uri_str = doc.Get ("ParentUri");
 
-					Uri uri, parent_uri;
-					uri = UriFu.EscapedStringToUri (uri_str);
-					parent_uri = UriFu.EscapedStringToUri (parent_uri_str);
+						Uri uri, parent_uri;
+						uri = UriFu.EscapedStringToUri (uri_str);
+						parent_uri = UriFu.EscapedStringToUri (parent_uri_str);
 
-					if (! prop_change_children_docs.Contains (parent_uri))
-						prop_change_children_docs [parent_uri] = new ArrayList ();
+						if (! prop_change_children_docs.Contains (parent_uri))
+							prop_change_children_docs [parent_uri] = new ArrayList ();
 
-					ArrayList children_list = (ArrayList) prop_change_children_docs [parent_uri];
-					children_list.Add (uri);
+						ArrayList children_list = (ArrayList) prop_change_children_docs [parent_uri];
+						children_list.Add (uri);
+					}
+
+					secondary_searcher.Close ();
 				}
-
-				secondary_searcher.Close ();
-#endif
 			}
 
 			// We are now done with the readers, so we close them.
@@ -279,12 +281,6 @@ namespace Beagle.Daemon {
 
 			IndexWriter [] primary_writers = new IndexWriter [LuceneContainer.NUM_BUCKETS];
 			IndexWriter [] secondary_writers = new IndexWriter [LuceneContainer.NUM_BUCKETS];
-
-#if joe_wip			
-			IndexWriter primary_writer, secondary_writer;
-			primary_writer = new IndexWriter (PrimaryStore, IndexingAnalyzer, false);
-			secondary_writer = null;
-#endif
 
 			foreach (Indexable indexable in request_indexables) {
 				
@@ -345,7 +341,7 @@ namespace Beagle.Daemon {
 
 				if (FileFilterNotifier != null)
 					FileFilterNotifier (indexable.DisplayUri, filter); // Update with our filter
-					
+
 				Document primary_doc = null, secondary_doc = null;
 
 				if (primary_writers [bucket] == null)
