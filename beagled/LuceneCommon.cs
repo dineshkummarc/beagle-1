@@ -647,24 +647,36 @@ namespace Beagle.Daemon {
 		// Handle the source's item count
 		//
 
+		private class CountingCollector : LNS.HitCollector {
+
+			public int Count = 0;
+
+			public override void Collect (int id, float score)
+			{
+				Count++;
+			}
+		}
+
 		public int GetItemCount (string source)
 		{
+			// XXX: Performance is really bad, we have to cache
 			// FIXME: The pre-singleton code cached the results
 			// here and invalidated them when data was flushed
 			// from the index helper.  Now we're just quering
 			// the index directly.  Maybe we should cache?
 			LNS.IndexSearcher primary_searcher = GetSearcher (PrimaryStore);
 
+			CountingCollector collector = new CountingCollector ();
+
 			Log.Debug ("Looking for source {0}", source);
 
 			Term term = new Term ("Source", source);
 			LNS.TermQuery query = new LNS.TermQuery (term);
-			LNS.Hits hits = primary_searcher.Search (query);
-			int count = hits.Length ();
+			primary_searcher.Search (query, null, collector);
 
 			ReleaseSearcher (primary_searcher);
 
-			return count;
+			return collector.Count;
 		}
 
 		//

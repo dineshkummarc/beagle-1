@@ -212,9 +212,9 @@ namespace Beagle.Daemon {
 				status.Name = this.Name;
 				status.ProgressPercent = this.ProgressPercent;
 				status.IsIndexing = this.IsIndexing;
-				// XXX: Fix item counts
-				//status.ItemCount = container.Driver.GetItemCount (this.Name);
-				status.ItemCount = 1;
+
+				for (int i = 0; i < LuceneContainer.NUM_BUCKETS; i++)
+					status.ItemCount += container.Drivers [i].GetItemCount (this.Name);
 
 				return status;
 			}
