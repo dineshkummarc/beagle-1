@@ -57,7 +57,7 @@ namespace Beagle.Daemon {
 
 		public abstract void Start ();
 
-		public abstract IQueryable Queryable { get; }
+		public abstract IQueryable[] Queryables { get; }
 
 		public abstract string GetSnippet (string [] query_terms, Hit hit);
 

@@ -54,10 +54,10 @@ namespace Beagle.Daemon {
 			queryables = new List <IQueryable> ();
 
 			foreach (IBackend backend in BackendDriver.Backends) {
-				IQueryable queryable = backend.Queryable;
-
-				if (! queryables.Contains (queryable))
-					queryables.Add (queryable);
+				foreach (IQueryable queryable in backend.Queryables) {
+					if (! queryables.Contains (queryable))
+						queryables.Add (queryable);
+				}
 
 				foreach (PropertyKeywordMapping mapping in ReflectionFu.ScanTypeForAttribute (backend.GetType (), typeof (PropertyKeywordMapping))) {
 					PropertyKeywordFu.RegisterMapping (mapping);

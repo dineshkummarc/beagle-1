@@ -52,11 +52,11 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			public bool   IsDirectory;
 		}
 
-		private LuceneQueryingDriver driver;
+		private LuceneContainer container;
 
-		public LuceneNameResolver (LuceneQueryingDriver driver)
+		public LuceneNameResolver (LuceneContainer container)
 		{
-			this.driver = driver;
+			this.container = container;
 		}
 
 		////////////////////////////////////////////////////////////////
@@ -128,6 +128,9 @@ namespace Beagle.Daemon.FileSystemQueryable {
 		{
 			Uri uri;
 			uri = GuidFu.ToUri (id);
+
+			int bucket;
+			bucket = container.GetBucket (uri);
 			
 			LNS.Query query;
 			query = LuceneCommon.UriQuery ("Uri", uri);
@@ -136,7 +139,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			collector = new SingletonCollector ();
 
 			LNS.IndexSearcher searcher;
-			searcher = LuceneCommon.GetSearcher (driver.SecondaryStore);
+			searcher = LuceneCommon.GetSearcher (container.Drivers [bucket].SecondaryStore);
 			searcher.Search (query, null, collector);
 
 			NameInfo info = null;
@@ -180,19 +183,23 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			collector = new SingletonCollector ();
 
 			LNS.IndexSearcher searcher;
-			searcher = LuceneCommon.GetSearcher (driver.SecondaryStore);
-			searcher.Search (query, null, collector);
 
-			Guid id;
-			if (collector.MatchId != -1) {
-				Document doc;
-				doc = searcher.Doc (collector.MatchId);
-				id = GuidFu.FromUriString (doc.Get ("Uri"));
-			} else 
-				id = Guid.Empty;
+			Guid id = Guid.Empty;
 
-			LuceneCommon.ReleaseSearcher (searcher);
+			for (int i = 0; i < LuceneContainer.NUM_BUCKETS; i++) {
+				searcher = LuceneCommon.GetSearcher (container.Drivers [i].SecondaryStore);
+				searcher.Search (query, null, collector);
 
+				if (collector.MatchId != -1) {
+					Document doc;
+					doc = searcher.Doc (collector.MatchId);
+					id = GuidFu.FromUriString (doc.Get ("Uri"));
+					break;
+				}
+
+				LuceneCommon.ReleaseSearcher (searcher);
+			}
+			
 			return id;
 		}
 
@@ -226,42 +233,44 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			LNS.Query query;
 			query = new LNS.TermQuery (new Term (field_name, "true"));
 
-			// Then we actually run the query
-			LNS.IndexSearcher searcher;
-			//searcher = new LNS.IndexSearcher (SecondaryStore);
-			searcher = LuceneCommon.GetSearcher (driver.SecondaryStore);
-
-			BetterBitArray matches;
-			matches = new BetterBitArray (searcher.MaxDoc ());
-
-			BitArrayHitCollector collector;
-			collector = new BitArrayHitCollector (matches);
-
-			searcher.Search (query, null, collector);
-			
-			// Finally we pull all of the matching documents,
-			// convert them to NameInfo, and store them in a list.
-
 			ArrayList match_list = new ArrayList ();
-			int i = 0;
-			while (i < matches.Count) {
+
+			// Then we actually run the query
+			for (int bucket = 0; bucket < LuceneContainer.NUM_BUCKETS; bucket++) {
+				LNS.IndexSearcher searcher;
+				searcher = LuceneCommon.GetSearcher (container.Drivers [bucket].SecondaryStore);
+
+				BetterBitArray matches;
+				matches = new BetterBitArray (searcher.MaxDoc ());
+
+				BitArrayHitCollector collector;
+				collector = new BitArrayHitCollector (matches);
+
+				searcher.Search (query, null, collector);
+			
+				// Finally we pull all of the matching documents,
+				// convert them to NameInfo, and store them in a list.
+
+				int i = 0;
+				while (i < matches.Count) {
 				
-				i = matches.GetNextTrueIndex (i);
-				if (i >= matches.Count)
-					break;
+					i = matches.GetNextTrueIndex (i);
+					if (i >= matches.Count)
+						break;
 
-				Document doc;
-				doc = searcher.Doc (i);
+					Document doc;
+					doc = searcher.Doc (i);
 
-				NameInfo info;
-				info = DocumentToNameInfo (doc);
+					NameInfo info;
+					info = DocumentToNameInfo (doc);
 
-				match_list.Add (info);
+					match_list.Add (info);
 
-				++i;
+					++i;
+				}
+
+				LuceneCommon.ReleaseSearcher (searcher);
 			}
-
-			LuceneCommon.ReleaseSearcher (searcher);
 
 			return match_list;
 		}

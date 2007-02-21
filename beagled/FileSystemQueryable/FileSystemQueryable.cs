@@ -98,7 +98,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			file_crawl_task = new FileCrawlTask (this);
 			file_crawl_task.Source = this;
 
-			name_resolver = new LuceneNameResolver (Driver);
+			name_resolver = new LuceneNameResolver (Container);
 			//name_resolver = (LuceneNameResolver) Driver;
 			PreloadDirectoryNameInfo ();
 

@@ -73,22 +73,7 @@ namespace Beagle.Daemon {
 
 		private bool read_only;
 
-#if joe_wip
 		private LuceneQueryingDriver[] drivers = new LuceneQueryingDriver [NUM_BUCKETS];
-#else
-		private LuceneQueryingDriver driver = null;
-
-		private Lucene.Net.Store.Directory primary_store;
-		private Lucene.Net.Store.Directory secondary_store;
-
-		internal Lucene.Net.Store.Directory PrimaryStore {
-			get { return primary_store; }
-		}
-
-		internal Lucene.Net.Store.Directory SecondaryStore {
-			get { return secondary_store; }
-		}
-#endif
 
 		private Lucene.Net.Store.Directory[] primary_stores = new Lucene.Net.Store.Directory [NUM_BUCKETS];
 		private Lucene.Net.Store.Directory[] secondary_stores = new Lucene.Net.Store.Directory [NUM_BUCKETS];
@@ -135,15 +120,9 @@ namespace Beagle.Daemon {
 
 		public string Fingerprint { get { return fingerprint; } }
 
-#if joe_wip
 		public LuceneQueryingDriver[] Drivers {
 			get { return drivers; }
 		}
-#else
-		public LuceneQueryingDriver Driver {
-			get { return driver; }
-		}
-#endif
 
 		public string VersionFile {
 			get { return Path.Combine (top_dir, "version"); }
@@ -291,6 +270,10 @@ namespace Beagle.Daemon {
 
 				path = Path.Combine (SecondaryIndexDirectory, i.ToString ());
 				secondary_store = LuceneCommon.CreateIndex (path, LockDirectory);
+
+				drivers [i] = new LuceneQueryingDriver ();
+				drivers [i].PrimaryStore = primary_store;
+				drivers [i].SecondaryStore = secondary_store;
 			}
 
 			// Generate and store the index fingerprint.
@@ -304,9 +287,6 @@ namespace Beagle.Daemon {
 			writer = new StreamWriter (VersionFile, false);
 			writer.WriteLine (INDEX_VERSION);
 			writer.Close ();
-
-			// XXX
-			driver = new LuceneQueryingDriver ();
 		}
 
 		private void Open ()
@@ -323,11 +303,18 @@ namespace Beagle.Daemon {
 			reader.Close ();
 
 			// Create stores for our indexes.
-			primary_store = Lucene.Net.Store.FSDirectory.GetDirectory (PrimaryIndexDirectory, LockDirectory, false, read_only_mode);
-			secondary_store = Lucene.Net.Store.FSDirectory.GetDirectory (SecondaryIndexDirectory, LockDirectory, false, read_only_mode);
+			for (int i = 0; i < NUM_BUCKETS; i++) {
+				Lucene.Net.Store.Directory primary_store, secondary_store;
+				
+				primary_store = Lucene.Net.Store.FSDirectory.GetDirectory (Path.Combine (PrimaryIndexDirectory, i.ToString ()),
+											   LockDirectory, false, read_only_mode);
+				secondary_store = Lucene.Net.Store.FSDirectory.GetDirectory (Path.Combine (SecondaryIndexDirectory, i.ToString ()),
+											     LockDirectory, false, read_only_mode);
 
-			// XXX
-			driver = new LuceneQueryingDriver ();
+				drivers [i] = new LuceneQueryingDriver ();
+				drivers [i].PrimaryStore = primary_store;
+				drivers [i].SecondaryStore = secondary_store;
+			}
 		}
 
 		public bool CheckSourceVersion (string source_name, int source_version)
@@ -353,7 +340,9 @@ namespace Beagle.Daemon {
 
 		public void PurgeSource (string source_name, int source_version)
 		{
-			LuceneCommon.PurgeSource (source_name, PrimaryStore, SecondaryStore);
+			for (int i = 0; i < NUM_BUCKETS; i++)
+				LuceneCommon.PurgeSource (source_name, primary_stores [i], secondary_stores [i]);
+
 			WriteSourceVersionFile (source_name, source_version);
 		}
 

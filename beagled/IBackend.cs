@@ -38,7 +38,7 @@ namespace Beagle.Daemon {
 		
 		QueryDomain Domain { get; set; }
 
-		IQueryable Queryable { get; }
+		IQueryable[] Queryables { get; }
 
 		string GetSnippet (string[] query_terms, Hit hit);
 

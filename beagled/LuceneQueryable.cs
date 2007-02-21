@@ -26,6 +26,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 
 using Beagle.Util;
@@ -86,7 +87,9 @@ namespace Beagle.Daemon {
 			this.source_name = source_name;
 
 			container = GetLuceneContainer (source_name, source_version, read_only_mode);
-			container.Driver.RegisterSourceHitFilter (source_name, this.HitFilter);
+
+			foreach (LuceneQueryingDriver driver in container.Drivers)
+				driver.RegisterSourceHitFilter (source_name, this.HitFilter);
 
 			// If the queryable is in read-only more, don't 
 			// instantiate an indexer for it.
@@ -128,12 +131,12 @@ namespace Beagle.Daemon {
 			get { return Path.Combine (IndexDirectory, this.source_name); }
 		}
 
-		protected LuceneQueryingDriver Driver {
-			get { Log.Debug ("hmm"); return container.Driver; }
-		}
-
 		public Scheduler ThisScheduler {
 			get { return scheduler; }
+		}
+
+		protected LuceneContainer Container {
+			get { return container; }
 		}
 
 		/////////////////////////////////////////
@@ -143,8 +146,8 @@ namespace Beagle.Daemon {
 
 		}
 
-		public override IQueryable Queryable {
-			get { return container.Driver; }
+		public override IQueryable [] Queryables {
+			get { return container.Drivers; }
 		}
 
 		/////////////////////////////////////////
@@ -209,7 +212,9 @@ namespace Beagle.Daemon {
 				status.Name = this.Name;
 				status.ProgressPercent = this.ProgressPercent;
 				status.IsIndexing = this.IsIndexing;
-				status.ItemCount = container.Driver.GetItemCount (this.Name);
+				// XXX: Fix item counts
+				//status.ItemCount = container.Driver.GetItemCount (this.Name);
+				status.ItemCount = 1;
 
 				return status;
 			}
@@ -459,7 +464,7 @@ namespace Beagle.Daemon {
 
 		public Scheduler.Task NewRemoveByPropertyTask (Property prop)
 		{
-			PropertyRemovalGenerator prg = new PropertyRemovalGenerator (container.Driver, prop);
+			PropertyRemovalGenerator prg = new PropertyRemovalGenerator (container.Drivers, prop);
 
 			return NewAddTask (prg);
 		}
@@ -473,14 +478,14 @@ namespace Beagle.Daemon {
 
 		private class PropertyRemovalGenerator : IIndexableGenerator {
 
-			private LuceneQueryingDriver driver;
+			private LuceneQueryingDriver [] drivers;
 			private Property prop_to_match;
-			private Uri[] uris_to_remove;
+			private List <Uri> uris_to_remove;
 			private int idx;
 
-			public PropertyRemovalGenerator (LuceneQueryingDriver driver, Property prop)
+			public PropertyRemovalGenerator (LuceneQueryingDriver [] drivers, Property prop)
 			{
-				this.driver = driver;
+				this.drivers = drivers;
 				this.prop_to_match = prop;
 			}
 
@@ -496,10 +501,14 @@ namespace Beagle.Daemon {
 
 			public bool HasNextIndexable ()
 			{
-				if (uris_to_remove == null)
-					uris_to_remove = this.driver.PropertyQuery (this.prop_to_match);
+				if (uris_to_remove == null) {
+					uris_to_remove = new List <Uri> ();
 
-				if (idx < uris_to_remove.Length)
+					foreach (LuceneQueryingDriver driver in drivers)
+						uris_to_remove.AddRange (driver.PropertyQuery (this.prop_to_match));
+				}
+
+				if (idx < uris_to_remove.Count)
 					return true;
 				else 
 					return false;
@@ -872,8 +881,13 @@ namespace Beagle.Daemon {
 				fa_store.CommitTransaction ();
 
 			// Propagate the change notification to any open queries.
-			if (added_uris.Count > 0 || removed_uris.Count > 0)
-				container.Driver.QueryableChanged (added_uris, removed_uris);
+			if (added_uris.Count > 0 || removed_uris.Count > 0) {
+				// XXX: Be smart about which drivers we notify.
+				//container.Driver.QueryableChanged (added_uris, removed_uris);
+
+				foreach (LuceneQueryingDriver driver in container.Drivers)
+					driver.QueryableChanged (added_uris, removed_uris);
+			}
 		}
 
 		private void HandleAddReceipt (IndexerAddedReceipt r,
