@@ -7,10 +7,10 @@ msgid ""
 msgstr ""
 "Project-Id-Version: beagle trunk\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2007-02-05 21:34+0900\n"
+"POT-Creation-Date: 2007-02-12 16:09+0000\n"
 "PO-Revision-Date: 2007-02-05 21:29+0900\n"
-"Last-Translator: Takeshi AIHANA <takeshi.aihana@gmail.com>\n"
-"Language-Team: Japanese <gnome-translation@gnome.gr.jp>\n"
+"Last-Translator: Novell Language <language@novell.com>\n"
+"Language-Team: Novell Language <language@novell.com>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -1409,7 +1409,7 @@ msgstr "IPTC Information Interchange Model (IIM) のバージョン番号"
 
 #: ../Util/F-Spot/IptcFile.cs:177
 msgid "OSI Destination routing information"
-msgstr ""
+msgstr "OSI宛先ルーティング情報"
 
 #: ../Util/F-Spot/IptcFile.cs:179
 msgid "IPTC file format"
@@ -1417,125 +1417,125 @@ msgstr "IPTC ファイル形式"
 
 #: ../Util/F-Spot/IptcFile.cs:181
 msgid "Identifies the provider and product"
-msgstr ""
+msgstr "プロバイダと製品を指定します"
 
 #: ../Util/F-Spot/IptcFile.cs:183
 msgid "A unique number identifying the envelope"
-msgstr ""
+msgstr "エンベロープを識別する固有の番号"
 
 #: ../Util/F-Spot/IptcFile.cs:185
 msgid "A unique number"
-msgstr ""
+msgstr "固有の番号"
 
 #: ../Util/F-Spot/IptcFile.cs:187
 msgid ""
 "The envelope handling priority between 1 (most urgent) and 9 (least urgent)"
-msgstr ""
+msgstr "1(最優先)～9(優先度低)の優先度を処理するエンベロープ"
 
 #: ../Util/F-Spot/IptcFile.cs:189
 msgid "The year month and day (CCYYMMDD) the service sent the material"
-msgstr ""
+msgstr "サービスが素材を送信した年月日(CCYYMMDD)"
 
 #: ../Util/F-Spot/IptcFile.cs:191
 msgid ""
 "The hour minute and second the (HHMMSS+HHMM) the service sent the material"
-msgstr ""
+msgstr "サービスが素材を送信した時分秒(HHMMSS+HHMM)"
 
 #: ../Util/F-Spot/IptcFile.cs:193
 msgid "The character set designation"
-msgstr ""
+msgstr "文字セットの指定"
 
 #: ../Util/F-Spot/IptcFile.cs:195
 msgid "External globally unique object identifier"
-msgstr ""
+msgstr "グローバルな固有の外部オブジェクト識別子"
 
 #: ../Util/F-Spot/IptcFile.cs:200
 msgid "Abstract Relationship Method (ARM) identifier"
-msgstr ""
+msgstr "ARM(Abstract Relationship Method)識別子"
 
 #: ../Util/F-Spot/IptcFile.cs:202
 msgid "Abstract Relationship Method (ARM) version number."
-msgstr ""
+msgstr "ARM(Abstract Relationship Method)バージョン番号"
 
 #: ../Util/F-Spot/IptcFile.cs:205
 msgid "Number identifying the IIM version this application record uses"
-msgstr ""
+msgstr "このアプリケーションレコードが使用するIIMバージョンを識別する数字"
 
 #: ../Util/F-Spot/IptcFile.cs:207
 msgid "Object type reference"
-msgstr ""
+msgstr "オブジェクトタイプ参照"
 
 #: ../Util/F-Spot/IptcFile.cs:212
 msgid "Object attribute reference"
-msgstr ""
+msgstr "オブジェクト属性参照"
 
 #: ../Util/F-Spot/IptcFile.cs:218 ../Util/F-Spot/IptcFile.cs:222
 msgid "Object name"
-msgstr ""
+msgstr "オブジェクト名"
 
 #: ../Util/F-Spot/IptcFile.cs:220
 msgid "Status of the objectdata according to the provider"
-msgstr ""
+msgstr "プロバイダによるオブジェクトデータのステータス"
 
 #: ../Util/F-Spot/IptcFile.cs:224
 msgid "Location within a city or area where the object originates"
-msgstr ""
+msgstr "オブジェクト元の市またはエリア内の場所"
 
 #: ../Util/F-Spot/IptcFile.cs:227
 msgid "Name of the city the content is focussing on"
-msgstr ""
+msgstr "コンテンツが目的とする市名"
 
 #: ../Util/F-Spot/IptcFile.cs:230
 msgid "Copyright information for"
-msgstr ""
+msgstr "著作権情報:"
 
 #: ../Util/F-Spot/IptcFile.cs:233
 msgid "Full name of the country of the focus of the content"
-msgstr ""
+msgstr "コンテンツの目的となる国のフルネーム"
 
 #: ../Util/F-Spot/IptcFile.cs:236
 msgid ""
 "Two or three letter ISO3166 code of the country of the focus of the content"
-msgstr ""
+msgstr "コンテンツの目的となる国のISO3166コードを表す2つまたは3つの文字"
 
 #: ../Util/F-Spot/IptcFile.cs:239
 msgid "Creator of the content"
-msgstr ""
+msgstr "コンテンツ作成者"
 
 #: ../Util/F-Spot/IptcFile.cs:242
 msgid "Provider of the object"
-msgstr ""
+msgstr "オブジェクトのプロバイダ"
 
 #: ../Util/F-Spot/IptcFile.cs:245
 msgid "The title of the author or creator"
-msgstr ""
+msgstr "作成者のタイトル"
 
 #: ../Util/F-Spot/IptcFile.cs:248
 msgid ""
 "The person involved in writing, editing or correcting the object data or "
 "caption/abstract"
-msgstr ""
+msgstr "オブジェクトデータや要旨の執筆、編集、または訂正に携わった人"
 
 #: ../Util/F-Spot/IptcFile.cs:252
 msgid "Headline of the content"
-msgstr ""
+msgstr "コンテンツのヘッドライン"
 
 #: ../Util/F-Spot/IptcFile.cs:255
 msgid ""
 "Instructions from the creator to the receiver not covered by other fields"
-msgstr ""
+msgstr "他のフィールドでカバーしきれない、作成者による受信者向けの説明"
 
 #: ../Util/F-Spot/IptcFile.cs:258
 msgid "Intellectual genre of the object"
-msgstr ""
+msgstr "オブジェクトのジャンル"
 
 #: ../Util/F-Spot/IptcFile.cs:271
 msgid "Unknown IIM DataSet"
-msgstr ""
+msgstr "不明なIIMデータセット"
 
 #: ../Util/F-Spot/MetadataStore.cs:46
 msgid "Creator"
-msgstr ""
+msgstr "作成者"
 
 #: ../Util/F-Spot/MetadataStore.cs:47
 msgid "Title"
@@ -1543,95 +1543,95 @@ msgstr "タイトル"
 
 #: ../Util/F-Spot/MetadataStore.cs:48
 msgid "Copyright"
-msgstr ""
+msgstr "Copyright"
 
 #: ../Util/F-Spot/MetadataStore.cs:49
 msgid "Subject and Keywords"
-msgstr ""
+msgstr "件名とキーワード"
 
 #: ../Util/F-Spot/MetadataStore.cs:50
 msgid "Compression"
-msgstr ""
+msgstr "圧縮"
 
 #: ../Util/F-Spot/MetadataStore.cs:52
 msgid "Planar Configuration"
-msgstr ""
+msgstr "平面設定"
 
 #: ../Util/F-Spot/MetadataStore.cs:56
 msgid "Photometric Interpretation"
-msgstr ""
+msgstr "光度計の動作"
 
 #: ../Util/F-Spot/MetadataStore.cs:58
 msgid "Resolution Unit"
-msgstr ""
+msgstr "解像度ユニット"
 
 #: ../Util/F-Spot/MetadataStore.cs:60
 msgid "Exposure Program"
-msgstr ""
+msgstr "露光プログラム"
 
 #: ../Util/F-Spot/MetadataStore.cs:62
 msgid "Metering Mode"
-msgstr ""
+msgstr "調量モード"
 
 #: ../Util/F-Spot/MetadataStore.cs:64
 msgid "Exposure Mode"
-msgstr ""
+msgstr "露光モード"
 
 #: ../Util/F-Spot/MetadataStore.cs:66
 msgid "Custom Rendered"
-msgstr ""
+msgstr "カスタムレンダリング"
 
 #: ../Util/F-Spot/MetadataStore.cs:68
 msgid "Components Configuration"
-msgstr ""
+msgstr "コンポーネント環境設定"
 
 #: ../Util/F-Spot/MetadataStore.cs:70
 msgid "Light Source"
-msgstr ""
+msgstr "光源"
 
 #: ../Util/F-Spot/MetadataStore.cs:72
 msgid "Sensing Method"
-msgstr ""
+msgstr "検出方法"
 
 #: ../Util/F-Spot/MetadataStore.cs:74
 msgid "Color Space"
-msgstr ""
+msgstr "色空間"
 
 #: ../Util/F-Spot/MetadataStore.cs:76
 msgid "White Balance"
-msgstr ""
+msgstr "ホワイトバランス"
 
 #: ../Util/F-Spot/MetadataStore.cs:78
 msgid "Focal Plane Resolution Unit"
-msgstr ""
+msgstr "焦点面解像度ユニット"
 
 #: ../Util/F-Spot/MetadataStore.cs:80
 msgid "File Source Type"
-msgstr ""
+msgstr "ファイルソースタイプ"
 
 #: ../Util/F-Spot/MetadataStore.cs:82
 msgid "Scene Capture Type"
-msgstr ""
+msgstr "シーンキャプチャタイプ"
 
 #: ../Util/F-Spot/MetadataStore.cs:84
 msgid "Gain Control"
-msgstr ""
+msgstr "ゲインコントロール"
 
 #: ../Util/F-Spot/MetadataStore.cs:86
 msgid "Contrast"
-msgstr ""
+msgstr "コントラスト"
 
 #: ../Util/F-Spot/MetadataStore.cs:88
 msgid "Saturation"
-msgstr ""
+msgstr "彩度"
 
 #: ../Util/F-Spot/MetadataStore.cs:90
 msgid "Sharpness"
-msgstr ""
+msgstr "シャープネス"
 
 #: ../Util/F-Spot/MetadataStore.cs:92
 msgid "Scene Type"
-msgstr ""
+msgstr "シーンタイプ"
 
 #. Translators: Example output: Aug 9
 #: ../Util/StringFu.cs:119
@@ -1717,3 +1717,4 @@ msgstr "{0:0.0}Kバイト"
 #, csharp-format
 msgid "{0:0.0} MB"
 msgstr "{0:0.0}Mバイト"
+
