@@ -63,8 +63,11 @@ namespace Beagle {
 		private static object type_lock = new object ();
 
 		private Hashtable handlers = new Hashtable ();
-		private string client_name;
-		private Client client;
+
+		//A list of clients which will receive this message 
+		protected ArrayList clients = new ArrayList ();
+		//How many clients have completed all comms
+		protected int clients_finished;
 
 		[XmlIgnore]
 		public bool Keepalive;
@@ -79,7 +82,11 @@ namespace Beagle {
 		public RequestMessage (bool keepalive, string client_name)
 		{
 			this.Keepalive = keepalive;
-			this.client_name = client_name;
+
+			//FIXME: To keep the constructor compatible with the old single-client RequestMessage,
+			//A UnixSocketClient is created and added to the clients list by default. There should be a
+			//way to skip this if needed.
+			this.clients.Add ( new ClientContainer (true, typeof(UnixSocketClient), client_name) );
 		}
 
 		public RequestMessage (bool keepalive) : this (keepalive, null)
@@ -96,6 +103,11 @@ namespace Beagle {
 		{
 
 		}
+		
+		~RequestMessage ()
+		{
+			this.Close ();
+		}
 
 		public static Type[] Types {
 			get {
@@ -110,8 +122,12 @@ namespace Beagle {
 
 		public void Close ()
 		{
-			if (this.client != null)
-				this.client.Close ();
+			lock (clients) {
+				foreach (ClientContainer c in this.clients)	{
+					if (c.client != null)
+						c.client.Close ();
+				}
+			}
 		}
 
 		public void RegisterAsyncResponseHandler (Type t, AsyncResponseHandler handler)
@@ -145,38 +161,60 @@ namespace Beagle {
 			}
 		}
 
-		public void SendAsync ()
+		virtual public void SendAsync ()
 		{
-			if (this.client != null)
-				this.client.Close ();
-			this.client = new Client (this.client_name);
-			this.client.AsyncResponseEvent += OnAsyncResponse;
-			this.client.ClosedEvent += OnClosedEvent;
-			this.client.SendAsync (this);
+			lock (clients) {
+				foreach (ClientContainer c in this.clients) {
+					if (c.client != null)
+						c.client.Close ();
+					
+					c.CreateClient ();
+					c.client.AsyncResponseEvent += OnAsyncResponse;
+					c.client.ClosedEvent += OnClosedEvent;
+					c.client.SendAsync (this);
+				}
+			}
 		}
 
 		public void SendAsyncBlocking ()
 		{
-			this.client = new Client (this.client_name);
-			this.client.AsyncResponseEvent += OnAsyncResponse;
-			this.client.ClosedEvent += OnClosedEvent;
-			this.client.SendAsyncBlocking (this);
+			lock (clients) {
+				foreach (ClientContainer c in this.clients) {
+					c.CreateClient ();
+					c.client.AsyncResponseEvent += OnAsyncResponse;
+					c.client.ClosedEvent += OnClosedEvent;
+					c.client.SendAsyncBlocking (this);
+				}
+			}
 		}
 
-		public ResponseMessage Send ()
+		public ResponseMessage[] Send ()
 		{
-			Client client = new Client (this.client_name);
-			ResponseMessage resp = client.Send (this);
-			client.Close ();
+			ArrayList responses = new ArrayList ();
+			
+			foreach (ClientContainer c in clients)
+			{
+				c.CreateClient ();
+				//Logger.Log.Debug ("Sending message");
+				ResponseMessage resp = c.client.Send (this);
+				//Logger.Log.Debug ("Got reply");
+				c.client.Close ();
+				//Logger.Log.Debug ("Closed client");
+	
+				// Add some nice syntactic sugar by throwing an
+				// exception if the response is an error.
+				
+				//TODO: Maybe it's not right to throw an exception anymore (silently fail)? Or maybe throw
+				//exceptions only for local fails?
+				ErrorResponse err = resp as ErrorResponse;		
 
-			// Add some nice syntactic sugar by throwing an
-			// exception if the response is an error.
-			ErrorResponse err = resp as ErrorResponse;
+				if (err != null)	
+					throw new ResponseMessageException (err);
 
-			if (err != null)
-				throw new ResponseMessageException (err);
-
-			return resp;
+				responses.Add (resp);
+			}
+			
+			return (ResponseMessage []) responses.ToArray (typeof (ResponseMessage));
 		}
 
 	}
@@ -296,6 +334,28 @@ namespace Beagle {
 			}
 
 			return sb.ToString ();
+		}
+	}
+
+	internal class ClientContainer
+	{
+		public bool local;
+		private System.Type clienttype;
+		private string id;
+		
+		public Client client;
+	
+	
+		public ClientContainer (bool local, System.Type client_type, string id)
+		{
+			this.local = local;
+			this.clienttype = client_type;
+			this.id = id;
+		}
+		
+		public void CreateClient ()
+		{
+			client = (Client) System.Activator.CreateInstance (clienttype, new object[] { id });
 		}
 	}
 

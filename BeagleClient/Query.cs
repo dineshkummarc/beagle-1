@@ -61,6 +61,8 @@ namespace Beagle {
 		private QueryPart_Or source_part = null;
 
 		private bool is_index_listener = false;
+		
+		private int nodes_finished;
 
 		// Events to make things nicer to clients
 		public delegate void HitsAdded (HitsAddedResponse response);
@@ -69,7 +71,10 @@ namespace Beagle {
 		public delegate void HitsSubtracted (HitsSubtractedResponse response);
 		public event HitsSubtracted HitsSubtractedEvent;
 
-		public delegate void Finished (FinishedResponse response);
+		public delegate void NodeFinished (FinishedResponse response);
+		public event NodeFinished NodeFinishedEvent;
+		
+		public delegate void Finished ();
 		public event Finished FinishedEvent;
 
 		public Query () : base (true)
@@ -107,15 +112,28 @@ namespace Beagle {
 		private void OnFinished (ResponseMessage r)
 		{
 			FinishedResponse response = (FinishedResponse) r;
-
-			if (this.FinishedEvent != null)
-				this.FinishedEvent (response);
+	
+			if (this.NodeFinishedEvent != null)
+				this.NodeFinishedEvent (response);
+				
+			if (++nodes_finished == clients.Count && this.FinishedEvent != null) {
+				Logger.Log.Debug ("Query: All nodes finished."); 
+				this.FinishedEvent ();
+			}
 		}
 
 		private void OnError (ResponseMessage r)
 		{
 			ErrorResponse response = (ErrorResponse) r;
+			
+			Logger.Log.Warn ("Query: Error returned by a client: " + response.ErrorMessage );
+			
+			if (++nodes_finished == clients.Count && this.FinishedEvent != null) {
+				Logger.Log.Debug ("Query: All nodes done."); 
+				this.FinishedEvent ();
+			}
 
+			//TODO: Ignore errorresponses from network nodes or let user decide
 			throw new ResponseMessageException (response);
 		}
 
@@ -354,6 +372,25 @@ namespace Beagle {
 
 		public void AddDomain (Beagle.QueryDomain d)
 		{
+		    /*
+			ArrayList hosts_to_add = null;
+			
+			switch (d) {
+				case QueryDomain.Neighborhood:
+					hosts_to_add = Conf.Networking.NeighborhoodNodes;
+					break;
+				case QueryDomain.Global:
+					hosts_to_add = Conf.Networking.GlobalNodes;
+					break;
+			}
+			lock (clients) {
+				foreach (string url in hosts_to_add) {
+					Logger.Log.Debug ( "Query: Adding " + url + " to query");
+					clients.Add ( new ClientContainer ( false, typeof (HttpClient), url) );
+				}
+			}
+		
+		    */
 			domainFlags |= d;
 		}
 
