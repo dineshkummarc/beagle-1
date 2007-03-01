@@ -421,7 +421,7 @@ namespace Beagle.Util {
 			ClearUtterances ();
 
 			StringBuilder line_sb = null;
-			LineReader reader = new ReencodingLineReader (File.FullName);
+			LineReader reader = new ReencodingLineReader (File.FullName, Encoding.Default);
 
 			string dt_string, text;
 			string speaker = String.Empty;
@@ -435,7 +435,7 @@ namespace Beagle.Util {
 						DateTime dt = DateTime.ParseExact (
 							dt_string,
 							LogTimeFormatString,
-							CultureInfo.InvariantCulture,
+							CultureInfo.CurrentCulture,
 							DateTimeStyles.AssumeLocal);
 
 						AddUtterance (dt, speaker, text);
