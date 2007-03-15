@@ -126,7 +126,7 @@ namespace Beagle.Filters {
 
 			while (count < MAX_CHILDREN
 			       && total_size <= MAX_ALL_FILES
-			       && (a_entry = this.get_next_entry ()) != null) {
+			       && (a_entry = DoGetNextEntry ()) != null) {
 
 				// Store file names in the archive
 				AppendText (Path.GetFileName (a_entry.Name));
@@ -141,12 +141,18 @@ namespace Beagle.Filters {
 
 				// FIXME: For nested archives, create uid:foo#bar
 				// instead of uid:foo#xxx#bar (avoid duplicates ?)
-				Indexable child = new Indexable (new Uri (Uri.ToString () + "#" + a_entry.Name, true));
+				// FIXME: Construct correct Uri
+				// 1. Use Uri (foo, true): foo is not escaped. This creates serialization error for uris containing non-ascii character
+				// 2: Using Uri (foo): foo is escaped. This causes foo.zip#b#c (file c in archive b in archive foo) to be escaped to foo.zip#b%23c. This should be properly escaped back. Note that, file b#c in archive foo.zip would also be escaped to foo.zip#b%23c. If there is any problem about incorrect filename containing '#' in an archive, then System.Uri should be abandoned and a custom Beagle.Uri should be created which can handle multiple fragments.
+				// If you read the Uri related FIXMEs and hacks in beagled/*Queryable,
+				// then you would see why creating Beagle.Uri class over System.Uri
+				// is not at all a bad idea :)
+				Indexable child = new Indexable (new Uri (Uri.ToString () + "#" + a_entry.Name));
 
 				child.CacheContent = true;
 				child.MimeType = a_entry.MimeType;
 
-				child.DisplayUri = new Uri (DisplayUri.ToString () + "#" + a_entry.Name, true);
+				child.DisplayUri = new Uri (DisplayUri.ToString () + "#" + a_entry.Name);
 				child.ContentUri = UriFu.PathToFileUri (a_entry.TempFile);
 				child.DeleteContent = true;
 
@@ -183,12 +189,12 @@ namespace Beagle.Filters {
 			public string TempFile;
 		}
 
-		private string StoreStreamInTempFile (Stream stream, DateTime mtime)
+		private string StoreStreamInTempFile (Stream stream, string extension, DateTime mtime)
 		{
 			if (stream == null)
 				return null;
 
-			string filename = Path.GetTempFileName ();
+			string filename = FileSystem.GetTempFileName (extension);
 			FileStream file_stream = File.OpenWrite (filename);
 
 			//Log.Debug ("Storing archive contents in {0}", filename);
@@ -259,6 +265,32 @@ namespace Beagle.Filters {
 			return filename;
 		}
 
+		// Special method to get ".tar.gz" and ".tar.bz2" instead of
+		// just ".gz" and ".bz2"
+		private string GetExtension (string filename)
+		{
+			string ext = Path.GetExtension (filename);
+			if (ext != ".gz" && ext != ".bz2")
+				return ext;
+
+			if (filename.EndsWith (".tar.gz"))
+				return ".tar.gz";
+			else if (filename.EndsWith (".tar.bz2"))
+				return ".tar.bz2";
+			else
+				return ext;
+		}
+
+		private ArchiveEntry DoGetNextEntry ()
+		{
+			try {
+				return this.get_next_entry ();
+			} catch (Exception e) {
+				Log.Warn (e, "Unable to extract file from {0}", file_info);
+				return null;
+			}
+		}
+
 		private ArchiveEntry GetNextEntryZip ()
 		{
 			ZipInputStream zip_stream = (ZipInputStream) archive_stream;
@@ -279,11 +311,14 @@ namespace Beagle.Filters {
 			entry.Size = zip_entry.Size;
 
 			// Only index smaller subfiles, to avoid filling /tmp
-			if (entry.Size <= MAX_SINGLE_FILE) {
-				entry.TempFile = StoreStreamInTempFile (archive_stream, entry.Modified);
-				entry.MimeType = XdgMime.GetMimeType (entry.TempFile);
-			} else
+			if (entry.Size > MAX_SINGLE_FILE) {
 				Log.Debug ("Skipping over large file {0} in {1}", entry.Name, this.file_info);
+				return entry;
+			}
+
+			entry.TempFile = StoreStreamInTempFile (archive_stream, GetExtension (entry.Name), entry.Modified);
+			if (entry.TempFile != null)
+				entry.MimeType = XdgMime.GetMimeType (entry.TempFile);
 
 			return entry;
 		}
@@ -307,11 +342,14 @@ namespace Beagle.Filters {
 			entry.Size = tar_entry.Size;
 
 			// Only index smaller subfiles, to avoid filling /tmp
-			if (entry.Size <= MAX_SINGLE_FILE) {
-				entry.TempFile = StoreStreamInTempFile (archive_stream, entry.Modified);
-				entry.MimeType = XdgMime.GetMimeType (entry.TempFile);
-			} else
+			if (entry.Size > MAX_SINGLE_FILE) {
 				Log.Debug ("Skipping over large file {0} in {1}", entry.Name, this.file_info);
+				return entry;
+			}
+
+			entry.TempFile = StoreStreamInTempFile (archive_stream, GetExtension (entry.Name), entry.Modified);
+			if (entry.TempFile != null)
+				entry.MimeType = XdgMime.GetMimeType (entry.TempFile);
 
 			return entry;
 		}
@@ -327,7 +365,7 @@ namespace Beagle.Filters {
 			entry.Name = Path.GetFileNameWithoutExtension (this.file_info.Name);
 			entry.Modified = this.file_info.LastWriteTimeUtc;
 
-			entry.TempFile = StoreStreamInTempFile (archive_stream, entry.Modified);
+			entry.TempFile = StoreStreamInTempFile (archive_stream, GetExtension (entry.Name), entry.Modified);
 
 			if (entry.TempFile != null) {
 				entry.Size = new FileInfo (entry.TempFile).Length;
