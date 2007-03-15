@@ -328,10 +328,11 @@ namespace Beagle.Filters {
 			entry.Modified = this.file_info.LastWriteTimeUtc;
 
 			entry.TempFile = StoreStreamInTempFile (archive_stream, entry.Modified);
-			entry.MimeType = XdgMime.GetMimeType (entry.TempFile);
 
-			if (entry.TempFile != null)
+			if (entry.TempFile != null) {
 				entry.Size = new FileInfo (entry.TempFile).Length;
+				entry.MimeType = XdgMime.GetMimeType (entry.TempFile);
+			}
 
 			handled_single = true;
 
