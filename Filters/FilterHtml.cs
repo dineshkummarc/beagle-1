@@ -429,6 +429,7 @@ namespace Beagle.Filters {
 		override protected void RegisterSupportedTypes () 
 		{
 			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("text/html"));
+			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("application/xhtml+xml"));
 		}
 	}
 
