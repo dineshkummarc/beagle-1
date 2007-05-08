@@ -246,12 +246,17 @@ namespace Beagle.Daemon {
 			int current_major_version, current_minor_version;
 			int i = version_str.IndexOf ('.');
 			
-			if (i != -1) {
-				current_major_version = Convert.ToInt32 (version_str.Substring (0, i));
-				current_minor_version = Convert.ToInt32 (version_str.Substring (i+1));
-			} else {
-				current_minor_version = Convert.ToInt32 (version_str);
-				current_major_version = 0;
+			try {
+				if (i != -1) {
+					current_major_version = Convert.ToInt32 (version_str.Substring (0, i));
+					current_minor_version = Convert.ToInt32 (version_str.Substring (i+1));
+				} else {
+					current_minor_version = Convert.ToInt32 (version_str);
+					current_major_version = 0;
+				}
+			} catch (FormatException) {
+				// Something wrong with the version file.
+				return false;
 			}
 
 			if (current_major_version != MAJOR_VERSION
@@ -267,11 +272,93 @@ namespace Beagle.Daemon {
 			// assume that the index is corrupted and declare it non-existent.
 			DirectoryInfo lock_dir_info;
 			lock_dir_info = new DirectoryInfo (LockDirectory);
+			bool dangling_lock = false;
+
 			foreach (FileInfo info in lock_dir_info.GetFiles ()) {
 				if (IsDanglingLock (info)) {
-					Logger.Log.Warn ("Found a dangling index lock on {0}", info.FullName);
-					return false;
+					Logger.Log.Warn ("Found a dangling index lock on {0}.", info.FullName);
+					dangling_lock = true;
 				}
+			}
+
+			if (dangling_lock) {
+				Beagle.Util.Stopwatch w = new Beagle.Util.Stopwatch ();
+				w.Start ();
+
+				if (VerifyLuceneIndex (PrimaryIndexDirectory) && 
+				    VerifyLuceneIndex (SecondaryIndexDirectory)) {
+					w.Stop ();
+
+					Log.Warn ("Indexes verified in {0}.  Deleting stale lock files.", w);
+
+					try {
+						foreach (FileInfo info in lock_dir_info.GetFiles ())
+							info.Delete ();
+					} catch {
+						Log.Warn ("Could not delete lock files.");
+						return false;
+					}
+					return true;
+				} else
+					return false;
+			}
+
+			return true;
+		}
+
+		private bool VerifyLuceneIndex (string path)
+		{
+			if (! Directory.Exists (path))
+				return true;
+
+			Log.Debug ("Verifying index {0}", path);
+
+			IndexReader reader = null;
+			TermEnum enumerator = null;
+			TermPositions positions = null;
+
+			try {
+				reader = IndexReader.Open (path);
+
+				// Crawl all of the terms in the index, and get the
+				// term positions and crawl those as well.  This
+				// method is suggested as a way to verify the index
+				// here:
+				//
+				// http://mail-archives.apache.org/mod_mbox/lucene-java-user/200504.mbox/%3c4265767B.5090307@getopt.org%3e
+				enumerator = reader.Terms ();
+
+				while (enumerator.Next ()) {
+					Term term = enumerator.Term ();
+					positions = reader.TermPositions (term);
+
+					while (positions.Next ()) {
+						int freq = positions.Freq ();
+
+						for (int i = 0; i < freq; i++)
+							positions.NextPosition ();
+					}
+					positions.Close ();
+					positions = null;
+				}
+
+				enumerator.Close ();
+				enumerator = null;
+
+				reader.Close ();
+				reader = null;
+			} catch (Exception e) {
+				Log.Warn ("Lucene index {0} is corrupted ({1})", path, e.Message);
+				return false;
+			} finally {
+				if (positions != null)
+					positions.Close ();
+
+				if (enumerator != null)
+					enumerator.Close ();
+
+				if (reader != null)
+					reader.Close ();
 			}
 
 			return true;
