@@ -11,16 +11,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: beagle HEAD\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2007-02-12 16:09+0000\n"
+"POT-Creation-Date: 2006-12-12 10:31+0100\n"
 "PO-Revision-Date: 2006-12-12 16:15+0100\n"
-"Last-Translator: Novell Language <language@novell.com>\n"
-"Language-Team: Novell Language <language@novell.com>\n"
+"Last-Translator: Hendrik Brandt <heb@gnome-de.org>\n"
+"Language-Team: German <gnome-de@gnome.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);"
 
-#: ../glue/eggtrayicon.c:127 ../Util/F-Spot/MetadataStore.cs:54
+#: ../glue/eggtrayicon.c:127
 msgid "Orientation"
 msgstr "Ausrichtung"
 
@@ -30,9 +30,9 @@ msgstr "Die Ausrichtung des Benachrichtigungsfeldes."
 
 #: ../ContactViewer/ContactWindow.cs:74
 msgid "Open..."
-msgstr "Öffnen ..."
+msgstr "Öffnen …"
 
-#: ../ContactViewer/ContactWindow.cs:76 ../search/Tray/TrayIcon.cs:98
+#: ../ContactViewer/ContactWindow.cs:76 ../search/Tray/TrayIcon.cs:86
 msgid "Quit"
 msgstr "Beenden"
 
@@ -66,8 +66,7 @@ msgid ""
 "Unable to open mork database:\n"
 "\n"
 " {0}"
-msgstr ""
-"mork-Datenbank konnte nicht geöffnet werden:\n"
+msgstr "mork-Datenbank konnte nicht geöffnet werden:\n"
 "\n"
 " {0}"
 
@@ -267,7 +266,7 @@ msgstr "Bundesland/Kanton:"
 #: ../ContactViewer/contactviewer.glade.h:40
 #: ../search/Tiles/ArchivedFile.cs:76 ../search/Tiles/Calendar.cs:51
 #: ../search/Tiles/File.cs:140 ../search/Tiles/Note.cs:62
-#: ../search/Tiles/RSSFeed.cs:48 ../search/Tiles/WebHistory.cs:53
+#: ../search/Tiles/RSSFeed.cs:48 ../search/Tiles/WebHistory.cs:50
 msgid "Title:"
 msgstr "Titel:"
 
@@ -276,8 +275,7 @@ msgid ""
 "Unknown\n"
 "Plain text\n"
 "HTML"
-msgstr ""
-"Unbekannt\n"
+msgstr "Unbekannt\n"
 "Unformatierter Text\n"
 "HTML"
 
@@ -306,16 +304,12 @@ msgstr "<b>Unterhaltungsmitschnitte</b>"
 msgid "IM Viewer"
 msgstr "IM-Betrachter"
 
-#: ../ImLogViewer/ImLogWindow.cs:106 ../ImLogViewer/ImLogWindow.cs:118
+#: ../ImLogViewer/ImLogWindow.cs:102
 #, csharp-format
 msgid "Conversations in {0}"
 msgstr "Unterhaltungen in {0}"
 
 #: ../ImLogViewer/ImLogWindow.cs:109
-msgid "Conversations in {0} ({1})"
-msgstr "Kommunikationen in {0} ({1})"
-
-#: ../ImLogViewer/ImLogWindow.cs:125
 #, csharp-format
 msgid "Conversations with {0}"
 msgstr "Unterhaltungen mit {0}"
@@ -347,14 +341,14 @@ msgstr "Es haben sich keine Treffer ergeben."
 #: ../search/Pages/NoMatch.cs:20
 #, csharp-format
 msgid "Your search for \"{0}\" did not match any files on your computer."
-msgstr "Ihre Suche nach \"{0}\" hat keine Treffer auf Ihrem Rechner ergeben."
+msgstr "Ihre Suche nach »{0}« hat keine Treffer auf Ihrem Rechner ergeben."
 
 #: ../search/Pages/NoMatch.cs:24
 msgid ""
 "You can change the scope of your search using the \"Search\" menu. A broader "
 "search scope might produce more results."
 msgstr ""
-"Sie können den Bereich Ihrer Suche über das Menü \"Suche\" ändern. Durch einen "
+"Sie können den Bereich Ihrer Suche über das Menü »Suche« ändern. Durch einen "
 "größeren Suchbereich ergeben sich eventuell mehr Treffer."
 
 #: ../search/Pages/NoMatch.cs:26
@@ -415,8 +409,7 @@ msgstr "Der Suchdienst ist nicht aktiv"
 msgid "Start search service"
 msgstr "Suchedienst starten"
 
-#: ../search/Search.cs:138 ../search/Search.cs:254
-#: ../search/Tray/TrayIcon.cs:33
+#: ../search/Search.cs:138 ../search/Tray/TrayIcon.cs:32
 msgid "Desktop Search"
 msgstr "Desktop-Suche"
 
@@ -436,34 +429,31 @@ msgstr "Geben Sie hier Ihre Suchbegriffe ein"
 msgid "Start searching"
 msgstr "Suche starten"
 
-#: ../search/Search.cs:273
+#: ../search/Search.cs:264
 #, csharp-format
 msgid "Desktop Search: {0}"
 msgstr "Desktop-Suche: {0}"
 
-#: ../search/Search.cs:289
-msgid "Showing {0} match"
-msgid_plural "Showing all {0} matches"
-msgstr[0] "{0} Übereinstimmungen werden angezeigt"
-msgstr[1] "Alle {0} Übereinstimmungen werden angezeigt"
+#: ../search/Search.cs:280
+#, csharp-format
+msgid "Showing all {0} matches"
+msgstr "Alle {0} Treffer anzeigen"
 
-#: ../search/Search.cs:291
+#: ../search/Search.cs:282
+#, csharp-format
 msgid "Showing the top {0} of {1} total matches"
-msgid_plural "Showing the top {0} of {1} total matches"
-msgstr[0] "{0} von {1} Übereinstimmungen insgesamt werden angezeigt"
-msgstr[1] "{0} von {1} Übereinstimmungen insgesamt werden angezeigt"
+msgstr "Die ersten {0} von {1} Treffer anzeigen"
 
-#: ../search/Search.cs:564
+#: ../search/Search.cs:553
 msgid "Your data is being indexed"
 msgstr "Ihre Daten werden indiziert"
 
-#: ../search/Search.cs:565
+#: ../search/Search.cs:554
 msgid ""
 "The search service is in the process of indexing your data.  Search results "
 "may be incomplete until indexing has finished."
-msgstr ""
-"Aktuell indiziert der Suchdienst Ihre Daten. Einigen Suchergebnisse könnten "
-"bis zum Abschluss der Indizierung unvollständig sein."
+msgstr "Aktuell indiziert der Suchdienst Ihre Daten. Einigen Suchergebnisse könnten bis zum Abschluss "
+"der Indizierung unvollständig sein."
 
 #: ../search/Tiles/ArchivedFile.cs:39
 #, csharp-format
@@ -532,7 +522,7 @@ msgid "Last Edited:"
 msgstr "Zuletzt geändert:"
 
 #: ../search/Tiles/File.cs:146 ../search/Tiles/Folder.cs:52
-#: ../search/Tiles/Image.cs:84
+#: ../search/Tiles/Image.cs:80
 msgid "Full Path:"
 msgstr "Vollständiger Pfad:"
 
@@ -552,17 +542,9 @@ msgstr[1] "Enthält {0} Elemente"
 msgid "Set as Wallpaper"
 msgstr "Als Hintergrundbild verwenden"
 
-#: ../search/Tiles/Image.cs:81
-msgid "Tags:"
-msgstr "Tags:"
-
-#: ../search/Tiles/Image.cs:83
+#: ../search/Tiles/Image.cs:79
 msgid "Modified:"
 msgstr "Geändert:"
-
-#: ../search/Tiles/Image.cs:93
-msgid "Comment:"
-msgstr "Kommentar:"
 
 #: ../search/Tiles/IMLog.cs:30
 msgid "IM Conversation"
@@ -703,12 +685,12 @@ msgid "Archives"
 msgstr "Archive"
 
 #: ../search/Tiles/Utils.cs:133 ../search/Tiles/Utils.cs:215
-#: ../Util/StringFu.cs:116
+#: ../Util/StringFu.cs:88
 msgid "Yesterday"
 msgstr "Gestern"
 
 #: ../search/Tiles/Utils.cs:135 ../search/Tiles/Utils.cs:217
-#: ../Util/StringFu.cs:114
+#: ../Util/StringFu.cs:86
 msgid "Today"
 msgstr "Heute"
 
@@ -765,23 +747,23 @@ msgstr[1] "In {0} Jahren"
 msgid "Unknown duration"
 msgstr "Länge unbekannt"
 
-#: ../search/Tiles/WebHistory.cs:54
+#: ../search/Tiles/WebHistory.cs:51
 msgid "URL:"
 msgstr "Adresse:"
 
-#: ../search/Tiles/WebHistory.cs:55
+#: ../search/Tiles/WebHistory.cs:52
 msgid "Accessed:"
 msgstr "Zugegriffen:"
 
-#: ../search/Tray/TrayIcon.cs:69
+#: ../search/Tray/TrayIcon.cs:57
 msgid "No Recent Searches"
 msgstr "Keine zuletzt verwendete Suche"
 
-#: ../search/Tray/TrayIcon.cs:74
+#: ../search/Tray/TrayIcon.cs:62
 msgid "Recent Searches"
 msgstr "Letzte Suchanfragen"
 
-#: ../search/Tray/TrayIcon.cs:90
+#: ../search/Tray/TrayIcon.cs:78
 msgid "Clear"
 msgstr "Löschen"
 
@@ -1164,17 +1146,17 @@ msgstr ""
 "Sie, dass die aktuell angezeigten Werte zurückgesetzt werden und eine neu "
 "Konfiguration geladen wird?"
 
-#: ../tools/Settings.cs:305
+#: ../tools/Settings.cs:297
 msgid "Select Path"
 msgstr "Pfad auswählen"
 
-#: ../tools/Settings.cs:324
+#: ../tools/Settings.cs:316
 msgid "The selected path is already selected for indexing and wasn't added."
 msgstr ""
 "Der Pfad ist bereits zur Indizierung vorgesehen und wurde deshalb nicht "
 "hinzugefügt."
 
-#: ../tools/Settings.cs:327
+#: ../tools/Settings.cs:319
 msgid ""
 "The selected path wasn't added. The list contains items that supersedes it "
 "and the data is already being indexed."
@@ -1182,15 +1164,15 @@ msgstr ""
 "Der ausgewählte Pfad wurde nicht hinzugefügt. Die Liste enthält bereits "
 "einen darüber liegenden Eintrag dessen Daten bereits indiziert wurden."
 
-#: ../tools/Settings.cs:338
+#: ../tools/Settings.cs:330
 msgid "Path not added"
 msgstr "Pfad nicht hinzugefügt"
 
-#: ../tools/Settings.cs:347
+#: ../tools/Settings.cs:339
 msgid "Remove obsolete paths"
 msgstr "Veraltete Pfade entfernen"
 
-#: ../tools/Settings.cs:348
+#: ../tools/Settings.cs:340
 msgid ""
 "Adding this path will obsolete some of the existing include paths. This will "
 "result in the removal of the old obsolete paths. Do you still wish to add it?"
@@ -1199,11 +1181,11 @@ msgstr ""
 "überflüssig. Dadurch werden diese veralteten Pfade aus der Liste entfernt. "
 "Möchten Sie trotzdem fortfahren?"
 
-#: ../tools/Settings.cs:374
+#: ../tools/Settings.cs:366
 msgid "Remove path"
 msgstr "Pfad entfernen"
 
-#: ../tools/Settings.cs:375
+#: ../tools/Settings.cs:367
 msgid ""
 "Are you sure you wish to remove this path from the list of directories to be "
 "included for indexing?"
@@ -1211,11 +1193,11 @@ msgstr ""
 "Sind Sie sicher, dass Sie diesen Pfad von der Liste der zu indizierenden "
 "Ordner entfernen möchten?"
 
-#: ../tools/Settings.cs:404
+#: ../tools/Settings.cs:396
 msgid "Remove item"
 msgstr "Eintrag entfernen"
 
-#: ../tools/Settings.cs:405
+#: ../tools/Settings.cs:397
 msgid ""
 "Are you sure you wish to remove this item from the list of data to be "
 "excluded from indexing?"
@@ -1223,48 +1205,48 @@ msgstr ""
 "Sind Sie sicher, dass Sie diesen Eintrag von der Liste der von der "
 "Indizierung auszuschließenden Daten entfernen möchten?"
 
-#: ../tools/Settings.cs:455 ../tools/Settings.cs:544 ../tools/Settings.cs:631
-#: ../tools/Settings.cs:970
+#: ../tools/Settings.cs:447 ../tools/Settings.cs:536 ../tools/Settings.cs:623
+#: ../tools/Settings.cs:962
 msgid "Name"
 msgstr "Name"
 
-#: ../tools/Settings.cs:538
+#: ../tools/Settings.cs:530
 msgid "Type"
 msgstr "Typ"
 
-#: ../tools/Settings.cs:591
+#: ../tools/Settings.cs:583
 msgid "Path:"
 msgstr "Pfad:"
 
-#: ../tools/Settings.cs:594
+#: ../tools/Settings.cs:586
 msgid "Pattern:"
 msgstr "Muster:"
 
-#: ../tools/Settings.cs:597
+#: ../tools/Settings.cs:589
 msgid "Mail folder:"
 msgstr "E-Mail-Ordner:"
 
-#: ../tools/Settings.cs:878
+#: ../tools/Settings.cs:870
 msgid "Select Folder"
 msgstr "Ordner auswählen"
 
-#: ../tools/Settings.cs:904 ../tools/settings.glade.h:19
+#: ../tools/Settings.cs:896 ../tools/settings.glade.h:19
 msgid "P_ath:"
 msgstr "Pf_ad:"
 
-#: ../tools/Settings.cs:909
+#: ../tools/Settings.cs:901
 msgid "M_ail folder:"
 msgstr "E-_Mail-Ordner:"
 
-#: ../tools/Settings.cs:914
+#: ../tools/Settings.cs:906
 msgid "P_attern:"
 msgstr "M_uster:"
 
-#: ../tools/Settings.cs:938
+#: ../tools/Settings.cs:930
 msgid "Error adding path"
 msgstr "Fehler beim Hinzufügen des Pfades"
 
-#: ../tools/Settings.cs:939
+#: ../tools/Settings.cs:931
 msgid ""
 "The specified path could not be found and therefore it could not be added to "
 "the list of resources excluded for indexing."
@@ -1273,7 +1255,7 @@ msgstr ""
 "Liste der von der Indizierung auszuschließenden Ressourcen aufgenommen "
 "werden."
 
-#: ../tools/Settings.cs:969
+#: ../tools/Settings.cs:961
 msgid "Show"
 msgstr "Zeigen"
 
@@ -1391,7 +1373,7 @@ msgstr "Dem _Systemadministrator erlauben Beagle zu starten"
 
 #: ../tools/settings.glade.h:28
 msgid "_Browse..."
-msgstr "_Durchsuchen ..."
+msgstr "_Durchsuchen …"
 
 #: ../tools/settings.glade.h:29
 msgid "_Folder path"
@@ -1406,10 +1388,14 @@ msgid "_Start search & indexing services automatically "
 msgstr "_Such- und Indizierungsdienste automatisch starten "
 
 #: ../tools/beagle-settings.desktop.in.in.h:1
-msgid "Configure Desktop Search"
-msgstr "Desktop-Suche konfigurieren"
+msgid "Configure Desktop Search & Indexing"
+msgstr "Desktop-Suche und -Indizierung einstellen"
 
 #: ../tools/beagle-settings.desktop.in.in.h:2
+msgid "Configure search & indexing properties"
+msgstr "Desktop-Suche und -Indizierungseigenschaften einstellen"
+
+#: ../tools/beagle-settings.desktop.in.in.h:3
 msgid "Search & Indexing"
 msgstr "Suche & Indizierung"
 
@@ -1417,318 +1403,87 @@ msgstr "Suche & Indizierung"
 msgid "On This Computer"
 msgstr "Auf diesem Rechner"
 
-#: ../Util/F-Spot/Exif.cs:248
+#: ../Util/ExifData.cs:226
 msgid "Image Directory"
 msgstr "Bildverzeichnis"
 
-#: ../Util/F-Spot/Exif.cs:250
+#: ../Util/ExifData.cs:228
 msgid "Thumbnail Directory"
 msgstr "Vorschauverzeichnis"
 
-#: ../Util/F-Spot/Exif.cs:252
+#: ../Util/ExifData.cs:230
 msgid "Exif Directory"
 msgstr "EXIF-Verzeichnis"
 
-#: ../Util/F-Spot/Exif.cs:254
+#: ../Util/ExifData.cs:232
 msgid "GPS Directory"
 msgstr "GPS-Verzeichnis"
 
-#: ../Util/F-Spot/Exif.cs:256
+#: ../Util/ExifData.cs:234
 msgid "InterOperability Directory"
 msgstr "Interoperabilitätsverzeichnis"
 
-#: ../Util/F-Spot/Exif.cs:258
+#: ../Util/ExifData.cs:236
 msgid "Unknown Directory"
 msgstr "Unbekanntes Verzeichnis"
 
-#: ../Util/F-Spot/IptcFile.cs:175
-msgid "IPTC Information Interchange Model (IIM) Version number"
-msgstr "IPTC-Information Interchange Model-(IIM-)Versionsnummer"
-
-#: ../Util/F-Spot/IptcFile.cs:177
-msgid "OSI Destination routing information"
-msgstr "OSI-Zielroutinginformationen"
-
-#: ../Util/F-Spot/IptcFile.cs:179
-msgid "IPTC file format"
-msgstr "IPTC-Dateiformat"
-
-#: ../Util/F-Spot/IptcFile.cs:181
-msgid "Identifies the provider and product"
-msgstr "Identifiziert Anbieter und Produkt"
-
-#: ../Util/F-Spot/IptcFile.cs:183
-msgid "A unique number identifying the envelope"
-msgstr "Eindeutige Nummer zur Identifikation des Umschlags"
-
-#: ../Util/F-Spot/IptcFile.cs:185
-msgid "A unique number"
-msgstr "Eindeutige Nummer"
-
-#: ../Util/F-Spot/IptcFile.cs:187
-msgid ""
-"The envelope handling priority between 1 (most urgent) and 9 (least urgent)"
-msgstr "Priorität für die Umschlagsverarbeitung, zwischen 1 (am dringensten) und 9 (am wenigsten dringend)"
-
-#: ../Util/F-Spot/IptcFile.cs:189
-msgid "The year month and day (CCYYMMDD) the service sent the material"
-msgstr "Angabe des Zeitpunkts mit Jahr, Monat und Tag (JJJJMMTT), zu dem der Dienst das Material gesendet hat"
-
-#: ../Util/F-Spot/IptcFile.cs:191
-msgid ""
-"The hour minute and second the (HHMMSS+HHMM) the service sent the material"
-msgstr "Angabe des Zeitpunkts mit Stunde, Minute und Sekunde (HHMMSS+HHMM), zu dem der Dienst das Material gesendet hat"
-
-#: ../Util/F-Spot/IptcFile.cs:193
-msgid "The character set designation"
-msgstr "Zeichensatzbezeichnung"
-
-#: ../Util/F-Spot/IptcFile.cs:195
-msgid "External globally unique object identifier"
-msgstr "Externe, global eindeutige Objektkennung"
-
-#: ../Util/F-Spot/IptcFile.cs:200
-msgid "Abstract Relationship Method (ARM) identifier"
-msgstr "Abstract Relationship Method-(ARM-)Kennung"
-
-#: ../Util/F-Spot/IptcFile.cs:202
-msgid "Abstract Relationship Method (ARM) version number."
-msgstr "Abstract Relationship Method-(ARM-)Versionsnummer."
-
-#: ../Util/F-Spot/IptcFile.cs:205
-msgid "Number identifying the IIM version this application record uses"
-msgstr "Nummer, anhand deren die von diesem Anwendungsdatensatz verwendete IIM-Version identifiziert wird"
-
-#: ../Util/F-Spot/IptcFile.cs:207
-msgid "Object type reference"
-msgstr "Objekttypreferenz"
-
-#: ../Util/F-Spot/IptcFile.cs:212
-msgid "Object attribute reference"
-msgstr "Objektattributreferenz"
-
-#: ../Util/F-Spot/IptcFile.cs:218 ../Util/F-Spot/IptcFile.cs:222
-msgid "Object name"
-msgstr "Objektname"
-
-#: ../Util/F-Spot/IptcFile.cs:220
-msgid "Status of the objectdata according to the provider"
-msgstr "Status der Objektdaten laut Anbieter"
-
-#: ../Util/F-Spot/IptcFile.cs:224
-msgid "Location within a city or area where the object originates"
-msgstr "Ort in einer Stadt oder Region, in der das Objekt seinen Ursprung hat"
-
-#: ../Util/F-Spot/IptcFile.cs:227
-msgid "Name of the city the content is focussing on"
-msgstr "Name der Stadt, auf die sich der Inhalt bezieht"
-
-#: ../Util/F-Spot/IptcFile.cs:230
-msgid "Copyright information for"
-msgstr "Copyright-Informationen für"
-
-#: ../Util/F-Spot/IptcFile.cs:233
-msgid "Full name of the country of the focus of the content"
-msgstr "Vollständiger Name des Landes, auf das sich der Inhalt bezieht"
-
-#: ../Util/F-Spot/IptcFile.cs:236
-msgid ""
-"Two or three letter ISO3166 code of the country of the focus of the content"
-msgstr "Aus zwei bzw. drei Buchstaben bestehender ISO3166-Code des Landes, auf das sich der Inhalt bezieht"
-
-#: ../Util/F-Spot/IptcFile.cs:239
-msgid "Creator of the content"
-msgstr "Ersteller des Inhalts"
-
-#: ../Util/F-Spot/IptcFile.cs:242
-msgid "Provider of the object"
-msgstr "Bereitsteller des Objekts"
-
-#: ../Util/F-Spot/IptcFile.cs:245
-msgid "The title of the author or creator"
-msgstr "Titel des Autors oder Erstellers"
-
-#: ../Util/F-Spot/IptcFile.cs:248
-msgid ""
-"The person involved in writing, editing or correcting the object data or "
-"caption/abstract"
-msgstr "Person, die an der Erstellung, Bearbeitung oder Korrektur der Objektdaten, des Titels oder der Zusammenfassung beteiligt war"
-
-#: ../Util/F-Spot/IptcFile.cs:252
-msgid "Headline of the content"
-msgstr "Überschrift des Inhalts"
-
-#: ../Util/F-Spot/IptcFile.cs:255
-msgid ""
-"Instructions from the creator to the receiver not covered by other fields"
-msgstr "Anweisungen vom Ersteller an den Empfänger, die nicht in anderen Feldern enthalten sind"
-
-#: ../Util/F-Spot/IptcFile.cs:258
-msgid "Intellectual genre of the object"
-msgstr "Kategorie des Objekts"
-
-#: ../Util/F-Spot/IptcFile.cs:271
-msgid "Unknown IIM DataSet"
-msgstr "Unbekannte IIM-Datengruppe"
-
-#: ../Util/F-Spot/MetadataStore.cs:46
-msgid "Creator"
-msgstr "Ersteller"
-
-#: ../Util/F-Spot/MetadataStore.cs:47
-msgid "Title"
-msgstr "Titel"
-
-#: ../Util/F-Spot/MetadataStore.cs:48
-msgid "Copyright"
-msgstr "Copyright"
-
-#: ../Util/F-Spot/MetadataStore.cs:49
-msgid "Subject and Keywords"
-msgstr "Thema und Stichworte"
-
-#: ../Util/F-Spot/MetadataStore.cs:50
-msgid "Compression"
-msgstr "Art der Kompression"
-
-#: ../Util/F-Spot/MetadataStore.cs:52
-msgid "Planar Configuration"
-msgstr "Datenausrichtung"
-
-#: ../Util/F-Spot/MetadataStore.cs:56
-msgid "Photometric Interpretation"
-msgstr "Pixel-Zusammensetzung"
-
-#: ../Util/F-Spot/MetadataStore.cs:58
-msgid "Resolution Unit"
-msgstr "Maßeinheit der Auflösung"
-
-#: ../Util/F-Spot/MetadataStore.cs:60
-msgid "Exposure Program"
-msgstr "Belichtungsprogramm"
-
-#: ../Util/F-Spot/MetadataStore.cs:62
-msgid "Metering Mode"
-msgstr "Messverfahren"
-
-#: ../Util/F-Spot/MetadataStore.cs:64
-msgid "Exposure Mode"
-msgstr "Belichtungsmodus"
-
-#: ../Util/F-Spot/MetadataStore.cs:66
-msgid "Custom Rendered"
-msgstr "Benutzerdefinierte Bildverarbeitung"
-
-#: ../Util/F-Spot/MetadataStore.cs:68
-msgid "Components Configuration"
-msgstr "Komponentenkonfiguration"
-
-#: ../Util/F-Spot/MetadataStore.cs:70
-msgid "Light Source"
-msgstr "Lichtquelle"
-
-#: ../Util/F-Spot/MetadataStore.cs:72
-msgid "Sensing Method"
-msgstr "Messmethode"
-
-#: ../Util/F-Spot/MetadataStore.cs:74
-msgid "Color Space"
-msgstr "Farbraum"
-
-#: ../Util/F-Spot/MetadataStore.cs:76
-msgid "White Balance"
-msgstr "Weißabgleich"
-
-#: ../Util/F-Spot/MetadataStore.cs:78
-msgid "Focal Plane Resolution Unit"
-msgstr "Einheit der Sensorauflösung"
-
-#: ../Util/F-Spot/MetadataStore.cs:80
-msgid "File Source Type"
-msgstr "Dateiquellentyp"
-
-#: ../Util/F-Spot/MetadataStore.cs:82
-msgid "Scene Capture Type"
-msgstr "Aufnahmeart"
-
-#: ../Util/F-Spot/MetadataStore.cs:84
-msgid "Gain Control"
-msgstr "Verstärkung"
-
-#: ../Util/F-Spot/MetadataStore.cs:86
-msgid "Contrast"
-msgstr "Kontrast"
-
-#: ../Util/F-Spot/MetadataStore.cs:88
-msgid "Saturation"
-msgstr "Sättigung"
-
-#: ../Util/F-Spot/MetadataStore.cs:90
-msgid "Sharpness"
-msgstr "Schärfe"
-
-#: ../Util/F-Spot/MetadataStore.cs:92
-msgid "Scene Type"
-msgstr "Szenentyp"
-
 #. Translators: Example output: Aug 9
-#: ../Util/StringFu.cs:119
+#: ../Util/StringFu.cs:91
 msgid "MMM d"
 msgstr "d. MMM"
 
 #. Translators: Example output: Aug 9, 2000
-#: ../Util/StringFu.cs:122
+#: ../Util/StringFu.cs:94
 msgid "MMM d, yyyy"
 msgstr "d. MMM yyyy"
 
 #. Translators: Example output: 11:05 AM  (note h = 12-hour time)
-#: ../Util/StringFu.cs:125
+#: ../Util/StringFu.cs:97
 msgid "h:mm tt"
 msgstr "HH:mm"
 
 #. Translators: {0} is a date (e.g. 'Today' or 'Apr 23'), {1} is the time
-#: ../Util/StringFu.cs:131
+#: ../Util/StringFu.cs:103
 #, csharp-format
 msgid "{0}, {1}"
 msgstr "{0}, {1}"
 
 #. To translators: {0} is the time of the day, eg. 13:45
-#: ../Util/StringFu.cs:148
+#: ../Util/StringFu.cs:120
 #, csharp-format
 msgid "Today, {0}"
 msgstr "Heute, {0}"
 
 #. To translators: {0} is the time of the day, eg. 13:45
-#: ../Util/StringFu.cs:151
+#: ../Util/StringFu.cs:123
 #, csharp-format
 msgid "Yesterday, {0}"
 msgstr "Gestern, {0}"
 
 #. To translators: {0} is the number of days that have passed, {1} is the time of the day, eg. 13:45
-#: ../Util/StringFu.cs:156
-msgid "{0} day ago, {1}"
-msgid_plural "{0} days ago, {1}"
-msgstr[0] "{0} Tag her, {1}"
-msgstr[1] "{0} Tage her, {1}"
+#: ../Util/StringFu.cs:126
+#, csharp-format
+msgid "{0} days ago, {1}"
+msgstr "Vor {0} Tagen, {1}"
 
 #. Translators: Example output: January 3, 3:45 PM
-#: ../Util/StringFu.cs:162
+#: ../Util/StringFu.cs:131
 msgid "MMMM d, h:mm tt"
 msgstr "d. MMMM, HH:mm"
 
 #. Translators: Example output: March 23 2001, 10:04 AM
-#: ../Util/StringFu.cs:167
+#: ../Util/StringFu.cs:136
 msgid "MMMM d yyyy, h:mm tt"
 msgstr "d. MMMM yyyy, HH:mm"
 
-#: ../Util/StringFu.cs:177
+#: ../Util/StringFu.cs:146
 #, csharp-format
 msgid "{0} hour"
 msgid_plural "{0} hours"
 msgstr[0] "{0} Stunde"
 msgstr[1] "{0} Stunden"
 
-#: ../Util/StringFu.cs:184
+#: ../Util/StringFu.cs:153
 #, csharp-format
 msgid "{0} minute"
 msgid_plural "{0} minutes"
@@ -1736,29 +1491,22 @@ msgstr[0] "{0} Minute"
 msgstr[1] "{0} Minuten"
 
 #. Translators: {0} is a file size in bytes
-#: ../Util/StringFu.cs:218
-msgid "{0} byte"
-msgid_plural "{0} bytes"
-msgstr[0] "{0} byte"
-msgstr[1] "{0} bytes"
+#: ../Util/StringFu.cs:169
+#, csharp-format
+msgid "{0} bytes"
+msgstr "{0} Byte"
 
 #. Translators: {0} is a file size in kilobytes
-#: ../Util/StringFu.cs:222
+#: ../Util/StringFu.cs:173
 #, csharp-format
 msgid "{0:0.0} KB"
 msgstr "{0:0.0} KB"
 
 #. Translators: {0} is a file size in megabytes
-#: ../Util/StringFu.cs:225
+#: ../Util/StringFu.cs:176
 #, csharp-format
 msgid "{0:0.0} MB"
 msgstr "{0:0.0} MB"
-
-#~ msgid "Configure Desktop Search & Indexing"
-#~ msgstr "Desktop-Suche und -Indizierung einstellen"
-
-#~ msgid "Configure search & indexing properties"
-#~ msgstr "Desktop-Suche und -Indizierungseigenschaften einstellen"
 
 #, fuzzy
 #~ msgid "FirstName"
@@ -1856,4 +1604,3 @@ msgstr "{0:0.0} MB"
 
 #~ msgid "Search everywhere"
 #~ msgstr "Ihren gesamten Datenbestand durchsuchen"
-

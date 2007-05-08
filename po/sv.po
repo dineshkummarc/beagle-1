@@ -9,10 +9,10 @@ msgid ""
 msgstr ""
 "Project-Id-Version: beagle\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2007-02-12 16:09+0000\n"
-"PO-Revision-Date: 2007-02-03 00:29+0100\n"
-"Last-Translator: Novell Language <language@novell.com>\n"
-"Language-Team: Novell Language <language@novell.com>\n"
+"POT-Creation-Date: 2007-03-24 10:52+0100\n"
+"PO-Revision-Date: 2007-03-24 10:36+0100\n"
+"Last-Translator: Daniel Nylander <po@danielnylander.se>\n"
+"Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -38,7 +38,7 @@ msgstr "Avsluta"
 msgid "About"
 msgstr "Om"
 
-#: ../ContactViewer/ContactWindow.cs:95 ../search/Tiles/Utils.cs:26
+#: ../ContactViewer/ContactWindow.cs:95 ../search/Tiles/Utils.cs:27
 msgid "Contacts"
 msgstr "Kontakter"
 
@@ -264,7 +264,7 @@ msgstr "Län/Region:"
 
 #: ../ContactViewer/contactviewer.glade.h:40
 #: ../search/Tiles/ArchivedFile.cs:76 ../search/Tiles/Calendar.cs:51
-#: ../search/Tiles/File.cs:140 ../search/Tiles/Note.cs:62
+#: ../search/Tiles/File.cs:173 ../search/Tiles/Note.cs:62
 #: ../search/Tiles/RSSFeed.cs:48 ../search/Tiles/WebHistory.cs:53
 msgid "Title:"
 msgstr "Titel:"
@@ -481,7 +481,7 @@ msgstr "Filnamn:"
 msgid "Inside File:"
 msgstr "inne i filen:"
 
-#: ../search/Tiles/ArchivedFile.cs:81 ../search/Tiles/File.cs:144
+#: ../search/Tiles/ArchivedFile.cs:81 ../search/Tiles/File.cs:177
 msgid "Author:"
 msgstr "Upphovsman:"
 
@@ -528,13 +528,13 @@ msgstr "E-post"
 msgid "Move to Trash"
 msgstr "Flytta till papperskorg"
 
-#: ../search/Tiles/File.cs:141 ../search/Tiles/Folder.cs:51
+#: ../search/Tiles/File.cs:174 ../search/Tiles/Folder.cs:51
 #: ../search/Tiles/Note.cs:63
 msgid "Last Edited:"
 msgstr "Senast redigerad:"
 
-#: ../search/Tiles/File.cs:146 ../search/Tiles/Folder.cs:52
-#: ../search/Tiles/Image.cs:84
+#: ../search/Tiles/File.cs:179 ../search/Tiles/Folder.cs:52
+#: ../search/Tiles/Image.cs:87
 msgid "Full Path:"
 msgstr "Fullständig sökväg:"
 
@@ -554,15 +554,15 @@ msgstr[1] "Innehåller {0} objekt"
 msgid "Set as Wallpaper"
 msgstr "Ställ in som skrivbordsbakgrund"
 
-#: ../search/Tiles/Image.cs:81
+#: ../search/Tiles/Image.cs:84
 msgid "Tags:"
 msgstr "Taggar:"
 
-#: ../search/Tiles/Image.cs:83
+#: ../search/Tiles/Image.cs:86
 msgid "Modified:"
 msgstr "Ändrad:"
 
-#: ../search/Tiles/Image.cs:93
+#: ../search/Tiles/Image.cs:96
 msgid "Comment:"
 msgstr "Kommentar:"
 
@@ -661,72 +661,72 @@ msgstr[1] "{0} sidor"
 msgid "Open"
 msgstr "Öppna"
 
-#: ../search/Tiles/Utils.cs:24
+#: ../search/Tiles/Utils.cs:25
 msgid "Applications"
 msgstr "Program"
 
-#: ../search/Tiles/Utils.cs:28
+#: ../search/Tiles/Utils.cs:29
 msgid "Calendar Events"
 msgstr "Kalenderhändelser"
 
-#: ../search/Tiles/Utils.cs:30
+#: ../search/Tiles/Utils.cs:31
 msgid "Folders"
 msgstr "Mappar"
 
-#: ../search/Tiles/Utils.cs:32
+#: ../search/Tiles/Utils.cs:33
 msgid "Images"
 msgstr "Bilder"
 
-#: ../search/Tiles/Utils.cs:34
+#: ../search/Tiles/Utils.cs:35
 msgid "Audio"
 msgstr "Ljud"
 
-#: ../search/Tiles/Utils.cs:36
+#: ../search/Tiles/Utils.cs:37
 msgid "Video"
 msgstr "Video"
 
-#: ../search/Tiles/Utils.cs:38
+#: ../search/Tiles/Utils.cs:39
 msgid "Documents"
 msgstr "Dokument"
 
-#: ../search/Tiles/Utils.cs:40
+#: ../search/Tiles/Utils.cs:41
 msgid "Conversations"
 msgstr "Konversationer"
 
-#: ../search/Tiles/Utils.cs:42
+#: ../search/Tiles/Utils.cs:43
 msgid "Websites"
 msgstr "Webbsidor"
 
-#: ../search/Tiles/Utils.cs:44
+#: ../search/Tiles/Utils.cs:45
 msgid "News Feeds"
 msgstr "Nyhetskanaler"
 
-#: ../search/Tiles/Utils.cs:46
+#: ../search/Tiles/Utils.cs:47
 msgid "Archives"
 msgstr "Arkiv"
 
-#: ../search/Tiles/Utils.cs:133 ../search/Tiles/Utils.cs:215
-#: ../Util/StringFu.cs:116
+#: ../search/Tiles/Utils.cs:122 ../search/Tiles/Utils.cs:204
+#: ../Util/StringFu.cs:117
 msgid "Yesterday"
 msgstr "Igår"
 
-#: ../search/Tiles/Utils.cs:135 ../search/Tiles/Utils.cs:217
-#: ../Util/StringFu.cs:114
+#: ../search/Tiles/Utils.cs:124 ../search/Tiles/Utils.cs:206
+#: ../Util/StringFu.cs:115
 msgid "Today"
 msgstr "Idag"
 
-#: ../search/Tiles/Utils.cs:137 ../search/Tiles/Utils.cs:219
+#: ../search/Tiles/Utils.cs:126 ../search/Tiles/Utils.cs:208
 msgid "Tomorrow"
 msgstr "Imorgon"
 
-#: ../search/Tiles/Utils.cs:235
+#: ../search/Tiles/Utils.cs:224
 #, csharp-format
 msgid "{0} week ago"
 msgid_plural "{0} weeks ago"
 msgstr[0] "{0} vecka sedan"
 msgstr[1] "{0} veckor sedan"
 
-#: ../search/Tiles/Utils.cs:237
+#: ../search/Tiles/Utils.cs:226
 #, csharp-format
 msgid "In {0} week"
 msgid_plural "In {0} weeks"
@@ -734,28 +734,28 @@ msgstr[0] "Om {0} vecka"
 msgstr[1] "Om {0} veckor"
 
 #. Let's say a year and a half to stop saying months
-#: ../search/Tiles/Utils.cs:239
+#: ../search/Tiles/Utils.cs:228
 #, csharp-format
 msgid "{0} month ago"
 msgid_plural "{0} months ago"
 msgstr[0] "{0} månad sedan"
 msgstr[1] "{0} månader sedan"
 
-#: ../search/Tiles/Utils.cs:241
+#: ../search/Tiles/Utils.cs:230
 #, csharp-format
 msgid "In {0} month"
 msgid_plural "In {0} months"
 msgstr[0] "Om {0} månad"
 msgstr[1] "Om {0} månader"
 
-#: ../search/Tiles/Utils.cs:243
+#: ../search/Tiles/Utils.cs:232
 #, csharp-format
 msgid "{0} year ago"
 msgid_plural "{0} years ago"
 msgstr[0] "{0} år sedan"
 msgstr[1] "{0} år sedan"
 
-#: ../search/Tiles/Utils.cs:245
+#: ../search/Tiles/Utils.cs:234
 #, csharp-format
 msgid "In {0} year"
 msgid_plural "In {0} years"
@@ -1404,7 +1404,7 @@ msgstr "_Starta söknings- och indexeringstjänster automatiskt "
 
 #: ../tools/beagle-settings.desktop.in.in.h:1
 msgid "Configure Desktop Search"
-msgstr "Configure Desktop Search"
+msgstr "Konfigurera skrivbordssökning"
 
 #: ../tools/beagle-settings.desktop.in.in.h:2
 msgid "Search & Indexing"
@@ -1676,40 +1676,40 @@ msgid "Scene Type"
 msgstr "Scentyp"
 
 #. Translators: Example output: Aug 9
-#: ../Util/StringFu.cs:119
+#: ../Util/StringFu.cs:120
 msgid "MMM d"
 msgstr "d MMM"
 
 #. Translators: Example output: Aug 9, 2000
-#: ../Util/StringFu.cs:122
+#: ../Util/StringFu.cs:123
 msgid "MMM d, yyyy"
 msgstr "d MMM, yyyy"
 
 #. Translators: Example output: 11:05 AM  (note h = 12-hour time)
-#: ../Util/StringFu.cs:125
+#: ../Util/StringFu.cs:126
 msgid "h:mm tt"
 msgstr "HH:mm"
 
 #. Translators: {0} is a date (e.g. 'Today' or 'Apr 23'), {1} is the time
-#: ../Util/StringFu.cs:131
+#: ../Util/StringFu.cs:132
 #, csharp-format
 msgid "{0}, {1}"
 msgstr "{0}, {1}"
 
 #. To translators: {0} is the time of the day, eg. 13:45
-#: ../Util/StringFu.cs:148
+#: ../Util/StringFu.cs:149
 #, csharp-format
 msgid "Today, {0}"
 msgstr "Idag, {0}"
 
 #. To translators: {0} is the time of the day, eg. 13:45
-#: ../Util/StringFu.cs:151
+#: ../Util/StringFu.cs:152
 #, csharp-format
 msgid "Yesterday, {0}"
 msgstr "Igår, {0}"
 
 #. To translators: {0} is the number of days that have passed, {1} is the time of the day, eg. 13:45
-#: ../Util/StringFu.cs:156
+#: ../Util/StringFu.cs:157
 #, csharp-format
 msgid "{0} day ago, {1}"
 msgid_plural "{0} days ago, {1}"
@@ -1717,23 +1717,23 @@ msgstr[0] "{0} dag sedan, {1}"
 msgstr[1] "{0} dagar sedan, {1}"
 
 #. Translators: Example output: January 3, 3:45 PM
-#: ../Util/StringFu.cs:162
+#: ../Util/StringFu.cs:163
 msgid "MMMM d, h:mm tt"
 msgstr "d MMMM, HH:mm"
 
 #. Translators: Example output: March 23 2001, 10:04 AM
-#: ../Util/StringFu.cs:167
+#: ../Util/StringFu.cs:168
 msgid "MMMM d yyyy, h:mm tt"
 msgstr "d MMMM yyyy, HH:mm"
 
-#: ../Util/StringFu.cs:177
+#: ../Util/StringFu.cs:178
 #, csharp-format
 msgid "{0} hour"
 msgid_plural "{0} hours"
 msgstr[0] "{0} timme"
 msgstr[1] "{0} timmar"
 
-#: ../Util/StringFu.cs:184
+#: ../Util/StringFu.cs:185
 #, csharp-format
 msgid "{0} minute"
 msgid_plural "{0} minutes"
@@ -1741,7 +1741,7 @@ msgstr[0] "{0} minut"
 msgstr[1] "{0} minuter"
 
 #. Translators: {0} is a file size in bytes
-#: ../Util/StringFu.cs:218
+#: ../Util/StringFu.cs:219
 #, csharp-format
 msgid "{0} byte"
 msgid_plural "{0} bytes"
@@ -1749,13 +1749,13 @@ msgstr[0] "{0} byte"
 msgstr[1] "{0} byte"
 
 #. Translators: {0} is a file size in kilobytes
-#: ../Util/StringFu.cs:222
+#: ../Util/StringFu.cs:223
 #, csharp-format
 msgid "{0:0.0} KB"
 msgstr "{0:0.0} KB"
 
 #. Translators: {0} is a file size in megabytes
-#: ../Util/StringFu.cs:225
+#: ../Util/StringFu.cs:226
 #, csharp-format
 msgid "{0:0.0} MB"
 msgstr "{0:0.0} MB"

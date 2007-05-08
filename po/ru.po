@@ -8,18 +8,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ru\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2007-02-12 16:09+0000\n"
+"POT-Creation-Date: 2007-01-04 13:14+0200\n"
 "PO-Revision-Date: 2007-01-04 13:47+0200\n"
-"Last-Translator: Novell Language <language@novell.com>\n"
-"Language-Team: Novell Language <language@novell.com>\n"
+"Last-Translator: Leonid Kanter <leon@asplinux.ru>\n"
+"Language-Team:  <gnome-cyr@gnome.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms:  nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%"
-"10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Plural-Forms:  nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 "X-Generator: KBabel 1.11.4\n"
 
-#: ../glue/eggtrayicon.c:127 ../Util/F-Spot/MetadataStore.cs:54
+#: ../glue/eggtrayicon.c:127
 msgid "Orientation"
 msgstr "Расположение"
 
@@ -31,7 +30,7 @@ msgstr "Расположение системного лотка."
 msgid "Open..."
 msgstr "Открыть..."
 
-#: ../ContactViewer/ContactWindow.cs:76 ../search/Tray/TrayIcon.cs:98
+#: ../ContactViewer/ContactWindow.cs:76 ../search/Tray/TrayIcon.cs:86
 msgid "Quit"
 msgstr "Выход"
 
@@ -306,16 +305,12 @@ msgstr "<b>История бесед</b>"
 msgid "IM Viewer"
 msgstr "Интернет-пейджер"
 
-#: ../ImLogViewer/ImLogWindow.cs:106 ../ImLogViewer/ImLogWindow.cs:118
+#: ../ImLogViewer/ImLogWindow.cs:102
 #, csharp-format
 msgid "Conversations in {0}"
 msgstr "Беседы в {0}"
 
 #: ../ImLogViewer/ImLogWindow.cs:109
-msgid "Conversations in {0} ({1})"
-msgstr "Беседы в {0} ({1})"
-
-#: ../ImLogViewer/ImLogWindow.cs:125
 #, csharp-format
 msgid "Conversations with {0}"
 msgstr "Беседы с {0}"
@@ -348,8 +343,7 @@ msgstr "Ничего не найдено."
 #: ../search/Pages/NoMatch.cs:20
 #, csharp-format
 msgid "Your search for \"{0}\" did not match any files on your computer."
-msgstr ""
-"Ни один из файлов на вашем компьютере не соответствует критерию поиска «{0}»."
+msgstr "Ни один из файлов на вашем компьютере не соответствует критерию поиска «{0}»."
 
 #: ../search/Pages/NoMatch.cs:24
 msgid ""
@@ -375,21 +369,17 @@ msgstr ""
 
 #: ../search/Pages/QuickTips.cs:11
 msgid "To search for optional terms, use OR.  ex: <b>George OR Ringo</b>"
-msgstr ""
-"Для нестрогого поиска используйте «OR», например: <b>Джордж OR Ринго</b>"
+msgstr "Для нестрогого поиска используйте «OR», например: <b>Джордж OR Ринго</b>"
 
 #: ../search/Pages/QuickTips.cs:12
-msgid ""
-"To exclude search terms, use the minus symbol in front, such as <b>-cats</b>"
+msgid "To exclude search terms, use the minus symbol in front, such as <b>-cats</b>"
 msgstr ""
 "Чтобы исключить слова из поиска, поставьте перед ними знак минуса, например: "
 "<b>-кошки</b>"
 
 #: ../search/Pages/QuickTips.cs:13
-msgid ""
-"When searching for a phrase, add quotes. ex: <b>\"There be dragons\"</b>"
-msgstr ""
-"При поиске фразы добавляйте кавычки, например: <b>\"да будет свет\"</b>"
+msgid "When searching for a phrase, add quotes. ex: <b>\"There be dragons\"</b>"
+msgstr "При поиске фразы добавляйте кавычки, например: <b>\"да будет свет\"</b>"
 
 #: ../search/Pages/QuickTips.cs:19 ../search/UIManager.cs:92
 msgid "Quick Tips"
@@ -415,8 +405,7 @@ msgstr "Служба поиска не запущена"
 msgid "Start search service"
 msgstr "Запустить службу поиска"
 
-#: ../search/Search.cs:138 ../search/Search.cs:254
-#: ../search/Tray/TrayIcon.cs:33
+#: ../search/Search.cs:138 ../search/Tray/TrayIcon.cs:32
 msgid "Desktop Search"
 msgstr "Персональная поисковая система"
 
@@ -436,36 +425,30 @@ msgstr "Введите условия поиска"
 msgid "Start searching"
 msgstr "Начать поиск"
 
-#: ../search/Search.cs:273
+#: ../search/Search.cs:264
 #, csharp-format
 msgid "Desktop Search: {0}"
 msgstr "Персональная поисковая система: {0}"
 
-#: ../search/Search.cs:289
-msgid "Showing {0} match"
-msgid_plural "Showing all {0} matches"
-msgstr[0] "Показано {0} совпадение"
-msgstr[1] "Показаны все {0} совпадения"
-msgstr[2] "Показаны все {0} совпадений"
+#: ../search/Search.cs:280
+#, csharp-format
+msgid "Showing all {0} matches"
+msgstr "Отображаются все {0} совпадений"
 
-#: ../search/Search.cs:291
+#: ../search/Search.cs:282
+#, csharp-format
 msgid "Showing the top {0} of {1} total matches"
-msgid_plural "Showing the top {0} of {1} total matches"
-msgstr[0] "Показаны лучшие {0} из общего числа ({1}) совпадений"
-msgstr[1] "Показаны лучшие {0} из общего числа ({1}) совпадений"
-msgstr[2] "Показаны лучшие {0} из общего числа ({1}) совпадений"
+msgstr "Отображаются первые {0} из {1} совпадений"
 
-#: ../search/Search.cs:564
+#: ../search/Search.cs:555
 msgid "Your data is being indexed"
 msgstr "Ваши данные индексируются"
 
-#: ../search/Search.cs:565
+#: ../search/Search.cs:556
 msgid ""
 "The search service is in the process of indexing your data.  Search results "
 "may be incomplete until indexing has finished."
-msgstr ""
-"Идет процесс индексирования данных. Результаты поиска могут быть неполными, "
-"пока индексирование не закончено."
+msgstr "Идет процесс индексирования данных. Результаты поиска могут быть неполными, пока индексирование не закончено."
 
 #: ../search/Tiles/ArchivedFile.cs:39
 #, csharp-format
@@ -534,7 +517,7 @@ msgid "Last Edited:"
 msgstr "Последние изменения:"
 
 #: ../search/Tiles/File.cs:146 ../search/Tiles/Folder.cs:52
-#: ../search/Tiles/Image.cs:84
+#: ../search/Tiles/Image.cs:80
 msgid "Full Path:"
 msgstr "Полный путь:"
 
@@ -555,17 +538,9 @@ msgstr[2] "Содержит {0} элементов"
 msgid "Set as Wallpaper"
 msgstr "Установить как фон"
 
-#: ../search/Tiles/Image.cs:81
-msgid "Tags:"
-msgstr "Теги:"
-
-#: ../search/Tiles/Image.cs:83
+#: ../search/Tiles/Image.cs:79
 msgid "Modified:"
 msgstr "Изменён:"
-
-#: ../search/Tiles/Image.cs:93
-msgid "Comment:"
-msgstr "Комментарий:"
 
 #: ../search/Tiles/IMLog.cs:30
 msgid "IM Conversation"
@@ -708,12 +683,12 @@ msgid "Archives"
 msgstr "Архивы"
 
 #: ../search/Tiles/Utils.cs:133 ../search/Tiles/Utils.cs:215
-#: ../Util/StringFu.cs:116
+#: ../Util/StringFu.cs:106
 msgid "Yesterday"
 msgstr "Вчера"
 
 #: ../search/Tiles/Utils.cs:135 ../search/Tiles/Utils.cs:217
-#: ../Util/StringFu.cs:114
+#: ../Util/StringFu.cs:104
 msgid "Today"
 msgstr "Сегодня"
 
@@ -784,15 +759,15 @@ msgstr "Адрес:"
 msgid "Accessed:"
 msgstr "Дата доступа:"
 
-#: ../search/Tray/TrayIcon.cs:69
+#: ../search/Tray/TrayIcon.cs:57
 msgid "No Recent Searches"
 msgstr "Недавние запросы отсутствуют"
 
-#: ../search/Tray/TrayIcon.cs:74
+#: ../search/Tray/TrayIcon.cs:62
 msgid "Recent Searches"
 msgstr "Недавние запросы"
 
-#: ../search/Tray/TrayIcon.cs:90
+#: ../search/Tray/TrayIcon.cs:78
 msgid "Clear"
 msgstr "Очистить"
 
@@ -1228,8 +1203,7 @@ msgstr "Выбрать путь"
 
 #: ../tools/Settings.cs:324
 msgid "The selected path is already selected for indexing and wasn't added."
-msgstr ""
-"Данный путь уже был ранее выбран для индексирования, поэтому он не добавлен."
+msgstr "Данный путь уже был ранее выбран для индексирования, поэтому он не добавлен."
 
 #: ../tools/Settings.cs:327
 msgid ""
@@ -1414,8 +1388,7 @@ msgstr "Укажите ресурс, который вы хотите исклю
 
 #: ../tools/settings.glade.h:21
 msgid "Please select the mail folder you wish to exclude from indexing. "
-msgstr ""
-"Выберите почтовую папку, которую вы хотите исключить из индексирования. "
+msgstr "Выберите почтовую папку, которую вы хотите исключить из индексирования. "
 
 #: ../tools/settings.glade.h:23
 msgid "Search Preferences"
@@ -1458,10 +1431,14 @@ msgid "_Start search & indexing services automatically "
 msgstr "_Запускать службы поиска и индексирования автоматически "
 
 #: ../tools/beagle-settings.desktop.in.in.h:1
-msgid "Configure Desktop Search"
-msgstr "Настроить поиск на рабочем столе"
+msgid "Configure Desktop Search & Indexing"
+msgstr "Настройка поиска и индексирования"
 
 #: ../tools/beagle-settings.desktop.in.in.h:2
+msgid "Configure search & indexing properties"
+msgstr "Настройка параметров поиска и индексирования"
+
+#: ../tools/beagle-settings.desktop.in.in.h:3
 msgid "Search & Indexing"
 msgstr "Поиск и индексирование"
 
@@ -1469,312 +1446,80 @@ msgstr "Поиск и индексирование"
 msgid "On This Computer"
 msgstr "На этом компьютере"
 
-#: ../Util/F-Spot/Exif.cs:248
+#: ../Util/ExifData.cs:226
 msgid "Image Directory"
 msgstr "Папка изображений"
 
-#: ../Util/F-Spot/Exif.cs:250
+#: ../Util/ExifData.cs:228
 msgid "Thumbnail Directory"
 msgstr "Папка миниатюр"
 
-#: ../Util/F-Spot/Exif.cs:252
+#: ../Util/ExifData.cs:230
 msgid "Exif Directory"
 msgstr "Папка EXIF"
 
-#: ../Util/F-Spot/Exif.cs:254
+#: ../Util/ExifData.cs:232
 msgid "GPS Directory"
 msgstr "Папка GPS"
 
-#: ../Util/F-Spot/Exif.cs:256
+#: ../Util/ExifData.cs:234
 msgid "InterOperability Directory"
 msgstr "Папка InterOperability"
 
-#: ../Util/F-Spot/Exif.cs:258
+#: ../Util/ExifData.cs:236
 msgid "Unknown Directory"
 msgstr "Неизвестный каталог"
 
-#: ../Util/F-Spot/IptcFile.cs:175
-msgid "IPTC Information Interchange Model (IIM) Version number"
-msgstr "Номер версии модели обмена данными IPTC (IIM)"
-
-#: ../Util/F-Spot/IptcFile.cs:177
-msgid "OSI Destination routing information"
-msgstr "Сведения о маршрутизации к адресату OSI"
-
-#: ../Util/F-Spot/IptcFile.cs:179
-msgid "IPTC file format"
-msgstr "Формат файла IPTC"
-
-#: ../Util/F-Spot/IptcFile.cs:181
-msgid "Identifies the provider and product"
-msgstr "Идентифицирует провайдера и продукт"
-
-#: ../Util/F-Spot/IptcFile.cs:183
-msgid "A unique number identifying the envelope"
-msgstr "Уникальный номер для идентификации конверта "
-
-#: ../Util/F-Spot/IptcFile.cs:185
-msgid "A unique number"
-msgstr "Уникальный номер"
-
-#: ../Util/F-Spot/IptcFile.cs:187
-msgid ""
-"The envelope handling priority between 1 (most urgent) and 9 (least urgent)"
-msgstr "Приоритет обработки конвертов: от 1 (максимальная срочность) до 9 (минимальная срочность) "
-
-#: ../Util/F-Spot/IptcFile.cs:189
-msgid "The year month and day (CCYYMMDD) the service sent the material"
-msgstr "Год, месяц и день (ГГГГMMДД) отправки материала службой"
-
-#: ../Util/F-Spot/IptcFile.cs:191
-msgid ""
-"The hour minute and second the (HHMMSS+HHMM) the service sent the material"
-msgstr "Час, минута и секунда (ЧЧMMСС+ЧЧMM) отправки материала службой"
-
-#: ../Util/F-Spot/IptcFile.cs:193
-msgid "The character set designation"
-msgstr "Выбор кодировки"
-
-#: ../Util/F-Spot/IptcFile.cs:195
-msgid "External globally unique object identifier"
-msgstr "Внешний глобально уникальный идентификатор объекта"
-
-#: ../Util/F-Spot/IptcFile.cs:200
-msgid "Abstract Relationship Method (ARM) identifier"
-msgstr "Идентификатор ARM (Abstract Relationship Method)"
-
-#: ../Util/F-Spot/IptcFile.cs:202
-msgid "Abstract Relationship Method (ARM) version number."
-msgstr "Номер версии ARM (Abstract Relationship Method)"
-
-#: ../Util/F-Spot/IptcFile.cs:205
-msgid "Number identifying the IIM version this application record uses"
-msgstr "Номер, идентифицирующий версию IIM, используемую даным приложением при записи"
-
-#: ../Util/F-Spot/IptcFile.cs:207
-msgid "Object type reference"
-msgstr "Ссылка на тип объекта"
-
-#: ../Util/F-Spot/IptcFile.cs:212
-msgid "Object attribute reference"
-msgstr "Ссылка на атрибут объекта"
-
-#: ../Util/F-Spot/IptcFile.cs:218 ../Util/F-Spot/IptcFile.cs:222
-msgid "Object name"
-msgstr "Имя объекта"
-
-#: ../Util/F-Spot/IptcFile.cs:220
-msgid "Status of the objectdata according to the provider"
-msgstr "Состояние данных objectdata, указанное поставщиком"
-
-#: ../Util/F-Spot/IptcFile.cs:224
-msgid "Location within a city or area where the object originates"
-msgstr "Место в пределах города или области, где был создан объект"
-
-#: ../Util/F-Spot/IptcFile.cs:227
-msgid "Name of the city the content is focussing on"
-msgstr "Название города, которому посвящено содержимое"
-
-#: ../Util/F-Spot/IptcFile.cs:230
-msgid "Copyright information for"
-msgstr "Сведения об авторских правах для"
-
-#: ../Util/F-Spot/IptcFile.cs:233
-msgid "Full name of the country of the focus of the content"
-msgstr "Полное название страны, которой посвящено содержимое"
-
-#: ../Util/F-Spot/IptcFile.cs:236
-msgid ""
-"Two or three letter ISO3166 code of the country of the focus of the content"
-msgstr "Двух- или трехбуквенный код (стандарт ISO3166) страны, которой посвящено содержиме"
-
-#: ../Util/F-Spot/IptcFile.cs:239
-msgid "Creator of the content"
-msgstr "Создатель содержимого"
-
-#: ../Util/F-Spot/IptcFile.cs:242
-msgid "Provider of the object"
-msgstr "Поставщик объекта"
-
-#: ../Util/F-Spot/IptcFile.cs:245
-msgid "The title of the author or creator"
-msgstr "Звание автора или создателя"
-
-#: ../Util/F-Spot/IptcFile.cs:248
-msgid ""
-"The person involved in writing, editing or correcting the object data or "
-"caption/abstract"
-msgstr "Лицо, принимавшее участие в написании, редактировании или исправлении данных объекта,  его заголовков или краткого обзора"
-
-#: ../Util/F-Spot/IptcFile.cs:252
-msgid "Headline of the content"
-msgstr "Заголовок содержимого"
-
-#: ../Util/F-Spot/IptcFile.cs:255
-msgid ""
-"Instructions from the creator to the receiver not covered by other fields"
-msgstr "Авторские инструкции получателю, не отраженные в других полях "
-
-#: ../Util/F-Spot/IptcFile.cs:258
-msgid "Intellectual genre of the object"
-msgstr "Интеллектуальный жанр объекта"
-
-#: ../Util/F-Spot/IptcFile.cs:271
-msgid "Unknown IIM DataSet"
-msgstr "Неизвестный IIM DataSet"
-
-#: ../Util/F-Spot/MetadataStore.cs:46
-msgid "Creator"
-msgstr "Создатель"
-
-#: ../Util/F-Spot/MetadataStore.cs:47
-msgid "Title"
-msgstr "Заголовок"
-
-#: ../Util/F-Spot/MetadataStore.cs:48
-msgid "Copyright"
-msgstr "Авторские права"
-
-#: ../Util/F-Spot/MetadataStore.cs:49
-msgid "Subject and Keywords"
-msgstr "Тема и ключевые слова"
-
-#: ../Util/F-Spot/MetadataStore.cs:50
-msgid "Compression"
-msgstr "Сжатие"
-
-#: ../Util/F-Spot/MetadataStore.cs:52
-msgid "Planar Configuration"
-msgstr "Плоская конфигурация"
-
-#: ../Util/F-Spot/MetadataStore.cs:56
-msgid "Photometric Interpretation"
-msgstr "Фотометрическая интерпретация"
-
-#: ../Util/F-Spot/MetadataStore.cs:58
-msgid "Resolution Unit"
-msgstr "Единица разрешения"
-
-#: ../Util/F-Spot/MetadataStore.cs:60
-msgid "Exposure Program"
-msgstr "Программа экспонирования"
-
-#: ../Util/F-Spot/MetadataStore.cs:62
-msgid "Metering Mode"
-msgstr "Режим измерения"
-
-#: ../Util/F-Spot/MetadataStore.cs:64
-msgid "Exposure Mode"
-msgstr "Режим выдержки"
-
-#: ../Util/F-Spot/MetadataStore.cs:66
-msgid "Custom Rendered"
-msgstr "Настроенное отображение"
-
-#: ../Util/F-Spot/MetadataStore.cs:68
-msgid "Components Configuration"
-msgstr "Конфигурация компонентов"
-
-#: ../Util/F-Spot/MetadataStore.cs:70
-msgid "Light Source"
-msgstr "Источник освещения"
-
-#: ../Util/F-Spot/MetadataStore.cs:72
-msgid "Sensing Method"
-msgstr "Метод измерения"
-
-#: ../Util/F-Spot/MetadataStore.cs:74
-msgid "Color Space"
-msgstr "Цветовое пространство"
-
-#: ../Util/F-Spot/MetadataStore.cs:76
-msgid "White Balance"
-msgstr "Баланс белого"
-
-#: ../Util/F-Spot/MetadataStore.cs:78
-msgid "Focal Plane Resolution Unit"
-msgstr "Модуль разрешения фокальной плоскости"
-
-#: ../Util/F-Spot/MetadataStore.cs:80
-msgid "File Source Type"
-msgstr "Тип источника файлов"
-
-#: ../Util/F-Spot/MetadataStore.cs:82
-msgid "Scene Capture Type"
-msgstr "Тип захвата сцены"
-
-#: ../Util/F-Spot/MetadataStore.cs:84
-msgid "Gain Control"
-msgstr "Управление усилением"
-
-#: ../Util/F-Spot/MetadataStore.cs:86
-msgid "Contrast"
-msgstr "Контраст"
-
-#: ../Util/F-Spot/MetadataStore.cs:88
-msgid "Saturation"
-msgstr "Насыщенность"
-
-#: ../Util/F-Spot/MetadataStore.cs:90
-msgid "Sharpness"
-msgstr "Резкость"
-
-#: ../Util/F-Spot/MetadataStore.cs:92
-msgid "Scene Type"
-msgstr "Тип сцены"
-
 #. Translators: Example output: Aug 9
-#: ../Util/StringFu.cs:119
+#: ../Util/StringFu.cs:109
 msgid "MMM d"
 msgstr "d MMM"
 
 #. Translators: Example output: Aug 9, 2000
-#: ../Util/StringFu.cs:122
+#: ../Util/StringFu.cs:112
 msgid "MMM d, yyyy"
 msgstr "d MMM yyyy"
 
 #. Translators: Example output: 11:05 AM  (note h = 12-hour time)
-#: ../Util/StringFu.cs:125
+#: ../Util/StringFu.cs:115
 msgid "h:mm tt"
 msgstr "hh:mm"
 
 #. Translators: {0} is a date (e.g. 'Today' or 'Apr 23'), {1} is the time
-#: ../Util/StringFu.cs:131
+#: ../Util/StringFu.cs:121
 #, csharp-format
 msgid "{0}, {1}"
 msgstr "{0}, {1}"
 
 #. To translators: {0} is the time of the day, eg. 13:45
-#: ../Util/StringFu.cs:148
+#: ../Util/StringFu.cs:138
 #, csharp-format
 msgid "Today, {0}"
 msgstr "Сегодня в {0}"
 
 #. To translators: {0} is the time of the day, eg. 13:45
-#: ../Util/StringFu.cs:151
+#: ../Util/StringFu.cs:141
 #, csharp-format
 msgid "Yesterday, {0}"
 msgstr "Вчера в {0}"
 
 #. To translators: {0} is the number of days that have passed, {1} is the time of the day, eg. 13:45
-#: ../Util/StringFu.cs:156
-msgid "{0} day ago, {1}"
-msgid_plural "{0} days ago, {1}"
-msgstr[0] "{0} день тому назад, {1}"
-msgstr[1] "{0} дня тому назад, {1}"
-msgstr[2] "{0} дней тому назад, {1}"
+#: ../Util/StringFu.cs:144
+#, csharp-format
+msgid "{0} days ago, {1}"
+msgstr "{0} дней назад, {1}"
 
 #. Translators: Example output: January 3, 3:45 PM
-#: ../Util/StringFu.cs:162
+#: ../Util/StringFu.cs:149
 msgid "MMMM d, h:mm tt"
 msgstr "d MMMM, hh:mm"
 
 #. Translators: Example output: March 23 2001, 10:04 AM
-#: ../Util/StringFu.cs:167
+#: ../Util/StringFu.cs:154
 msgid "MMMM d yyyy, h:mm tt"
 msgstr "d MMMM yyyy, hh:mm"
 
-#: ../Util/StringFu.cs:177
+#: ../Util/StringFu.cs:164
 #, csharp-format
 msgid "{0} hour"
 msgid_plural "{0} hours"
@@ -1782,7 +1527,7 @@ msgstr[0] "{0} час"
 msgstr[1] "{0} часа"
 msgstr[2] "{0} часов"
 
-#: ../Util/StringFu.cs:184
+#: ../Util/StringFu.cs:171
 #, csharp-format
 msgid "{0} minute"
 msgid_plural "{0} minutes"
@@ -1791,27 +1536,20 @@ msgstr[1] "{0} минуты"
 msgstr[2] "{0} минут"
 
 #. Translators: {0} is a file size in bytes
-#: ../Util/StringFu.cs:218
-msgid "{0} byte"
-msgid_plural "{0} bytes"
-msgstr[0] "{0} байт"
-msgstr[1] "{0} байта"
-msgstr[2] "{0} байтов"
+#: ../Util/StringFu.cs:205
+#, csharp-format
+msgid "{0} bytes"
+msgstr "{0} байт"
 
 #. Translators: {0} is a file size in kilobytes
-#: ../Util/StringFu.cs:222
+#: ../Util/StringFu.cs:209
 #, csharp-format
 msgid "{0:0.0} KB"
 msgstr "{0:0.0} КБ"
 
 #. Translators: {0} is a file size in megabytes
-#: ../Util/StringFu.cs:225
+#: ../Util/StringFu.cs:212
 #, csharp-format
 msgid "{0:0.0} MB"
 msgstr "{0:0.0} МБ"
 
-#~ msgid "Configure Desktop Search & Indexing"
-#~ msgstr "Настройка поиска и индексирования"
-
-#~ msgid "Configure search & indexing properties"
-#~ msgstr "Настройка параметров поиска и индексирования"
