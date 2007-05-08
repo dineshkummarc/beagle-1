@@ -269,8 +269,12 @@ namespace Beagle.Daemon {
 			}
 
 			// We are now done with the readers, so we close them.
+			// And also free them. Somehow not freeing them is preventing them from
+			// GCed at all.
 			primary_reader.Close ();
+			primary_reader = null;
 			secondary_reader.Close ();
+			secondary_reader = null;
 
 			// FIXME: If we crash at exactly this point, we are in
 			// trouble.  Items will have been dropped from the index
