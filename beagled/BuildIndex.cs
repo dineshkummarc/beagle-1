@@ -265,6 +265,14 @@ namespace Beagle.Daemon
 				Environment.Exit (0);
 			}
 
+			// Setup some exclude patterns akin to FSQ/FileNameFilter.cs
+			denied_patterns.Add (new ExcludeItem (ExcludeType.Pattern, "*~"));
+			denied_patterns.Add (new ExcludeItem (ExcludeType.Pattern, "#*#"));
+			denied_patterns.Add (new ExcludeItem (ExcludeType.Pattern, "*.o"));
+			denied_patterns.Add (new ExcludeItem (ExcludeType.Pattern, "*.a"));
+			denied_patterns.Add (new ExcludeItem (ExcludeType.Pattern, "*.aux"));
+			denied_patterns.Add (new ExcludeItem (ExcludeType.Pattern, "*.tmp"));
+
 			Log.Always ("Starting beagle-build-index (pid {0}) at {1}", Process.GetCurrentProcess ().Id, DateTime.Now);
 
 			// Set system priorities so we don't slow down the system
@@ -463,6 +471,8 @@ namespace Beagle.Daemon
 			ArrayList pending_children;
 			pending_children = new ArrayList ();
 
+			fa_store.BeginTransaction ();
+
 			foreach (IndexerReceipt raw_r in receipts) {
 
 				if (raw_r is IndexerAddedReceipt) {
@@ -503,6 +513,8 @@ namespace Beagle.Daemon
 					pending_children.AddRange (r.Children);
 				}
 			}
+
+			fa_store.CommitTransaction ();
 
 			request.Clear (); // clear out the old request
 
