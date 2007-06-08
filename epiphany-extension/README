@@ -1,0 +1,17 @@
+
+This is an Epiphany extension that allows Beagle to index every page
+the user views.  The code is derived from Dashboard's extension.
+
+Right now, this extension is just a hack: for every page, Epiphany tries to
+run a program named 'beagle-epiphany-index'.  The page's URI and title are
+passed to beagle-epiphany-index as command-line arguments, and the HTML is
+written to its stdin.
+
+Obviously this opens up a huge security hole: anyone who can get a rogue
+program named 'beagle-epiphany-index' into the user's path can spy on all of
+their web traffic.  
+
+There is also the issue of private information (account numbers, etc.) ending
+up in the index.  To try to avoid this, beagle-epiphany-index will not index
+https:// URIs.
+
