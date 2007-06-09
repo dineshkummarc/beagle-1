@@ -1,5 +1,5 @@
 //
-// ThunderbirdQueryable.cs: The backend starting point
+// INIFileParser.cs: A basic INI-file parser
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -25,23 +25,60 @@
 //
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 
-[assembly: Beagle.Daemon.IQueryableTypes (typeof (Beagle.Daemon.ThunderbirdQueryable.ThunderbirdQueryable))]
-
-namespace Beagle.Daemon.ThunderbirdQueryable {
+namespace Beagle.Util.Thunderbird.Preferences {
 	
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
-	public class ThunderbirdQueryable : LuceneQueryable {
+	public struct INISection {
+		public string Section;
+		public Dictionary <string, string> Parameters;
 		
-		public ThunderbirdQueryable () : base ("ThunderbirdIndex")
+		public static INISection New (string section)
+		{
+			throw new NotImplementedException ();
+		}
+	}
+	
+	public class INIFileParser : IEnumerable<INISection> {
+		
+		public INIFileParser (string filename)
 		{
 			throw new NotImplementedException ();
 		}
 		
-		public override void Start ()
+		public void Load ()
 		{
-			base.Start ();
 			throw new NotImplementedException ();
+		}
+		
+		public string GetSection (string section)
+		{
+			throw new NotImplementedException ();
+		}
+		
+		public string GetValue (string section, string key)
+		{
+			throw new NotImplementedException ();
+		}
+		
+		public IEnumerator<INISection> GetEnumerator ()
+		{
+			throw new NotImplementedException ();
+		}
+		
+		/* public */ IEnumerator IEnumerable.GetEnumerator ()
+		{
+			throw new NotImplementedException ();
+		}
+		
+		public string Filename { 
+			get {
+				throw new NotImplementedException ();
+			}
+			set {
+				throw new NotImplementedException ();
+			}
 		}
 	}
 }

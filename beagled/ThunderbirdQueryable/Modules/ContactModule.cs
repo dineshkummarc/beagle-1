@@ -1,5 +1,5 @@
 //
-// ThunderbirdQueryable.cs: The backend starting point
+// ContactModule.cs: Contacts/addressbook module
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -25,22 +25,19 @@
 //
 
 using System;
+using Beagle.Util.Modules;
+using Beagle.Util.Thunderbird;
 
-[assembly: Beagle.Daemon.IQueryableTypes (typeof (Beagle.Daemon.ThunderbirdQueryable.ThunderbirdQueryable))]
-
-namespace Beagle.Daemon.ThunderbirdQueryable {
+namespace Beagle.Daemon.ThunderbirdQueryable.Modules {
 	
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
-	public class ThunderbirdQueryable : LuceneQueryable {
-		
-		public ThunderbirdQueryable () : base ("ThunderbirdIndex")
+	[Module ("Addressbook")]
+	[ModuleSettings (ThunderbirdModuleType.Standalone)]
+	public class ContactModule : MorkModule<ContactIndexableGenerator> { }
+	
+	public class ContactIndexableGenerator : MorkIndexableGenerator {
+
+		protected override Indexable ToIndexable (Indexable indexable, PropertyStore store)
 		{
-			throw new NotImplementedException ();
-		}
-		
-		public override void Start ()
-		{
-			base.Start ();
 			throw new NotImplementedException ();
 		}
 	}

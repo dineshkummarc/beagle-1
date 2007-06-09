@@ -194,7 +194,7 @@ dnl ----------------------------------------------
 AC_ARG_ENABLE([thunderbird],
 	AC_HELP_STRING([--enable-thunderbird], [Enable Thunderbird Mail Backend (default no)]),
 	enable_tbird=$enableval,
-	enable_tbird=no)
+	enable_tbird=yes)
 AM_CONDITIONAL(ENABLE_THUNDERBIRD, test "x$enable_tbird" = "xyes")
 
 dnl -------------------------------------------------------
@@ -575,7 +575,6 @@ tools/beagle-settings.desktop.in
 search/Makefile
 search/beagle-search.desktop.in
 ImLogViewer/Makefile
-ContactViewer/Makefile
 epiphany-extension/Makefile
 mozilla-extension/Makefile
 bludgeon/Makefile

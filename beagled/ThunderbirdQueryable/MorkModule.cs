@@ -1,5 +1,5 @@
 //
-// ThunderbirdQueryable.cs: The backend starting point
+// MorkModule.cs: A generic Mork module
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -25,23 +25,38 @@
 //
 
 using System;
-
-[assembly: Beagle.Daemon.IQueryableTypes (typeof (Beagle.Daemon.ThunderbirdQueryable.ThunderbirdQueryable))]
+using Beagle.Util.Trackers;
+using Beagle.Util.Thunderbird;
 
 namespace Beagle.Daemon.ThunderbirdQueryable {
 	
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
-	public class ThunderbirdQueryable : LuceneQueryable {
+	public abstract class MorkModule<T> : IThunderbirdModule where T : MorkIndexableGenerator {
 		
-		public ThunderbirdQueryable () : base ("ThunderbirdIndex")
+		public void Initialize (ModuleEnvironment env)
 		{
 			throw new NotImplementedException ();
 		}
 		
-		public override void Start ()
+		public void Unload ()
 		{
-			base.Start ();
 			throw new NotImplementedException ();
+		}
+		
+		public void OnFileUpdate (FileTrackerEventArgs args)
+		{
+			throw new NotImplementedException ();
+		}
+		
+		public ModuleEnvironment Environment {
+			get {
+				throw new NotImplementedException ();
+			}
+		}
+		
+		public string Type {
+			get {
+				throw new NotImplementedException ();
+			}
 		}
 	}
 }

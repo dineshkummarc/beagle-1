@@ -1,5 +1,5 @@
 //
-// ThunderbirdQueryable.cs: The backend starting point
+// PreferenceParser.cs: A parser for the "Mozilla User Preference" file format
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -25,22 +25,22 @@
 //
 
 using System;
+using System.IO;
 
-[assembly: Beagle.Daemon.IQueryableTypes (typeof (Beagle.Daemon.ThunderbirdQueryable.ThunderbirdQueryable))]
-
-namespace Beagle.Daemon.ThunderbirdQueryable {
+namespace Beagle.Util.Thunderbird.Preferences {
 	
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
-	public class ThunderbirdQueryable : LuceneQueryable {
+	public class PreferenceStore : PropertyStore {
 		
-		public ThunderbirdQueryable () : base ("ThunderbirdIndex")
+		public PreferenceStore ()
 		{
 			throw new NotImplementedException ();
 		}
+	}
+	
+	public class PreferenceParser {
 		
-		public override void Start ()
+		public PreferenceParser (PreferenceStore store)
 		{
-			base.Start ();
 			throw new NotImplementedException ();
 		}
 	}

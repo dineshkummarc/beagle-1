@@ -1,5 +1,5 @@
 //
-// ThunderbirdQueryable.cs: The backend starting point
+// ThunderbirdProfileIndexer.cs: Begins the indexing process and makes sure all accounts are indexed
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -25,22 +25,14 @@
 //
 
 using System;
-
-[assembly: Beagle.Daemon.IQueryableTypes (typeof (Beagle.Daemon.ThunderbirdQueryable.ThunderbirdQueryable))]
+using Beagle.Util.Thunderbird;
 
 namespace Beagle.Daemon.ThunderbirdQueryable {
 	
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
-	public class ThunderbirdQueryable : LuceneQueryable {
+	public class ThunderbirdProfileIndexer {
 		
-		public ThunderbirdQueryable () : base ("ThunderbirdIndex")
+		public ThunderbirdProfileIndexer (ThunderbirdQueryable queryable, string path)
 		{
-			throw new NotImplementedException ();
-		}
-		
-		public override void Start ()
-		{
-			base.Start ();
 			throw new NotImplementedException ();
 		}
 	}

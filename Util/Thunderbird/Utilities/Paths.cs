@@ -1,5 +1,5 @@
 //
-// ThunderbirdQueryable.cs: The backend starting point
+// Paths.cs: All paths needed when discovering things to index
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -26,22 +26,24 @@
 
 using System;
 
-[assembly: Beagle.Daemon.IQueryableTypes (typeof (Beagle.Daemon.ThunderbirdQueryable.ThunderbirdQueryable))]
-
-namespace Beagle.Daemon.ThunderbirdQueryable {
+namespace Beagle.Util.Thunderbird.Utilities {
 	
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
-	public class ThunderbirdQueryable : LuceneQueryable {
-		
-		public ThunderbirdQueryable () : base ("ThunderbirdIndex")
+	public static class Paths {
+	
+		public static string[] GetRootPaths ()
 		{
 			throw new NotImplementedException ();
 		}
 		
-		public override void Start ()
+		public static bool IsRootPath (string directory)
 		{
-			base.Start ();
 			throw new NotImplementedException ();
+		}
+		
+		public static bool RootPathsOverriden {
+			get {
+				throw new NotImplementedException ();
+			}
 		}
 	}
 }

@@ -1,5 +1,5 @@
 //
-// ThunderbirdQueryable.cs: The backend starting point
+// IO.cs: Basic IO
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -26,21 +26,23 @@
 
 using System;
 
-[assembly: Beagle.Daemon.IQueryableTypes (typeof (Beagle.Daemon.ThunderbirdQueryable.ThunderbirdQueryable))]
-
-namespace Beagle.Daemon.ThunderbirdQueryable {
+namespace Beagle.Util.Thunderbird.Utilities {
 	
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
-	public class ThunderbirdQueryable : LuceneQueryable {
+	public static class IO {
 		
-		public ThunderbirdQueryable () : base ("ThunderbirdIndex")
+		// Move to Mork.Utilities
+		/* public static bool IsFullyIndexable (string mailbox_file)
+		{
+			throw new NotImplementedException ();
+		} */
+		
+		public static int GetFileSize (string filename)
 		{
 			throw new NotImplementedException ();
 		}
 		
-		public override void Start ()
+		public static int IsEmpty (string filename)
 		{
-			base.Start ();
 			throw new NotImplementedException ();
 		}
 	}

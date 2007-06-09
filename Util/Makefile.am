@@ -94,6 +94,8 @@ UTIL_CSFILES = 			        	\
 	$(srcdir)/F-Spot/PixbufUtils.cs		\
 	$(srcdir)/F-Spot/Tiff.cs		\
 	$(srcdir)/F-Spot/XmpFile.cs		\
+	$(srcdir)/Modules/ModuleAttribute.cs    \
+	$(srcdir)/Modules/ModuleLoader.cs       \
 	$(srcdir)/SemWeb/AssemblyInfo.cs        \
 	$(srcdir)/SemWeb/NamespaceManager.cs    \
 	$(srcdir)/SemWeb/Util.cs                \
@@ -117,12 +119,25 @@ UTIL_CSFILES = 			        	\
 	$(srcdir)/SemWeb/Algos.cs               \
 	$(srcdir)/SemWeb/Remote.cs              \
 	$(srcdir)/SemWeb/XPathSemWebNavigator.cs\
-	$(srcdir)/PropertyKeywordAttribute.cs
+	$(srcdir)/Trackers/CollectorTracker.cs  \
+	$(srcdir)/Trackers/DefaultTracker.cs    \
+	$(srcdir)/Trackers/FileTracker.cs       \
+	$(srcdir)/Trackers/FileTrackerEventArgs.cs\
+	$(srcdir)/Trackers/InotifyTracker.cs    \
+	$(srcdir)/PropertyKeywordAttribute.cs   
 
 if ENABLE_THUNDERBIRD
 UTIL_CSFILES +=					\
-	$(srcdir)/Mork.cs			\
-	$(srcdir)/Thunderbird.cs
+	$(srcdir)/Thunderbird/AccountManager.cs \
+	$(srcdir)/Thunderbird/IManager.cs       \
+	$(srcdir)/Thunderbird/ProfileManager.cs \
+	$(srcdir)/Thunderbird/PropertyStore.cs  \
+	$(srcdir)/Thunderbird/Preferences/INIFileParser.cs\
+	$(srcdir)/Thunderbird/Preferences/PreferenceParser.cs\
+	$(srcdir)/Thunderbird/Utilities/Convert.cs\
+	$(srcdir)/Thunderbird/Utilities/IO.cs   \
+	$(srcdir)/Thunderbird/Utilities/Paths.cs\
+	$(srcdir)/Thunderbird/Utilities/RangeList.cs
 endif
 
 if HAS_LIBCHM 
@@ -212,8 +227,17 @@ uninstall-local:
 COND_CS_FILES =				\
 	$(srcdir)/ChmFile.cs		\
 	$(srcdir)/Galago.cs		\
-	$(srcdir)/Mork.cs		\
-	$(srcdir)/Thunderbird.cs
+        $(srcdir)/Thunderbird/AccountManager.cs \
+        $(srcdir)/Thunderbird/IManager.cs       \
+        $(srcdir)/Thunderbird/ProfileManager.cs \
+        $(srcdir)/Thunderbird/PropertyStore.cs  \
+        $(srcdir)/Thunderbird/Preferences/INIFileParser.cs\
+        $(srcdir)/Thunderbird/Preferences/PreferenceParser.cs\
+        $(srcdir)/Thunderbird/Utilities/Convert.cs\
+        $(srcdir)/Thunderbird/Utilities/IO.cs   \
+        $(srcdir)/Thunderbird/Utilities/Paths.cs\
+        $(srcdir)/Thunderbird/Utilities/RangeList.cs
+
 
 EXTRA_DIST =			\
 	$(EXTSTR_IN)		\

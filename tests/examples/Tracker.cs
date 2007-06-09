@@ -1,5 +1,5 @@
 //
-// ThunderbirdQueryable.cs: The backend starting point
+// Modules.cs: A tracker example
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -25,23 +25,33 @@
 //
 
 using System;
+using Beagle.Util.Trackers;
 
-[assembly: Beagle.Daemon.IQueryableTypes (typeof (Beagle.Daemon.ThunderbirdQueryable.ThunderbirdQueryable))]
+namespace Examples {
 
-namespace Beagle.Daemon.ThunderbirdQueryable {
+	public sealed class Inotify {
 	
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
-	public class ThunderbirdQueryable : LuceneQueryable {
+		public static FileTracker tracker = null;
 		
-		public ThunderbirdQueryable () : base ("ThunderbirdIndex")
+		public static void OnNotification (object o, FileTrackerEventArgs args)
 		{
-			throw new NotImplementedException ();
+			Console.WriteLine ("New {0} created: {1}",
+				(args.IsDirectory ? "directory" : "file"),
+				(args.IsDirectory ? args.Path : String.Format ("{0}/{1}", args.Path, args.FileName)));
 		}
 		
-		public override void Start ()
+		public static void Main ()
 		{
-			base.Start ();
-			throw new NotImplementedException ();
+			try {
+				tracker = new InotifyTracker ();
+				Console.WriteLine ("Using inotify to track changes!");
+			} catch (NotSupportedException) {
+				tracker = new DefaultTracker ();
+				Console.WriteLine ("Inotify not supported! Using default tracker!");
+			}
+			
+			tracker.Notification += OnNotification;
+			tracker.Watch ("/home/postlund", TrackOperation.Created);
 		}
 	}
 }

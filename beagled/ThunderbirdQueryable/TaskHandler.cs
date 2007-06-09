@@ -1,5 +1,5 @@
 //
-// ThunderbirdQueryable.cs: The backend starting point
+// TaskHandler.cs: A TaskHandler helps out when adding new data to the indexing queue
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -25,22 +25,34 @@
 //
 
 using System;
-
-[assembly: Beagle.Daemon.IQueryableTypes (typeof (Beagle.Daemon.ThunderbirdQueryable.ThunderbirdQueryable))]
+using Beagle.Util;
 
 namespace Beagle.Daemon.ThunderbirdQueryable {
 	
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
-	public class ThunderbirdQueryable : LuceneQueryable {
-		
-		public ThunderbirdQueryable () : base ("ThunderbirdIndex")
+	public class TaskHandler {
+	
+		public TaskHandler (Scheduler scheduler)
+		{
+			throw new NotImplementedException ();
+		}
+
+		public void AddTask (IIndexableGenerator generator, string tag)
 		{
 			throw new NotImplementedException ();
 		}
 		
-		public override void Start ()
+		public void ScheduleRemoval (Property prop, Scheduler.Priority prio)
 		{
-			base.Start ();
+			throw new NotImplementedException ();
+		}
+		
+		public void ScheduleRemoval (Uri uri, string tag, Scheduler.Priority prio)
+		{
+			throw new NotImplementedException ();
+		}
+		
+		public void ScheduleRemoval (Uri[] uris, string tag, Scheduler.Priority prio)
+		{
 			throw new NotImplementedException ();
 		}
 	}

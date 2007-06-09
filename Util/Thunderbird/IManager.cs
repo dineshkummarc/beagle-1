@@ -1,5 +1,5 @@
 //
-// ThunderbirdQueryable.cs: The backend starting point
+// IManager.cs: A "manager" interface used to implement any type of manager
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -25,23 +25,17 @@
 //
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 
-[assembly: Beagle.Daemon.IQueryableTypes (typeof (Beagle.Daemon.ThunderbirdQueryable.ThunderbirdQueryable))]
-
-namespace Beagle.Daemon.ThunderbirdQueryable {
+namespace Beagle.Util.Thunderbird {
 	
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
-	public class ThunderbirdQueryable : LuceneQueryable {
-		
-		public ThunderbirdQueryable () : base ("ThunderbirdIndex")
-		{
-			throw new NotImplementedException ();
-		}
-		
-		public override void Start ()
-		{
-			base.Start ();
-			throw new NotImplementedException ();
-		}
+	public interface IManager<T, S> : ICollection<T> where S : EventArgs {
+		void Load ();
+		void Unload ();
+		bool Loaded { get; }
+		event EventHandler<S> Added;
+		event EventHandler<S> Removed;
+		event EventHandler<S> Changed;
 	}
 }

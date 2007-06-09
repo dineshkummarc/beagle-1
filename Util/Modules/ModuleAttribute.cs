@@ -1,5 +1,5 @@
 //
-// ThunderbirdQueryable.cs: The backend starting point
+// ModuleLoader.cs: Attribute used to point out a module
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -26,22 +26,20 @@
 
 using System;
 
-[assembly: Beagle.Daemon.IQueryableTypes (typeof (Beagle.Daemon.ThunderbirdQueryable.ThunderbirdQueryable))]
-
-namespace Beagle.Daemon.ThunderbirdQueryable {
+namespace Beagle.Util.Modules {
 	
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
-	public class ThunderbirdQueryable : LuceneQueryable {
+	[AttributeUsage (AttributeTargets.Class, AllowMultiple = false)]
+	public class ModuleAttribute : Attribute {
+		private string name;
 		
-		public ThunderbirdQueryable () : base ("ThunderbirdIndex")
+		public ModuleAttribute (string name)
 		{
-			throw new NotImplementedException ();
+			this.name = name;
 		}
 		
-		public override void Start ()
-		{
-			base.Start ();
-			throw new NotImplementedException ();
+		public string Name {
+			get { return name; }
+			set { name = value; }
 		}
 	}
 }

@@ -1,5 +1,5 @@
 //
-// ThunderbirdQueryable.cs: The backend starting point
+// IThunderbirdModule.cs: These types are used when creating a new Thunderbird module
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -26,22 +26,31 @@
 
 using System;
 
-[assembly: Beagle.Daemon.IQueryableTypes (typeof (Beagle.Daemon.ThunderbirdQueryable.ThunderbirdQueryable))]
+using Beagle.Util.Thunderbird;
+using Beagle.Util.Trackers;
 
 namespace Beagle.Daemon.ThunderbirdQueryable {
 	
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
-	public class ThunderbirdQueryable : LuceneQueryable {
+	public struct ModuleEnvironment {
+		public readonly Account Account;
+		public readonly TaskHandler Handler;
+		public readonly FileTracker Tracker;
+		public readonly string WorkingDirectory;
 		
-		public ThunderbirdQueryable () : base ("ThunderbirdIndex")
+		public ModuleEnvironment (Account account, TaskHandler handler,
+								FileTracker tracker, string working)
 		{
-			throw new NotImplementedException ();
+			this.Account = account;
+			this.Handler = handler;
+			this.Tracker = tracker;
+			this.WorkingDirectory = working;
 		}
-		
-		public override void Start ()
-		{
-			base.Start ();
-			throw new NotImplementedException ();
-		}
+	}
+	
+	public interface IThunderbirdModule {
+       void Initialize (ModuleEnvironment environment);
+       void Unload ();
+       void OnFileUpdate (FileTrackerEventArgs update);
+       ModuleEnvironment Environment { get; }
 	}
 }

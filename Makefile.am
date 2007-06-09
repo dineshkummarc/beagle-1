@@ -40,12 +40,6 @@ if ENABLE_BLUDGEON
 SUBDIRS += bludgeon
 endif
 
-if ENABLE_THUNDERBIRD
-if ENABLE_GUI
-SUBDIRS += ContactViewer
-endif
-endif
-
 # When the chooser work has been fixed up to use libbeagle, we can
 # reenable this directory.
 # SUBDIRS += chooser-fu

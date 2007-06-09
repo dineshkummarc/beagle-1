@@ -1,5 +1,5 @@
 //
-// ThunderbirdQueryable.cs: The backend starting point
+// FileTracker.cs: The file tracker definition
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -26,22 +26,20 @@
 
 using System;
 
-[assembly: Beagle.Daemon.IQueryableTypes (typeof (Beagle.Daemon.ThunderbirdQueryable.ThunderbirdQueryable))]
-
-namespace Beagle.Daemon.ThunderbirdQueryable {
+namespace Beagle.Util.Trackers {
 	
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
-	public class ThunderbirdQueryable : LuceneQueryable {
-		
-		public ThunderbirdQueryable () : base ("ThunderbirdIndex")
-		{
-			throw new NotImplementedException ();
-		}
-		
-		public override void Start ()
-		{
-			base.Start ();
-			throw new NotImplementedException ();
-		}
+	public enum TrackOperation {
+		Changed = 0x1,
+		Created = 0x2,
+		Deleted = 0x4,
+		Renamed = 0x8,
+		All = (Changed | Created | Deleted | Renamed)
+	}
+	
+	public interface FileTracker {
+		void Watch (string path, TrackOperation operation);
+		void Watch (string path, TrackOperation operation, bool recursive, bool hidden);
+		uint Watches { get; }
+		event FileTrackerEventHandler Notification;
 	}
 }

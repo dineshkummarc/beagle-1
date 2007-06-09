@@ -1,5 +1,5 @@
 //
-// ThunderbirdQueryable.cs: The backend starting point
+// Modules.cs: A module example
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -25,23 +25,40 @@
 //
 
 using System;
+using System.Reflection;
+using Beagle.Util.Modules;
 
-[assembly: Beagle.Daemon.IQueryableTypes (typeof (Beagle.Daemon.ThunderbirdQueryable.ThunderbirdQueryable))]
-
-namespace Beagle.Daemon.ThunderbirdQueryable {
+namespace Examples {
 	
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
-	public class ThunderbirdQueryable : LuceneQueryable {
-		
-		public ThunderbirdQueryable () : base ("ThunderbirdIndex")
+	public interface ExampleModule {
+		void Say (string message);
+	}
+	
+	[Module ("First module")]
+	public class FirstModule : ExampleModule {
+		public void Say (string message)
 		{
-			throw new NotImplementedException ();
+			Console.WriteLine (String.Format ("This message comes from FirstModule: {0}", message));
 		}
-		
-		public override void Start ()
+	}
+	
+	[Module ("Second module")]
+	public class SecondModule : ExampleModule {
+		public void Say (string message)
 		{
-			base.Start ();
-			throw new NotImplementedException ();
+			Console.WriteLine (String.Format ("This message comes from SecondModule: {0}", message));
+		}
+	}
+	
+	public class Modules {
+
+		public static void Main ()
+		{
+			ModuleLoader<ExampleModule> loader = new ModuleLoader<ExampleModule> ();
+			loader.ScanAssembly (Assembly.GetCallingAssembly ());
+			
+			foreach (ExampleModule m in loader)
+				m.Say ("Hello world!");
 		}
 	}
 }

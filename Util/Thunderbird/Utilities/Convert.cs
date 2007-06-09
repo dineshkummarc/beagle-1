@@ -1,5 +1,5 @@
 //
-// ThunderbirdQueryable.cs: The backend starting point
+// Convert.cs: A few helper methods for converting between different formats
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -26,21 +26,17 @@
 
 using System;
 
-[assembly: Beagle.Daemon.IQueryableTypes (typeof (Beagle.Daemon.ThunderbirdQueryable.ThunderbirdQueryable))]
-
-namespace Beagle.Daemon.ThunderbirdQueryable {
+namespace Beagle.Util.Thunderbird.Utilities {
 	
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
-	public class ThunderbirdQueryable : LuceneQueryable {
+	public static class Convert {
 		
-		public ThunderbirdQueryable () : base ("ThunderbirdIndex")
+		public static DateTime ToDateTime (string hex_date)
 		{
 			throw new NotImplementedException ();
 		}
 		
-		public override void Start ()
+		public static int HexToDec (string hex)
 		{
-			base.Start ();
 			throw new NotImplementedException ();
 		}
 	}

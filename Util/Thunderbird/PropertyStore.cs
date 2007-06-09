@@ -1,5 +1,5 @@
 //
-// ThunderbirdQueryable.cs: The backend starting point
+// PropertyStore.cs: A key-value based system with string, integer or bool as key type
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -25,22 +25,42 @@
 //
 
 using System;
+using System.Collections.Generic;
 
-[assembly: Beagle.Daemon.IQueryableTypes (typeof (Beagle.Daemon.ThunderbirdQueryable.ThunderbirdQueryable))]
+namespace Beagle.Util.Thunderbird {
 
-namespace Beagle.Daemon.ThunderbirdQueryable {
+	public enum PropertyValueType { 
+		String, 
+		Boolean, 
+		Integer
+	}
 	
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
-	public class ThunderbirdQueryable : LuceneQueryable {
-		
-		public ThunderbirdQueryable () : base ("ThunderbirdIndex")
+	public struct PropertyValue {		
+		public readonly string String;
+		public readonly bool Bool;
+		public readonly int Integer;
+		public readonly PropertyValueType Type;
+
+		public static PropertyValue New (string str)
 		{
 			throw new NotImplementedException ();
 		}
-		
-		public override void Start ()
+
+		public static PropertyValue New (bool predicate)
 		{
-			base.Start ();
+			throw new NotImplementedException ();
+		}
+
+		public static PropertyValue New (int integer)
+		{
+			throw new NotImplementedException ();
+		}
+	}
+
+	public class PropertyStore : Dictionary<string, PropertyValue> {
+		
+		public PropertyStore ()
+		{
 			throw new NotImplementedException ();
 		}
 	}

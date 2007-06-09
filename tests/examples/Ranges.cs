@@ -1,5 +1,5 @@
 //
-// ThunderbirdQueryable.cs: The backend starting point
+// Ranges.cs: A range example
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -26,22 +26,21 @@
 
 using System;
 
-[assembly: Beagle.Daemon.IQueryableTypes (typeof (Beagle.Daemon.ThunderbirdQueryable.ThunderbirdQueryable))]
+using Beagle.Util.Thunderbird.Utilities;
 
-namespace Beagle.Daemon.ThunderbirdQueryable {
+namespace Examples {
 	
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
-	public class ThunderbirdQueryable : LuceneQueryable {
+	public static class Ranges {
 		
-		public ThunderbirdQueryable () : base ("ThunderbirdIndex")
+		public static void Main ()
 		{
-			throw new NotImplementedException ();
-		}
-		
-		public override void Start ()
-		{
-			base.Start ();
-			throw new NotImplementedException ();
+			RangeList ranges = new RangeList ();
+			ranges.Add (Range.New (3, 10));
+			ranges.Add (Range.New (8, 15));
+			ranges.Add (Range.New (20, 30));
+			
+			foreach (Range r in ranges)
+				Console.WriteLine (r);
 		}
 	}
 }

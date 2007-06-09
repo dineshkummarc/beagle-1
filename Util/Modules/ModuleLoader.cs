@@ -1,5 +1,5 @@
 //
-// ThunderbirdQueryable.cs: The backend starting point
+// ModuleLoader.cs: This loader will locate modules with a ModuleAttribute
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -25,23 +25,53 @@
 //
 
 using System;
+using System.Reflection;
+using System.Collections;
+using System.Collections.Generic;
 
-[assembly: Beagle.Daemon.IQueryableTypes (typeof (Beagle.Daemon.ThunderbirdQueryable.ThunderbirdQueryable))]
-
-namespace Beagle.Daemon.ThunderbirdQueryable {
+namespace Beagle.Util.Modules {
 	
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
-	public class ThunderbirdQueryable : LuceneQueryable {
+	public class ModuleLoader<T> : IEnumerable<T> {
 		
-		public ThunderbirdQueryable () : base ("ThunderbirdIndex")
+		public ModuleLoader()
 		{
 			throw new NotImplementedException ();
 		}
 		
-		public override void Start ()
+		public void ScanAssembly (Assembly assembly)
 		{
-			base.Start ();
 			throw new NotImplementedException ();
 		}
+		
+		public string GetName (T module)
+		{
+			throw new NotImplementedException ();
+		}
+		
+		public void UnloadAll ()
+		{
+			throw new NotImplementedException ();
+		}
+		
+		public IEnumerator<T> GetEnumerator ()
+		{
+			throw new NotImplementedException ();
+		}
+
+		/* public */ IEnumerator IEnumerable.GetEnumerator ()
+		{
+			throw new NotImplementedException ();
+		}
+		
+		public uint Count {
+			get {
+				throw new NotImplementedException ();
+			}
+		}
+	}
+	
+	public class ModuleException : Exception {
+	
+		public ModuleException (string message) : base (message) { }
 	}
 }

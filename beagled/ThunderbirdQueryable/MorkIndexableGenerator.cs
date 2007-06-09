@@ -1,5 +1,5 @@
 //
-// ThunderbirdQueryable.cs: The backend starting point
+// MorkIndexableGenerator.cs: A generic IndexableGenerator for Mork files
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -25,23 +25,44 @@
 //
 
 using System;
-
-[assembly: Beagle.Daemon.IQueryableTypes (typeof (Beagle.Daemon.ThunderbirdQueryable.ThunderbirdQueryable))]
+using Beagle.Util;
+using Beagle.Util.Thunderbird;
 
 namespace Beagle.Daemon.ThunderbirdQueryable {
 	
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
-	public class ThunderbirdQueryable : LuceneQueryable {
+	public abstract class MorkIndexableGenerator : IIndexableGenerator {
 		
-		public ThunderbirdQueryable () : base ("ThunderbirdIndex")
+		public void Load (Account account, string file)
 		{
 			throw new NotImplementedException ();
 		}
 		
-		public override void Start ()
+		public Indexable GetNextIndexable ()
 		{
-			base.Start ();
 			throw new NotImplementedException ();
+		}
+
+		public bool HasNextIndexable ()
+		{
+			throw new NotImplementedException ();
+		}
+
+		public void PostFlushHook ()
+		{
+			throw new NotImplementedException ();
+		}
+		
+		private Indexable NewIndexable ()
+		{
+			throw new NotImplementedException ();
+		}
+		
+		protected abstract Indexable ToIndexable (Indexable indexable, PropertyStore store);
+		
+		public string StatusName { 
+			get {
+				throw new NotImplementedException ();
+			}
 		}
 	}
 }
