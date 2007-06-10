@@ -1,1 +1,7 @@
-wqw
+This directory contains a couple of regression tests and code examples. They all reflect the Thunderbird backend code and all implementations around it.
+
+You will find the following sub-directories:
+* nunit
+  NUnit regression tests
+* examples
+  Some basic examples that might be good to check out

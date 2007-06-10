@@ -25,6 +25,7 @@
 //
 
 using System;
+using Beagle.Util;
 
 namespace Beagle.Util.Thunderbird.Utilities {
 	
@@ -32,12 +33,14 @@ namespace Beagle.Util.Thunderbird.Utilities {
 		
 		public static DateTime ToDateTime (string hex_date)
 		{
-			throw new NotImplementedException ();
+			DateTime time = DateTimeUtil.UnixToDateTimeUtc (0);
+			
+			return time.AddSeconds (HexToDec (hex_date));
 		}
 		
 		public static int HexToDec (string hex)
 		{
-			throw new NotImplementedException ();
+			return System.Convert.ToInt32 (hex, 16);
 		}
 	}
 }

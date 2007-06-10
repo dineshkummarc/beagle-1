@@ -25,6 +25,7 @@
 //
 
 using System;
+using System.IO;
 
 namespace Beagle.Util.Thunderbird.Utilities {
 	
@@ -36,14 +37,19 @@ namespace Beagle.Util.Thunderbird.Utilities {
 			throw new NotImplementedException ();
 		} */
 		
-		public static int GetFileSize (string filename)
+		public static long GetFileSize (string filename)
 		{
-			throw new NotImplementedException ();
+			FileStream stream = new FileStream (filename, FileMode.Open);
+
+			return stream.Length;
 		}
 		
-		public static int IsEmpty (string filename)
+		public static bool IsEmpty (string filename)
 		{
-			throw new NotImplementedException ();
+			if (GetFileSize (filename) == 0)
+				return true;
+
+			return false;
 		}
 	}
 }
