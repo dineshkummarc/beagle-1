@@ -40,7 +40,7 @@ namespace Beagle.Util.Trackers {
 			throw new NotImplementedException ();
 		}
 		
-		public void Watch (string path, TrackOperation operation, bool recursive, bool hidden)
+		public void Watch (string path, TrackOperation operation, bool recursive)
 		{
 			throw new NotImplementedException ();
 		}
@@ -54,7 +54,7 @@ namespace Beagle.Util.Trackers {
 			}
 		}
 		
-		public uint Watches { 
+		public int Watches { 
 			get {
 				throw new NotImplementedException ();
 			}

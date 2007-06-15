@@ -25,6 +25,7 @@
 //
 
 using System;
+using System.Threading;
 using Beagle.Util.Trackers;
 
 namespace Examples {
@@ -52,6 +53,7 @@ namespace Examples {
 			
 			tracker.Notification += OnNotification;
 			tracker.Watch ("/home/postlund", TrackOperation.Created);
+			Thread.Sleep (60); // Wait a minute before quitting
 		}
 	}
 }

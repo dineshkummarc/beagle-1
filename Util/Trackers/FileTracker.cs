@@ -38,8 +38,8 @@ namespace Beagle.Util.Trackers {
 	
 	public interface FileTracker {
 		void Watch (string path, TrackOperation operation);
-		void Watch (string path, TrackOperation operation, bool recursive, bool hidden);
-		uint Watches { get; }
+		void Watch (string path, TrackOperation operation, bool recursive);
+		int Watches { get; }
 		event FileTrackerEventHandler Notification;
 	}
 }

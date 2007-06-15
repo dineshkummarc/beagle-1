@@ -25,6 +25,8 @@
 //
 
 using System;
+using System.Collections;
+using Beagle.Util;
 
 namespace Beagle.Util.Trackers {
 	
@@ -32,26 +34,137 @@ namespace Beagle.Util.Trackers {
 		
 		public InotifyTracker ()
 		{
-			throw new NotImplementedException ();
+			Inotify.Start ();
+			if (!Inotify.Enabled)
+				throw new NotSupportedException ("Inotify is not supported on this system");
+			
 		}
 		
 		public void Watch (string path, TrackOperation operation)
 		{
-			throw new NotImplementedException ();
+			Watch (path, operation, false);
 		}
 
-		public void Watch (string path, TrackOperation operation, bool recursive, bool hidden)
+		public void Watch (string path, TrackOperation operation, bool recursive)
 		{
-			throw new NotImplementedException ();
+			Inotify.EventType type = GetEventType (operation);
+			
+			if (!recursive) {
+				Inotify.Subscribe (path, HandleNotification, type);
+			} else {
+				Queue pending = new Queue ();
+				pending.Enqueue (path);
+				
+				while (pending.Count > 0) {
+					string dir = pending.Dequeue () as string;
+					
+					foreach (string subdir in DirectoryWalker.GetDirectories (dir))
+						pending.Enqueue (subdir);
+					
+					Inotify.Subscribe (path, HandleNotification, type);
+				}
+			}
+		}
+		
+		private Inotify.EventType GetEventType (TrackOperation operation)
+		{
+			bool init = false;
+			Inotify.EventType type = Inotify.EventType.Access;
+			
+			if ((operation & TrackOperation.Created) != 0) {
+				type = Inotify.EventType.Create;
+				init = true;
+			}
+			
+			if ((operation & TrackOperation.Changed) != 0) {
+				if (!init) {
+					type = Inotify.EventType.Modify;
+					init = true;
+				} else
+					type = (type | Inotify.EventType.Modify);
+			}
+			
+			if ((operation & TrackOperation.Deleted) != 0) {
+				if (!init) {
+					type = Inotify.EventType.Delete | Inotify.EventType.DeleteSelf;
+					init = true;
+				} else 
+					type = (type | Inotify.EventType.Delete | Inotify.EventType.DeleteSelf);
+			}
+			
+			if ((operation & TrackOperation.Renamed) != 0) {
+				if (!init)
+					type = Inotify.EventType.MovedTo | Inotify.EventType.MovedFrom;
+				else
+					type = (type | Inotify.EventType.MovedTo | Inotify.EventType.MovedFrom);
+			}
+			
+			return type;
+		}
+		
+		private TrackOperation GetTrackOperation (Inotify.EventType type)
+		{
+			bool init = false;
+			TrackOperation operation = TrackOperation.Created;
+			
+			if ((type & Inotify.EventType.Create) != 0) {
+				operation = TrackOperation.Created;
+				init = true;
+			}
+			
+			if ((type & Inotify.EventType.Modify) != 0) {
+				if (!init) {
+					operation = TrackOperation.Changed;
+					init = true;
+				} else
+					operation = (operation | TrackOperation.Changed);
+			}
+			
+			if ((type & (Inotify.EventType.Delete | Inotify.EventType.DeleteSelf)) != 0) {
+				if (!init) {
+					operation = TrackOperation.Deleted;
+					init = true;
+				} else
+					operation = (operation | TrackOperation.Deleted); 
+			}
+			
+			if ((type & (Inotify.EventType.MovedTo | Inotify.EventType.MovedFrom)) != 0) {
+				if (!init) 
+					operation = TrackOperation.Renamed;
+				else
+					operation = (operation | TrackOperation.Renamed);
+			}
+			
+			return operation;
 		}
 
-		public uint Watches {
+		public int Watches {
 			get {
-				throw new NotImplementedException ();
+				return Inotify.WatchCount;
 			}
-			set {
-				throw new NotImplementedException ();
+		}
+		
+		protected virtual void HandleNotification (
+				Inotify.Watch watch,
+				string path,
+				string subitem,
+				string srcpath,
+				Inotify.EventType type)
+		{
+			bool is_dir = ((type & Inotify.EventType.IsDirectory) != 0 ? true : false);
+			TrackOperation operation = GetTrackOperation (type);
+			
+			if (operation == TrackOperation.Renamed) {
+				OnNotification (
+					new FileTrackerRenamedEventArgs (path, null, srcpath, subitem, is_dir));
+			} else {
+				OnNotification (
+					new FileTrackerEventArgs (path, subitem, is_dir, operation));
 			}
+			
+			// If the directory was removed, make sure we don't monitor it anymore
+			if (operation == TrackOperation.Deleted && is_dir && subitem == null)
+				watch.Unsubscribe ();
 		}
 
 		protected virtual void OnNotification (FileTrackerEventArgs args)

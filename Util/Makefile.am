@@ -95,7 +95,7 @@ UTIL_CSFILES = 			        	\
 	$(srcdir)/F-Spot/Tiff.cs		\
 	$(srcdir)/F-Spot/XmpFile.cs		\
 	$(srcdir)/Modules/ModuleAttribute.cs    \
-	$(srcdir)/Modules/ModuleLoader.cs       \
+	$(srcdir)/Modules/ModuleTypeLoader.cs   \
 	$(srcdir)/SemWeb/AssemblyInfo.cs        \
 	$(srcdir)/SemWeb/NamespaceManager.cs    \
 	$(srcdir)/SemWeb/Util.cs                \
@@ -135,6 +135,7 @@ UTIL_CSFILES +=					\
 	$(srcdir)/Thunderbird/Preferences/INIFileParser.cs\
 	$(srcdir)/Thunderbird/Preferences/PreferenceParser.cs\
 	$(srcdir)/Thunderbird/Utilities/Convert.cs\
+	$(srcdir)/Thunderbird/Utilities/FileReader.cs\
 	$(srcdir)/Thunderbird/Utilities/IO.cs   \
 	$(srcdir)/Thunderbird/Utilities/Paths.cs\
 	$(srcdir)/Thunderbird/Utilities/RangeList.cs

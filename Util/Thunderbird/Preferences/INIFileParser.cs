@@ -25,59 +25,197 @@
 //
 
 using System;
+using System.IO;
+using System.Text;
 using System.Collections;
 using System.Collections.Generic;
+using Beagle.Util.Thunderbird.Utilities;
 
 namespace Beagle.Util.Thunderbird.Preferences {
 	
 	public struct INISection {
 		public string Section;
-		public Dictionary <string, string> Parameters;
+		public Dictionary<string, string> Parameters;
+		public static readonly INISection Empty = INISection.New (null);
 		
 		public static INISection New (string section)
 		{
-			throw new NotImplementedException ();
+			INISection s = new INISection ();
+			s.Section = section;
+			s.Parameters = new Dictionary<string, string> ();
+			
+			return s;
 		}
 	}
 	
 	public class INIFileParser : IEnumerable<INISection> {
+		private string filename;
+		private FileReader reader;
+		private List<INISection> sections;
+		private static Encoding enc = Encoding.Default;
+		private bool debug = false;
+		
+		// Various parsing tokens
+		private const int Assignment = 61;
+		private const int Comment = 59;
+		private const int NewLine = 10;
+		private const int SectionStart = 91;
+		private const int SectionEnd = 93;
+		private const int Whitespace = 10;
 		
 		public INIFileParser (string filename)
 		{
-			throw new NotImplementedException ();
+			this.filename = filename;
+			this.sections = new List<INISection> ();
+			
+			if (Environment.GetEnvironmentVariable ("BEAGLE_INIPARSER_DEBUG") != null)
+				debug = true;
+			
+			// Open file and prepare for parsing
+			FileStream stream = new FileStream (filename, FileMode.Open);
+			reader = new FileReader (stream);
+			
+			// This is the parsing main loop
+			while (!reader.EOF) {
+			
+				switch (reader.Current) {
+				case Comment:
+					reader.IgnoreLine ();
+					break;
+				case SectionStart:
+					// We take very easy on parsing errors (according to the Thunderbird code base),
+					// so we just catch all exceptions and act as if nothing happned... ;)
+					try {
+						ReadSection ();
+					} catch { 
+						if (debug)
+							Logger.Log.Debug ("Failed to parse section");
+					}
+					break;
+				default:
+					// Everything that is not a section nor a comment will be ignored
+					reader.Read ();
+					break;
+				}
+			}
+			
+			reader.Close ();
+			reader = null;
 		}
 		
-		public void Load ()
+		private void ReadSection ()
 		{
-			throw new NotImplementedException ();
+			// Make sure the section has a name (and isn't just [])
+			if (reader.Read () == SectionEnd) // [ - end of section
+				return;
+			
+			// Set the marker and find the end of the section declaration
+			reader.SetMarker ();
+			while (!reader.EOF && reader.Current != SectionEnd) {
+				// The closing ] must exist on the same line
+				if (reader.Current == NewLine)
+					return;
+				
+				reader.Read ();
+			}
+			
+			// Create the section
+			byte[] name = reader.GetFromMarker (0, 0);
+			INISection section = INISection.New (enc.GetString (name));
+			
+			// Extract all paramaters and all section
+			reader.IgnoreLine ();
+			while (!reader.EOF && reader.Current != SectionStart) {
+				try {
+					ParseParameter (section);
+				} catch (Exception e) {
+					if (debug)
+						//Console.WriteLine (e);
+						Logger.Log.Debug (e, "Failed to parse parameter");
+				}
+			}
+			
+			sections.Add (section);
 		}
 		
-		public string GetSection (string section)
+		private void ParseParameter (INISection section)
 		{
-			throw new NotImplementedException ();
+			byte[] param_key = null, param_value = null;
+			
+			reader.ResetMarker ();
+			do {
+				// Check for comments and new lines, they determine when a parameter ends
+				if (reader.Current == Comment || reader.Current == NewLine) {
+					if (param_key != null) {
+						param_value = reader.GetFromMarker (1, 0);
+						reader.IgnoreLine ();
+						break;
+					}
+					
+					// Start all over from here
+					reader.ResetMarker ();
+					reader.IgnoreLine ();
+				} else if (reader.Current == Assignment) {
+					param_key = reader.GetFromMarker (0, 0);
+					reader.SetMarker ();
+				} else if (!reader.ActiveMarker) {
+					reader.SetMarker ();
+				}
+			} while (!reader.EOF && reader.Read () != SectionStart);
+			
+			if (param_key == null)
+				return;
+			
+			string key_str = enc.GetString (param_key);
+			string value_str = (param_value != null ? enc.GetString (param_value) : string.Empty);
+			
+			// This section will be added if it doesn't exist or just update if it exists
+			section.Parameters.Add (key_str, value_str);
+		}
+		
+		public bool ContainsSection (string section)
+		{
+			foreach (INISection s in sections) {
+				if (s.Section.Equals (section))
+					return true;
+			}
+			
+			return false;
+		}
+
+		public INISection GetSection (string section)
+		{
+			foreach (INISection s in sections) {
+				if (s.Section.Equals (section))
+					return s;
+			}
+			
+			return INISection.Empty;
 		}
 		
 		public string GetValue (string section, string key)
 		{
-			throw new NotImplementedException ();
+			INISection s = GetSection (section);
+			
+			if (!s.Equals (INISection.Empty) && s.Parameters.ContainsKey (key))
+				return s.Parameters [key];
+			
+			return null;
 		}
 		
 		public IEnumerator<INISection> GetEnumerator ()
 		{
-			throw new NotImplementedException ();
+			return sections.GetEnumerator ();
 		}
 		
 		/* public */ IEnumerator IEnumerable.GetEnumerator ()
 		{
-			throw new NotImplementedException ();
+			return sections.GetEnumerator ();
 		}
 		
 		public string Filename { 
 			get {
-				throw new NotImplementedException ();
-			}
-			set {
-				throw new NotImplementedException ();
+				return filename;
 			}
 		}
 	}

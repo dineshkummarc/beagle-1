@@ -40,15 +40,17 @@ namespace Beagle.Util.Thunderbird.Utilities {
 		public static long GetFileSize (string filename)
 		{
 			FileStream stream = new FileStream (filename, FileMode.Open);
+			long length = stream.Length;
+			stream.Close ();
 
-			return stream.Length;
+			return length;
 		}
 		
 		public static bool IsEmpty (string filename)
 		{
 			if (GetFileSize (filename) == 0)
 				return true;
-
+			
 			return false;
 		}
 	}

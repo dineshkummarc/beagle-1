@@ -1,5 +1,5 @@
 //
-// ModuleLoader.cs: This loader will locate modules with a ModuleAttribute
+// Utilities.cs: An example of some utility methods
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -25,53 +25,19 @@
 //
 
 using System;
-using System.Reflection;
-using System.Collections;
-using System.Collections.Generic;
+using Beagle.Util.Thunderbird.Utilities;
 
-namespace Beagle.Util.Modules {
+namespace Examples {
 	
-	public class ModuleLoader<T> : IEnumerable<T> {
+	public static class Utilities {
 		
-		public ModuleLoader()
+		public static void Main ()
 		{
-			throw new NotImplementedException ();
+			Console.WriteLine ("* Root paths {0} overriden", 
+				(Paths.RootPathsOverriden ? "ARE" : "ARE NOT"));
+			Console.WriteLine ("* Root paths on this computer: ");
+			foreach (string root in Paths.GetRootPaths ())
+				Console.WriteLine (" {0}", root);
 		}
-		
-		public void ScanAssembly (Assembly assembly)
-		{
-			throw new NotImplementedException ();
-		}
-		
-		public string GetName (T module)
-		{
-			throw new NotImplementedException ();
-		}
-		
-		public void UnloadAll ()
-		{
-			throw new NotImplementedException ();
-		}
-		
-		public IEnumerator<T> GetEnumerator ()
-		{
-			throw new NotImplementedException ();
-		}
-
-		/* public */ IEnumerator IEnumerable.GetEnumerator ()
-		{
-			throw new NotImplementedException ();
-		}
-		
-		public uint Count {
-			get {
-				throw new NotImplementedException ();
-			}
-		}
-	}
-	
-	public class ModuleException : Exception {
-	
-		public ModuleException (string message) : base (message) { }
 	}
 }

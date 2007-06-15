@@ -26,9 +26,21 @@
 
 using System;
 using System.Reflection;
+using Beagle.Util;
 using Beagle.Util.Modules;
+using Examples;
+
+[assembly: ModuleDefinedTypes (
+	typeof (FirstModule), 
+	typeof (SecondModule)
+)]
 
 namespace Examples {
+
+	[AttributeUsage (AttributeTargets.Assembly)]
+	public class ModuleDefinedTypes : TypeCacheAttribute {
+		public ModuleDefinedTypes (params Type[] types) : base (types) { }
+	}
 	
 	public interface ExampleModule {
 		void Say (string message);
@@ -49,16 +61,27 @@ namespace Examples {
 			Console.WriteLine (String.Format ("This message comes from SecondModule: {0}", message));
 		}
 	}
+
+	// A module which i missing the ExampleModule interface
+	[Module ("Third module")]
+	public class ThirdModule {
+		// Since we have no ExampleModule, there's no need to implement anything here
+	}
 	
 	public class Modules {
 
 		public static void Main ()
 		{
-			ModuleLoader<ExampleModule> loader = new ModuleLoader<ExampleModule> ();
-			loader.ScanAssembly (Assembly.GetCallingAssembly ());
-			
-			foreach (ExampleModule m in loader)
-				m.Say ("Hello world!");
+			Assembly asm = Assembly.GetCallingAssembly ();
+			ModuleTypeLoader<ExampleModule> loader = new ModuleTypeLoader<ExampleModule> ();
+			loader.ScanAssembly (asm, typeof (ModuleDefinedTypes));
+		
+			Console.WriteLine ("Module type count: {0}", loader.Count);	
+			foreach (Type t in loader) {
+				Console.WriteLine ("* Module name: {0}", loader.GetName (t));
+				ExampleModule module = (ExampleModule) Activator.CreateInstance (t);
+				module.Say ("Hello world!");
+			}
 		}
 	}
 }

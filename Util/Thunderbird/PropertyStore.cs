@@ -40,20 +40,44 @@ namespace Beagle.Util.Thunderbird {
 		public readonly bool Bool;
 		public readonly int Integer;
 		public readonly PropertyValueType Type;
+		
+		private PropertyValue (string str)
+		{
+			String = str;
+			Bool = false;
+			Integer = 0;
+			Type = PropertyValueType.String;
+		}
+		
+		private PropertyValue (bool predicate)
+		{
+			String = string.Empty;
+			Bool = predicate;
+			Integer = 0;
+			Type = PropertyValueType.Boolean;
+		}
+		
+		private PropertyValue (int integer)
+		{
+			String = string.Empty;
+			Bool = false;
+			Integer = integer;
+			Type = PropertyValueType.Integer;
+		}
 
 		public static PropertyValue New (string str)
 		{
-			throw new NotImplementedException ();
+			return new PropertyValue (str);
 		}
 
 		public static PropertyValue New (bool predicate)
 		{
-			throw new NotImplementedException ();
+			return new PropertyValue (predicate);
 		}
 
 		public static PropertyValue New (int integer)
 		{
-			throw new NotImplementedException ();
+			return new PropertyValue (integer);
 		}
 	}
 
@@ -61,7 +85,6 @@ namespace Beagle.Util.Thunderbird {
 		
 		public PropertyStore ()
 		{
-			throw new NotImplementedException ();
 		}
 	}
 }
