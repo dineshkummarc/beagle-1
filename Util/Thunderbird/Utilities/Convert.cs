@@ -25,6 +25,7 @@
 //
 
 using System;
+using System.Text;
 using Beagle.Util;
 
 namespace Beagle.Util.Thunderbird.Utilities {
@@ -41,6 +42,44 @@ namespace Beagle.Util.Thunderbird.Utilities {
 		public static int HexToDec (string hex)
 		{
 			return System.Convert.ToInt32 (hex, 16);
+		}
+		
+		public static bool ToBoolean (byte[] bytes)
+		{
+			if (bytes == null)
+				throw new ArgumentNullException ("bytes");
+			if (bytes.Length < 4)
+				throw new ArgumentException ("bytes.Length != 4");
+			
+			string str = Encoding.Default.GetString (bytes, 0, 4);
+			
+			// String.ToLower () is _really_ expensive and we don't want to use that 
+			// (using ToLower () allocates more than 1000 new objects, which in my test 
+			// case made the heap grow)
+			return (str [0].Equals ('t') || str [0].Equals ('T')) &&
+					(str [1].Equals ('r') || str [1].Equals ('R')) &&
+					(str [2].Equals ('u') || str [2].Equals ('U')) &&
+					(str [3].Equals ('e') || str [3].Equals ('E'));
+		}
+		
+		public static bool ToBoolean (string str)
+		{
+			if (String.IsNullOrEmpty (str))
+				throw new ArgumentNullException ("str");
+			else if (str.Equals ("1"))
+				return true;
+			else if (str.Equals ("0"))
+				return false;
+			
+			return System.Convert.ToBoolean (str);
+		}
+		
+		public static int ToInt32 (byte[] bytes)
+		{
+			if (bytes == null)
+				throw new ArgumentNullException ("bytes");
+
+			return System.Convert.ToInt32 (Encoding.Default.GetString (bytes));
 		}
 	}
 }

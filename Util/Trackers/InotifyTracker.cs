@@ -25,6 +25,7 @@
 //
 
 using System;
+using System.IO;
 using System.Collections;
 using Beagle.Util;
 
@@ -155,8 +156,11 @@ namespace Beagle.Util.Trackers {
 			TrackOperation operation = GetTrackOperation (type);
 			
 			if (operation == TrackOperation.Renamed) {
-				OnNotification (
-					new FileTrackerRenamedEventArgs (path, null, srcpath, subitem, is_dir));
+				string srcfile = Path.GetFileName (srcpath), 
+						srcdir = Path.GetDirectoryName (srcpath);
+				
+				OnNotification (new FileTrackerRenamedEventArgs 
+					(path, subitem, srcdir, srcfile, is_dir, TrackOperation.Renamed));
 			} else {
 				OnNotification (
 					new FileTrackerEventArgs (path, subitem, is_dir, operation));

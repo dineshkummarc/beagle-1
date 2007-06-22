@@ -525,7 +525,13 @@ THUNDERBIRD_CSFILES =						\
 	$(THUNDERBIRD_DIR)/MorkModule.cs			\
 	$(THUNDERBIRD_DIR)/TaskHandler.cs			\
 	$(THUNDERBIRD_DIR)/ThunderbirdProfileIndexer.cs		\
-	$(THUNDERBIRD_DIR)/ThunderbirdQueryable.cs
+	$(THUNDERBIRD_DIR)/ThunderbirdQueryable.cs		\
+	$(THUNDERBIRD_DIR)/Modules/ContactModule.cs		\
+	$(THUNDERBIRD_DIR)/Modules/ImapModule.cs		\
+	$(THUNDERBIRD_DIR)/Modules/MoveMailModule.cs		\
+	$(THUNDERBIRD_DIR)/Modules/NewsgroupModule.cs		\
+	$(THUNDERBIRD_DIR)/Modules/Pop3Module.cs		\
+	$(THUNDERBIRD_DIR)/Modules/RSSModule.cs
 
 THUNDERBIRD_LOCAL_ASSEMBLIES =		\
 	../Util/Util.dll		\

@@ -1,5 +1,5 @@
 //
-// Tracker.cs: A tracker example
+// INIParser.cs: An INI file parser example
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -25,36 +25,25 @@
 //
 
 using System;
-using System.Threading;
-using Beagle.Util.Trackers;
+using Beagle.Util.Thunderbird;
+using Beagle.Util.Thunderbird.Preferences;
 
 namespace Examples {
-
-	public sealed class Inotify {
 	
-		public static FileTracker tracker = null;
+	public static class Preferences {
 		
-		public static void OnNotification (object o, FileTrackerEventArgs args)
+		public static void Main (string[] args)
 		{
-			Console.WriteLine ("New {0} created: {1}",
-				(args.IsDirectory ? "directory" : "file"),
-				(args.IsDirectory ? args.Path : String.Format ("{0}/{1}", args.Path, args.FileName)));
-		}
-		
-		public static void Main ()
-		{
-			try {
-				tracker = new InotifyTracker ();
-				Console.WriteLine ("Using inotify to track changes!");
-			} catch (NotSupportedException) {
-				tracker = new DefaultTracker ();
-				Console.WriteLine ("Inotify not supported! Using default tracker!");
+			if (args == null || args.Length != 1) {
+				Console.WriteLine ("Usage: INIParser.exe <file>");
+				Environment.Exit (0);
 			}
 			
-			tracker.Notification += OnNotification;
-			tracker.Watch ("/home/postlund", TrackOperation.Created);
-			Console.WriteLine ("Watching for changes. Press any key to quit.");
-			Console.Read ();
+			INIFileParser parser = new INIFileParser (args [0]);
+			Console.WriteLine ("File content:");
+			Console.WriteLine ("-------------");
+			foreach (INISection section in parser)
+				Console.WriteLine (section);
 		}
 	}
 }

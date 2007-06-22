@@ -1,5 +1,5 @@
 //
-// Modules.cs: A module example
+// Modules.cs: A small example showing of the module type loader
 //
 // Copyright (C) 2007 Pierre Östlund
 //

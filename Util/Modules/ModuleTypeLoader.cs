@@ -47,8 +47,19 @@ namespace Beagle.Util.Modules {
 				T obj = (T) Activator.CreateInstance (type);
 				ArrayList attr = ReflectionFu.ScanTypeForAttribute (type, typeof (ModuleAttribute));
 				if (attr.Count > 0 && Inherits (typeof (T), obj))
-					modules.Add (type);
+					Add (type);
 			}
+		}
+		
+		// We use this to make sure we don't add duplicates
+		private void Add (Type t)
+		{
+			foreach (Type mod_type in modules) {
+				if (mod_type.Equals (t))
+					return;
+			}
+			
+			modules.Add (t);
 		}
 		
 		private bool Inherits (Type t, object o)

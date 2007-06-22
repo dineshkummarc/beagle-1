@@ -1,5 +1,5 @@
 //
-// MorkStream.cs: A stream object decicated to reading data from a Mork file
+// MorkStream.cs: A stream object decicated to sequential file reading
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -38,12 +38,21 @@ namespace Beagle.Util.Thunderbird.Utilities {
 		private long current_marker = -1;
 		private long file_length = -1;
 		
+		public const int EndOfFile = -1;
+		public const long NoMarker = -1;
+		
 		public FileReader (Stream stream) : this (stream, 512) { }
 		
 		public FileReader (Stream stream, int buffer_size)
 		{
+			if (stream == null)
+				throw new ArgumentNullException ("stream");
+			if (buffer_size < 1)
+				throw new ArgumentException ("buffer_size < 1");
+			
 			this.stream = stream;
 			file_length = stream.Length;
+			stream.Position = 0;
 			buffer = new byte [buffer_size];
 			Open ();
 		}
@@ -95,9 +104,10 @@ namespace Beagle.Util.Thunderbird.Utilities {
 				Read ();
 		}
 
-		public void Close ()
+		public virtual void Close ()
 		{
-			stream.Close ();
+			if (stream != null)
+				stream.Close ();
 			Array.Clear (buffer, 0, buffer.Length);
 			left_overs = null;
 			bytes_in_buffer = -1;
@@ -112,27 +122,61 @@ namespace Beagle.Util.Thunderbird.Utilities {
 			current_marker = (current_position < 0 ? 0 : current_position);
 		}
 		
+		// Calculates the buffer length needed after cutting. Everything less than zero can be
+		// considered invalid and everything above zero is ok. Equal to zero has to be judged 
+		// according to situation (since its just an empty buffer).
+		private long GetCutLength (uint cut_start, uint cut_end)
+		{
+			long len = (current_position - current_marker) +
+					(left_overs != null ? left_overs.Length : 0);
+			
+			return (len - cut_start - cut_end);
+		}
+		
 		public byte[] GetFromMarker (uint cut_start, uint cut_end)
 		{
-			long start = 0;
-			long length = current_position - (current_marker + cut_start) - cut_end;
-			byte[] tmp;
+			long len = current_position - current_marker, 
+				left = (left_overs != null ? left_overs.Length : 0);
+			long buf_length = GetCutLength (cut_start, cut_end);
 			
-			if (current_marker < 0)
+			if (current_marker == NoMarker || buf_length < 1)
 				return null;
 			
-			if (left_overs != null) {
-				tmp = new byte [length + left_overs.Length];
-				Array.Copy (left_overs, cut_start, tmp, 0, left_overs.Length - cut_start);
-				start = left_overs.Length;
+			// Make sure we have an array with enough room
+			byte[] tmp = new byte [buf_length]; 
+
+			if (left_overs == null || cut_start >= left) {
+				// Everything is in main buffer
+				long cut = cut_start - left;
+				Array.Copy (buffer, (current_marker+cut), tmp, 0, (len-cut_end-cut));
+			} else if (cut_end >= current_position-current_marker) {
+				// Everything is in left_overs
+				long cut = cut_end - len;
+				Array.Copy (left_overs, cut_start, tmp, 0, (left_overs.Length-cut_start-cut));
 			} else {
-				tmp = new byte [length];
+				// Copy from both
+				int start = (left_overs != null ? left_overs.Length : 0);
+
+				if (left_overs != null)
+					Array.Copy (left_overs, cut_start, tmp, 0, (start-cut_start));
+				
+				Array.Copy (buffer, current_marker, tmp, start-cut_start, (len-cut_end));
 			}
 			
-			//Array.Copy (buffer, current_marker, tmp, start, (current_position - current_marker) - cut_end);
-			Array.Copy (buffer, current_marker + cut_start, tmp, start, length);
-			
 			return tmp;
+		}
+		
+		public bool Match (params int[] values)
+		{
+			if (values == null)
+				throw new ArgumentNullException ("values");
+			
+			foreach (int a in values) {
+				if (Read () != a)
+					return false;
+			}
+			
+			return true;
 		}
 		
 		public void ResetMarker ()

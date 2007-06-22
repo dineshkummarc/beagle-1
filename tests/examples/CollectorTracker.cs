@@ -1,5 +1,5 @@
 //
-// Tracker.cs: A tracker example
+// CollectorTracker.cs: A collector tracker example
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -30,19 +30,39 @@ using Beagle.Util.Trackers;
 
 namespace Examples {
 
-	public sealed class Inotify {
+	public sealed class Collector {
 	
-		public static FileTracker tracker = null;
+		public static FileTracker collector = null;
+		public static GLib.MainLoop main_loop = new GLib.MainLoop ();
+
+		public static string GetMods (TrackOperation operation)
+		{
+			return String.Format ("{0} {1} {2} {3}",
+				(operation & TrackOperation.Changed),
+				(operation & TrackOperation.Created),
+				(operation & TrackOperation.Deleted),
+				(operation & TrackOperation.Renamed));
+		}
 		
 		public static void OnNotification (object o, FileTrackerEventArgs args)
 		{
-			Console.WriteLine ("New {0} created: {1}",
-				(args.IsDirectory ? "directory" : "file"),
-				(args.IsDirectory ? args.Path : String.Format ("{0}/{1}", args.Path, args.FileName)));
+			Console.WriteLine ("Time: {0}", DateTime.Now);
+
+			if ((args.Operation & TrackOperation.Renamed) != 0) {
+				FileTrackerRenamedEventArgs rea = (FileTrackerRenamedEventArgs) args;
+				Console.WriteLine ("* {0}/{1} -> {2}/{3}, directory: {4}, mods: {5}",
+					rea.OldPath, rea.OldFile, rea.Path, rea.FileName, rea.IsDirectory,
+					GetMods (rea.Operation));
+			} else {
+				Console.WriteLine ("* {0}/{1}, directory: {2}, mods: {3}",
+					args.Path, args.FileName, args.IsDirectory, GetMods (args.Operation));
+			}
 		}
 		
-		public static void Main ()
+		public static void Main (string[] args)
 		{
+			FileTracker tracker = null;
+
 			try {
 				tracker = new InotifyTracker ();
 				Console.WriteLine ("Using inotify to track changes!");
@@ -51,10 +71,13 @@ namespace Examples {
 				Console.WriteLine ("Inotify not supported! Using default tracker!");
 			}
 			
-			tracker.Notification += OnNotification;
-			tracker.Watch ("/home/postlund", TrackOperation.Created);
-			Console.WriteLine ("Watching for changes. Press any key to quit.");
-			Console.Read ();
+			collector = new CollectorTracker (tracker, 5000);
+			collector.Notification += OnNotification;
+
+			foreach (string path in args)
+				collector.Watch (path, TrackOperation.All);
+
+			main_loop.Run ();
 		}
 	}
 }

@@ -40,44 +40,48 @@ namespace Beagle.Util.Thunderbird {
 		public readonly bool Bool;
 		public readonly int Integer;
 		public readonly PropertyValueType Type;
+		private readonly bool IsNull;
 		
-		private PropertyValue (string str)
+		public static readonly PropertyValue Null = 
+			new PropertyValue (null, false, 0, PropertyValueType.String, true);
+		
+		private PropertyValue (string str, bool pred, 
+				int integer, PropertyValueType type, bool is_null)
 		{
 			String = str;
-			Bool = false;
-			Integer = 0;
-			Type = PropertyValueType.String;
-		}
-		
-		private PropertyValue (bool predicate)
-		{
-			String = string.Empty;
-			Bool = predicate;
-			Integer = 0;
-			Type = PropertyValueType.Boolean;
-		}
-		
-		private PropertyValue (int integer)
-		{
-			String = string.Empty;
-			Bool = false;
+			Bool = pred;
 			Integer = integer;
-			Type = PropertyValueType.Integer;
+			Type = type;
+			IsNull = is_null;
 		}
 
 		public static PropertyValue New (string str)
 		{
-			return new PropertyValue (str);
+			return new PropertyValue (str, false, 0, PropertyValueType.String, false);
 		}
 
 		public static PropertyValue New (bool predicate)
 		{
-			return new PropertyValue (predicate);
+			return new PropertyValue (null, predicate, 0, PropertyValueType.Boolean, false);
 		}
 
 		public static PropertyValue New (int integer)
 		{
-			return new PropertyValue (integer);
+			return new PropertyValue (null, false, integer, PropertyValueType.Integer, false);
+		}
+		
+		public override string ToString ()
+		{
+			switch (Type) {
+			case PropertyValueType.String:
+				return String;
+			case PropertyValueType.Integer:
+				return Convert.ToString (Integer);
+			case PropertyValueType.Boolean:
+				return Convert.ToString (Bool);
+			}
+			
+			return null;
 		}
 	}
 
@@ -85,6 +89,79 @@ namespace Beagle.Util.Thunderbird {
 		
 		public PropertyStore ()
 		{
+		}
+		
+		private PropertyValue Get (string key)
+		{
+			PropertyValue property = PropertyValue.Null;
+			
+			if (TryGetValue (key, out property))
+				return property;
+			
+			return PropertyValue.Null;
+		}
+		
+		public void Set (string key, string val)
+		{
+			PropertyValue pv = PropertyValue.New (val);
+			
+			if (ContainsKey (key)) {
+				this [key] = pv;
+			} else {
+				Add (key, pv);
+			}
+		}
+		
+		public void Set (string key, int val)
+		{
+			PropertyValue pv = PropertyValue.New (val);
+			
+			if (ContainsKey (key)) {
+				this [key] = pv;
+			} else {
+				Add (key, pv);
+			}
+		}
+		
+		public void Set (string key, bool val)
+		{
+			PropertyValue pv = PropertyValue.New (val);
+			
+			if (ContainsKey (key)) {
+				this [key] = pv;
+			} else {
+				Add (key, pv);
+			}
+		}
+		
+		public string GetString (string key)
+		{
+			PropertyValue val = Get (key);
+			
+			if (!val.Type.Equals (PropertyValueType.String))
+				throw new InvalidCastException ("invalid cast");
+			
+			return val.String;
+		}
+		
+		public int GetInt (string key)
+		{
+			PropertyValue val = Get (key);
+			
+			if (!val.Type.Equals (PropertyValueType.Integer))
+				throw new InvalidCastException ("invalid cast");
+			
+			return val.Integer;
+		}
+		
+		public bool GetBoolean (string key)
+		{
+			PropertyValue val = Get (key);
+			
+			if (!val.Type.Equals (PropertyValueType.Boolean))
+				throw new InvalidCastException ("invalid cast");
+			
+			return val.Bool;
 		}
 	}
 }

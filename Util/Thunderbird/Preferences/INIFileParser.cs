@@ -36,7 +36,15 @@ namespace Beagle.Util.Thunderbird.Preferences {
 	public struct INISection {
 		public string Section;
 		public Dictionary<string, string> Parameters;
-		public static readonly INISection Empty = INISection.New (null);
+		public static readonly INISection Null = NewEmpty ();
+		
+		private static INISection NewEmpty ()
+		{
+			INISection s = new INISection ();
+			s.Section = null;
+			s.Parameters = null;
+			return s;
+		}
 		
 		public static INISection New (string section)
 		{
@@ -46,10 +54,25 @@ namespace Beagle.Util.Thunderbird.Preferences {
 			
 			return s;
 		}
+		
+		public override string ToString ()
+		{
+			int position = 0;
+			StringBuilder builder = new StringBuilder ();
+			
+			builder.AppendLine (String.Format ("Section: {0}", Section));
+			foreach (string key in Parameters.Keys) {
+				if (position++ != (Parameters.Count - 1))
+					builder.AppendLine (String.Format ("* {0}={1}", key, Parameters [key]));
+				else
+					builder.Append (String.Format ("* {0}={1}", key, Parameters [key]));
+			}
+			
+			return builder.ToString ();
+		}
 	}
 	
 	public class INIFileParser : IEnumerable<INISection> {
-		private string filename;
 		private FileReader reader;
 		private List<INISection> sections;
 		private static Encoding enc = Encoding.Default;
@@ -62,18 +85,19 @@ namespace Beagle.Util.Thunderbird.Preferences {
 		private const int SectionStart = 91;
 		private const int SectionEnd = 93;
 		private const int Whitespace = 10;
+		private const int SpaceSign = 32;
 		
-		public INIFileParser (string filename)
+		public INIFileParser (string filename) : this (new FileStream (filename, FileMode.Open)) { }
+		
+		public INIFileParser (Stream stream)
 		{
-			this.filename = filename;
+			if (stream == null)
+				throw new ArgumentNullException ("stream");
+			
 			this.sections = new List<INISection> ();
+			this.reader = new FileReader (stream);
 			
-			if (Environment.GetEnvironmentVariable ("BEAGLE_INIPARSER_DEBUG") != null)
-				debug = true;
-			
-			// Open file and prepare for parsing
-			FileStream stream = new FileStream (filename, FileMode.Open);
-			reader = new FileReader (stream);
+			debug = (Environment.GetEnvironmentVariable ("BEAGLE_INIPARSER_DEBUG") != null);
 			
 			// This is the parsing main loop
 			while (!reader.EOF) {
@@ -98,9 +122,6 @@ namespace Beagle.Util.Thunderbird.Preferences {
 					break;
 				}
 			}
-			
-			reader.Close ();
-			reader = null;
 		}
 		
 		private void ReadSection ()
@@ -190,17 +211,25 @@ namespace Beagle.Util.Thunderbird.Preferences {
 					return s;
 			}
 			
-			return INISection.Empty;
+			return INISection.Null;
 		}
 		
 		public string GetValue (string section, string key)
 		{
 			INISection s = GetSection (section);
 			
-			if (!s.Equals (INISection.Empty) && s.Parameters.ContainsKey (key))
+			if (!s.Equals (INISection.Null) && s.Parameters.ContainsKey (key))
 				return s.Parameters [key];
 			
 			return null;
+		}
+		
+		public void Close ()
+		{
+			if (reader != null)
+				reader.Close ();
+			
+			reader = null;
 		}
 		
 		public IEnumerator<INISection> GetEnumerator ()
@@ -213,9 +242,9 @@ namespace Beagle.Util.Thunderbird.Preferences {
 			return sections.GetEnumerator ();
 		}
 		
-		public string Filename { 
+		public int Count {
 			get {
-				return filename;
+				return sections.Count;
 			}
 		}
 	}

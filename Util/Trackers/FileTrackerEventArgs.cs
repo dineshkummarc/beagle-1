@@ -39,7 +39,7 @@ namespace Beagle.Util.Trackers {
 		public FileTrackerEventArgs (string path, string file, 
 									bool is_directory, TrackOperation operation)
 		{
-			this.path = path;
+			this.path = path.TrimEnd ('/');
 			this.filename = file;
 			this.is_directory = is_directory;
 			this.operation = operation;
@@ -67,8 +67,8 @@ namespace Beagle.Util.Trackers {
 		private string old_file;
 		
 		public FileTrackerRenamedEventArgs (string path, string file, string old_path, 
-											string old_file, bool is_directory) : 
-			base (path, file, is_directory, TrackOperation.Renamed)
+											string old_file, bool is_directory, TrackOperation op) 
+			: base (path, file, is_directory, op | TrackOperation.Renamed)
 		{
 			this.old_path = old_path;
 			this.old_file = old_file;

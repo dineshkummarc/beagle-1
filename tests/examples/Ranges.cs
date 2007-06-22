@@ -41,6 +41,7 @@ namespace Examples {
 			
 			foreach (Range r in ranges)
 				Console.WriteLine (r);
+			Console.WriteLine ("Count: {0}", ranges.Count);
 		}
 	}
 }

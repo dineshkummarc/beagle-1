@@ -38,6 +38,8 @@ namespace Examples {
 			Console.WriteLine ("* Root paths on this computer: ");
 			foreach (string root in Paths.GetRootPaths ())
 				Console.WriteLine (" {0}", root);
+
+			
 		}
 	}
 }

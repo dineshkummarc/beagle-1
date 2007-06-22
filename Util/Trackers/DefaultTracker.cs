@@ -133,8 +133,8 @@ namespace Beagle.Util.Trackers {
 			string path = Path.GetDirectoryName (args.FullPath);
 			string old_path = Path.GetDirectoryName (args.OldFullPath);
 			
-			OnNotification (
-				new FileTrackerRenamedEventArgs (path, args.Name, old_path, args.OldName, is_dir));
+			OnNotification (new FileTrackerRenamedEventArgs 
+				(path, args.Name, old_path, args.OldName, is_dir, TrackOperation.Renamed));
 		}
 		
 		protected virtual void OnNotification (FileTrackerEventArgs args)

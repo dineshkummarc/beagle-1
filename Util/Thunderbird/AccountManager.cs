@@ -31,133 +31,186 @@ using System.Collections.Generic;
 namespace Beagle.Util.Thunderbird {
 	
 	public class MessageIdentity : PropertyStore {
+		private string key;
 	
 		public MessageIdentity (string key)
 		{
-			throw new NotImplementedException ();
+			this.key = key;
 		}
 		
 		public string Key { 
 			get {
-				throw new NotImplementedException ();
+				return key;
 			}
 			set {
-				throw new NotImplementedException ();
+				key = value;
 			}
 		}
 		
 		public string IdentityName { 
 			get {
-				throw new NotImplementedException ();
+				try {
+					GetString ("identityName");
+				} catch {
+				}
+				
+				return string.Empty;
 			}
 			set {
-				throw new NotImplementedException ();
+				Set ("identityName", value);
 			}
 		}
 		
 		public string FullName { 
 			get {
-				throw new NotImplementedException ();
+				try {
+					GetString ("fullName");
+				} catch {
+				}
+				
+				return string.Empty;
 			}
 			set {
-				throw new NotImplementedException ();
+				Set ("fullName", value);
 			}
 		}
 		public string Email { 
 			get {
-				throw new NotImplementedException ();
+				try {
+					GetString ("useremail");
+				} catch {
+				}
+				
+				return string.Empty;
 			}
 			set {
-				throw new NotImplementedException ();
+				Set ("useremail", value);
 			}
 		}
 	}
 
 	public class IncomingServer : PropertyStore {
+		private string key;
 	
 		public IncomingServer (string key)
 		{
-			throw new NotImplementedException ();
+			this.key = key;
 		}
 		
 		public string Key { 
 			get {
-				throw new NotImplementedException ();
+				return key;
 			}
 			set {
-				throw new NotImplementedException ();
+				key = value;
 			}
 		}
 		
 		public string PrettyName { 
 			get {
-				throw new NotImplementedException ();
+				try {
+					return GetString ("prettyName");
+				} catch {
+				}
+				
+				return string.Empty;
 			}
 			set {
-				throw new NotImplementedException ();
+				Set ("prettyName", value);
 			}
 		}
 		
 		public string HostName { 
 			get {
-				throw new NotImplementedException ();
+				try {
+					return GetString ("hostname");
+				} catch {
+				}
+				
+				return string.Empty;
 			}
 			set {
-				throw new NotImplementedException ();
+				Set ("hostname", value);
 			}
 		}
 		
 		public string RealHostName { 
 			get {
-				throw new NotImplementedException ();
+				try {
+					return GetString ("realHostName");
+				} catch {
+				}
+				
+				return string.Empty;
 			}
 			set {
-				throw new NotImplementedException ();
+				Set ("realHostName", value);
 			}
 		}
 		
-		public long Port { 
+		public int Port { 
 			get {
-				throw new NotImplementedException ();
+				try {
+					return GetInt ("port");
+				} catch {
+				}
+				
+				return -1;
 			}
 			set {
-				throw new NotImplementedException ();
+				Set ("port", value);
 			}
 		}
 		
 		public string Username { 
 			get {
-				throw new NotImplementedException ();
+				try {
+					return GetString ("username");
+				} catch {
+				}
+				
+				return string.Empty;
 			}
 			set {
-				throw new NotImplementedException ();
+				Set ("username", value);
 			}
 		}
 		
 		public string RealUserName { 
 			get {
-				throw new NotImplementedException ();
+				try {
+					return GetString ("realUsername");
+				} catch {
+				}
+				
+				return string.Empty;
 			}
 			set {
-				throw new NotImplementedException ();
+				Set ("realUsername", value);
 			}
 		}
 		
 		public string Type { 
 			get {
-				throw new NotImplementedException ();
+				try {
+					return GetString ("type");
+				} catch {
+				}
+				
+				return string.Empty;
 			}
 			set {
-				throw new NotImplementedException ();
+				Set ("type", value);
 			}
 		}
 	}
 	
 	public class Account {
+		private List<MessageIdentity> identities;
 		
 		public Account()
 		{
-			throw new NotImplementedException ();
+			this.identities = new List<MessageIdentity> ();
 		}
 
 		public void Add (MessageIdentity id)
