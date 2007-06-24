@@ -1,0 +1,17 @@
+<Combine name="beagle-tbird-soc07" fileversion="2.0">
+  <Configurations active="Debug">
+    <Configuration name="Debug" ctype="CombineConfiguration">
+      <Entry build="True" name="beagle-tbird-soc07" configuration="Debug" />
+    </Configuration>
+    <Configuration name="Release" ctype="CombineConfiguration">
+      <Entry build="True" name="beagle-tbird-soc07" configuration="Release" />
+    </Configuration>
+  </Configurations>
+  <DeployTargets />
+  <StartMode startupentry="beagle-tbird-soc07" single="True">
+    <Execute type="None" entry="beagle-tbird-soc07" />
+  </StartMode>
+  <Entries>
+    <Entry filename="./beagle-tbird-soc07.mdp" />
+  </Entries>
+</Combine>

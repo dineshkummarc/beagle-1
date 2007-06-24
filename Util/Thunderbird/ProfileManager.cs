@@ -108,7 +108,6 @@ namespace Beagle.Util.Thunderbird {
 				return;
 			}
 			
-			//bool found_default = false;
 			profiles = new List<Profile> ();
 			
 			// Open file and add all profiles
@@ -196,6 +195,12 @@ namespace Beagle.Util.Thunderbird {
 		
 		private bool Update (Profile old_profile, Profile new_profile)
 		{
+			CheckLoaded ();
+			if (old_profile.Equals (Profile.Null))
+				throw new ArgumentNullException ("old_profile");
+			if (new_profile.Equals (Profile.Null))
+				throw new ArgumentNullException ("new_profile");
+			
 			if (Equal (old_profile, new_profile) && profiles.Contains (old_profile)) {
 				if (!old_profile.Name.Equals (new_profile.Name) 
 					|| old_profile.IsRelative != new_profile.IsRelative
@@ -238,19 +243,14 @@ namespace Beagle.Util.Thunderbird {
 		public bool Contains (Profile profile)
 		{
 			CheckLoaded ();
-			foreach (Profile p in profiles) {
-				if (p.Equals (profile))
-					return true;
-			}
-			
-			return false;
+			return profiles.Contains (profile);
 		}
 		
 		public void Clear ()
 		{
 			CheckLoaded ();
-			for (int i = 0; i < profiles.Count; i++)
-				Remove (profiles [i]);
+			while (profiles.Count > 0) 
+				Remove (profiles [0]);
 		}
 		
 		public void CopyTo (Profile[] array, int index)

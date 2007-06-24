@@ -25,6 +25,7 @@
 //
 
 using System;
+using System.Text;
 using System.Collections.Generic;
 
 namespace Beagle.Util.Thunderbird {
@@ -82,6 +83,26 @@ namespace Beagle.Util.Thunderbird {
 			}
 			
 			return null;
+		}
+		
+		// FIXME: I would really like to override the Equals-method instead of using a static
+		// class member. But how the heck would I do to generate a decent hash code?
+		public static bool Equal (PropertyValue pv1, PropertyValue pv2)
+		{
+			if (pv1.Equals (Null) || pv2.Equals (Null) || pv1.Type != pv2.Type) {
+				return false;
+			}
+			//Console.WriteLine ("{0},,,,{1}", pv1, pv2);
+			switch (pv1.Type) {
+			case PropertyValueType.String:
+				return pv1.String.Equals (pv2.String);
+			case PropertyValueType.Integer:
+				return (pv1.Integer == pv2.Integer);
+			case PropertyValueType.Boolean:
+				return (pv1.Bool == pv2.Bool);
+			}
+			
+			return false;
 		}
 	}
 
@@ -162,6 +183,46 @@ namespace Beagle.Util.Thunderbird {
 				throw new InvalidCastException ("invalid cast");
 			
 			return val.Bool;
+		}
+		
+		public override string ToString ()
+		{
+			int count = 0;
+			StringBuilder builder = new StringBuilder ();
+			
+			foreach (string key in this.Keys) {
+				string str = String.Format ("* {0} = {1}", key, this [key]);
+				
+				if (count++ != (this.Count-1))
+					builder.AppendLine (str);
+				else
+					builder.Append (str);
+			}
+			
+			return builder.ToString ();
+		}
+		
+		// FIXME: I would really like to override the Equals-method instead of using a static
+		// class member. But how the heck would I do to generate a decent hash code?
+		public static bool Equals (PropertyStore store1, PropertyStore store2)
+		{
+			if (store1 == null || store2 == null || (store1.Count != store2.Count))
+				return false;
+			
+			foreach (string old_key in store1.Keys) {
+				bool found = false;
+				foreach (string new_key in store2.Keys) {
+					if (PropertyValue.Equal (store1 [old_key], store2 [new_key])) {
+						found = true;
+						break;
+					}
+				}
+				
+				if (!found) 
+					return false;
+			}
+			
+			return true;
 		}
 	}
 }

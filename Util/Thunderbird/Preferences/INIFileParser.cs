@@ -57,18 +57,7 @@ namespace Beagle.Util.Thunderbird.Preferences {
 		
 		public override string ToString ()
 		{
-			int position = 0;
-			StringBuilder builder = new StringBuilder ();
-			
-			builder.AppendLine (String.Format ("Section: {0}", Section));
-			foreach (string key in Parameters.Keys) {
-				if (position++ != (Parameters.Count - 1))
-					builder.AppendLine (String.Format ("* {0}={1}", key, Parameters [key]));
-				else
-					builder.Append (String.Format ("* {0}={1}", key, Parameters [key]));
-			}
-			
-			return builder.ToString ();
+			return String.Format ("Section: {0}\n{1}", Section, Parameters);
 		}
 	}
 	

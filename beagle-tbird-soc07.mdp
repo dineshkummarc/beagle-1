@@ -1,0 +1,51 @@
+<Project name="beagle-tbird-soc07" fileversion="2.0" language="Boo" clr-version="Net_1_1" ctype="DotNetProject">
+  <Configurations active="Debug">
+    <Configuration name="Debug" ctype="DotNetProjectConfiguration">
+      <Output directory="./bin/Debug" assembly="beagle-tbird-soc07" />
+      <Build debugmode="True" target="Exe" />
+      <Execution runwithwarnings="True" consolepause="True" runtime="MsNet" clr-version="Net_1_1" />
+      <CodeGeneration genwarnings="False" ducky="False" culture="" ctype="BooCompilerParameters" />
+    </Configuration>
+    <Configuration name="Release" ctype="DotNetProjectConfiguration">
+      <Output directory="./bin/Release" assembly="beagle-tbird-soc07" />
+      <Build debugmode="False" target="Exe" />
+      <Execution runwithwarnings="True" consolepause="True" runtime="MsNet" clr-version="Net_1_1" />
+      <CodeGeneration genwarnings="False" ducky="False" culture="" ctype="BooCompilerParameters" />
+    </Configuration>
+  </Configurations>
+  <DeployTargets />
+  <Contents>
+    <File name="./beagled/ThunderbirdQueryable/IThunderbirdModule.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./beagled/ThunderbirdQueryable/ModuleManager.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./beagled/ThunderbirdQueryable/MorkIndexableGenerator.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./beagled/ThunderbirdQueryable/MorkModule.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./beagled/ThunderbirdQueryable/TaskHandler.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./beagled/ThunderbirdQueryable/ThunderbirdProfileIndexer.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./beagled/ThunderbirdQueryable/ThunderbirdQueryable.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./beagled/ThunderbirdQueryable/Modules/ContactModule.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./beagled/ThunderbirdQueryable/Modules/ImapModule.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./beagled/ThunderbirdQueryable/Modules/MoveMailModule.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./beagled/ThunderbirdQueryable/Modules/NewsgroupModule.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./beagled/ThunderbirdQueryable/Modules/Pop3Module.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./beagled/ThunderbirdQueryable/Modules/RSSModule.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Modules/ModuleAttribute.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Modules/ModuleTypeLoader.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Trackers/CollectorTracker.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Trackers/DefaultTracker.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Trackers/FileTracker.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Trackers/FileTrackerEventArgs.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Trackers/InotifyTracker.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Thunderbird/AccountManager.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Thunderbird/IManager.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Thunderbird/ProfileManager.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Thunderbird/PropertyStore.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Thunderbird/Preferences/INIFileParser.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Thunderbird/Preferences/PreferenceParser.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Thunderbird/Utilities/Convert.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Thunderbird/Utilities/FileReader.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Thunderbird/Utilities/IO.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Thunderbird/Utilities/Paths.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Thunderbird/Utilities/RangeList.cs" subtype="Code" buildaction="Nothing" />
+  </Contents>
+  <References />
+</Project>
