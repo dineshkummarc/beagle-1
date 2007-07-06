@@ -1,4 +1,3 @@
-#define ENABLE_XML_DUMP
 //
 // Server.cs
 //
@@ -134,8 +133,13 @@ namespace Beagle.Daemon {
 					if (!(e is IOException || e is ThreadAbortException))
 						throw;
 
+					// Reset the unsightly ThreadAbortException
+					Thread.ResetAbort ();
+
 					Logger.Log.Debug ("Bailing out of HandleConnection -- shutdown requested");
+					this.thread = null;
 					Server.MarkHandlerAsKilled (this);
+					Shutdown.WorkerFinished (network_data);
 					return;
 				}
 
@@ -322,8 +326,13 @@ namespace Beagle.Daemon {
 					if (!(e is IOException || e is ThreadAbortException))
 						throw;
 
+					// Reset the unsightly ThreadAbortException
+					Thread.ResetAbort ();
+
 					Logger.Log.Debug ("Bailing out of HandleConnection -- shutdown requested");
+					this.thread = null;
 					Server.MarkHandlerAsKilled (this);
+					Shutdown.WorkerFinished (network_data);
 					return;
 				}
 
@@ -632,16 +641,11 @@ namespace Beagle.Daemon {
 		private void Run ()
 		{
 			this.running = true;
+			this.unix_listener.Start ();
 
 			if (! Shutdown.WorkerStart (this, String.Format ("server '{0}'", socket_path)))
 				return;
 
-			if (enable_http) {
-				System.Threading.Thread t = new Thread (new ThreadStart (HttpRun));
-				t.Start ();
-			}
-
-			this.unix_listener.Start ();
 			ConnectionHandler handler = null;
 
 			while (this.running) {
@@ -783,8 +787,11 @@ namespace Beagle.Daemon {
 			if (!initialized)
 				throw new Exception ("Server must be initialized before starting");
 
-			if (!Shutdown.ShutdownRequested)
+			if (!Shutdown.ShutdownRequested) {
+				if (enable_http)
+					ExceptionHandlingThread.Start (new ThreadStart (this.HttpRun));
 				ExceptionHandlingThread.Start (new ThreadStart (this.Run));
+			}
 		}
 
 		public void Stop ()

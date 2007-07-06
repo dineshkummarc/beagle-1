@@ -214,6 +214,7 @@ namespace Beagle {
 
 		protected override void SendRequest (RequestMessage request)
 		{
+			Logger.Log.Debug ("Sending request to {0}", socket_name);
 			this.client = new UnixClient (this.socket_name);
 			NetworkStream stream = this.client.GetStream ();
 			
@@ -436,7 +437,7 @@ namespace Beagle {
 		
 		protected override void SendRequest (RequestMessage request)
 		{
-			Logger.Log.Debug ("Sending request");
+			Logger.Log.Debug ("Sending request to {0}", client_url);
 			http_request = (HttpWebRequest) System.Net.WebRequest.Create (client_url);
 			http_request.Method = "POST";
 			http_request.KeepAlive = true;

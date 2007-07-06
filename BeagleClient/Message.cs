@@ -202,6 +202,10 @@ namespace Beagle {
 		virtual public void SendAsync ()
 		{
 			lock (clients) {
+				if (this.clients.Count == 0)
+					// FIXME: Throw a custom exception and catch it upwards, also better message
+					throw new Exception ("No where to send data, add local querydomain or add neighbourhood domain with some hosts");
+
 				foreach (ClientContainer c in this.clients.Values) {
 					if (c.client != null)
 						c.client.Close ();
@@ -217,6 +221,10 @@ namespace Beagle {
 		public void SendAsyncBlocking ()
 		{
 			lock (clients) {
+				if (this.clients.Count == 0)
+					// FIXME: Throw a custom exception and catch it upwards, also better message
+					throw new Exception ("No where to send data, add local querydomain or add neighbourhood domain with some hosts");
+
 				foreach (ClientContainer c in this.clients.Values) {
 					c.CreateClient ();
 					c.client.AsyncResponseEvent += OnAsyncResponse;

@@ -57,9 +57,9 @@ class QueryTool {
 	private static DateTime start_date = DateTime.MinValue;
 	private static DateTime end_date = DateTime.MinValue;
 
-	private static bool query_local = false;
-	private static bool query_neighborhood = true;
-	private static bool query_global = true;
+	private static bool query_local = true;
+	private static bool query_neighborhood = false;
+	private static bool query_global = false;
 
 	private static void OnHitsAdded (HitsAddedResponse response)
 	{
@@ -165,6 +165,12 @@ class QueryTool {
 			"              \t\t\tthe actual results.\n" +
 			"  --max-hits\t\t\tLimit number of search results per backend\n" +
 			"            \t\t\t(default = 100, max = 100)\n" +
+			"\n" +
+			"  --local <yes|no>\t\tQuery local system (default yes)\n" +
+			"  --network <yes|no>\t\tQuery other beagle systems in the neighbourhood domain specified in config (default no)\n" +
+			"                    \t\tUse 'beagle-config networking AddNeighborhoodBeagleNode hostname:portnumber' to add a remote beagle system\n" +
+			"                    \t\tThe service by default runs in port 4000\n" +
+			"\n" +
 			"  --flood\t\t\tExecute the query over and over again.  Don't do that.\n" +
 			"  --listener\t\t\tExecute an index listener query.  Don't do that either.\n" +
 			"  --help\t\t\tPrint this usage message.\n" +
@@ -267,12 +273,6 @@ class QueryTool {
 		};
 
 		query = new Query ();
-		if (!query_local)
-			query.RemoveDomain (QueryDomain.Local);
-		if (query_neighborhood)
-			query.AddDomain (QueryDomain.Neighborhood);
-		if (query_global)
-			query.AddDomain (QueryDomain.Global);
 
 		// Parse args
 		int i = 0;
@@ -356,6 +356,22 @@ class QueryTool {
 				System.Environment.Exit (0);
 				break;
 
+			case "--local":
+				if (++i >= args.Length) PrintUsageAndExit ();
+				if (args [i].ToLower () == "no")
+					query_local = false;
+				else
+					query_local = true;
+				break;
+
+			case "--network":
+				if (++i >= args.Length) PrintUsageAndExit ();
+				if (args [i].ToLower () == "yes")
+					query_neighborhood = true;
+				else
+					query_neighborhood = false;
+				break;
+
 			default:
 				if (query_str.Length > 0)
 					query_str.Append (' ');
@@ -367,6 +383,13 @@ class QueryTool {
 
 			++i;
 		}
+
+		if (!query_local)
+			query.RemoveDomain (QueryDomain.Local);
+		if (query_neighborhood)
+			query.AddDomain (QueryDomain.Neighborhood);
+		if (query_global)
+			query.AddDomain (QueryDomain.Global);
 
 		if (listener) {
 

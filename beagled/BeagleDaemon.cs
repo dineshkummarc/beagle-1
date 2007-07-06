@@ -146,27 +146,26 @@ namespace Beagle.Daemon {
 			usage +=
 				"Usage: beagled [OPTIONS]\n\n" +
 				"Options:\n" +
+				"  --version\t\tShow version of daemon, Mono, and Sqlite.\n" +
 				"  --foreground, --fg\tRun the daemon in the foreground.\n" +
 				"  --background, --bg\tRun the daemon in the background.\n" +
-				"  --replace\t\tReplace a running daemon with a new instance.\n" +
-				"  --debug\t\tWrite out debugging information.\n" +
-				"  --debug-memory\tWrite out debugging information about memory use.\n" +
-				"  --indexing-test-mode\tRun in foreground, and exit when fully indexed.\n" +
-				"  --indexing-delay\tTime to wait before indexing.  (Default 60 seconds)\n" +
 				"  --backend\t\tConfigure which backends to use.  Specifically:\n" +
 				"    --backend <name>\tOnly start backend 'name'\n" +
 				"    --backend +<name>\tAdditionally start backend 'name'\n" +
 				"    --backend -<name>\tDisable backend 'name'\n" +
-				"  --allow-backend\t(DEPRECATED) Start only the specific backend.\n" +
-				"  --deny-backend\t(DEPRECATED) Deny a specific backend.\n" +
+				"  --replace\t\tReplace a running daemon with a new instance.\n" +
 				"  --list-backends\tList all the available backends.\n" +
 				"  --add-static-backend\tAdd a static backend by path.\n" + 
+				"  --help\t\tPrint this usage message.\n" +
+				"\n" +
+				"Advance options:\n" +
+				"  --debug\t\tWrite out debugging information.\n" +
+				"  --debug-memory\tWrite out debugging information about memory use.\n" +
+				"  --indexing-test-mode\tRun in foreground, and exit when fully indexed.\n" +
+				"  --indexing-delay <t>\tWait 't' seconds before indexing.  (Default 60 seconds)\n" +
 				"  --disable-scheduler\tDisable the use of the scheduler.\n" +
-				"  --networked\t\tEnable remote queries to the daemon.\n" + 
-				"  --version\tShow version of daemon, Mono, and Sqlite.\n" +
-				// FIXME: Expose this to the user ?
-				//"  --disable-textcache\tDisable the use of the text cache used to provide snippets
-				"  --help\t\tPrint this usage message.\n";
+				"  --disable-text-cache\tDisable the use of the text cache used to provide snippets.\n" +
+				"  --networked\t\tEnable remote queries to the daemon.\n";
 
 			Console.WriteLine (usage);
 		}
@@ -222,6 +221,7 @@ namespace Beagle.Daemon {
 			// will become some sort of D-BUS signal, probably from
 			// something like gnome-power-manager.
 			prev_on_battery = initially_on_battery;
+			// Use 1 sec more than acpi poll interval
 			GLib.Timeout.Add (5000, CheckBatteryStatus);
 
 			// Start our Inotify threads
@@ -328,7 +328,8 @@ namespace Beagle.Daemon {
 					arg_debug_memory = true;
 					break;
 
-				case "--no-shapshots":
+				case "--no-snapshots":
+				case "--no-snapshot":
 					arg_heap_shot_snapshots = false;
 					break;
 
@@ -413,7 +414,7 @@ namespace Beagle.Daemon {
 					// FIXME: This option is deprecated and will be removed in a future release.
 					break;
 
-				case "--disable-textcache":
+				case "--disable-text-cache":
 					disable_textcache = true;
 					break;
 					
@@ -507,6 +508,9 @@ namespace Beagle.Daemon {
 			else
 				Logger.Log.Debug ("Unable to establish a connection to the X server");
 			XSetIOErrorHandler (BeagleXIOErrorHandler);
+
+			// Lower our CPU priority
+			SystemPriorities.Renice (7);
 
 			QueryDriver.Init ();
 			Server.Init ();
