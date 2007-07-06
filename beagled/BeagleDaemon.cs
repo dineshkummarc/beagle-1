@@ -49,6 +49,7 @@ namespace Beagle.Daemon {
 		private static bool arg_replace = false;
 		private static bool arg_disable_scheduler = false;
 		private static bool arg_indexing_test_mode = false;
+		private static bool arg_networked = false;
 		private static bool arg_heap_shot = false;
 		private static bool arg_heap_shot_snapshots = true;
 
@@ -63,7 +64,7 @@ namespace Beagle.Daemon {
 			Logger.Log.Debug ("Starting messaging server");
 
 			try {
-				server = new Server ("socket");
+				server = new Server ("socket", arg_networked);
 				server.Start ();
 			} catch (InvalidOperationException) {
 				return false;
@@ -161,6 +162,7 @@ namespace Beagle.Daemon {
 				"  --list-backends\tList all the available backends.\n" +
 				"  --add-static-backend\tAdd a static backend by path.\n" + 
 				"  --disable-scheduler\tDisable the use of the scheduler.\n" +
+				"  --networked\t\tEnable remote queries to the daemon.\n" + 
 				"  --version\tShow version of daemon, Mono, and Sqlite.\n" +
 				// FIXME: Expose this to the user ?
 				//"  --disable-textcache\tDisable the use of the text cache used to provide snippets
@@ -413,6 +415,10 @@ namespace Beagle.Daemon {
 
 				case "--disable-textcache":
 					disable_textcache = true;
+					break;
+					
+				case "--networked":
+					arg_networked = true;
 					break;
 				
 				case "--version":

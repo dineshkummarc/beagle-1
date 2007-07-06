@@ -28,6 +28,7 @@
 using System;
 using System.IO;
 using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 using System.Xml.Serialization;
 
@@ -40,7 +41,8 @@ namespace Beagle {
 		Local        = 1,
 		System       = 2,
 		Neighborhood = 4,
-		Global       = 8
+		Global       = 8,
+		All          = 15 /* 1 | 2 | 4 | 8 */
 	}
 
 	public class Query : RequestMessage {
@@ -370,11 +372,14 @@ namespace Beagle {
 			set { domainFlags = value; }
 		}
 
+		private Dictionary<string, bool> hosts_added = new Dictionary<string, bool> ();
+
 		public void AddDomain (Beagle.QueryDomain d)
 		{
-		    /*
+			domainFlags |= d;
+
 			ArrayList hosts_to_add = null;
-			
+
 			switch (d) {
 				case QueryDomain.Neighborhood:
 					hosts_to_add = Conf.Networking.NeighborhoodNodes;
@@ -383,20 +388,42 @@ namespace Beagle {
 					hosts_to_add = Conf.Networking.GlobalNodes;
 					break;
 			}
-			lock (clients) {
-				foreach (string url in hosts_to_add) {
-					Logger.Log.Debug ( "Query: Adding " + url + " to query");
-					clients.Add ( new ClientContainer ( false, typeof (HttpClient), url) );
-				}
+
+			if (hosts_to_add == null && d <= Beagle.QueryDomain.System) {
+				SetLocal (true);
+				return;
 			}
-		
-		    */
+
+			foreach (string url in hosts_to_add) {
+				if (hosts_added.ContainsKey (url))
+					continue;
+
+				hosts_added [url] = true;
+				Logger.Log.Debug ( "Query: Adding " + url + " to query");
+				SetRemote (url);
+			}
+		}
+
+		public void AddRemoteDomain (Beagle.QueryDomain d, string url)
+		{
+			if (d <= Beagle.QueryDomain.System)
+				throw new Exception ("I meant _remote_ domain!");
+
 			domainFlags |= d;
+			if (! hosts_added.ContainsKey (url)) {
+				hosts_added [url] = true;
+				SetRemote (url);
+			}
 		}
 
 		public void RemoveDomain (Beagle.QueryDomain d)
 		{
 			domainFlags &= ~d;
+
+			if (d <= Beagle.QueryDomain.System)
+				SetLocal (false);
+			else
+				throw new NotImplementedException ("Removing already added remote domains not supported");
 		}
 
 		public bool AllowsDomain (Beagle.QueryDomain d)

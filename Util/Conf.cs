@@ -47,6 +47,8 @@ namespace Beagle.Util {
 		public static DaemonConfig Daemon = null;
 		public static SearchingConfig Searching = null;
 
+		public static NetworkingConfig Networking = null;
+
 		private static string configs_dir;
 		private static Hashtable mtimes;
 		private static Hashtable subscriptions;
@@ -145,6 +147,10 @@ namespace Beagle.Util {
 		        Searching = (SearchingConfig) temp;
 			NotifySubscribers (Searching);
 
+			LoadFile (typeof (NetworkingConfig), Networking, out temp, force);
+		    	Networking = (NetworkingConfig) temp;
+			NotifySubscribers (Networking);
+			
 			watching_for_updates = true;
 		}
 
@@ -627,6 +633,97 @@ namespace Beagle.Util {
 						new RemovableMediaInfo (name, mount_path));
 
 				SaveNeeded = true;
+				return true;
+			}
+		}
+
+		[ConfigSection (Name="networking")]
+		public class NetworkingConfig: Section 
+		{
+			private ArrayList neighborhoodNodes = new ArrayList ();
+			private ArrayList globalNodes = new ArrayList ();
+			
+			[XmlArray]
+			[XmlArrayItem(ElementName="NeighborhoodNodes", Type=typeof(string))]
+			public ArrayList NeighborhoodNodes {
+				get { return neighborhoodNodes; }
+				set { neighborhoodNodes = value; }
+			}
+			
+			[XmlArray]
+			[XmlArrayItem(ElementName="GlobalNodes", Type=typeof(string))]
+			public ArrayList GlobalNodes {
+				get { return globalNodes; }
+				set { globalNodes = value; }
+			}
+
+			[ConfigOption (Description="List Networked Beagle Daemons to query", IsMutator=false)]
+			internal bool ListBeagleNodes (out string output, string [] args)
+			{
+				output = "Current list of Networked Beagle Daemons to query:\n";
+				
+				output += "Neighborhood Domain:\n";
+
+				foreach (string nb in neighborhoodNodes)
+					output += " - " + nb + "\n";
+					
+				output += "\nGlobal Domain:\n";
+
+				foreach (string nb in globalNodes)
+					output += " - " + nb + "\n";				
+
+				return true;
+			}
+
+			[ConfigOption (Description="Add a Networked Beagle Daemon to the 'Neighborhood' domain", Params=1, ParamsDescription="HostName:PortNo")]
+			internal bool AddNeighborhoodBeagleNode (out string output, string [] args)
+			{
+				string node = args[0];
+				
+				if (((string[])node.Split(':')).Length < 2)
+					node = args [0].Trim() + ":4000";
+							
+				neighborhoodNodes.Add(node);			
+				output = "Networked Beagle Daemon \"" + node +"\" added to Neighborhood.";
+				return true;
+			}
+			
+			[ConfigOption (Description="Add a Networked Beagle Daemon to the 'Global' domain", Params=1, ParamsDescription="HostName:PortNo")]
+			internal bool AddGlobalBeagleNode (out string output, string [] args)
+			{
+				string node = args[0];
+				
+				if (((string[])node.Split(':')).Length < 2)
+					node = args [0].Trim() + ":4000";
+							
+				globalNodes.Add(node);			
+				output = "Networked Beagle Daemon \"" + node +"\" added to Global.";
+				return true;
+			}
+
+			[ConfigOption (Description="Remove a configured Networked Beagle Daemon from the 'Neighborhood' domain.", Params=1, ParamsDescription="HostName:PortNo")]
+			internal bool DelNeighborhoodBeagleNode (out string output, string [] args)
+			{
+				string node = args[0];
+				
+				if (((string[])node.Split(':')).Length < 2)
+					node = args [0].Trim() + ":4000";
+							
+				neighborhoodNodes.Remove(node);					
+				output = "Networked Beagle Daemon \"" + node +"\" removed from Neighborhood.";
+				return true;
+			}
+			
+			[ConfigOption (Description="Remove a configured Networked Beagle Daemon from the 'Neighborhood' domain.", Params=1, ParamsDescription="HostName:PortNo")]
+			internal bool DelGlobalBeagleNode (out string output, string [] args)
+			{
+				string node = args[0];
+				
+				if (((string[])node.Split(':')).Length < 2)
+					node = args [0].Trim() + ":4000";
+							
+				globalNodes.Remove(node);					
+				output = "Networked Beagle Daemon \"" + node +"\" removed from Global.";
 				return true;
 			}
 		}

@@ -65,7 +65,7 @@ namespace Beagle {
 		private Hashtable handlers = new Hashtable ();
 
 		//A list of clients which will receive this message 
-		protected ArrayList clients = new ArrayList ();
+		protected Hashtable clients = new Hashtable ();
 		//How many clients have completed all comms
 		protected int clients_finished;
 
@@ -79,29 +79,34 @@ namespace Beagle {
 
 		// This is why names arguments (like in python) are a good idea.
 
-		public RequestMessage (bool keepalive, string client_name)
+		public RequestMessage (bool keepalive, bool local, string client_name)
 		{
 			this.Keepalive = keepalive;
 
-			//FIXME: To keep the constructor compatible with the old single-client RequestMessage,
-			//A UnixSocketClient is created and added to the clients list by default. There should be a
-			//way to skip this if needed.
-			this.clients.Add ( new ClientContainer (true, typeof(UnixSocketClient), client_name) );
+			if (local)
+				this.clients.Add ("local", new ClientContainer (true, typeof(UnixSocketClient), client_name));
 		}
 
-		public RequestMessage (bool keepalive) : this (keepalive, null)
+		public RequestMessage (bool keepalive, string client_name)
+			: this (keepalive, true, client_name)
 		{
-
 		}
 
-		public RequestMessage (string client_name) : this (false, client_name)
+		public RequestMessage (bool keepalive) : this (keepalive, true, null)
 		{
+		}
 
+		// Recommended: Use this only when local = false
+		public RequestMessage (bool keepalive, bool local) : this (keepalive, local, null)
+		{
+		}
+
+		public RequestMessage (string client_name) : this (false, true, client_name)
+		{
 		}
 
 		public RequestMessage () : this (false, null)
 		{
-
 		}
 		
 		~RequestMessage ()
@@ -123,7 +128,7 @@ namespace Beagle {
 		public void Close ()
 		{
 			lock (clients) {
-				foreach (ClientContainer c in this.clients)	{
+				foreach (ClientContainer c in this.clients.Values) {
 					if (c.client != null)
 						c.client.Close ();
 				}
@@ -161,10 +166,43 @@ namespace Beagle {
 			}
 		}
 
+		// Again an irritating long list of overloaded methods instead of named parameters
+		public void SetLocal (bool local)
+		{
+			SetLocal (local, null);
+		}
+
+		public void SetLocal (string client_name)
+		{
+			SetLocal (true, client_name);
+		}
+
+		public void SetLocal (bool local, string client_name)
+		{
+			lock (this.clients) {
+				if (! local) {
+					if (this.clients.Contains ("local"))
+						this.clients.Remove ("local");
+				} else {
+					if (! this.clients.Contains ("local"))
+						this.clients.Add ("local", new ClientContainer (true, typeof(UnixSocketClient), client_name));
+				}
+			}
+		}
+
+		// url: host:port
+		public void SetRemote (string url)
+		{
+			// Hashtable will replace existing clientcontainer (if any), which will
+			// in turn close the clients when GC will collect them
+			lock (this.clients)
+				this.clients [url] = new ClientContainer (false, typeof (HttpClient), url);
+		}
+
 		virtual public void SendAsync ()
 		{
 			lock (clients) {
-				foreach (ClientContainer c in this.clients) {
+				foreach (ClientContainer c in this.clients.Values) {
 					if (c.client != null)
 						c.client.Close ();
 					
@@ -179,7 +217,7 @@ namespace Beagle {
 		public void SendAsyncBlocking ()
 		{
 			lock (clients) {
-				foreach (ClientContainer c in this.clients) {
+				foreach (ClientContainer c in this.clients.Values) {
 					c.CreateClient ();
 					c.client.AsyncResponseEvent += OnAsyncResponse;
 					c.client.ClosedEvent += OnClosedEvent;
@@ -192,7 +230,7 @@ namespace Beagle {
 		{
 			ArrayList responses = new ArrayList ();
 			
-			foreach (ClientContainer c in clients)
+			foreach (ClientContainer c in clients.Values)
 			{
 				c.CreateClient ();
 				//Logger.Log.Debug ("Sending message");

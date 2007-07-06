@@ -365,8 +365,32 @@ OPERA_QUERYABLE_CSFILES =				\
 	$(operaqueryable)/OperaIndexer.cs		\
 	$(operaqueryable)/OperaQueryable.cs
 
+httplistener = $(srcdir)/webserver
+HTTPLISTENER_CSFILES = \
+	$(httplistener)/AuthenticationSchemes.cs		\
+	$(httplistener)/AuthenticationSchemeSelector.cs	\
+	$(httplistener)/ChunkedInputStream.cs			\
+	$(httplistener)/ChunkStream.cs				\
+	$(httplistener)/EndPointListener.cs			\
+	$(httplistener)/EndPointManager.cs			\
+	$(httplistener)/HttpConnection.cs			\
+	$(httplistener)/HttpListenerBasicIdentity.cs		\
+	$(httplistener)/HttpListenerContext.cs			\
+	$(httplistener)/HttpListener.cs				\
+	$(httplistener)/HttpListenerException.cs		\
+	$(httplistener)/HttpListenerPrefixCollection.cs		\
+	$(httplistener)/HttpListenerRequest.cs			\
+	$(httplistener)/HttpListenerResponse.cs			\
+	$(httplistener)/HttpStreamAsyncResult.cs		\
+	$(httplistener)/ListenerAsyncResult.cs			\
+	$(httplistener)/ListenerPrefix.cs			\
+	$(httplistener)/RequestStream.cs			\
+	$(httplistener)/ResponseStream.cs			\
+	$(httplistener)/WebHeaderCollection.cs		
+
 DAEMON_DLL_CSFILES = 						\
 	$(LUCENE_CSFILES)					\
+	$(HTTPLISTENER_CSFILES)					\
 	$(KMAIL_QUERYABLE_CSFILES)				\
 	$(FILE_SYSTEM_QUERYABLE_CSFILES)			\
 	$(GAIM_LOG_QUERYABLE_CSFILES)				\
@@ -435,7 +459,8 @@ DAEMON_DLL_ASSEMBLIES = 			\
 	$(DAEMON_DLL_LOCAL_ASSEMBLIES:%=-r:%)	\
 	$(SHARPZIPLIB_LIBS)		\
 	-r:Mono.Data.SqliteClient		\
-	-r:Mono.Posix
+	-r:Mono.Posix				\
+	-r:System.Web
 
 if USE_LOCAL_SQLITE
 DAEMON_DLL_CSFILES += $(SQLITE_CSFILES)

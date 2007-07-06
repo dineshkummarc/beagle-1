@@ -57,6 +57,10 @@ class QueryTool {
 	private static DateTime start_date = DateTime.MinValue;
 	private static DateTime end_date = DateTime.MinValue;
 
+	private static bool query_local = false;
+	private static bool query_neighborhood = true;
+	private static bool query_global = true;
+
 	private static void OnHitsAdded (HitsAddedResponse response)
 	{
 		lastQueryTime = DateTime.Now;
@@ -82,7 +86,7 @@ class QueryTool {
 
 			if (verbose) {
 				SnippetRequest sreq = new SnippetRequest (query, hit);
-				SnippetResponse sresp = (SnippetResponse) sreq.Send ();
+				SnippetResponse sresp = (SnippetResponse) ((ResponseMessage []) sreq.Send ()) [0];
 				Console.WriteLine ("PaUri: {0}", hit.ParentUri != null ? hit.ParentUri.ToString () : "(null)");
 				Console.WriteLine (" Snip: {0}", sresp.Snippet != null ? sresp.Snippet : "(null)");
 				Console.WriteLine (" Type: {0}", hit.Type);
@@ -119,7 +123,7 @@ class QueryTool {
 		}
 	}
 
-	private static void OnFinished (FinishedResponse response)
+	private static void OnFinished ()
 	{
 		if (verbose) {
 			Console.WriteLine ("Elapsed time: {0:0.000}s",
@@ -263,6 +267,12 @@ class QueryTool {
 		};
 
 		query = new Query ();
+		if (!query_local)
+			query.RemoveDomain (QueryDomain.Local);
+		if (query_neighborhood)
+			query.AddDomain (QueryDomain.Neighborhood);
+		if (query_global)
+			query.AddDomain (QueryDomain.Global);
 
 		// Parse args
 		int i = 0;
