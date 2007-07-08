@@ -65,6 +65,10 @@ namespace Beagle.Daemon {
 					Log.Debug ("Reading or creating attr for {0}", path);
 
 				FileAttributes attr = ifas.Read (path);
+
+				if (attr == null && unique_id == Guid.Empty)
+					unique_id = Guid.NewGuid ();
+
 				// If we pass in a Guid that doesn't match the one we found in the
 				// the attributes, clobber the old attributes and the old unique Guid.
 				if (attr == null
@@ -78,9 +82,6 @@ namespace Beagle.Daemon {
 					attr.UniqueId = unique_id;
 					attr.Path = path;
 					
-					// Now add the new attribute
-					// Note: New attribute should not be added.
-					//ifas.Write (attr);
 					created = true;
 				}
 
@@ -99,7 +100,7 @@ namespace Beagle.Daemon {
 
 		public FileAttributes ReadOrCreate (string path)
 		{
-			return ReadOrCreate (path, Guid.NewGuid ());
+			return ReadOrCreate (path, Guid.Empty);
 		}
 
 		public bool Write (FileAttributes attr)
@@ -192,12 +193,25 @@ namespace Beagle.Daemon {
 
 			attr = Read (path);
 
-			// If there are no attributes set on the file, there is no
-			// way that we can be up-to-date.
-			if (attr == null || ! attr.HasFilterInfo)
-				return false;
+			if (! FilterFactory.DirtyFilterCache) {
+				// If the filters are same as in last run,
+				// if attr is null, then there is no filter for this file even now
+				// if attr is not null, then check the timestamps (bypass HasFilterInfo)
 
-			return IsUpToDate (path, attr);
+				if (attr == null)
+					return true;
+				else
+					return IsUpToDate (path, attr);
+			} else {
+				// If there is a new filter in the mean time
+				// take previous filter information into consideration.
+				// Also, if attr is null, there could be a new filter now.
+
+				if (attr == null || ! attr.HasFilterInfo)
+					return false;
+				else
+					return IsUpToDate (path, attr);
+			}
 		}
 
 		public bool IsUpToDate (string path)

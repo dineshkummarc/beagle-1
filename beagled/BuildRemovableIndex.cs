@@ -204,10 +204,10 @@ namespace Beagle.Daemon
 			Conf.Save ();
 		}
 
-		protected override void AddToRequest (IndexerRequest request, Indexable indexable)
+		protected override void AddToRequest (Indexable indexable)
 		{
 			indexable.AddProperty (Property.New ("fixme:media_name", media_name));
-			base.AddToRequest (request, indexable);
+			base.AddToRequest (indexable);
 		}
 
 		//////////////////////////////////////////////

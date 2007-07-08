@@ -1,7 +1,7 @@
 //
 // LuceneCommon.cs
 //
-// Copyright (C) 2004-2005 Novell, Inc.
+// Copyright (C) 2004-2007 Novell, Inc.
 //
 
 //
@@ -78,7 +78,10 @@ namespace Beagle.Daemon {
 		//     lower case so that we're truly case insensitive.
 		// 16: add inverted timestamp to make querying substantially faster
 		// 17: add boolean property to denote a child indexable
-		private const int MAJOR_VERSION = 17;
+		// 18: add IsPersistent to properties, and adjust coded values
+		//     in AddPropertyToDocument() and GetPropertyFromDocument();
+		//     changed subdate field format rules for better readability
+		private const int MAJOR_VERSION = 18;
 		private int minor_version = 0;
 
 		private string index_name;
@@ -94,6 +97,9 @@ namespace Beagle.Daemon {
 		// This is the small index, containing document info that we
 		// expect to have change.  Canonical example: file names.
 		private Lucene.Net.Store.Directory secondary_store = null;
+
+		// Flush if more than this number of requests
+		public const int RequestFlushThreshold = 37; // a total arbitrary magic number
 
 		//////////////////////////////////////////////////////////////////////////////
 
@@ -246,12 +252,17 @@ namespace Beagle.Daemon {
 			int current_major_version, current_minor_version;
 			int i = version_str.IndexOf ('.');
 			
-			if (i != -1) {
-				current_major_version = Convert.ToInt32 (version_str.Substring (0, i));
-				current_minor_version = Convert.ToInt32 (version_str.Substring (i+1));
-			} else {
-				current_minor_version = Convert.ToInt32 (version_str);
-				current_major_version = 0;
+			try {
+				if (i != -1) {
+					current_major_version = Convert.ToInt32 (version_str.Substring (0, i));
+					current_minor_version = Convert.ToInt32 (version_str.Substring (i+1));
+				} else {
+					current_minor_version = Convert.ToInt32 (version_str);
+					current_major_version = 0;
+				}
+			} catch (FormatException) {
+				// Something wrong with the version file.
+				return false;
 			}
 
 			if (current_major_version != MAJOR_VERSION
@@ -267,11 +278,93 @@ namespace Beagle.Daemon {
 			// assume that the index is corrupted and declare it non-existent.
 			DirectoryInfo lock_dir_info;
 			lock_dir_info = new DirectoryInfo (LockDirectory);
+			bool dangling_lock = false;
+
 			foreach (FileInfo info in lock_dir_info.GetFiles ()) {
 				if (IsDanglingLock (info)) {
-					Logger.Log.Warn ("Found a dangling index lock on {0}", info.FullName);
-					return false;
+					Logger.Log.Warn ("Found a dangling index lock on {0}.", info.FullName);
+					dangling_lock = true;
 				}
+			}
+
+			if (dangling_lock) {
+				Beagle.Util.Stopwatch w = new Beagle.Util.Stopwatch ();
+				w.Start ();
+
+				if (VerifyLuceneIndex (PrimaryIndexDirectory) && 
+				    VerifyLuceneIndex (SecondaryIndexDirectory)) {
+					w.Stop ();
+
+					Log.Warn ("Indexes verified in {0}.  Deleting stale lock files.", w);
+
+					try {
+						foreach (FileInfo info in lock_dir_info.GetFiles ())
+							info.Delete ();
+					} catch {
+						Log.Warn ("Could not delete lock files.");
+						return false;
+					}
+					return true;
+				} else
+					return false;
+			}
+
+			return true;
+		}
+
+		private bool VerifyLuceneIndex (string path)
+		{
+			if (! Directory.Exists (path))
+				return true;
+
+			Log.Debug ("Verifying index {0}", path);
+
+			IndexReader reader = null;
+			TermEnum enumerator = null;
+			TermPositions positions = null;
+
+			try {
+				reader = IndexReader.Open (path);
+
+				// Crawl all of the terms in the index, and get the
+				// term positions and crawl those as well.  This
+				// method is suggested as a way to verify the index
+				// here:
+				//
+				// http://mail-archives.apache.org/mod_mbox/lucene-java-user/200504.mbox/%3c4265767B.5090307@getopt.org%3e
+				enumerator = reader.Terms ();
+
+				while (enumerator.Next ()) {
+					Term term = enumerator.Term ();
+					positions = reader.TermPositions (term);
+
+					while (positions.Next ()) {
+						int freq = positions.Freq ();
+
+						for (int i = 0; i < freq; i++)
+							positions.NextPosition ();
+					}
+					positions.Close ();
+					positions = null;
+				}
+
+				enumerator.Close ();
+				enumerator = null;
+
+				reader.Close ();
+				reader = null;
+			} catch (Exception e) {
+				Log.Warn ("Lucene index {0} is corrupted ({1})", path, e.Message);
+				return false;
+			} finally {
+				if (positions != null)
+					positions.Close ();
+
+				if (enumerator != null)
+					enumerator.Close ();
+
+				if (reader != null)
+					reader.Close ();
 			}
 
 			return true;
@@ -511,13 +604,13 @@ namespace Beagle.Daemon {
 			DateTime dt = StringFu.StringToDateTime (prop.Value);
 
 			Field f;
-			f = new Field ("YM:" + field_name,
+			f = new Field (field_name + "(YM)",
 				       StringFu.DateTimeToYearMonthString (dt),
 				       Field.Store.NO,
 				       Field.Index.NO_NORMS);
 			doc.Add (f);
 
-			f = new Field ("D:" + field_name,
+			f = new Field (field_name + "(D)",
 				       StringFu.DateTimeToDayString (dt),
 				       Field.Store.NO,
 				       Field.Index.NO_NORMS);
@@ -526,7 +619,7 @@ namespace Beagle.Daemon {
 
 		static protected void AddPropertyToDocument (Property prop, Document doc)
 		{
-			if (prop == null || prop.Value == null)
+			if (prop == null || String.IsNullOrEmpty (prop.Value))
 				return;
 
 			// Don't actually put properties in the UnindexedNamespace
@@ -556,8 +649,9 @@ namespace Beagle.Daemon {
 			}
 
 			string coded_value;
-			coded_value = String.Format ("{0}:{1}",
+			coded_value = String.Format ("{0}{1}:{2}",
 						     prop.IsSearched ? 's' : '_',
+						     prop.IsPersistent ? 'p' : '_',
 						     prop.Value);
 
 			string field_name = PropertyToFieldName (prop.Type, prop.Key);
@@ -572,6 +666,8 @@ namespace Beagle.Daemon {
 				AddDateFields (field_name, prop, doc);
 		}
 
+		public static bool DumpIndexMode = false;
+
 		static protected Property GetPropertyFromDocument (Field f, Document doc, bool from_primary_index)
 		{
 			// Note: we don't use the document that we pass in,
@@ -582,23 +678,38 @@ namespace Beagle.Daemon {
 			if (f == null)
 				return null;
 
+			bool internal_prop = false;
+
 			string field_name;
 			field_name = f.Name ();
 			if (field_name.Length < 7
-			    || ! field_name.StartsWith ("prop:"))
-				return null;
+			    || ! field_name.StartsWith ("prop:")) {
+				if (DumpIndexMode)
+					internal_prop = true;
+				else
+					return null;
+			}
 
 			string field_value;
 			field_value = f.StringValue ();
 
 			Property prop;
 			prop = new Property ();
-			prop.Type = CodeToType (field_name [5]);
-			prop.Key = field_name.Substring (7);
-			prop.Value = field_value.Substring (2);
+
+			if (DumpIndexMode) {
+				prop.Type = CodeToType ( internal_prop ? 'k' : field_name [5]);
+				prop.Key = (internal_prop ? field_name : field_name.Substring (7));
+				prop.Value = (internal_prop ? field_value : field_value.Substring (3));
+			} else {
+				prop.Type = CodeToType (field_name [5]);
+				prop.Key = field_name.Substring (7);
+				prop.Value = field_value.Substring (3);
+			}
+
 			prop.IsSearched = (field_value [0] == 's');
+			prop.IsPersistent = (field_value [1] == 'p');
 			prop.IsMutable = ! from_primary_index;
-			prop.IsStored = f.IsStored ();
+			prop.IsStored = true; // Unstored fields cannot be retrieved
 
 			return prop;
 		}
@@ -618,6 +729,11 @@ namespace Beagle.Daemon {
 
 			Field f;
 
+			// During querying, we retrieve a lucene document with only certain fields
+			// like Uri and Timestamp and quickly check if the document is a good one
+			// The field specified document constructor runs faster if the fields that
+			// are asked for are located at the beginning of the document.
+			// Hence it is better to keep "Uri" and "Timestamp" at the beginning.
 			f = new Field ("Uri", UriFu.UriToEscapedString (indexable.Uri),
 				       Field.Store.YES, Field.Index.NO_NORMS);
 			primary_doc.Add (f);
@@ -645,21 +761,22 @@ namespace Beagle.Daemon {
 				// Create an inverted timestamp so that we can
 				// sort by timestamp at search-time.
 				long timeval = Convert.ToInt64 (str);
-				f = new Field ("InvertedTimestamp", (Int64.MaxValue - timeval).ToString (),
+				// Pad the inverted timestamp with zeroes for proper string comparison during termenum enumeration
+				f = new Field ("InvertedTimestamp", (Int64.MaxValue - timeval).ToString ("d19"),
 					       Field.Store.NO, Field.Index.NO_NORMS);
 				primary_doc.Add (f);
 
 				str = StringFu.DateTimeToYearMonthString (indexable.Timestamp);
-				f = new Field ("YM:Timestamp", str, Field.Store.YES, Field.Index.NO_NORMS);
+				f = new Field ("Timestamp(YM)", str, Field.Store.YES, Field.Index.NO_NORMS);
 				primary_doc.Add (f);
-				f = new Field ("YM:" + wildcard_field, str,
+				f = new Field (wildcard_field + "(YM)", str,
 					       Field.Store.NO, Field.Index.NO_NORMS);
 				primary_doc.Add (f);
 
 				str = StringFu.DateTimeToDayString (indexable.Timestamp);
-				f = new Field ("D:Timestamp", str, Field.Store.YES, Field.Index.NO_NORMS);
+				f = new Field ("Timestamp(D)", str, Field.Store.YES, Field.Index.NO_NORMS);
 				primary_doc.Add (f);
-				f = new Field ("D:" + wildcard_field, str,
+				f = new Field (wildcard_field + "(D)", str,
 					       Field.Store.NO, Field.Index.NO_NORMS);
 				primary_doc.Add (f);
 			}
@@ -686,12 +803,13 @@ namespace Beagle.Daemon {
 					primary_doc.Add (f);
 				}
 			
+				// FIXME: HotText is ignored for now!
 				// Then add "HotText"
-				reader = indexable.GetHotTextReader ();
-				if (reader != null) {
-					f = new Field ("HotText", reader);
-					primary_doc.Add (f);
-				}
+				//reader = indexable.GetHotTextReader ();
+				//if (reader != null) {
+				//	f = new Field ("HotText", reader);
+				//	primary_doc.Add (f);
+				//}
 			}
 
 			// Store the Type and MimeType in special properties
@@ -779,6 +897,14 @@ namespace Beagle.Daemon {
 			// return w/o doing anything.
 			foreach (Property prop in prop_only_indexable.Properties) {
 				seen_props [prop.Key] = prop;
+
+				// Don't add properties that are empty; they
+				// essentially mean "reset this property"
+				if (prop.Value == String.Empty) {
+					Log.Debug ("Resetting prop '{0}'", prop.Key);
+					continue;
+				}
+
 				AddPropertyToDocument (prop, new_doc);
 				Logger.Log.Debug ("New prop '{0}' = '{1}'", prop.Key, prop.Value);
 			}
@@ -798,6 +924,27 @@ namespace Beagle.Daemon {
 			}
 
 			return new_doc;
+		}
+
+		static protected Document MergeDocuments (Document doc,
+							  Document prop_change_doc)
+		{
+			if (doc == null)
+				return prop_change_doc;
+
+			if (prop_change_doc == null)
+				return doc;
+
+			foreach (Field f in prop_change_doc.Fields ()) {
+				Property prop = GetPropertyFromDocument (f, prop_change_doc, false);
+
+				if (prop != null && prop.IsPersistent) {
+					Log.Debug ("Moving old persistent prop '{0}' = '{1}' forward", prop.Key, prop.Value);
+					AddPropertyToDocument (prop, doc);
+				}
+			}
+
+			return doc;
 		}
 
 		static protected Uri GetUriFromDocument (Document doc)
@@ -1041,7 +1188,7 @@ namespace Beagle.Daemon {
 
 		static private Term NewYearMonthTerm (string field_name, int y, int m)
 		{
-			return new Term ("YM:" + field_name, String.Format ("{0}{1:00}", y, m));
+			return new Term (field_name + "(YM)", String.Format ("{0}{1:00}", y, m));
 		}
 
 		static private LNS.Query NewYearMonthQuery (string field_name, int y, int m)
@@ -1058,7 +1205,7 @@ namespace Beagle.Daemon {
 
 		static private Term NewDayTerm (string field_name, int d)
 		{
-			return new Term ("D:" + field_name, String.Format ("{0:00}", d));
+			return new Term (field_name + "(D)", String.Format ("{0:00}", d));
 		}
 
 		static private LNS.Query NewDayQuery (string field_name, int d1, int d2)
@@ -1263,16 +1410,22 @@ namespace Beagle.Daemon {
 				LNS.BooleanQuery p_query = new LNS.BooleanQuery ();
 				LNS.BooleanQuery s_query = new LNS.BooleanQuery ();
 
+				bool added_subquery = false;
+
 				if (part.SearchFullText) {
 					LNS.Query subquery;
 					subquery = StringToQuery ("Text", part.Text, term_list);
-					if (subquery != null)
+					if (subquery != null) {
 						p_query.Add (subquery, false, false);
+						added_subquery = true;
+					}
 
 					// FIXME: HotText is ignored for now!
 					// subquery = StringToQuery ("HotText", part.Text);
-					// if (subquery != null) 
+					// if (subquery != null) {
 					//    p_query.Add (subquery, false, false);
+					//    added_subquery = true;
+					// }
 				}
 
 				if (part.SearchTextProperties) {
@@ -1283,20 +1436,45 @@ namespace Beagle.Daemon {
 						// Properties can live in either index
 						if (! only_build_primary_query)
 							s_query.Add (subquery.Clone () as LNS.Query, false, false);
+						added_subquery = true;
 					}
 
-					Term term;
-					term = new Term ("PropertyKeyword", part.Text.ToLower ()); // make sure text is lowercased
-					// FIXME: terms are already added in term_list. But they may have been tokenized
-					// The term here is non-tokenized version. Should this be added to term_list ?
-					// term_list is used to calculate scores
-					if (term_list != null)
-						term_list.Add (term);
-					subquery = new LNS.TermQuery (term);
-					p_query.Add (subquery, false, false);
-					// Properties can live in either index
-					if (! only_build_primary_query)
-						s_query.Add (subquery.Clone () as LNS.Query, false, false);
+					// The "added_subquery" check is to handle the situation where
+					// a part of the text is a stop word.  Normally, a search for
+					// "hello world" would break down into this query:
+					//
+					// (Text:hello OR PropertyText:hello OR PropertyKeyword:hello)
+					// AND (Text:world OR PropertText:world OR PropertyKeyword:world)
+					//
+					// This fails with stop words, though.  Let's assume that "world"
+					// is a stop word.  You would end up with:
+					//
+					// (Text:hello OR PropertyText:hello OR PropertyKeyword:hello)
+					// AND (PropertyKeyword:world)
+					//
+					// Which is not what we want.  We'd want to match documents that
+					// had only "hello" without also having a keyword "world".  In
+					// this case, don't create the PropertyKeyword part of the query,
+					// since it would be included in the larger set if it weren't
+					// required anyway.
+					if (added_subquery) {
+						Term term;
+						term = new Term ("PropertyKeyword", part.Text.ToLower ()); // make sure text is lowercased
+						// FIXME: terms are already added in term_list. But they may have been tokenized
+						// The term here is non-tokenized version. Should this be added to term_list ?
+						// term_list is used to calculate scores
+						if (term_list != null)
+							term_list.Add (term);
+						subquery = new LNS.TermQuery (term);
+						p_query.Add (subquery, false, false);
+						// Properties can live in either index
+						if (! only_build_primary_query)
+							s_query.Add (subquery.Clone () as LNS.Query, false, false);
+					} else {
+						// Reset these so we return a null query
+						p_query = null;
+						s_query = null;
+					}
 				}
 
 				primary_query = p_query;
@@ -1375,21 +1553,37 @@ namespace Beagle.Daemon {
 				return;
 			}
 
+			if (abstract_part is QueryPart_Uri) {
+				QueryPart_Uri part = (QueryPart_Uri) abstract_part;
+
+				// Do a term query on the Uri field.
+				// This is probably less efficient that using a TermEnum;
+				// but this is required for the query API where the uri query
+				// can be part of a prohibited query or a boolean or query.
+				Term term;
+				term = new Term ("Uri", UriFu.UriToEscapedString (part.Uri));
+				if (term_list != null)
+					term_list.Add (term);
+				primary_query = new LNS.TermQuery (term);
+
+				// Query only the primary index
+				return;
+			}
+
 			if (abstract_part is QueryPart_DateRange) {
 
 				QueryPart_DateRange part = (QueryPart_DateRange) abstract_part;
+
+				// FIXME: We don't handle prohibited queries with sub-date
+				// accuracy.  For example, if we say we prohibit matches
+				// between 5 May 2007 at 2 PM and 8 May at 5 AM, we'll
+				// miss any matches that happen between midnight and 2 PM
+				// on 5 May 2007 and between midnight and 5 AM on 8 May.
 
 				primary_query = GetDateRangeQuery (part, out hit_filter);
 				// Date properties can live in either index
 				if (! only_build_primary_query && primary_query != null)
 					secondary_query = primary_query.Clone () as LNS.Query;
-
-				// If this is a prohibited part, invert our hit filter.
-				if (part.Logic == QueryPartLogic.Prohibited) {
-					NotHitFilter nhf;
-					nhf = new NotHitFilter (hit_filter);
-					hit_filter = new HitFilter (nhf.HitFilter);
-				}
 				
 				return;
 			}

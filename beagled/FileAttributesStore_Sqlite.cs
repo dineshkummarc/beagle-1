@@ -35,13 +35,23 @@ using Beagle.Util;
 
 namespace Beagle.Daemon {
 
+	// FIXME: This class isn't multithread safe!  This class does not
+	// ensure that different threads don't utilize a transaction started
+	// in a certain thread at the same time.  However, since all the
+	// writes to this database are handled by a single thread, this isn't
+	// currently a problem, but it would have to be fixed if we wanted to
+	// do this in the future.
+	//
+	// See http://bugzilla.gnome.org/show_bug.cgi?329022
+
 	public class FileAttributesStore_Sqlite : IFileAttributesStore {
 
 		// Version history:
 		// 1: Original version
 		// 2: Replaced LastIndexedTime with LastAttrTime
 		// 3: Changed STRING to TEXT
-		const int VERSION = 3;
+		// 4: Use (directory, filename) as unique constraint
+		const int VERSION = 4;
 
 		private SqliteConnection connection;
 		private BitArray path_flags;
@@ -129,20 +139,15 @@ namespace Beagle.Daemon {
 							VERSION, index_fingerprint);
 
 				SqliteUtils.DoNonQuery (connection,
-							"CREATE TABLE file_attributes (           " +
-							"  unique_id      TEXT UNIQUE,          " +
+							"CREATE TABLE file_attributes (         " +
+							"  unique_id      TEXT NOT NULL,        " +
 							"  directory      TEXT NOT NULL,        " +
 							"  filename       TEXT NOT NULL,        " +
 							"  last_mtime     TEXT NOT NULL,        " +
 							"  last_attrtime  TEXT NOT NULL,        " +
 							"  filter_name    TEXT NOT NULL,        " +
-							"  filter_version TEXT NOT NULL         " +
-							")");
-
-				SqliteUtils.DoNonQuery (connection,
-							"CREATE UNIQUE INDEX file_path on file_attributes (" +
-							"  directory,      " +
-							"  filename        " +
+							"  filter_version TEXT NOT NULL,        " +
+							"  UNIQUE (directory, filename)         " +
 							")");
 			} else {
 				SqliteCommand command;

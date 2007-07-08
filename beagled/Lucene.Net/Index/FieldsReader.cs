@@ -29,7 +29,7 @@ namespace Lucene.Net.Index
 	/// It uses &lt;segment&gt;.fdt and &lt;segment&gt;.fdx; files.
 	/// 
 	/// </summary>
-	/// <version>  $Id$
+	/// <version>  $Id: FieldsReader.cs,v 1.4 2006/10/02 17:08:52 joeshaw Exp $
 	/// </version>
 	public sealed class FieldsReader
 	{
@@ -149,7 +149,7 @@ namespace Lucene.Net.Index
 		
 		public /*internal*/ Document Doc(int n, string[] fields)
 		{
-			if (fields.Length == 0)
+			if (fields == null || fields.Length == 0)
 				return Doc (n);
 
 			// FIXME: use Hashset

@@ -178,6 +178,8 @@ namespace Beagle.Daemon {
 
 			string str;
 			while ( (str = string_source ()) != null) {
+				if (str.Length == 0)
+					continue;
 				found_snippet_length += HighlightTerms (query_terms_list, str, ref matches);
 				if (found_snippet_length >= soft_snippet_limit)
 					break;
@@ -208,7 +210,12 @@ namespace Beagle.Daemon {
 			TextReader reader = TextCache.UserCache.GetReader (filename);
 			if (reader == null)
 				return null;
-			return GetSnippet (query_terms, reader);
+			try {
+				return GetSnippet (query_terms, reader);
+			} catch (ICSharpCode.SharpZipLib.SharpZipBaseException ex) {
+				Log.Debug ("Unexpected exception '{0}' while extracting snippet for {1}", ex.Message, filename);
+				return null;
+			}
 		}
 	}
 

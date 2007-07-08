@@ -28,6 +28,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Reflection;
 
 using System.Xml;
@@ -41,14 +42,88 @@ namespace Beagle.Daemon {
 
 		static private bool Debug = false;
 
+		class FilterCache {
+			private int version = 1;
+			private SortedDictionary<string, DateTime> mtime_cache = new SortedDictionary<string, DateTime> ();
+			private string filter_cache_dir;
+
+			public FilterCache (string filter_cache_dir)
+			{
+				this.filter_cache_dir = filter_cache_dir;
+			}
+
+			internal void RegisterFilter (string filter_file_name, DateTime filter_last_mtime)
+			{
+				mtime_cache [filter_file_name] = filter_last_mtime;
+			}
+
+			// Return true if dirty, else return false
+			internal bool UpdateCache ()
+			{
+				StringBuilder cache_string_sb = new StringBuilder ();
+				// Format of filterver.dat:
+				// <Version\n><FilterAssembly.Filename:FilterAssemblyFile.LastMTime>\n+
+				//
+				cache_string_sb.AppendFormat ("{0}\n", version);
+
+				foreach (KeyValuePair<string, DateTime> kvp in mtime_cache)
+					cache_string_sb.AppendFormat ("{0}:{1}\n", kvp.Key, kvp.Value);
+
+				if (filter_cache_dir == null)
+					filter_cache_dir = PathFinder.StorageDir;
+
+				string filterver_dat = Path.Combine (filter_cache_dir, "filterver.dat");
+				string old_cache_text = null;
+
+				try {
+					old_cache_text = File.ReadAllText (filterver_dat);
+				} catch (FileNotFoundException) {
+					Log.Debug ("Cannot read {0}, assuming dirty filterver.dat", filterver_dat);
+				}
+
+				string new_cache_text = cache_string_sb.ToString ();
+
+				bool is_dirty = (old_cache_text != new_cache_text);
+				Log.Debug ("Verifying filter_cache at {0} ... cache is dirty ? {1}", filterver_dat, is_dirty);
+
+				if (! is_dirty)
+					return false;
+
+				// If dirty, write the new version info
+				try {
+					File.WriteAllText (filterver_dat, new_cache_text);
+				} catch (Exception e) {
+					Log.Warn ("Unable to update {0}", filterver_dat);
+				}
+
+				return true;
+			}
+		}
+
+		static private string filter_cache_dir = null;
+		public static string FilterCacheDir {
+			set { filter_cache_dir = value; }
+		}
+
+		private static bool cache_dirty = true;
+		public static bool DirtyFilterCache {
+			get { return cache_dirty; }
+		}
+
 		static FilterFactory ()
 		{
+			FilterCache filter_cache = new FilterCache (filter_cache_dir);
 			ReflectionFu.ScanEnvironmentForAssemblies ("BEAGLE_FILTER_PATH", PathFinder.FilterDir,
 								   delegate (Assembly a) {
-									   int n = ScanAssemblyForFilters (a);
+									   int n = ScanAssemblyForFilters (a, filter_cache);
 									   Logger.Log.Debug ("Loaded {0} filter{1} from {2}",
 											     n, n == 1 ? "" : "s", a.Location);
 								   });
+
+			// FIXME: Up external filter version if external-filters.xml is modified
+
+			// Check if cache is dirty and also update the cache on the disk
+			cache_dirty = filter_cache.UpdateCache ();
 		}
 
 		/////////////////////////////////////////////////////////////////////////
@@ -57,7 +132,7 @@ namespace Beagle.Daemon {
 		static private ICollection CreateFilters (Uri uri, string extension, string mime_type)
 		{
 			Hashtable matched_filters_by_flavor = FilterFlavor.NewHashtable ();
-			
+
 			foreach (FilterFlavor flavor in FilterFlavor.Flavors) {
 				if (flavor.IsMatch (uri, extension, mime_type)) {
 					Filter matched_filter = null;
@@ -236,33 +311,28 @@ namespace Beagle.Daemon {
 
 				if (indexable.Crawled)
 					candidate_filter.EnableCrawlMode ();
-				
-				// Set the filter's URIs
-				candidate_filter.Uri = indexable.Uri;
-				candidate_filter.DisplayUri = indexable.DisplayUri;
 
-				// allow the filter access to the indexable's properties
-				candidate_filter.IndexableProperties = indexable.Properties;
-				
+				// Set the indexable on the filter.
+				candidate_filter.Indexable = indexable;
+
 				// Open the filter, copy the file's properties to the indexable,
 				// and hook up the TextReaders.
 
-				bool succesful_open = false;
+				bool successful_open = false;
 				TextReader text_reader;
 				Stream binary_stream;
 
 				if (path != null)
-					succesful_open = candidate_filter.Open (path);
+					successful_open = candidate_filter.Open (path);
 				else if ((text_reader = indexable.GetTextReader ()) != null)
-					succesful_open = candidate_filter.Open (text_reader);
+					successful_open = candidate_filter.Open (text_reader);
 				else if ((binary_stream = indexable.GetBinaryStream ()) != null)
-					succesful_open = candidate_filter.Open (binary_stream);
+					successful_open = candidate_filter.Open (binary_stream);
 					
-				if (succesful_open) {
-					if (candidate_filter.Timestamp != DateTime.MinValue)
-						indexable.Timestamp = candidate_filter.Timestamp;
-					foreach (Property prop in candidate_filter.Properties)
-						indexable.AddProperty (prop);
+				if (successful_open) {
+					// Set FileType
+					indexable.AddProperty (Property.NewKeyword ("beagle:FileType", candidate_filter.FileType));
+
 					indexable.SetTextReader (candidate_filter.GetTextReader ());
 					indexable.SetHotTextReader (candidate_filter.GetHotTextReader ());
 
@@ -271,8 +341,8 @@ namespace Beagle.Daemon {
 
 					filter = candidate_filter;
 					return true;
-				} else if (Debug) {
-					Logger.Log.Debug ("Unsuccessfully filtered {0} with {1}, falling back", path, candidate_filter);
+				} else {
+					Log.Warn ("Error in filtering {0} with {1}, falling back", path, candidate_filter);
 					candidate_filter.Cleanup ();
 				}
 			}
@@ -299,7 +369,7 @@ namespace Beagle.Daemon {
 
 		private static Dictionary<string, int> filter_versions_by_name = new Dictionary<string, int> ();
 
-		static private int ScanAssemblyForFilters (Assembly assembly)
+		static private int ScanAssemblyForFilters (Assembly assembly, FilterCache filter_cache)
 		{
 			int count = 0;
 
@@ -323,55 +393,12 @@ namespace Beagle.Daemon {
 				++count;
 			}
 
+			if (count > 0) {
+				DateTime last_mtime = File.GetLastWriteTimeUtc (assembly.Location);
+				filter_cache.RegisterFilter (assembly.Location, last_mtime);
+			}
+
 			return count;
-		}
-		
-	}
-
-	/////////////////////////////////////////////////////////////////////////
-
-	public class FilteredStatus 
-	{
-		private Uri uri;
-		private string filter_name;
-		private int filter_version;
-
-		[XmlIgnore]
-		public Uri Uri {
-			get { return uri; }
-			set { uri = value; }
-		}
-
-		[XmlAttribute ("Uri")]
-		public string UriAsString {
-			get {
-				return UriFu.UriToEscapedString (uri);
-			}
-
-			set {
-				uri = UriFu.EscapedStringToUri (value);
-			}
-		}
-
-		public string FilterName {
-			get { return filter_name; }
-			set { filter_name = value; }
-		}
-
-		public int FilterVersion {
-			get { return filter_version; }
-			set { filter_version = value; }
-		}
-
-		public static FilteredStatus New (Indexable indexable, Filter filter)
-		{
-			FilteredStatus status = new FilteredStatus ();
-
-			status.Uri = indexable.Uri;
-			status.FilterName = filter.GetType ().ToString ();
-			status.FilterVersion = filter.Version;
-
-			return status;
 		}
 	}
 }

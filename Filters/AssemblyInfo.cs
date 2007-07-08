@@ -30,6 +30,7 @@ using Beagle.Filters;
 
 // All filter types have to be listed here to be loaded.
 [assembly: Beagle.Daemon.FilterTypes (
+	 typeof(FilterApplication),
 	 typeof(FilterArchive),
 	 typeof(FilterAbiWord),
 	 typeof(FilterBMP),
@@ -42,7 +43,6 @@ using Beagle.Filters;
 	 typeof(FilterCSharp),
 	 typeof(FilterDeb),
 	 typeof(FilterDesktop),
-	 typeof(FilterDirectory),
 #if ENABLE_WV1
 	 typeof(FilterDOC),
 #endif
@@ -52,7 +52,7 @@ using Beagle.Filters;
 	 typeof(FilterFortran),
 	 typeof(FilterGif),
 	 typeof(FilterHtml),
-	 typeof(FilterImLog),
+	 typeof(FilterIgnore),
 	 typeof(FilterJava),
 	 typeof(FilterJavascript),
 	 typeof(FilterJpeg),
@@ -60,7 +60,9 @@ using Beagle.Filters;
 	 typeof(FilterKnotes),
 	 typeof(FilterKOrganizer),
 	 typeof(FilterKonqHistory),
+	 typeof(FilterKopeteLog),
 	 typeof(FilterLabyrinth),
+	 typeof(FilterM3U),
 	 typeof(FilterMail),
 	 typeof(FilterMan),
 	 typeof(FilterMatlab),
@@ -72,10 +74,12 @@ using Beagle.Filters;
 	 typeof(FilterPdf),
 	 typeof(FilterPerl),
 	 typeof(FilterPhp),
+	 typeof(FilterPidginLog),
 	 typeof(FilterPng),
 #if ENABLE_GSF_SHARP
 	 typeof(FilterPPT),
 #endif
+	 typeof(FilterPls),
 	 typeof(FilterPython),
 	 typeof(FilterRPM),
 	 typeof(FilterRTF),

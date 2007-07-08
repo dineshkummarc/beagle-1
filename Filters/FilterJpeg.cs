@@ -39,11 +39,20 @@ using SemWeb;
 
 namespace Beagle.Filters {
 	
-	[PropertyKeywordMapping (Keyword="imagemodel",     PropertyName="exif:Model",    IsKeyword=true)]
+	[PropertyKeywordMapping (Keyword="imagemodel", PropertyName="exif:Model", IsKeyword=false, Description="Camera model as specified in exif or IPTC tags")]
+	[PropertyKeywordMapping (Keyword="imagetag", PropertyName="image:tag", IsKeyword=false, Description="FSpot, Digikam image tags")]
+	[PropertyKeywordMapping (Keyword="imagecomment", PropertyName="fspot:Description", IsKeyword=false, Description="F-Spot User comments")]
+	[PropertyKeywordMapping (Keyword="imagecomment", PropertyName="digikam:caption", IsKeyword=false, Description="Digikam User comments")]
+	[PropertyKeywordMapping (Keyword="imagecomment", PropertyName="jfif:Comment", IsKeyword=false, Description="JFIF comments")]
+	[PropertyKeywordMapping (Keyword="imagecomment", PropertyName="exif:UserComment", IsKeyword=false, Description="Exif comments")]
+	[PropertyKeywordMapping (Keyword="imagecomment", PropertyName="iptc:caption", IsKeyword=false, Description="IPTC caption")]
 	public class FilterJpeg : FilterImage {
 
 		public FilterJpeg ()
 		{
+			// Store exif model as tokenized word
+			// Store exif:Copyright as dc:rights
+			SetVersion (1);
 		}
 
 		protected override void RegisterSupportedTypes ()
@@ -55,7 +64,6 @@ namespace Beagle.Filters {
 		{
 			string comment = header.GetJFIFComment ();
 			AddProperty (Beagle.Property.New ("jfif:Comment", comment));
-			AddProperty (Beagle.Property.NewUnstored ("fixme:comment", comment));
 		}
 
 		private void AddExifProperties (JpegHeader header)
@@ -68,12 +76,9 @@ namespace Beagle.Filters {
 			
 			str = exif.LookupFirstValue (ExifTag.UserComment);
 			AddProperty (Beagle.Property.New ("exif:UserComment", str));
-			AddProperty (Beagle.Property.NewUnstored ("fixme:comment", str));
-
 
 			str = exif.LookupFirstValue (ExifTag.ImageDescription);
 			AddProperty (Beagle.Property.New ("exif:ImageDescription", str));
-			AddProperty (Beagle.Property.NewUnstored ("fixme:comment", str));
 
 			str = exif.LookupFirstValue (ExifTag.PixelXDimension);
 			if (str != null && str != String.Empty) {
@@ -109,10 +114,10 @@ namespace Beagle.Filters {
 			AddProperty (Beagle.Property.NewUnsearched ("exif:Flash", str));
 
 			str = exif.LookupFirstValue (ExifTag.Model);
-			AddProperty (Beagle.Property.NewKeyword ("exif:Model", str));
+			AddProperty (Beagle.Property.New ("exif:Model", str));
 
 			str = exif.LookupFirstValue (ExifTag.Copyright);
-			AddProperty (Beagle.Property.New ("exif:Copyright", str));
+			AddProperty (Beagle.Property.New ("dc:rights", str));
 
 			str = exif.LookupFirstValue (ExifTag.DateTime);
 			if (str != null && str != String.Empty) {
@@ -148,11 +153,11 @@ namespace Beagle.Filters {
 
 				case DataSetID.CaptionAbstract:
 					AddProperty (Beagle.Property.New ("iptc:caption", data.XmpObject));
-					AddProperty (Beagle.Property.NewUnstored ("fixme:comment", data.XmpObject));
 					break;
 
 				case DataSetID.Keywords:
 					AddProperty (Beagle.Property.NewKeyword ("iptc:keyword", data.XmpObject));
+					AddProperty (Beagle.Property.NewUnstored ("image:tag", data.XmpObject));
 					break;
 
 				default:

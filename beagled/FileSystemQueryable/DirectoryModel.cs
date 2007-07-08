@@ -174,6 +174,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 		public bool NeedsCrawl {
 			get {
 				return state != DirectoryState.Clean
+					&& state != DirectoryState.PossiblyClean
 					&& state != DirectoryState.Uncrawlable;
 			}
 		}
@@ -226,6 +227,14 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			
 			if (FileSystemQueryable.Debug)
 				Log.Debug ("Marked {0} as {1}", this, state);
+		}
+
+		public void MarkAsUnknown ()
+		{
+			state = DirectoryState.Unknown;
+
+			if (FileSystemQueryable.Debug)
+				Log.Debug ("Reset {0} to {1}", this, state);
 		}
 
 		///////////////////////////////////////////////////////////

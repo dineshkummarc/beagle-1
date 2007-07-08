@@ -40,7 +40,11 @@ using Beagle;
 using Beagle.Util;
 using Beagle.Daemon;
 
-class QueryTool {
+// Assembly information
+[assembly: AssemblyTitle ("beagle-query")]
+[assembly: AssemblyDescription ("Command-line interface to the Beagle search system")]
+
+public class QueryTool {
 
 	private static int count = 0;
 	private static Query query = null;
@@ -139,24 +143,18 @@ class QueryTool {
 
 	public static void PrintUsageAndExit () 
 	{
+		VersionFu.PrintHeader ();
+
 		string usage =
-			"beagle-query: Command-line interface to the Beagle search system.\n" +
-			"Web page: http://www.gnome.org/projects/beagle\n" +
-			"Copyright (C) 2004-2006 Novell, Inc.\n\n";
-		usage +=
 			"Usage: beagle-query [OPTIONS] <query string>\n\n" +
 			"Options:\n" +
 			"  --verbose\t\t\tPrint detailed information about each hit.\n" +
-			"  --mime <mime type>\t\tConstrain search results to the specified mime\n" +
-			"                    \t\ttype. Can be used multiply.\n" +
-			"  --type <hit type>\t\tConstrain search results to the specified hit\n" +
-			"                    \t\ttype. Can be used multiply.\n" +
-			"  --source <source>\t\tConstrain query to the specified source.\n" +
-			"                   \t\tSources list available from beagle-status.\n" +
-			"  --start <date>\t\tConstrain query to items after specified date.\n" +
-			"                \t\tDate must be in the form \"yyyyMMdd\" or \"yyyyMMddHHmmss\"\n" +
-			"  --end <date>\t\t\tConstrain query to items before specified date.\n" +
-			"              \t\t\tDate must be in the form \"yyyyMMdd\" or \"yyyyMMddHHmmss\"\n" +
+			"  --mime <mime type>\t\t(DEPRECATED Use mimetype: property query.)\n" +
+			"  --type <hit type>\t\t(DEPRECATED Use hittype: property query.)\n" +
+			"  --source <source>\t\t(DEPRECATED Use source: property query.)\n" +
+			"                   \t\tSources list available from beagle-info --status.\n" +
+			"  --start <date>\t\t(DEPRECATED Use date range query syntax).\n" +
+			"  --end <date>\t\t\t(DEPRECATED Use date range query syntax).\n" +
 			"  --keywords\t\t\tLists the keywords allowed in 'query string'.\n" +
 			"            \t\t\tKeyword queries can be specified as keywordname:value e.g. ext:jpg\n" +
 			"  --live-query\t\t\tRun continuously, printing notifications if a\n" +
@@ -164,7 +162,7 @@ class QueryTool {
 			"  --stats-only\t\t\tOnly display statistics about the query, not\n" +
 			"              \t\t\tthe actual results.\n" +
 			"  --max-hits\t\t\tLimit number of search results per backend\n" +
-			"            \t\t\t(default = 100, max = 100)\n" +
+			"            \t\t\t(default 100)\n" +
 			"\n" +
 			"  --local <yes|no>\t\tQuery local system (default yes)\n" +
 			"  --network <yes|no>\t\tQuery other beagle systems in the neighbourhood domain specified in config (default no)\n" +
@@ -174,6 +172,7 @@ class QueryTool {
 			"  --flood\t\t\tExecute the query over and over again.  Don't do that.\n" +
 			"  --listener\t\t\tExecute an index listener query.  Don't do that either.\n" +
 			"  --help\t\t\tPrint this usage message.\n" +
+			"  --version\t\t\tPrint version information.\n" +
 			"\n" +
 			"Query string supports an advanced query syntax.\n" +
 			"For details of the query syntax, please see http://beagle-project.org/Searching_Data\n" +
@@ -265,6 +264,11 @@ class QueryTool {
 		if (args.Length == 0 || Array.IndexOf (args, "--help") > -1 || Array.IndexOf (args, "--usage") > -1)
 			PrintUsageAndExit ();
 
+		if (Array.IndexOf (args, "--version") > -1) {
+			VersionFu.PrintVersion ();
+			Environment.Exit (0);
+		}
+
 		StringBuilder query_str =  new StringBuilder ();
 
 		string[] formats = {
@@ -344,13 +348,13 @@ class QueryTool {
 
 				Console.WriteLine ("Supported query keywords are:");
 
-				IDictionaryEnumerator property_keyword_enum = PropertyKeywordFu.MappingEnumerator;
-				while (property_keyword_enum.MoveNext ()) {
-					PropertyDetail prop = property_keyword_enum.Value as PropertyDetail;
-					if (prop.Description != null)
-						Console.WriteLine ("  {0,-20} for {1}", property_keyword_enum.Key, prop.Description);
-					else
-						Console.WriteLine ("  {0,-20}", property_keyword_enum.Key);
+				foreach (string key in PropertyKeywordFu.Keys) {
+					foreach (PropertyDetail prop in PropertyKeywordFu.Properties (key)) {
+						// Dont print properties without description; they confuse people
+						if (string.IsNullOrEmpty (prop.Description))
+							continue;
+						Console.WriteLine ("  {0,-20} for {1}", key, prop.Description);
+					}
 				}
 
 				System.Environment.Exit (0);
@@ -426,7 +430,5 @@ class QueryTool {
 
 		main_loop.Run ();
 	}
-
-
 }
 	

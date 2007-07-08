@@ -40,12 +40,14 @@ namespace Search.Tiles {
 				From.LabelProp = "(unknown)";
 
 			try {
-				Timestamp = StringFu.StringToDateTime (hit.GetFirstProperty ("fixme:starttime"));
+				string starttime = hit.GetFirstProperty ("fixme:starttime");
+				
+				if (!String.IsNullOrEmpty (starttime))
+				    Timestamp = StringFu.StringToDateTime (starttime);
+				    
 				Date.LabelProp = Utils.NiceShortDate (Timestamp);
 			} catch {}
-
 		}
-
 
 		private Hashtable IconsForSize (int size)
 		{
@@ -77,10 +79,12 @@ namespace Search.Tiles {
 		private Gdk.Pixbuf LoadBuddyIcon ()
 		{
 			Gdk.Pixbuf icon = null;
-
+			try {
 			if (Hit ["fixme:speakingto_icon"] != null && System.IO.File.Exists (Hit ["fixme:speakingto_icon"]))
 				icon = new Gdk.Pixbuf (Hit ["fixme:speakingto_icon"]);
-
+			} catch (Exception e){
+				Console.WriteLine(e);
+			}
 			return icon;				
 		}
 
@@ -140,10 +144,16 @@ namespace Search.Tiles {
 		public override void Open ()
 		{
 			SafeProcess p = new SafeProcess ();
+
+			string log_path = Hit.Uri.LocalPath;
+
+			if (Hit.Source == "Konversation")
+				log_path = Hit.ParentUri.LocalPath;
+
 			p.Arguments = new string [] { "beagle-imlogviewer",
 						      "--client", Hit ["fixme:client"],
 						      "--highlight-search", Query.QuotedText,
-						      Hit.Uri.LocalPath };
+						      log_path };
 
 			try {
 				p.Start ();

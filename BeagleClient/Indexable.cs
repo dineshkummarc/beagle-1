@@ -2,6 +2,7 @@
 // Indexable.cs
 //
 // Copyright (C) 2004 Novell, Inc.
+// Copyright (C) 2007 Debajyoti Bera <dbera.web@gmail.com>
 //
 
 //
@@ -58,6 +59,9 @@ namespace Beagle {
 		// reasons.
 		private IndexableType type = IndexableType.Add;
 
+		// Used to uniquely determine any indexable
+		private int indexable_id = 0;
+
 		// The URI of the item being indexed.
 		private Uri uri = null;
 
@@ -87,6 +91,8 @@ namespace Beagle {
 
 		// Is this being indexed because of crawling or other
 		// background activity?
+		// If crawl is set, then the underlying file will be flushed
+		// from buffer cache as soon as it is indexed.
 		private bool crawled = true;
 
 		// Is this object inherently contentless?
@@ -133,7 +139,7 @@ namespace Beagle {
 		{
 			this.type = type;
 			this.uri = uri;
-			this.hit_type = "File"; // FIXME: Why do we default to this?
+			this.hit_type = String.Empty;
 		}
 
 		public Indexable (Uri uri) : this (IndexableType.Add, uri)
@@ -156,6 +162,12 @@ namespace Beagle {
 		public IndexableType Type {
 			get { return type; }
 			set { type = value; }
+		}
+
+		[XmlAttribute ("Id")]
+		public int Id {
+			get { return indexable_id; }
+			set { indexable_id = value; }
 		}
 
 		[XmlIgnore]
@@ -445,7 +457,8 @@ namespace Beagle {
 		// merge the two indexables: it just does it.
 		public void Merge (Indexable other)
 		{
-			this.Timestamp = other.Timestamp;
+			if (other.Timestamp > this.Timestamp)
+				this.Timestamp = other.Timestamp;
 
 			foreach (Property prop in other.Properties)
 				this.AddProperty (prop);
@@ -466,6 +479,11 @@ namespace Beagle {
 
 			if (!this.ValidTimestamp)
 				this.Timestamp = parent.Timestamp;
+
+			if (string.IsNullOrEmpty (this.HitType))
+				this.HitType = parent.HitType;
+
+			this.Source = parent.Source;
 
 			// FIXME: Set all of the parent's properties on the
 			// child so that we get matches against the child

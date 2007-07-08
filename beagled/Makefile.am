@@ -21,12 +21,12 @@ PLUGIN_TARGET = BeagleDaemonPlugins.dll
 
 PLUGIN_CSFLAGS = -target:library
 
-PLUGIN_CSFILES =			\
-	$(srcdir)/Flavor.cs		\
+PLUGIN_CSFILES =				\
+	$(srcdir)/Flavor.cs			\
 	$(srcdir)/Filter.cs
 
-PLUGIN_LOCAL_ASSEMBLIES =		\
-	../Util/Util.dll		\
+PLUGIN_LOCAL_ASSEMBLIES =			\
+	../Util/Util.dll			\
 	../BeagleClient/Beagle.dll
 
 PLUGIN_ASSEMBLIES =				\
@@ -55,198 +55,197 @@ WRAPPER_SED = sed 					\
 lucenedir = $(srcdir)/Lucene.Net
 
 LUCENE_1_9_CSFILES =							\
-	$(lucenedir)/Analysis/Standard/CharStream.cs	\
-	$(lucenedir)/Analysis/Standard/FastCharStream.cs	\
-	$(lucenedir)/Analysis/Standard/ParseException.cs	\
-	$(lucenedir)/Analysis/Standard/StandardAnalyzer.cs	\
-	$(lucenedir)/Analysis/Standard/StandardFilter.cs	\
-	$(lucenedir)/Analysis/Standard/StandardTokenizer.cs	\
+	$(lucenedir)/Analysis/Standard/CharStream.cs			\
+	$(lucenedir)/Analysis/Standard/FastCharStream.cs		\
+	$(lucenedir)/Analysis/Standard/ParseException.cs		\
+	$(lucenedir)/Analysis/Standard/StandardAnalyzer.cs		\
+	$(lucenedir)/Analysis/Standard/StandardFilter.cs		\
+	$(lucenedir)/Analysis/Standard/StandardTokenizer.cs		\
 	$(lucenedir)/Analysis/Standard/StandardTokenizerConstants.cs	\
 	$(lucenedir)/Analysis/Standard/StandardTokenizerTokenManager.cs	\
-	$(lucenedir)/Analysis/Standard/Token.cs	\
-	$(lucenedir)/Analysis/Standard/TokenMgrError.cs	\
-	$(lucenedir)/Analysis/Analyzer.cs	\
-	$(lucenedir)/Analysis/CharTokenizer.cs	\
-	$(lucenedir)/Analysis/ISOLatin1AccentFilter.cs	\
-	$(lucenedir)/Analysis/KeywordAnalyzer.cs	\
-	$(lucenedir)/Analysis/KeywordTokenizer.cs	\
-	$(lucenedir)/Analysis/LengthFilter.cs	\
-	$(lucenedir)/Analysis/LetterTokenizer.cs	\
-	$(lucenedir)/Analysis/LowerCaseFilter.cs	\
-	$(lucenedir)/Analysis/LowerCaseTokenizer.cs	\
-	$(lucenedir)/Analysis/PerFieldAnalyzerWrapper.cs	\
-	$(lucenedir)/Analysis/PorterStemFilter.cs	\
-	$(lucenedir)/Analysis/PorterStemmer.cs	\
-	$(lucenedir)/Analysis/SimpleAnalyzer.cs	\
-	$(lucenedir)/Analysis/StopAnalyzer.cs	\
-	$(lucenedir)/Analysis/StopFilter.cs	\
-	$(lucenedir)/Analysis/Token.cs	\
-	$(lucenedir)/Analysis/TokenFilter.cs	\
-	$(lucenedir)/Analysis/Tokenizer.cs	\
-	$(lucenedir)/Analysis/TokenStream.cs	\
-	$(lucenedir)/Analysis/WhitespaceAnalyzer.cs	\
-	$(lucenedir)/Analysis/WhitespaceTokenizer.cs	\
-	$(lucenedir)/Analysis/WordlistLoader.cs	\
-	$(lucenedir)/Document/DateField.cs	\
-	$(lucenedir)/Document/DateTools.cs	\
-	$(lucenedir)/Document/Document.cs	\
-	$(lucenedir)/Document/Field.cs	\
-	$(lucenedir)/Document/NumberTools.cs	\
-	$(lucenedir)/Index/CompoundFileReader.cs	\
-	$(lucenedir)/Index/CompoundFileWriter.cs	\
-	$(lucenedir)/Index/DocumentWriter.cs	\
-	$(lucenedir)/Index/FieldInfo.cs	\
-	$(lucenedir)/Index/FieldInfos.cs	\
-	$(lucenedir)/Index/FieldsReader.cs	\
-	$(lucenedir)/Index/FieldsWriter.cs	\
-	$(lucenedir)/Index/FilterIndexReader.cs	\
-	$(lucenedir)/Index/IndexFileNameFilter.cs	\
-	$(lucenedir)/Index/IndexFileNames.cs	\
-	$(lucenedir)/Index/IndexModifier.cs	\
-	$(lucenedir)/Index/IndexReader.cs	\
-	$(lucenedir)/Index/IndexWriter.cs	\
-	$(lucenedir)/Index/MultipleTermPositions.cs	\
-	$(lucenedir)/Index/MultiReader.cs	\
-	$(lucenedir)/Index/ParallelReader.cs	\
-	$(lucenedir)/Index/SegmentInfo.cs	\
-	$(lucenedir)/Index/SegmentInfos.cs	\
-	$(lucenedir)/Index/SegmentMergeInfo.cs	\
-	$(lucenedir)/Index/SegmentMergeQueue.cs	\
-	$(lucenedir)/Index/SegmentMerger.cs	\
-	$(lucenedir)/Index/SegmentReader.cs	\
-	$(lucenedir)/Index/SegmentTermDocs.cs	\
-	$(lucenedir)/Index/SegmentTermEnum.cs	\
-	$(lucenedir)/Index/SegmentTermPositions.cs	\
-	$(lucenedir)/Index/SegmentTermPositionVector.cs	\
-	$(lucenedir)/Index/SegmentTermVector.cs	\
-	$(lucenedir)/Index/Term.cs	\
-	$(lucenedir)/Index/TermBuffer.cs	\
-	$(lucenedir)/Index/TermDocs.cs	\
-	$(lucenedir)/Index/TermEnum.cs	\
-	$(lucenedir)/Index/TermFreqVector.cs	\
-	$(lucenedir)/Index/TermInfo.cs	\
-	$(lucenedir)/Index/TermInfosReader.cs	\
-	$(lucenedir)/Index/TermInfosWriter.cs	\
-	$(lucenedir)/Index/TermPositions.cs	\
-	$(lucenedir)/Index/TermPositionVector.cs	\
-	$(lucenedir)/Index/TermVectorOffsetInfo.cs	\
-	$(lucenedir)/Index/TermVectorsReader.cs	\
-	$(lucenedir)/Index/TermVectorsWriter.cs	\
-	$(lucenedir)/QueryParser/CharStream.cs	\
-	$(lucenedir)/QueryParser/FastCharStream.cs	\
-	$(lucenedir)/QueryParser/MultiFieldQueryParser.cs	\
-	$(lucenedir)/QueryParser/ParseException.cs	\
-	$(lucenedir)/QueryParser/QueryParser.cs	\
-	$(lucenedir)/QueryParser/QueryParserConstants.cs	\
-	$(lucenedir)/QueryParser/QueryParserTokenManager.cs	\
-	$(lucenedir)/QueryParser/Token.cs	\
-	$(lucenedir)/QueryParser/TokenMgrError.cs	\
-	$(lucenedir)/Search/Regex/RegexQuery.cs	\
-	$(lucenedir)/Search/Regex/RegexTermEnum.cs	\
-	$(lucenedir)/Search/Regex/SpanRegexQuery.cs	\
-	$(lucenedir)/Search/Spans/NearSpans.cs	\
-	$(lucenedir)/Search/Spans/SpanFirstQuery.cs	\
-	$(lucenedir)/Search/Spans/SpanNearQuery.cs	\
-	$(lucenedir)/Search/Spans/SpanNotQuery.cs	\
-	$(lucenedir)/Search/Spans/SpanOrQuery.cs	\
-	$(lucenedir)/Search/Spans/SpanQuery.cs	\
-	$(lucenedir)/Search/Spans/Spans.cs	\
-	$(lucenedir)/Search/Spans/SpanScorer.cs	\
-	$(lucenedir)/Search/Spans/SpanTermQuery.cs	\
-	$(lucenedir)/Search/Spans/SpanWeight.cs	\
-	$(lucenedir)/Search/BooleanClause.cs	\
-	$(lucenedir)/Search/BooleanQuery.cs	\
-	$(lucenedir)/Search/BooleanScorer.cs	\
-	$(lucenedir)/Search/BooleanScorer2.cs	\
-	$(lucenedir)/Search/CachingWrapperFilter.cs	\
-	$(lucenedir)/Search/ConjunctionScorer.cs	\
-	$(lucenedir)/Search/ConstantScoreQuery.cs	\
-	$(lucenedir)/Search/ConstantScoreRangeQuery.cs	\
-	$(lucenedir)/Search/DateFilter.cs	\
-	$(lucenedir)/Search/DefaultSimilarity.cs	\
-	$(lucenedir)/Search/DisjunctionMaxQuery.cs	\
-	$(lucenedir)/Search/DisjunctionMaxScorer.cs	\
-	$(lucenedir)/Search/DisjunctionSumScorer.cs	\
-	$(lucenedir)/Search/ExactPhraseScorer.cs	\
-	$(lucenedir)/Search/Explanation.cs	\
-	$(lucenedir)/Search/FieldCache.cs	\
-	$(lucenedir)/Search/FieldCacheImpl.cs	\
-	$(lucenedir)/Search/FieldDoc.cs	\
-	$(lucenedir)/Search/FieldDocSortedHitQueue.cs	\
-	$(lucenedir)/Search/FieldSortedHitQueue.cs	\
-	$(lucenedir)/Search/Filter.cs	\
-	$(lucenedir)/Search/FilteredQuery.cs	\
-	$(lucenedir)/Search/FilteredTermEnum.cs	\
-	$(lucenedir)/Search/FuzzyQuery.cs	\
-	$(lucenedir)/Search/FuzzyTermEnum.cs	\
-	$(lucenedir)/Search/Hit.cs	\
-	$(lucenedir)/Search/HitCollector.cs	\
-	$(lucenedir)/Search/HitIterator.cs	\
-	$(lucenedir)/Search/HitQueue.cs	\
-	$(lucenedir)/Search/Hits.cs	\
-	$(lucenedir)/Search/IndexSearcher.cs	\
-	$(lucenedir)/Search/MatchAllDocsQuery.cs	\
-	$(lucenedir)/Search/MultiPhraseQuery.cs	\
-	$(lucenedir)/Search/MultiSearcher.cs	\
-	$(lucenedir)/Search/MultiTermQuery.cs	\
-	$(lucenedir)/Search/NonMatchingScorer.cs	\
-	$(lucenedir)/Search/ParallelMultiSearcher.cs	\
-	$(lucenedir)/Search/PhrasePositions.cs	\
-	$(lucenedir)/Search/PhrasePrefixQuery.cs	\
-	$(lucenedir)/Search/PhraseQuery.cs	\
-	$(lucenedir)/Search/PhraseQueue.cs	\
-	$(lucenedir)/Search/PhraseScorer.cs	\
-	$(lucenedir)/Search/PrefixQuery.cs	\
-	$(lucenedir)/Search/Query.cs	\
-	$(lucenedir)/Search/QueryFilter.cs	\
-	$(lucenedir)/Search/QueryTermVector.cs	\
-	$(lucenedir)/Search/RangeFilter.cs	\
-	$(lucenedir)/Search/RangeQuery.cs	\
-	$(lucenedir)/Search/ReqExclScorer.cs	\
-	$(lucenedir)/Search/ReqOptSumScorer.cs	\
-	$(lucenedir)/Search/ScoreDoc.cs	\
-	$(lucenedir)/Search/ScoreDocComparator.cs	\
-	$(lucenedir)/Search/Scorer.cs	\
-	$(lucenedir)/Search/Searchable.cs	\
-	$(lucenedir)/Search/Searcher.cs	\
-	$(lucenedir)/Search/Similarity.cs	\
-	$(lucenedir)/Search/SimilarityDelegator.cs	\
-	$(lucenedir)/Search/SloppyPhraseScorer.cs	\
-	$(lucenedir)/Search/Sort.cs	\
-	$(lucenedir)/Search/SortComparator.cs	\
-	$(lucenedir)/Search/SortComparatorSource.cs	\
-	$(lucenedir)/Search/SortField.cs	\
-	$(lucenedir)/Search/TermQuery.cs	\
-	$(lucenedir)/Search/TermScorer.cs	\
-	$(lucenedir)/Search/TopDocs.cs	\
-	$(lucenedir)/Search/TopFieldDocs.cs	\
-	$(lucenedir)/Search/Weight.cs	\
-	$(lucenedir)/Search/WildcardQuery.cs	\
-	$(lucenedir)/Search/WildcardTermEnum.cs	\
-	$(lucenedir)/Store/BufferedIndexInput.cs	\
-	$(lucenedir)/Store/BufferedIndexOutput.cs	\
-	$(lucenedir)/Store/Directory.cs	\
-	$(lucenedir)/Store/FSDirectory.cs	\
-	$(lucenedir)/Store/IndexInput.cs	\
-	$(lucenedir)/Store/IndexOutput.cs	\
-	$(lucenedir)/Store/InputStream.cs	\
-	$(lucenedir)/Store/Lock.cs	\
-	$(lucenedir)/Store/MMapDirectory.cs	\
-	$(lucenedir)/Store/OutputStream.cs	\
-	$(lucenedir)/Store/RAMDirectory.cs	\
-	$(lucenedir)/Store/RAMFile.cs	\
-	$(lucenedir)/Store/RAMInputStream.cs	\
-	$(lucenedir)/Store/RAMOutputStream.cs	\
-	$(lucenedir)/Util/BitVector.cs	\
-	$(lucenedir)/Util/Constants.cs	\
-	$(lucenedir)/Util/Parameter.cs	\
-	$(lucenedir)/Util/PriorityQueue.cs	\
-	$(lucenedir)/Util/SmallFloat.cs	\
-	$(lucenedir)/Util/StringHelper.cs	\
-	$(lucenedir)/Util/ToStringUtils.cs	\
-	$(lucenedir)/AssemblyInfo.cs	\
-	$(lucenedir)/LucenePackage.cs	\
-	$(lucenedir)/SharpZipLibAdapter.cs	\
+	$(lucenedir)/Analysis/Standard/Token.cs				\
+	$(lucenedir)/Analysis/Standard/TokenMgrError.cs			\
+	$(lucenedir)/Analysis/Analyzer.cs				\
+	$(lucenedir)/Analysis/CharTokenizer.cs				\
+	$(lucenedir)/Analysis/ISOLatin1AccentFilter.cs			\
+	$(lucenedir)/Analysis/KeywordAnalyzer.cs			\
+	$(lucenedir)/Analysis/KeywordTokenizer.cs			\
+	$(lucenedir)/Analysis/LengthFilter.cs				\
+	$(lucenedir)/Analysis/LetterTokenizer.cs			\
+	$(lucenedir)/Analysis/LowerCaseFilter.cs			\
+	$(lucenedir)/Analysis/LowerCaseTokenizer.cs			\
+	$(lucenedir)/Analysis/PerFieldAnalyzerWrapper.cs		\
+	$(lucenedir)/Analysis/PorterStemFilter.cs			\
+	$(lucenedir)/Analysis/PorterStemmer.cs				\
+	$(lucenedir)/Analysis/SimpleAnalyzer.cs				\
+	$(lucenedir)/Analysis/StopAnalyzer.cs				\
+	$(lucenedir)/Analysis/StopFilter.cs				\
+	$(lucenedir)/Analysis/Token.cs					\
+	$(lucenedir)/Analysis/TokenFilter.cs				\
+	$(lucenedir)/Analysis/Tokenizer.cs				\
+	$(lucenedir)/Analysis/TokenStream.cs				\
+	$(lucenedir)/Analysis/WhitespaceAnalyzer.cs			\
+	$(lucenedir)/Analysis/WhitespaceTokenizer.cs			\
+	$(lucenedir)/Analysis/WordlistLoader.cs				\
+	$(lucenedir)/Document/DateField.cs				\
+	$(lucenedir)/Document/DateTools.cs				\
+	$(lucenedir)/Document/Document.cs				\
+	$(lucenedir)/Document/Field.cs					\
+	$(lucenedir)/Document/NumberTools.cs				\
+	$(lucenedir)/Index/CompoundFileReader.cs			\
+	$(lucenedir)/Index/CompoundFileWriter.cs			\
+	$(lucenedir)/Index/DocumentWriter.cs				\
+	$(lucenedir)/Index/FieldInfo.cs					\
+	$(lucenedir)/Index/FieldInfos.cs				\
+	$(lucenedir)/Index/FieldsReader.cs				\
+	$(lucenedir)/Index/FieldsWriter.cs				\
+	$(lucenedir)/Index/FilterIndexReader.cs				\
+	$(lucenedir)/Index/IndexFileNameFilter.cs			\
+	$(lucenedir)/Index/IndexFileNames.cs				\
+	$(lucenedir)/Index/IndexModifier.cs				\
+	$(lucenedir)/Index/IndexReader.cs				\
+	$(lucenedir)/Index/IndexWriter.cs				\
+	$(lucenedir)/Index/MultipleTermPositions.cs			\
+	$(lucenedir)/Index/MultiReader.cs				\
+	$(lucenedir)/Index/ParallelReader.cs				\
+	$(lucenedir)/Index/SegmentInfo.cs				\
+	$(lucenedir)/Index/SegmentInfos.cs				\
+	$(lucenedir)/Index/SegmentMergeInfo.cs				\
+	$(lucenedir)/Index/SegmentMergeQueue.cs				\
+	$(lucenedir)/Index/SegmentMerger.cs				\
+	$(lucenedir)/Index/SegmentReader.cs				\
+	$(lucenedir)/Index/SegmentTermDocs.cs				\
+	$(lucenedir)/Index/SegmentTermEnum.cs				\
+	$(lucenedir)/Index/SegmentTermPositions.cs			\
+	$(lucenedir)/Index/SegmentTermPositionVector.cs			\
+	$(lucenedir)/Index/SegmentTermVector.cs				\
+	$(lucenedir)/Index/Term.cs					\
+	$(lucenedir)/Index/TermBuffer.cs				\
+	$(lucenedir)/Index/TermDocs.cs					\
+	$(lucenedir)/Index/TermEnum.cs					\
+	$(lucenedir)/Index/TermFreqVector.cs				\
+	$(lucenedir)/Index/TermInfo.cs					\
+	$(lucenedir)/Index/TermInfosReader.cs				\
+	$(lucenedir)/Index/TermInfosWriter.cs				\
+	$(lucenedir)/Index/TermPositions.cs				\
+	$(lucenedir)/Index/TermPositionVector.cs			\
+	$(lucenedir)/Index/TermVectorOffsetInfo.cs			\
+	$(lucenedir)/Index/TermVectorsReader.cs				\
+	$(lucenedir)/Index/TermVectorsWriter.cs				\
+	$(lucenedir)/QueryParser/CharStream.cs				\
+	$(lucenedir)/QueryParser/FastCharStream.cs			\
+	$(lucenedir)/QueryParser/MultiFieldQueryParser.cs		\
+	$(lucenedir)/QueryParser/ParseException.cs			\
+	$(lucenedir)/QueryParser/QueryParser.cs				\
+	$(lucenedir)/QueryParser/QueryParserConstants.cs		\
+	$(lucenedir)/QueryParser/QueryParserTokenManager.cs		\
+	$(lucenedir)/QueryParser/Token.cs				\
+	$(lucenedir)/QueryParser/TokenMgrError.cs			\
+	$(lucenedir)/Search/Regex/RegexQuery.cs				\
+	$(lucenedir)/Search/Regex/RegexTermEnum.cs			\
+	$(lucenedir)/Search/Regex/SpanRegexQuery.cs			\
+	$(lucenedir)/Search/Spans/NearSpans.cs				\
+	$(lucenedir)/Search/Spans/SpanFirstQuery.cs			\
+	$(lucenedir)/Search/Spans/SpanNearQuery.cs			\
+	$(lucenedir)/Search/Spans/SpanNotQuery.cs			\
+	$(lucenedir)/Search/Spans/SpanOrQuery.cs			\
+	$(lucenedir)/Search/Spans/SpanQuery.cs				\
+	$(lucenedir)/Search/Spans/Spans.cs				\
+	$(lucenedir)/Search/Spans/SpanScorer.cs				\
+	$(lucenedir)/Search/Spans/SpanTermQuery.cs			\
+	$(lucenedir)/Search/Spans/SpanWeight.cs				\
+	$(lucenedir)/Search/BooleanClause.cs				\
+	$(lucenedir)/Search/BooleanQuery.cs				\
+	$(lucenedir)/Search/BooleanScorer.cs				\
+	$(lucenedir)/Search/BooleanScorer2.cs				\
+	$(lucenedir)/Search/CachingWrapperFilter.cs			\
+	$(lucenedir)/Search/ConjunctionScorer.cs			\
+	$(lucenedir)/Search/ConstantScoreQuery.cs			\
+	$(lucenedir)/Search/ConstantScoreRangeQuery.cs			\
+	$(lucenedir)/Search/DateFilter.cs				\
+	$(lucenedir)/Search/DefaultSimilarity.cs			\
+	$(lucenedir)/Search/DisjunctionMaxQuery.cs			\
+	$(lucenedir)/Search/DisjunctionMaxScorer.cs			\
+	$(lucenedir)/Search/DisjunctionSumScorer.cs			\
+	$(lucenedir)/Search/ExactPhraseScorer.cs			\
+	$(lucenedir)/Search/Explanation.cs				\
+	$(lucenedir)/Search/FieldCache.cs				\
+	$(lucenedir)/Search/FieldCacheImpl.cs				\
+	$(lucenedir)/Search/FieldDoc.cs					\
+	$(lucenedir)/Search/FieldDocSortedHitQueue.cs			\
+	$(lucenedir)/Search/FieldSortedHitQueue.cs			\
+	$(lucenedir)/Search/Filter.cs					\
+	$(lucenedir)/Search/FilteredQuery.cs				\
+	$(lucenedir)/Search/FilteredTermEnum.cs				\
+	$(lucenedir)/Search/FuzzyQuery.cs				\
+	$(lucenedir)/Search/FuzzyTermEnum.cs				\
+	$(lucenedir)/Search/Hit.cs					\
+	$(lucenedir)/Search/HitCollector.cs				\
+	$(lucenedir)/Search/HitIterator.cs				\
+	$(lucenedir)/Search/HitQueue.cs					\
+	$(lucenedir)/Search/Hits.cs					\
+	$(lucenedir)/Search/IndexSearcher.cs				\
+	$(lucenedir)/Search/MatchAllDocsQuery.cs			\
+	$(lucenedir)/Search/MultiPhraseQuery.cs				\
+	$(lucenedir)/Search/MultiSearcher.cs				\
+	$(lucenedir)/Search/MultiTermQuery.cs				\
+	$(lucenedir)/Search/NonMatchingScorer.cs			\
+	$(lucenedir)/Search/ParallelMultiSearcher.cs			\
+	$(lucenedir)/Search/PhrasePositions.cs				\
+	$(lucenedir)/Search/PhrasePrefixQuery.cs			\
+	$(lucenedir)/Search/PhraseQuery.cs				\
+	$(lucenedir)/Search/PhraseQueue.cs				\
+	$(lucenedir)/Search/PhraseScorer.cs				\
+	$(lucenedir)/Search/PrefixQuery.cs				\
+	$(lucenedir)/Search/Query.cs					\
+	$(lucenedir)/Search/QueryFilter.cs				\
+	$(lucenedir)/Search/QueryTermVector.cs				\
+	$(lucenedir)/Search/RangeFilter.cs				\
+	$(lucenedir)/Search/RangeQuery.cs				\
+	$(lucenedir)/Search/ReqExclScorer.cs				\
+	$(lucenedir)/Search/ReqOptSumScorer.cs				\
+	$(lucenedir)/Search/ScoreDoc.cs					\
+	$(lucenedir)/Search/ScoreDocComparator.cs			\
+	$(lucenedir)/Search/Scorer.cs					\
+	$(lucenedir)/Search/Searchable.cs				\
+	$(lucenedir)/Search/Searcher.cs					\
+	$(lucenedir)/Search/Similarity.cs				\
+	$(lucenedir)/Search/SimilarityDelegator.cs			\
+	$(lucenedir)/Search/SloppyPhraseScorer.cs			\
+	$(lucenedir)/Search/Sort.cs					\
+	$(lucenedir)/Search/SortComparator.cs				\
+	$(lucenedir)/Search/SortComparatorSource.cs			\
+	$(lucenedir)/Search/SortField.cs				\
+	$(lucenedir)/Search/TermQuery.cs				\
+	$(lucenedir)/Search/TermScorer.cs				\
+	$(lucenedir)/Search/TopDocs.cs					\
+	$(lucenedir)/Search/TopFieldDocs.cs				\
+	$(lucenedir)/Search/Weight.cs					\
+	$(lucenedir)/Search/WildcardQuery.cs				\
+	$(lucenedir)/Search/WildcardTermEnum.cs				\
+	$(lucenedir)/Store/BufferedIndexInput.cs			\
+	$(lucenedir)/Store/BufferedIndexOutput.cs			\
+	$(lucenedir)/Store/Directory.cs					\
+	$(lucenedir)/Store/FSDirectory.cs				\
+	$(lucenedir)/Store/IndexInput.cs				\
+	$(lucenedir)/Store/IndexOutput.cs				\
+	$(lucenedir)/Store/InputStream.cs				\
+	$(lucenedir)/Store/Lock.cs					\
+	$(lucenedir)/Store/MMapDirectory.cs				\
+	$(lucenedir)/Store/OutputStream.cs				\
+	$(lucenedir)/Store/RAMDirectory.cs				\
+	$(lucenedir)/Store/RAMFile.cs					\
+	$(lucenedir)/Store/RAMInputStream.cs				\
+	$(lucenedir)/Store/RAMOutputStream.cs				\
+	$(lucenedir)/Util/BitVector.cs					\
+	$(lucenedir)/Util/Constants.cs					\
+	$(lucenedir)/Util/Parameter.cs					\
+	$(lucenedir)/Util/PriorityQueue.cs				\
+	$(lucenedir)/Util/SmallFloat.cs					\
+	$(lucenedir)/Util/StringHelper.cs				\
+	$(lucenedir)/Util/ToStringUtils.cs				\
+	$(lucenedir)/LucenePackage.cs					\
+	$(lucenedir)/SharpZipLibAdapter.cs				\
 	$(lucenedir)/SupportClass.cs
 
 # Stuff we don't build because we don't use it and it
@@ -289,45 +288,47 @@ FILE_SYSTEM_QUERYABLE_CSFILES =					\
 	$(fsqueryabledir)/FileCrawlTask.cs			\
 	$(fsqueryabledir)/DirectoryIndexableGenerator.cs	\
 	$(fsqueryabledir)/FileNameFilter.cs			\
-	$(fsqueryabledir)/LuceneNameResolver.cs			\
+	$(fsqueryabledir)/InternalUriManager.cs			\
 	$(fsqueryabledir)/FileSystemQueryable.cs		\
 	$(fsqueryabledir)/IFileEventBackend.cs			\
 	$(fsqueryabledir)/InotifyBackend.cs			\
-	$(fsqueryabledir)/NullFileEventBackend.cs
+	$(fsqueryabledir)/NullFileEventBackend.cs		\
+	$(fsqueryabledir)/XmpSidecarStore.cs
 
 
-gaimlogqueryable = $(srcdir)/GaimLogQueryable
-GAIM_LOG_QUERYABLE_CSFILES =				\
-	$(gaimlogqueryable)/GaimLogQueryable.cs
+
+pidginqueryable = $(srcdir)/PidginQueryable
+PIDGIN_QUERYABLE_CSFILES =					\
+	$(pidginqueryable)/PidginQueryable.cs
 
 tomboyqueryable = $(srcdir)/TomboyQueryable
-TOMBOY_QUERYABLE_CSFILES =				\
+TOMBOY_QUERYABLE_CSFILES =					\
 	$(tomboyqueryable)/TomboyQueryable.cs
 
 labyrinthqueryable = $(srcdir)/LabyrinthQueryable
-LABYRINTH_QUERYABLE_CSFILES =				\
+LABYRINTH_QUERYABLE_CSFILES =					\
 	$(labyrinthqueryable)/LabyrinthQueryable.cs
 
 kmailqueryable = $(srcdir)/KMailQueryable
-KMAIL_QUERYABLE_CSFILES =				\
-	$(kmailqueryable)/KMailQueryable.cs		\
-	$(kmailqueryable)/KMailIndexableGenerator.cs	\
+KMAIL_QUERYABLE_CSFILES =					\
+	$(kmailqueryable)/KMailQueryable.cs			\
+	$(kmailqueryable)/KMailIndexableGenerator.cs		\
 	$(kmailqueryable)/KMailIndexer.cs
 
 blamqueryable = $(srcdir)/BlamQueryable
-BLAM_QUERYABLE_CSFILES =				\
+BLAM_QUERYABLE_CSFILES =					\
 	$(blamqueryable)/BlamQueryable.cs
 
 lifereaqueryable = $(srcdir)/LifereaQueryable
-LIFEREA_QUERYABLE_CSFILES =				\
+LIFEREA_QUERYABLE_CSFILES =					\
 	$(lifereaqueryable)/LifereaQueryable.cs
 
 akregatorqueryable = $(srcdir)/AkregatorQueryable
-AKREGATOR_QUERYABLE_CSFILES =				\
+AKREGATOR_QUERYABLE_CSFILES =					\
 	$(akregatorqueryable)/AkregatorQueryable.cs
 
 konqhistoryqueryable = $(srcdir)/KonqHistoryQueryable
-KONQHISTORY_QUERYABLE_CSFILES =				\
+KONQHISTORY_QUERYABLE_CSFILES =					\
 	$(konqhistoryqueryable)/KonqQueryable.cs
 
 konqbookmarkqueryable = $(srcdir)/KonqBookmarkQueryable
@@ -335,20 +336,20 @@ KONQBOOKMARK_QUERYABLE_CSFILES =				\
 	$(konqbookmarkqueryable)/KonqBookmarkQueryable.cs
 
 kopetequeryable = $(srcdir)/KopeteQueryable
-KOPETE_QUERYABLE_CSFILES =				\
-	$(kopetequeryable)/KopeteQueryable.cs 	 	\
+KOPETE_QUERYABLE_CSFILES =					\
+	$(kopetequeryable)/KopeteQueryable.cs 	 		\
 	$(kopetequeryable)/KopeteCrawler.cs
 
 knotesqueryable = $(srcdir)/KNotesQueryable
-KNOTES_QUERYABLE_CSFILES =				\
+KNOTES_QUERYABLE_CSFILES =					\
 	$(knotesqueryable)/KNotesQueryable.cs
 
 korganizerqueryable = $(srcdir)/KOrganizerQueryable
-KORGANIZER_QUERYABLE_CSFILES =				\
+KORGANIZER_QUERYABLE_CSFILES =					\
 	$(korganizerqueryable)/KOrganizerQueryable.cs
 
 kabcqueryable = $(srcdir)/KAddressBookQueryable
-KABC_QUERYABLE_CSFILES =				\
+KABC_QUERYABLE_CSFILES =					\
 	$(kabcqueryable)/KabcQueryable.cs
 
 konversationqueryable = $(srcdir)/KonversationQueryable
@@ -356,13 +357,13 @@ KONVERSATION_QUERYABLE_CSFILES =				\
 	$(konversationqueryable)/KonversationQueryable.cs
 
 indexingservicequeryable = $(srcdir)/IndexingServiceQueryable
-INDEXING_SERVICE_QUERYABLE_CSFILES =			\
+INDEXING_SERVICE_QUERYABLE_CSFILES =				\
 	$(indexingservicequeryable)/IndexingServiceQueryable.cs
 
 operaqueryable = $(srcdir)/OperaQueryable
-OPERA_QUERYABLE_CSFILES =				\
-	$(operaqueryable)/OperaIndexableGenerator.cs	\
-	$(operaqueryable)/OperaIndexer.cs		\
+OPERA_QUERYABLE_CSFILES =					\
+	$(operaqueryable)/OperaIndexableGenerator.cs		\
+	$(operaqueryable)/OperaIndexer.cs			\
 	$(operaqueryable)/OperaQueryable.cs
 
 httplistener = $(srcdir)/webserver
@@ -388,12 +389,16 @@ HTTPLISTENER_CSFILES = \
 	$(httplistener)/ResponseStream.cs			\
 	$(httplistener)/WebHeaderCollection.cs		
 
+nautilusqueryable = $(srcdir)/NautilusMetadataQueryable
+NAUTILUS_QUERYABLE_CSFILES =					\
+	$(nautilusqueryable)/NautilusMetadataQueryable.cs
+
 DAEMON_DLL_CSFILES = 						\
 	$(LUCENE_CSFILES)					\
 	$(HTTPLISTENER_CSFILES)					\
 	$(KMAIL_QUERYABLE_CSFILES)				\
 	$(FILE_SYSTEM_QUERYABLE_CSFILES)			\
-	$(GAIM_LOG_QUERYABLE_CSFILES)				\
+	$(PIDGIN_QUERYABLE_CSFILES)				\
 	$(INDEXING_SERVICE_QUERYABLE_CSFILES)			\
 	$(TOMBOY_QUERYABLE_CSFILES)				\
 	$(LABYRINTH_QUERYABLE_CSFILES)				\
@@ -407,8 +412,10 @@ DAEMON_DLL_CSFILES = 						\
 	$(KABC_QUERYABLE_CSFILES)				\
 	$(KOPETE_QUERYABLE_CSFILES)				\
 	$(KONVERSATION_QUERYABLE_CSFILES)			\
-	$(OPERA_QUERYABLE_CSFILES)			\
+	$(OPERA_QUERYABLE_CSFILES)				\
+	$(NAUTILUS_QUERYABLE_CSFILES)				\
 	$(srcdir)/AssemblyInfo.cs				\
+	$(srcdir)/ExternalMetadataQueryable.cs			\
 	$(srcdir)/FileAttributes.cs				\
 	$(srcdir)/FileAttributesStore.cs			\
 	$(srcdir)/FileAttributesStore_ExtendedAttribute.cs	\
@@ -449,16 +456,16 @@ DAEMON_DLL_CSFILES = 						\
 	$(srcdir)/StaticQueryable.cs				\
 	$(srcdir)/TextCache.cs
 
-DAEMON_DLL_LOCAL_ASSEMBLIES =		\
-	../Util/Util.dll		\
-	../BeagleClient/Beagle.dll	\
+DAEMON_DLL_LOCAL_ASSEMBLIES =					\
+	../Util/Util.dll					\
+	../BeagleClient/Beagle.dll				\
 	./$(PLUGIN_TARGET)
 
-DAEMON_DLL_ASSEMBLIES = 			\
-	$(BEAGLED_LIBS)                 	\
-	$(DAEMON_DLL_LOCAL_ASSEMBLIES:%=-r:%)	\
-	$(SHARPZIPLIB_LIBS)		\
-	-r:Mono.Data.SqliteClient		\
+DAEMON_DLL_ASSEMBLIES = 					\
+	$(BEAGLED_LIBS)                 			\
+	$(DAEMON_DLL_LOCAL_ASSEMBLIES:%=-r:%)			\
+	$(SHARPZIPLIB_LIBS)					\
+	-r:Mono.Data.SqliteClient				\
 	-r:Mono.Posix				\
 	-r:System.Web
 
@@ -501,6 +508,7 @@ EDS_QUERYABLE_CSFILES =                                 \
 	$(edsqueryable)/CalContainer.cs			\
 	$(edsqueryable)/Container.cs			\
 	$(edsqueryable)/EvolutionDataServerQueryable.cs	\
+	$(edsqueryable)/SchedulingIndexableGenerator.cs	\
 	$(edsqueryable)/SourcesHandler.cs
 
 evomailqueryable = $(srcdir)/EvolutionMailQueryable
@@ -546,14 +554,14 @@ THUNDERBIRD_CSFILES =						\
 	$(THUNDERBIRD_DIR)/Nntp.cs				\
 	$(THUNDERBIRD_DIR)/MoveMail.cs
 
-THUNDERBIRD_LOCAL_ASSEMBLIES =		\
-	../Util/Util.dll		\
-	../BeagleClient/Beagle.dll	\
+THUNDERBIRD_LOCAL_ASSEMBLIES =					\
+	../Util/Util.dll					\
+	../BeagleClient/Beagle.dll				\
 	./BeagleDaemonLib.dll
 
-THUNDERBIRD_ASSEMBLIES =				\
-	-r:Mono.Posix				\
-	$(BEAGLED_LIBS)                 	\
+THUNDERBIRD_ASSEMBLIES =					\
+	-r:Mono.Posix						\
+	$(BEAGLED_LIBS)                 			\
 	$(THUNDERBIRD_LOCAL_ASSEMBLIES:%=-r:%)
 
 
@@ -575,6 +583,7 @@ DAEMON_CSFLAGS =				\
 	$(BEAGLE_DEFINES)
 
 DAEMON_CSFILES =				\
+	$(srcdir)/AssemblyInfo.cs		\
 	$(srcdir)/BeagleDaemon.cs		\
 	$(srcdir)/RemoteIndexer.cs
 
@@ -646,7 +655,8 @@ EXTRACT_CONTENT_CSFLAGS = \
 	-target:exe
 
 EXTRACT_CONTENT_CSFILES = \
-	$(srcdir)/ExtractContent.cs
+	$(srcdir)/ExtractContent.cs		\
+	$(srcdir)/NoiseFilter.cs
 
 EXTRACT_CONTENT_LOCAL_ASSEMBLIES = \
 	../Util/Util.dll			\
@@ -784,96 +794,6 @@ $(SNIPPET_TEST_TARGET): $(SNIPPET_TEST_CSFILES) $(SNIPPET_TEST_LOCAL_ASSEMBLIES)
 
 ############################################################
 
-TERM_STATS_WRAPPER = beagle-term-stats
-TERM_STATS_TARGET = TermStatsTool.exe
-
-$(TERM_STATS_WRAPPER): $(srcdir)/$(WRAPPER_IN)
-	$(WRAPPER_SED) -e "s|\@target\@|$(TERM_STATS_TARGET)|g" < $(srcdir)/$(WRAPPER_IN) > $@
-	chmod +x $(TERM_STATS_WRAPPER)
-
-TERM_STATS_CSFLAGS = \
-	-target:exe
-
-TERM_STATS_CSFILES = \
-	$(srcdir)/TermStatsTool.cs
-
-TERM_STATS_LOCAL_ASSEMBLIES =	\
-	../Util/Util.dll			\
-	../BeagleClient/Beagle.dll		\
-	./$(PLUGIN_TARGET)			\
-	./$(DAEMON_DLL_TARGET)
-
-TERM_STATS_ASSEMBLIES = \
-	$(BEAGLED_LIBS)				\
-	$(SHARPZIPLIB_LIBS)			\
-	$(DAEMON_LOCAL_ASSEMBLIES:%=-r:%)	\
-	-r:Mono.Posix
-
-$(TERM_STATS_TARGET): $(TERM_STATS_CSFILES) $(TERM_STATS_LOCAL_ASSEMBLIES)
-	$(CSC) -out:$@ $(TERM_STATS_CSFLAGS) $(TERM_STATS_CSFILES) $(TERM_STATS_ASSEMBLIES)
-
-############################################################
-
-NAME_INDEX_WRAPPER = beagle-name-index
-NAME_INDEX_TARGET = NameIndexTool.exe
-
-$(NAME_INDEX_WRAPPER): $(srcdir)/$(WRAPPER_IN)
-	$(WRAPPER_SED) -e "s|\@target\@|$(NAME_INDEX_TARGET)|g" < $(srcdir)/$(WRAPPER_IN) > $@
-	chmod +x $(NAME_INDEX_WRAPPER)
-
-NAME_INDEX_CSFLAGS = \
-	-target:exe
-
-NAME_INDEX_CSFILES = \
-	$(srcdir)/NameIndexTool.cs
-
-NAME_INDEX_LOCAL_ASSEMBLIES =	\
-	../Util/Util.dll			\
-	../BeagleClient/Beagle.dll		\
-	./$(PLUGIN_TARGET)			\
-	./$(DAEMON_DLL_TARGET)
-
-NAME_INDEX_ASSEMBLIES = \
-	$(BEAGLED_LIBS)				\
-	$(SHARPZIPLIB_LIBS)			\
-	$(DAEMON_LOCAL_ASSEMBLIES:%=-r:%)	\
-	-r:Mono.Posix
-
-$(NAME_INDEX_TARGET): $(NAME_INDEX_CSFILES) $(NAME_INDEX_LOCAL_ASSEMBLIES)
-	$(CSC) -out:$@ $(NAME_INDEX_CSFLAGS) $(NAME_INDEX_CSFILES) $(NAME_INDEX_ASSEMBLIES)
-
-############################################################
-
-FS_SANITY_CHECK_WRAPPER = beagle-file-system-sanity-check
-FS_SANITY_CHECK_TARGET = SanityCheckTool.exe
-
-$(FS_SANITY_CHECK_WRAPPER): $(srcdir)/$(WRAPPER_IN)
-	$(WRAPPER_SED) -e "s|\@target\@|$(FS_SANITY_CHECK_TARGET)|g" < $(srcdir)/$(WRAPPER_IN) > $@
-	chmod +x $(FS_SANITY_CHECK_WRAPPER)
-
-FS_SANITY_CHECK_CSFLAGS = \
-	-target:exe
-
-FS_SANITY_CHECK_CSFILES = \
-	$(srcdir)/SanityCheckTool.cs
-
-FS_SANITY_CHECK_LOCAL_ASSEMBLIES = \
-	../Util/Util.dll			\
-	../BeagleClient/Beagle.dll		\
-	./$(PLUGIN_TARGET)			\
-	./$(DAEMON_DLL_TARGET)
-
-FS_SANITY_CHECK_ASSEMBLIES = \
-	$(BEAGLED_LIBS)				\
-	$(SHARPZIPLIB_LIBS)			\
-	$(DAEMON_LOCAL_ASSEMBLIES:%=-r:%)	\
-	-r:Mono.Posix
-
-$(FS_SANITY_CHECK_TARGET): $(FS_SANITY_CHECK_CSFILES) $(FS_SANITY_CHECK_LOCAL_ASSEMBLIES)
-	$(CSC) -out:$@ $(FS_SANITY_CHECK_CSFLAGS) $(FS_SANITY_CHECK_CSFILES) $(FS_SANITY_CHECK_ASSEMBLIES)
-
-############################################################
-
 BUILD_INDEX_WRAPPER = beagle-build-index
 BUILD_INDEX_TARGET = BuildIndex.exe
 
@@ -966,10 +886,6 @@ $(CRAWL_SYSTEM): $(srcdir)/$(CRAWL_SYSTEM_IN)
 ############################################################
 ############################################################
 
-#	$(MASTER_DELETE_TARGET)
-
-#	$(FS_SANITY_CHECK_TARGET)
-
 ALL_TARGETS = 				\
 	$(PLUGIN_TARGET)		\
 	$(DAEMON_DLL_TARGET)		\
@@ -977,6 +893,8 @@ ALL_TARGETS = 				\
 	$(DAEMON_WRAPPER)		\
 	$(INDEX_HELPER_TARGET)		\
 	$(INDEX_HELPER_WRAPPER)		\
+	$(BUILD_INDEX_TARGET)		\
+	$(BUILD_INDEX_WRAPPER)		\
 	$(INDEX_WEB_CONTENT_TARGET)	\
 	$(INDEX_WEB_CONTENT_WRAPPER)	\
 	$(EXTRACT_CONTENT_TARGET)	\
@@ -984,14 +902,15 @@ ALL_TARGETS = 				\
 	$(DUMP_INDEX_TARGET)		\
 	$(DUMP_INDEX_WRAPPER)		\
 	$(SNIPPET_TEST_TARGET)		\
-	$(TERM_STATS_TARGET)		\
-	$(NAME_INDEX_TARGET)		\
+	$(SNIPPET_TEST_WRAPPET)		\
 	$(MANAGE_INDEX_TARGET)		\
 	$(MANAGE_INDEX_WRAPPER)		\
 	$(BUILD_INDEX_TARGET)		\
 	$(BUILD_INDEX_WRAPPER)		\
 	$(REMOVABLE_INDEX_TARGET)	\
-	$(REMOVABLE_INDEX_WRAPPER)
+	$(REMOVABLE_INDEX_WRAPPER)	\
+	$(MASTER_DELETE_TARGET)		\
+	$(MASTER_DELETE_WRAPPER)
 
 if ENABLE_THUNDERBIRD
 ALL_TARGETS += $(THUNDERBIRD_TARGET)
@@ -1005,6 +924,10 @@ endif
 man_MANS = 				\
 	beagled.1			\
 	beagle-build-index.8		\
+	beagle-dump-index.1		\
+	beagle-extract-content.8	\
+	beagle-imlogviewer.8		\
+	beagle-index-url.8		\
 	beagle-manage-index.8
 
 all: $(ALL_TARGETS)
@@ -1113,15 +1036,11 @@ SBIN_WRAPPERS = \
 	$(BUILD_INDEX_WRAPPER)		\
 	$(REMOVABLE_INDEX_WRAPPER)	\
 	$(DUMP_INDEX_WRAPPER)		\
-	$(MANAGE_INDEX_WRAPPER)
-
-#	$(MASTER_DELETE_WRAPPER)
-#	$(FS_SANITY_CHECK_WRAPPER)
+	$(MANAGE_INDEX_WRAPPER)		\
+	$(MASTER_DELETE_WRAPPER)
 
 noinst_SCRIPTS=	\
-	$(SNIPPET_TEST_WRAPPER)		\
-	$(TERM_STATS_WRAPPER)		\
-	$(NAME_INDEX_WRAPPER)		
+	$(SNIPPET_TEST_WRAPPER)
 
 EXTRA_DIST = \
 	$(autostart_DATA)			\
@@ -1140,9 +1059,6 @@ EXTRA_DIST = \
 	$(SNIPPET_TEST_CSFILES)			\
 	$(INDEX_HELPER_CSFILES)			\
 	$(MASTER_DELETE_CSFILES)		\
-	$(TERM_STATS_CSFILES)			\
-	$(NAME_INDEX_CSFILES)			\
-	$(FS_SANITY_CHECK_CSFILES)		\
 	$(MANAGE_INDEX_CSFILES)			\
 	$(BUILD_INDEX_CSFILES)			\
 	$(REMOVABLE_INDEX_CSFILES)
@@ -1175,15 +1091,6 @@ CLEANFILES = \
 	$(SNIPPET_TEST_TARGET)			\
 	$(SNIPPET_TEST_TARGET).mdb		\
 	$(SNIPPET_TEST_WRAPPER)			\
-	$(TERM_STATS_TARGET)			\
-	$(TERM_STATS_TARGET).mdb		\
-	$(TERM_STATS_WRAPPER)			\
-	$(NAME_INDEX_TARGET)			\
-	$(NAME_INDEX_TARGET).mdb		\
-	$(NAME_INDEX_WRAPPER)			\
-	$(FS_SANITY_CHECK_TARGET)		\
-	$(FS_SANITY_CHECK_TARGET).mdb		\
-	$(FS_SANITY_CHECK_WRAPPER)		\
 	$(MANAGE_INDEX_TARGET)			\
 	$(MANAGE_INDEX_TARGET).mdb		\
 	$(MANAGE_INDEX_WRAPPER)			\

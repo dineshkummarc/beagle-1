@@ -1,6 +1,8 @@
 using System;
 using Mono.Unix;
 
+using Beagle.Util;
+
 namespace Search.Tiles {
 
 	public class WebHistoryActivator : TileActivator {
@@ -22,7 +24,12 @@ namespace Search.Tiles {
 		public WebHistory (Beagle.Hit hit, Beagle.Query query) : base (hit, query)
 		{
 			Group = TileGroup.Website;
-			Title = hit.GetFirstProperty ("dc:title");
+
+			string title = hit.GetFirstProperty ("dc:title");
+			if (String.IsNullOrEmpty (title))
+				title = Hit.Uri.Host;
+
+			Title = title;
 			Description = hit.Uri.ToString ();
 		}
 
@@ -39,8 +46,8 @@ namespace Search.Tiles {
 		}
 
 		public override void Open ()
-		{
-			base.OpenFromMime (Hit);
+		{			
+			base.OpenFromUri (UriFu.UriToEscapedString(Hit.Uri));
 		}
 
 		protected override DetailsPane GetDetails ()

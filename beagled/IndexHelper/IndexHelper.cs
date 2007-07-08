@@ -27,6 +27,7 @@
 
 using System;
 using System.Collections;
+using System.Diagnostics;
 using System.IO;
 using SNS = System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -53,7 +54,8 @@ namespace Beagle.IndexHelper {
 		}
 
 		// Current state with filtering.
-		public static Uri CurrentUri;
+		public static Uri CurrentDisplayUri;
+		public static Uri CurrentContentUri;
 		public static Filter CurrentFilter;
 
 		// DisableTextcache does more than merely ignoring
@@ -62,6 +64,8 @@ namespace Beagle.IndexHelper {
 		public static bool DisableTextCache {
 			get { return disable_textcache; }
 		}
+
+		private static bool heap_shot = false;
 
 		[DllImport ("libc")]
 		extern static private int unsetenv (string name);
@@ -91,7 +95,7 @@ namespace Beagle.IndexHelper {
 			bool run_by_hand = (Environment.GetEnvironmentVariable ("BEAGLE_RUN_HELPER_BY_HAND") != null);
 			bool log_in_fg = (Environment.GetEnvironmentVariable ("BEAGLE_LOG_IN_THE_FOREGROUND_PLEASE") != null);
 
-			if (args.Length == 1 && args [0] == "--disable-textcache")
+			if (args.Length == 1 && args [0] == "--disable-text-cache")
 				disable_textcache = true;
 			else
 				disable_textcache = false;
@@ -123,24 +127,24 @@ namespace Beagle.IndexHelper {
 			// Set the IO priority to idle, nice ourselves, and set
 			// a batch scheduling policy so we that we play nice
 			// on the system
-			if (Environment.GetEnvironmentVariable ("BEAGLE_EXERCISE_THE_DOG") == null) {
-				SystemPriorities.ReduceIoPriority ();
-
-				int nice_to_set;
-				
-				// We set different nice values because the
-				// internal implementation of SCHED_BATCH
-				// unconditionally imposes a +5 penalty on
-				// processes, and we want to be at nice +17,
-				// because it has a nice timeslice.
-				if (SystemPriorities.SetSchedulerPolicyBatch ())
-					nice_to_set = 12;
-				else
-					nice_to_set = 17;
-
-				SystemPriorities.Renice (nice_to_set);
-			} else
+			if (Environment.GetEnvironmentVariable ("BEAGLE_EXERCISE_THE_DOG") != null)
 				Log.Always ("BEAGLE_EXERCISE_THE_DOG is set");
+
+			SystemPriorities.ReduceIoPriority ();
+
+			int nice_to_set;
+				
+			// We set different nice values because the
+			// internal implementation of SCHED_BATCH
+			// unconditionally imposes a +5 penalty on
+			// processes, and we want to be at nice +17,
+			// because it has a nice timeslice.
+			if (SystemPriorities.SetSchedulerPolicyBatch ())
+				nice_to_set = 12;
+			else
+				nice_to_set = 17;
+
+			SystemPriorities.Renice (nice_to_set);
 
 			Server.Init ();
 
@@ -163,6 +167,9 @@ namespace Beagle.IndexHelper {
 			}
 
 			if (server_has_been_started) {
+				// Whether we should generate heap-shot snapshots
+				heap_shot = (Environment.GetEnvironmentVariable ("_HEY_LETS_DO_A_HEAP_SHOT") != null);
+
 				// Start the monitor thread, which keeps an eye on memory usage and idle time.
 				ExceptionHandlingThread.Start (new ThreadStart (MemoryAndIdleMonitorWorker));
 
@@ -215,9 +222,18 @@ namespace Beagle.IndexHelper {
 				// Check resident memory usage
 				int vmrss = SystemInformation.VmRss;
 				double size = vmrss / (double) vmrss_original;
-				if (vmrss != last_vmrss)
+				if (last_vmrss != 0 && vmrss != last_vmrss) {
 					Logger.Log.Debug ("Helper Size: VmRSS={0:0.0} MB, size={1:0.00}, {2:0.0}%",
 							  vmrss/1024.0, size, 100.0 * (size - 1) / (threshold - 1));
+
+					double increase = vmrss / (double) last_vmrss;
+
+					if (heap_shot && increase > 1.20) {
+						Log.Debug ("Large memory increase detected.  Sending SIGPROF to ourself.");
+						Mono.Unix.Native.Syscall.kill (Process.GetCurrentProcess ().Id, Mono.Unix.Native.Signum.SIGPROF);
+					}
+				}
+
 				last_vmrss = vmrss;
 				if (size > threshold
 				    || (max_request_count > 0 && RemoteIndexerExecutor.Count > max_request_count)) {
@@ -291,12 +307,6 @@ namespace Beagle.IndexHelper {
 			Mono.Unix.Native.Stdlib.signal (Mono.Unix.Native.Signum.SIGPIPE, Mono.Unix.Native.Stdlib.SIG_IGN);
 		}
 
-		// Our handler triggers an orderly shutdown when it receives a signal.
-		// However, this can be annoying if the process gets wedged during
-		// shutdown.  To deal with that case, we make a note of the time when
-		// the first signal comes in, and we allow signals to unconditionally
-		// kill the process after 5 seconds have passed.
-		private static DateTime signal_time = DateTime.MinValue;
 		private static void OurSignalHandler (int signal)
 		{
 			// This allows us to call OurSignalHandler w/o doing anything.
@@ -328,12 +338,12 @@ namespace Beagle.IndexHelper {
 
 			string span = StringFu.TimeSpanToString (DateTime.Now - last_activity);
 
-			if (CurrentUri == null)
+			if (CurrentDisplayUri == null)
 				Log.Warn ("Filtering status ({0} ago): no document is currently being filtered.", span);
 			else if (CurrentFilter == null)
-				Log.Warn ("Filtering status ({0} ago): determining filter for {1}", span, CurrentUri);
+				Log.Warn ("Filtering status ({0} ago): determining filter and extracting properties for {1} ({2})", span, CurrentDisplayUri, CurrentContentUri);
 			else
-				Log.Warn ("Filtering status ({0} ago): filtering {1} with {2}", span, CurrentUri, CurrentFilter);
+				Log.Warn ("Filtering status ({0} ago): extracting text from {1} ({2}) with {3}", span, CurrentDisplayUri, CurrentContentUri, CurrentFilter);
 
 			// Don't shut down on information signals (SIGUSR1 and SIGUSR2)
 			if ((Mono.Unix.Native.Signum) signal == Mono.Unix.Native.Signum.SIGUSR1 ||

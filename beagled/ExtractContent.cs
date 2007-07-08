@@ -1,7 +1,8 @@
 //
 // ExtractContent.cs
 //
-// Copyright (C) 2004 Novell, Inc.
+// Copyright (C) 2004-2007 Novell, Inc.
+// Copyright (C) 2007 Debajyoti Bera <dbera.web@gmail.com>
 //
 
 //
@@ -24,24 +25,52 @@
 // SOFTWARE.
 //
 
-
 using System;
-using System.Collections;
 using System.IO;
 using System.Net;
+using System.Reflection;
+using System.Collections;
 
 using Beagle;
 using Beagle.Util;
 using Beagle.Daemon;
 
+using Lucene.Net.Analysis;
+using Lucene.Net.Analysis.Standard;
+
+[assembly: AssemblyTitle ("beagle-extract-content")]
+[assembly: AssemblyDescription ("Extracts filtered data from a file")]
+
 class ExtractContentTool {
 
 	static bool tokenize = false;
-	static bool show_children = false;
+	static bool analyze = false;
+	static bool show_generated = false;
 	static string mime_type = null;
 	static bool continue_last = false;
+	static bool stats_only = false;
 
 	// FIXME: We don't display structural breaks
+	static void DisplayContent (string line)
+	{
+		line = line.Trim ();
+		if (line.Length == 0)
+			return;
+
+		if (tokenize) {
+			
+			string [] parts = line.Split (' ');
+			for (int i = 0; i < parts.Length; ++i) {
+				string part = parts [i].Trim ();
+				if (part != "")
+					Console.WriteLine ("{0}", part);
+			}
+
+		} else {
+			Console.WriteLine (line);
+		}
+	}
+
 	static void DisplayContent (char[] buffer, int length)
 	{
 		if (tokenize) {
@@ -84,6 +113,9 @@ class ExtractContentTool {
 
 		Console.WriteLine ("Filename: " + indexable.Uri);
 
+		if (indexable.ParentUri != null)
+			Console.WriteLine ("Parent: " + indexable.ParentUri);
+
 		Stopwatch watch = new Stopwatch ();
 
 		Filter filter;
@@ -100,20 +132,33 @@ class ExtractContentTool {
 		Console.WriteLine ("MimeType: {0}", indexable.MimeType);
 		Console.WriteLine ();
 
-		if (filter.ChildIndexables != null && filter.ChildIndexables.Count > 0) {
-			Console.WriteLine ("Child indexables ({0}):", filter.ChildIndexables.Count);
+		ArrayList generated_indexables = new ArrayList ();
+		Indexable generated_indexable;
 
-			foreach (Indexable i in filter.ChildIndexables)
-				Console.WriteLine ("  {0}", i.Uri);
+		bool first = true;
+		while (filter.GenerateNextIndexable (out generated_indexable)) {
+			if (generated_indexable == null)
+				continue;
 
-			Console.WriteLine ();
+			if (first) {
+				Console.WriteLine ("Filter-generated indexables:");
+				first = false;
+			}
+			
+			Console.WriteLine ("  {0}", generated_indexable.Uri);
+
+			if (show_generated)
+				generated_indexables.Add (generated_indexable);
+			else
+				generated_indexable.Cleanup ();
 		}
+
+		if (! first)
+			Console.WriteLine ();
 
 		// Make sure that the properties are sorted.
 		ArrayList prop_array = new ArrayList (indexable.Properties);
 		prop_array.Sort ();
-
-		bool first = true;
 
 		Console.WriteLine ("Properties:");
 
@@ -121,6 +166,9 @@ class ExtractContentTool {
 			Console.WriteLine ("  Timestamp = {0}", DateTimeUtil.ToString (indexable.Timestamp));
 
 		foreach (Beagle.Property prop in prop_array) {
+			if (String.IsNullOrEmpty (prop.Value))
+				continue;
+
 			Console.WriteLine ("  {0} = {1}", prop.Key, prop.Value);
 		}
 
@@ -133,19 +181,52 @@ class ExtractContentTool {
 		watch.Start ();
 
 		TextReader reader;
+		Analyzer indexing_analyzer = new BeagleAnalyzer ();
 
 		char[] buffer = new char [2048];
 		reader = indexable.GetTextReader ();
+		char separater_char = (tokenize ? '\n' : ' ');
 		if (reader != null) {
-			Console.WriteLine ("Content:");
-			while (true) {
-				int l = reader.Read (buffer, 0, 2048);
-				if (l <= 0)
-					break;
-				if (first)
-					first = false;
-				DisplayContent (buffer, l);
+			first = true;
+
+			if (analyze) {
+				if (! stats_only)
+					Console.WriteLine ("Content:");
+
+				TokenStream token_stream = indexing_analyzer.TokenStream ("Text", reader);
+				Lucene.Net.Analysis.Token token = token_stream.Next ();
+				first = (token == null);
+
+				if (! stats_only)
+					for (; token != null; token = token_stream.Next ())
+						Console.Write ("{0}{1}", token.TermText (), separater_char);
+
+				token_stream.Close ();
+			} else {
+#if false
+				while (true) {
+					int l = reader.Read (buffer, 0, 2048);
+					if (l <= 0)
+						break;
+					if (first)
+						first = false;
+					if (! stats_only)
+						DisplayContent (buffer, l);
+				}
+#else
+				string line;
+				first = true;
+				while ((line = reader.ReadLine ()) != null) {
+					if (first) {
+						Console.WriteLine ("Content:");
+						first = false;
+					}
+					if (! stats_only)
+						DisplayContent (line);
+				}
+#endif
 			}
+
 			reader.Close ();
 
 			if (first)
@@ -154,18 +235,32 @@ class ExtractContentTool {
 				Console.WriteLine ('\n');
 		}
 			
+		/*
 		reader = indexable.GetHotTextReader ();
+		first = true;
 		if (reader != null) {
 			Console.WriteLine ("HotContent:");
-			first = true;
-			while (true) {
-				int l = reader.Read (buffer, 0, 2048);
-				if (l <= 0)
-					break;
-				if (first)
-					first = false;
-				DisplayContent (buffer, l);
+
+			if (analyze) {
+				TokenStream token_stream = indexing_analyzer.TokenStream ("HotText", reader);
+				Lucene.Net.Analysis.Token token = token_stream.Next ();
+				first = (token == null);
+
+				for (; token != null; token = token_stream.Next ())
+					Console.Write ("{0}{1}", token.TermText (), separater_char);
+
+				token_stream.Close ();
+			} else {
+				while (true) {
+					int l = reader.Read (buffer, 0, 2048);
+					if (l <= 0)
+						break;
+					if (first)
+						first = false;
+					DisplayContent (buffer, l);
+				}
 			}
+
 			reader.Close ();
 
 			if (first)
@@ -173,11 +268,15 @@ class ExtractContentTool {
 			else
 				Console.WriteLine ('\n');
 		}
+		*/
 
 		watch.Stop ();
 
 		Console.WriteLine ();
 		Console.WriteLine ("Text extracted in {0}", watch);
+
+		foreach (Indexable gi in generated_indexables)
+			Display (gi);
 
 		Stream stream = indexable.GetBinaryStream ();
 		if (stream != null)
@@ -185,42 +284,30 @@ class ExtractContentTool {
 
 		// Clean up any temporary files associated with filtering this indexable.
 		indexable.Cleanup ();
-
-		if (filter.ChildIndexables != null) {
-			foreach (Indexable i in filter.ChildIndexables) {
-				if (! show_children) {
-					i.Cleanup ();
-					continue;
-				}
-
-				i.StoreStream ();
-				Display (i);
-			}
-		}
-		
-		indexable.Cleanup ();
-
 	}
 
 	static void PrintUsage ()
 	{
-		Console.WriteLine ("beagle-extract-content: Extracts filtered data from a file.");
-		Console.WriteLine ("Copyright (C) 2004-2005 Novell, Inc.");
-		Console.WriteLine ();
+		VersionFu.PrintHeader ();
+
 		Console.WriteLine ("Usage: beagle-extract-content [OPTIONS] file [file ...]");
 		Console.WriteLine ();
 		Console.WriteLine ("Options:");
 		Console.WriteLine ("  --debug\t\t\tPrint debug info to the console");
 		Console.WriteLine ("  --tokenize\t\t\tTokenize the text before printing");
-		Console.WriteLine ("  --show-children\t\tShow filtering information for items created by filters");
+		Console.WriteLine ("  --analyze\t\t\tAnalyze the text before printing.\n\t\t\t\tThis will output exactly the words, separated by whitespace, that go into beagle index.");
+		Console.WriteLine ("  --show-generated\t\tShow filtering information for items created by filters");
 		Console.WriteLine ("  --mimetype=<mime_type>\tUse filter for mime_type");
 		Console.WriteLine ("  --outfile=<filename>\t\tOutput file name");
 		Console.WriteLine ("  --help\t\t\tShow this message");
+		Console.WriteLine ("  --version\t\t\tPrint version information");
 		Console.WriteLine ();
 	}
 
 	static int Main (string[] args)
 	{
+		SystemInformation.SetProcessName ("beagle-extract-content");
+
 		if (Array.IndexOf (args, "--debug") == -1)
 			Log.Disable ();
 
@@ -229,11 +316,19 @@ class ExtractContentTool {
 			return 0;
 		}
 
+		if (Array.IndexOf (args, "--version") != -1) {
+			VersionFu.PrintVersion ();
+			return 0;
+		}
+
 		if (Array.IndexOf (args, "--tokenize") != -1)
 			tokenize = true;
 		
-		if (Array.IndexOf (args, "--show-children") != -1)
-			show_children = true;
+		if (Array.IndexOf (args, "--analyze") != -1)
+			analyze = true;
+		
+		if (Array.IndexOf (args, "--show-generated") != -1 || Array.IndexOf (args, "--show-children") != -1)
+			show_generated = true;
 
 		StreamWriter writer = null;
 		string outfile = null;
@@ -284,14 +379,25 @@ class ExtractContentTool {
 		if (writer != null)
 			writer.Close ();
 
-		GLib.MainLoop main_loop = new GLib.MainLoop ();
-
-		if (Environment.GetEnvironmentVariable ("BEAGLE_TEST_MEMORY") != null) {
-			GC.Collect ();
-			GLib.Timeout.Add (1000, delegate() { main_loop.Quit (); return false; });
-			main_loop.Run ();
-		}
-
 		return 0;
 	}
+
+	// A stripped version of LuceneCommon.BeagleAnalyzer
+	internal class BeagleAnalyzer : StandardAnalyzer {
+
+		public BeagleAnalyzer ()
+		{
+		}
+
+		public override TokenStream TokenStream (string fieldName, TextReader reader)
+		{
+			TokenStream outstream;
+			outstream = base.TokenStream (fieldName, reader);
+			outstream = new NoiseEmailHostFilter (outstream, true);
+			outstream = new PorterStemFilter (outstream);
+
+			return outstream;
+		}
+	}
+
 }

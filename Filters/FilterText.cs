@@ -37,6 +37,7 @@ namespace Beagle.Filters {
 		{
 			SnippetMode = true;
 			OriginalIsText = true;
+			SetFileType ("document");
 		}
 
 		protected override void RegisterSupportedTypes ()
@@ -60,31 +61,26 @@ namespace Beagle.Filters {
 			if (file.Length > LENGTH_CUTOFF) {
 				Beagle.Util.Logger.Log.Debug ("{0} is too large to filter!", file.FullName);
 				Error ();
+				return;
 			}
+
+			buf = new char [BUFSIZE];
 		}
 
+		const int BUFSIZE = 2048;
+		char[] buf;
 		override protected void DoPull ()
 		{
-			int n = 0;
-
-			// Using internal information: Lucene currently asks for char[2048] data
-			while (n <= 2048) {
-
-				string str = TextReader.ReadLine ();
-				if (str == null) {
+			bool pull = false;
+			do {
+				int read = TextReader.Read (buf, 0, BUFSIZE);
+				if (read == 0) {
 					Finished ();
-					return;
+					break;
 				} else {
-					AppendLine (str);
-					AppendStructuralBreak ();
-					// If we have added 2048 chars, stop
-					// DoPull is called repeatedly till the buffer is full,
-					// so stop after the buffer is full (and possibly overflown)
-					// to reduce number of function calls
-					n += str.Length;
-					n ++; // for the structural break
+					pull = AppendChars (buf, 0, read);
 				}
-			}
+			} while (pull);
 		}
 	}
 }

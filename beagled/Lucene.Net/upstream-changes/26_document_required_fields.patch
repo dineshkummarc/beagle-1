@@ -3,6 +3,8 @@ From D Bera <dbera.web@gmail.com>
 Creating Document() is expensive because it copies all the fields to the Document object. If some of the fields are not going to be used later, then quite some allocations and time could be saved by only copying the necessary fields when creating a Document object. Idea from:
 http://mail-archives.apache.org/mod_mbox/lucene-java-user/200405.mbox/<200405221922.i4MJMfU9017218%40outmail.freedom2surf.net>
 
+This patch is not required with Lucene.Net >= 2.1 (which will have FieldSelector and lazy Field loading).
+
 Index: Index/FieldsReader.cs
 ===================================================================
 RCS file: /cvs/gnome/beagle/beagled/Lucene.Net/Index/FieldsReader.cs,v

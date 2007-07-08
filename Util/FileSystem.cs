@@ -51,7 +51,7 @@ namespace Beagle.Util {
 			else if (Directory.Exists (path))
 				return Directory.GetLastWriteTimeUtc (path);
 			else
-				throw new FileNotFoundException (path);
+				return new DateTime (1601, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 		}
 
 		// Assumes input is UTC
@@ -121,6 +121,33 @@ namespace Beagle.Util {
 
 			return System.IO.Path.GetDirectoryName (path);
 		}
+
+		// Based on Path.GetTempFileName() from Mono
+                public static string GetTempFileName (string extension)
+                {
+                        FileStream f = null;
+                        string path;
+                        Random rnd;
+                        int num = 0;
+
+			if (! String.IsNullOrEmpty (extension) && extension [0] != '.')
+				extension = "." + extension;
+
+                        rnd = new Random ();
+                        do {
+                                num = rnd.Next ();
+                                num++;
+                                path = Path.Combine (Path.GetTempPath(), "tmp" + num.ToString("x") + extension);
+
+                                try {
+                                        f = new FileStream (path, FileMode.CreateNew);
+                                } catch { }
+                        } while (f == null);
+                        
+                        f.Close();
+                        return path;
+                }
+
 	}
 
 }

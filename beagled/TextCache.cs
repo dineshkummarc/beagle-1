@@ -37,6 +37,15 @@ using Beagle.Util;
 
 namespace Beagle.Daemon {
 
+	// FIXME: This class isn't multithread safe!  This class does not
+	// ensure that different threads don't utilize a transaction started
+	// in a certain thread at the same time.  However, since all the
+	// writes to this database are handled by a single thread, this isn't
+	// currently a problem, but it would have to be fixed if we wanted to
+	// do this in the future.
+	//
+	// See http://bugzilla.gnome.org/show_bug.cgi?329022
+
 	public class TextCache {
 
 		static public bool Debug = false;
@@ -335,6 +344,10 @@ namespace Beagle.Daemon {
 				// on a higer version of SharpZipLib
 				reader.Peek ();
 			} catch (Exception ex) {
+				// FIXME: WTF? The Peek () above advances one character. I'm not sure
+				// why though, maybe because an exception is thrown, anyways seek to
+				// the beginning of the file.
+				file_stream.Seek (0, SeekOrigin.Begin);
 				reader = new StreamReader (file_stream);
 			}
 

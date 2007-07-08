@@ -29,13 +29,18 @@ using System;
 using System.Collections;
 using System.IO;
 
-using Beagle.Util;
+using Beagle;
 using Beagle.Daemon;
 
 class MasterDeleteTool {
 
 	static void Main (string[] args)
 	{
+		if (args.Length != 2) {
+			Console.WriteLine ("Usage: beagle-master-delete-button /path/to/index-dir uri-to-delete");
+			return;
+		}
+
 		string index_dir = args [0];
 		Uri uri_to_delete = new Uri (args [1], false);
 
@@ -44,18 +49,29 @@ class MasterDeleteTool {
 			return;
 		}
 
-		LuceneDriver driver = new LuceneDriver (index_dir);
+		LuceneQueryingDriver driver = new LuceneQueryingDriver (index_dir, -1, true);
 
-		ICollection hits = driver.DoQueryByUri (uri_to_delete);
-		
-		if (hits == null || hits.Count == 0) {
+		LuceneIndexingDriver indexer = new LuceneIndexingDriver (index_dir, false);
+
+		Indexable indexable = new Indexable (uri_to_delete);
+		indexable.Type = IndexableType.Remove;
+
+		IndexerRequest request = new IndexerRequest ();
+		request.Add (indexable);
+
+		IndexerReceipt [] receipts = indexer.Flush (request);
+		if (receipts == null || receipts.Length == 0) {
 			Console.WriteLine ("Uri {0} not found in the index in {1}",
 					   uri_to_delete, index_dir);
 			return;
 		}
-			
-		driver.Remove (uri_to_delete);
-		driver.Flush ();
+
+		IndexerRemovedReceipt r = receipts [0] as IndexerRemovedReceipt;
+		if (r == null || r.NumRemoved == 0) {
+			Console.WriteLine ("Uri {0} not found in the index in {1}",
+					   uri_to_delete, index_dir);
+			return;
+		}
 
 		Console.WriteLine ("Uri {0} deleted", uri_to_delete);
 	}

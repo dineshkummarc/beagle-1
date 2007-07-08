@@ -21,6 +21,7 @@ namespace Beagle.Filters {
 		public FilterPdf ()
 		{
 			SnippetMode = true;
+			SetFileType ("document");
 		}
 
 		protected override void RegisterSupportedTypes ()
@@ -40,10 +41,13 @@ namespace Beagle.Filters {
 			pc = new SafeProcess ();
 			pc.Arguments = new string [] { "pdfinfo", FileInfo.FullName };
 			pc.RedirectStandardOutput = true;
-			pc.RedirectStandardError = true;
+			// See FIXME below for why this is false.
+			pc.RedirectStandardError = false;
 
-			// Let pdfinfo run for 10 CPU seconds, max.
+			// Let pdfinfo run for at most 10 CPU seconds, and not
+			// use more than 100 megs memory.
 			pc.CpuLimit = 90;
+			pc.MemLimit = 100*1024*1024;
 
 			try {
 				pc.Start ();
@@ -96,12 +100,14 @@ namespace Beagle.Filters {
 			}
 			pout.Close ();
 
+#if false
 			// Log any errors or warnings from stderr
 			pout = new StreamReader (pc.StandardError);
 			while ((str = pout.ReadLine ()) != null)
-				Log.Warn ("pdfinfo [{0}]: {1}", Uri, str);
+				Log.Warn ("pdfinfo [{0}]: {1}", Indexable.Uri, str);
 
 			pout.Close ();
+#endif
 			pc.Close ();
 		}
 		
@@ -121,8 +127,10 @@ namespace Beagle.Filters {
 			// stdout.
 			pc.RedirectStandardError = false;
 
-			// Let pdftotext run for 90 CPU seconds, max.
+			// Let pdftotext run for at most 90 CPU seconds, and not
+			// use more than 100 megs memory.
 			pc.CpuLimit = 90;
+			pc.MemLimit = 100*1024*1024;
 
 			try {
 				pc.Start ();

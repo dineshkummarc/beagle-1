@@ -37,11 +37,17 @@ using Beagle.Util;
 
 namespace Beagle.Filters {
 
-	[PropertyKeywordMapping (Keyword="mailfrom",     PropertyName="fixme:from_name",    IsKeyword=false)]
-	[PropertyKeywordMapping (Keyword="mailfromaddr", PropertyName="fixme:from_address", IsKeyword=false)]
-	[PropertyKeywordMapping (Keyword="mailto",       PropertyName="fixme:to_name",      IsKeyword=false)]
-	[PropertyKeywordMapping (Keyword="mailtoaddr",   PropertyName="fixme:to_address",   IsKeyword=false)]
-	[PropertyKeywordMapping (Keyword="mailinglist",  PropertyName="fixme:mlist",        IsKeyword=true, Description="Mailing list id")]
+	[PropertyKeywordMapping (Keyword="mailfrom",     PropertyName="fixme:from_name",    IsKeyword=false, Description="Name of email sender")]
+	[PropertyKeywordMapping (Keyword="mailfrom",     PropertyName="parent:fixme:from_name",    IsKeyword=false)]
+	[PropertyKeywordMapping (Keyword="mailfromaddr", PropertyName="fixme:from_address", IsKeyword=false, Description="Email address of sender")]
+	[PropertyKeywordMapping (Keyword="mailfromaddr", PropertyName="parent:fixme:from_address", IsKeyword=false)]
+	[PropertyKeywordMapping (Keyword="mailto",       PropertyName="fixme:to_name",      IsKeyword=false, Description="Name of receipient")]
+	[PropertyKeywordMapping (Keyword="mailto",       PropertyName="parent:fixme:to_name",      IsKeyword=false)]
+	[PropertyKeywordMapping (Keyword="mailtoaddr",   PropertyName="fixme:to_address",   IsKeyword=false, Description="Email address of receipient")]
+	[PropertyKeywordMapping (Keyword="mailtoaddr",   PropertyName="parent:fixme:to_address",   IsKeyword=false)]
+	[PropertyKeywordMapping (Keyword="mailinglist",  PropertyName="fixme:mlist",        IsKeyword=false, Description="Mailing list id e.g. dashboard-hackers.gnome.org")]
+	[PropertyKeywordMapping (Keyword="mailinglist",  PropertyName="parent:fixme:mlist",        IsKeyword=false)]
+	[PropertyKeywordMapping (Keyword="inattachment",  PropertyName="parent:fixme:hasAttachments", IsKeyword=true, Description="Use 'inattachment:true' for email attachments.")]
 	public class FilterMail : Beagle.Daemon.Filter, IDisposable {
 
 		private static bool gmime_initialized = false;
@@ -56,7 +62,12 @@ namespace Beagle.Filters {
 			// 2: No need to separately add sanitized version of emails.
 			//    BeagleAnalyzer uses a tokenfilter taking care of this.
 			// 3: Add standard file properties to attachments.
-			SetVersion (3);
+			// 4: Store snippets
+			// 5: Store mailing list id as tokenized
+			SetVersion (5);
+
+			SnippetMode = true;
+			SetFileType ("mail");
 		}
 
 		protected override void RegisterSupportedTypes ()
@@ -156,17 +167,15 @@ namespace Beagle.Filters {
 				AddProperty (Property.NewUnsearched ("fixme:reference", refs.Msgid));
 
 			string list_id = this.message.GetHeader ("List-Id");
-			if (list_id != null) {
-				// FIXME: Might need some additional parsing.
-				AddProperty (Property.NewKeyword ("fixme:mlist", GMime.Utils.HeaderDecodePhrase (list_id)));
-			}
+			if (list_id != null)
+				AddProperty (Property.New ("fixme:mlist", GMime.Utils.HeaderDecodePhrase (list_id)));
 
 			// KMail can store replies in the same folder
 			// Use issent flag to distinguish between incoming
 			// and outgoing message
 			string kmail_msg_sent = this.message.GetHeader ("X-KMail-Link-Type");
 			bool issent_is_set = false;
-			foreach (Property property in IndexableProperties) {
+			foreach (Property property in Indexable.Properties) {
 				if (property.Key == "fixme:isSent") {
 					issent_is_set = true;
 					break;
@@ -178,11 +187,11 @@ namespace Beagle.Filters {
 
 		protected override void DoPullSetup ()
 		{
-			this.handler = new PartHandler (this);
+			this.handler = new PartHandler (Indexable);
 			using (GMime.Object mime_part = this.message.MimePart)
 				this.handler.OnEachPart (mime_part);
 
-			AddChildIndexables (this.handler.ChildIndexables);
+			AddIndexables (this.handler.ChildIndexables);
 		}
 
 		protected override void DoPull ()
@@ -220,7 +229,7 @@ namespace Beagle.Filters {
 		}
 
 		private class PartHandler {
-			private Beagle.Daemon.Filter filter;
+			private Indexable indexable;
 			private int count = 0; // parts handled so far
 			private int depth = 0; // part recursion depth
 			private ArrayList child_indexables = new ArrayList ();
@@ -237,9 +246,9 @@ namespace Beagle.Filters {
 				"text/x-vcard"
 			};
 
-			public PartHandler (Beagle.Daemon.Filter filter)
+			public PartHandler (Indexable parent_indexable)
 			{
-				this.filter = filter;
+				this.indexable = parent_indexable;
 			}
 
 			private bool IsMimeTypeHandled (string mime_type)
@@ -334,11 +343,13 @@ namespace Beagle.Filters {
 						// attachments along with (real) attachments.
 
 						if (Array.IndexOf (blacklisted_mime_types, mime_type) == -1) {
-							string sub_uri = this.filter.Uri.ToString () + "#" + this.count;
+							string sub_uri = this.indexable.Uri.ToString () + "#" + this.count;
 							Indexable child = new Indexable (new Uri (sub_uri));
 
-							child.DisplayUri = new Uri (this.filter.DisplayUri.ToString () + "#" + this.count);
+							child.DisplayUri = new Uri (this.indexable.DisplayUri.ToString () + "#" + this.count);
 
+							// This is a special case.
+							// Even for mails found on disk, MailMessage hitype is set
 							child.HitType = "MailMessage";
 							child.MimeType = mime_type;
 							child.CacheContent = false;
@@ -357,10 +368,13 @@ namespace Beagle.Filters {
 							else
 								child.SetBinaryStream (stream);
 
+							child.SetChildOf (this.indexable);
+							child.StoreStream ();
+							child.CloseStreams ();
 							this.child_indexables.Add (child);
 						} else {
 							Log.Debug ("Skipping attachment {0}#{1} with blacklisted mime type {2}",
-								   this.filter.Uri, this.count, mime_type);
+								   this.indexable.Uri, this.count, mime_type);
 						}
 					}
 

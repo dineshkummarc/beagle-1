@@ -35,17 +35,24 @@ using SemWeb;
 
 namespace Beagle.Filters {
 
-	[PropertyKeywordMapping (Keyword="imagetag", PropertyName="image:tag", IsKeyword=false, Description="FSpot, Digikam image tags")]
-	[PropertyKeywordMapping (Keyword="comment", PropertyName="fixme:comment", IsKeyword=false, Description="User comments")]
 	public abstract class FilterImage : Beagle.Daemon.Filter {
+
+		// 1: Base
+		// 2: Added fspot:IsIndexed field, added width & height properties
+		// 3: Add Digikam tags and caption
+		// 4: Index IPTC keywords
+		private int version = 4;
 
 		public FilterImage ()
 		{
-			// 1: Base
-			// 2: Added fspot:IsIndexed field, added width & height properties
-			// 3: Add Digikam tags and caption
-			// 4: Index IPTC keywords
-			SetVersion (4);
+			base.SetVersion (Version);
+			SetFileType ("image");
+		}
+
+		protected new void SetVersion (int version)
+		{
+			this.version += version;
+			base.SetVersion (version);
 		}
 
 		protected virtual void PullImageProperties () { }
@@ -102,7 +109,6 @@ namespace Beagle.Filters {
 			AddProperty (Beagle.Property.NewBool ("fspot:IsIndexed", true));
 			
 			AddProperty (Beagle.Property.New ("fspot:Description", photo.Description));
-			AddProperty (Beagle.Property.NewUnstored ("fixme:comment", photo.Description));
 			
 			foreach (FSpotTools.Tag tag in photo.Tags) {
 				AddProperty (Beagle.Property.New ("fspot:Tag", tag.Name));
@@ -120,7 +126,6 @@ namespace Beagle.Filters {
 			AddProperty (Beagle.Property.NewBool ("digikam:IsIndexed", true));
 			
 			AddProperty (Beagle.Property.New ("digikam:caption", digikam_data.caption));
-			AddProperty (Beagle.Property.NewUnstored ("fixme:comment", digikam_data.caption));
 			
 			foreach (string tag in digikam_data.Tags) {
 				AddProperty (Beagle.Property.New ("digikam:Tag", tag));

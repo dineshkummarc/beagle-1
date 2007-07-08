@@ -236,10 +236,19 @@ namespace Beagle {
 
 		//////////////////////////
 
-		[XmlArray]
-		[XmlArrayItem (ElementName="Property", Type=typeof (Property))]
+		[XmlIgnore]
 		public ArrayList Properties {
 			get {  return properties; }
+		}
+
+		[XmlArray (ElementName="Properties")]
+		[XmlArrayItem (ElementName="Property", Type=typeof (Property))]
+		public PropertyList property_list {
+			get { return new PropertyList (properties); }
+			set {
+				foreach (Property prop in value)
+					properties.Add (prop);
+			}
 		}
 
 		public void AddProperty (Property prop)
@@ -323,7 +332,7 @@ namespace Beagle {
 					return null;
 
 				if (top - first != 1) {
-					Logger.Log.Warn ("Accessed multi-property key with Hit's indexer.");
+					Logger.Log.Warn ("Accessed multi-property key '(0}' with Hit's indexer.");
 					return null;
 				}
 

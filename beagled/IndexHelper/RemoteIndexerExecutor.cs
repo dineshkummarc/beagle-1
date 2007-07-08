@@ -44,7 +44,6 @@ namespace Beagle.IndexHelper {
 		static Hashtable indexer_table = new Hashtable ();
 
 		Indexable[] child_indexables;
-		FilteredStatus[] uris_filtered;
 
 		public override ResponseMessage Execute (RequestMessage raw_request)
 		{
@@ -65,9 +64,10 @@ namespace Beagle.IndexHelper {
 
 					indexer_table [remote_request.RemoteIndexName] = indexer;
 
-					indexer.FileFilterNotifier += delegate (Uri display_uri, Filter filter) {
+					indexer.FileFilterNotifier += delegate (Uri display_uri, Uri content_uri, Filter filter) {
 						IndexHelperTool.ReportActivity ();
-						IndexHelperTool.CurrentUri = display_uri;
+						IndexHelperTool.CurrentDisplayUri = display_uri;
+						IndexHelperTool.CurrentContentUri = content_uri;
 						IndexHelperTool.CurrentFilter = filter;
 					};
 				}
@@ -76,22 +76,6 @@ namespace Beagle.IndexHelper {
 			IndexerReceipt [] receipts = null;
 			if (remote_request.Request != null) // If we just want the item count, this will be null
 				receipts = indexer.Flush (remote_request.Request);
-
-			// Child indexables probably have streams
-			// associated with them.  We need to store them before
-			// sending them back to the daemon.
-			if (receipts != null && ! Shutdown.ShutdownRequested) {
-				foreach (IndexerReceipt r in receipts) {
-					IndexerChildIndexablesReceipt cir;
-					cir = r as IndexerChildIndexablesReceipt;
-					if (cir != null) {
-						foreach (Indexable i in cir.Children) {
-							i.StoreStream ();
-							i.CloseStreams ();
-						}
-					}
-				}
-			}
 
 			// Construct a response containing the item count and
 			// the receipts produced by the actual indexing.

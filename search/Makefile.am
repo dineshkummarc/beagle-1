@@ -67,6 +67,7 @@ TILES = 					\
 	$(srcdir)/Tiles/Presentation.cs		\
 	$(srcdir)/Tiles/RSSFeed.cs		\
 	$(srcdir)/Tiles/Spreadsheet.cs		\
+	$(srcdir)/Tiles/Task.cs			\
 	$(srcdir)/Tiles/TextDocument.cs		\
 	$(srcdir)/Tiles/ThumbnailFactory.cs	\
 	$(srcdir)/Tiles/Tile.cs			\
@@ -122,6 +123,8 @@ desktop_DATA     = $(desktop_files)
 
 autostartdir = $(sysconfdir)/xdg/autostart
 autostart_DATA = beagle-search-autostart.desktop
+
+man_MANS = beagle-search.1
 
 all: $(BIN_WRAPPERS)
 

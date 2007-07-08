@@ -138,12 +138,9 @@ namespace Beagle.Daemon {
 
 		private static void PrintUsage ()
 		{
-			string usage =
-				"beagled: The daemon to the Beagle search system.\n" +
-				"Web page: http://beagle-project.org\n" +
-				"Copyright (C) 2004-2007 Novell, Inc.\n\n";
+			VersionFu.PrintHeader ();
 
-			usage +=
+			string usage =
 				"Usage: beagled [OPTIONS]\n\n" +
 				"Options:\n" +
 				"  --version\t\tShow version of daemon, Mono, and Sqlite.\n" +
@@ -157,6 +154,7 @@ namespace Beagle.Daemon {
 				"  --list-backends\tList all the available backends.\n" +
 				"  --add-static-backend\tAdd a static backend by path.\n" + 
 				"  --help\t\tPrint this usage message.\n" +
+				"  --version\t\tPrint version information.\n" +
 				"\n" +
 				"Advance options:\n" +
 				"  --debug\t\tWrite out debugging information.\n" +
@@ -222,7 +220,7 @@ namespace Beagle.Daemon {
 			// something like gnome-power-manager.
 			prev_on_battery = initially_on_battery;
 			// Use 1 sec more than acpi poll interval
-			GLib.Timeout.Add (5000, CheckBatteryStatus);
+			GLib.Timeout.Add (((int) SystemInformation.acpi_poll_delay + 1) * 1000, CheckBatteryStatus);
 
 			// Start our Inotify threads
 			Inotify.Start ();
@@ -423,9 +421,7 @@ namespace Beagle.Daemon {
 					break;
 				
 				case "--version":
-					Console.WriteLine ("Beagle: " + ExternalStringsHack.Version);
-					Console.WriteLine ("Mono: " + SystemInformation.MonoRuntimeVersion);
-					Console.WriteLine ("Sqlite: " + ExternalStringsHack.SqliteVersion);
+					VersionFu.PrintVersion ();
 					Environment.Exit (0);
 					break;
 
@@ -437,10 +433,14 @@ namespace Beagle.Daemon {
 				}
 			}
 
+			if (Environment.GetEnvironmentVariable ("SABAYON_SESSION_RUNNING") == "yes") {
+				Console.WriteLine ("Beagle is running underneath Sabayon, exiting.");
+				Environment.Exit (0);
+			}
+
 			if (arg_indexing_test_mode) {
 				LuceneQueryable.OptimizeRightAway = true;
 			}
-				
 
 			// Bail out if we are trying to run as root
 			if (Environment.UserName == "root" && Environment.GetEnvironmentVariable ("SUDO_USER") != null) {

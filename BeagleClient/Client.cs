@@ -330,6 +330,13 @@ namespace Beagle {
 				} else {
 					deserialize_stream.Write (buffer, 0, end_index);
 					deserialize_stream.Seek (0, SeekOrigin.Begin);
+					Logger.Log.Debug ("We're here");
+
+#if ENABLE_XML_DUMP
+					StreamReader r = new StreamReader (deserialize_stream);
+					Logger.Log.Debug ("Received response:\n{0}\n", r.ReadToEnd ());
+					deserialize_stream.Seek (0, SeekOrigin.Begin);
+#endif
 
 					ResponseMessage resp;
 					try {
@@ -397,6 +404,12 @@ namespace Beagle {
 			}
 
 			this.buffer_stream.Seek (0, SeekOrigin.Begin);
+
+#if ENABLE_XML_DUMP
+			StreamReader dump_reader = new StreamReader (this.buffer_stream);
+			Logger.Log.Debug ("Received response:\n{0}\n", dump_reader.ReadToEnd ());
+			this.buffer_stream.Seek (0, SeekOrigin.Begin);
+#endif
 			
 			ResponseMessage resp = null;
 

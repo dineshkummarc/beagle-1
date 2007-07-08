@@ -71,7 +71,7 @@ namespace Beagle.Daemon.KMailQueryable {
 			account_name = account;
 			mail_root = root;
 			mail_directories = new ArrayList ();
-			Logger.Log.Debug ("mail_directories created for:" + mail_root + " (" + mail_directories.Count + ")");
+			Log.Debug ("{1} mail_directories created for {0}", mail_root, mail_directories.Count);
 			folder_directories = new ArrayList ();
 			mbox_files = new ArrayList ();
 
@@ -80,6 +80,10 @@ namespace Beagle.Daemon.KMailQueryable {
 			excludes.Add ("outbox");
 			excludes.Add ("trash");
 			excludes.Add ("drafts");
+
+			foreach (ExcludeItem item in Conf.Indexing.Excludes)
+				if (item.Type == ExcludeType.MailFolder)
+					excludes.Add (item.Value.ToLower ());
 		}
 
 		/**
@@ -109,7 +113,7 @@ namespace Beagle.Daemon.KMailQueryable {
 			// - if is in one of the mail_directories, index it if it is an mbox file
 			if ((type & Inotify.EventType.Create) != 0 && (type & Inotify.EventType.IsDirectory) == 0) {
 				if (IsMailDir (path)) {
-					Indexable indexable = MaildirMessageToIndexable (fullPath);
+					Indexable indexable = MaildirMessageToIndexable (fullPath, false);
 					AddIndexableTask (indexable, fullPath);
 				} else {
 					// add mbox file to mbox_files
@@ -141,7 +145,7 @@ namespace Beagle.Daemon.KMailQueryable {
 			// - need to delete from the source
 			if ((type & Inotify.EventType.MovedTo) != 0 && (type & Inotify.EventType.IsDirectory) == 0) {
 				if (IsMailDir (path)) {
-					Indexable indexable = MaildirMessageToIndexable (fullPath);
+					Indexable indexable = MaildirMessageToIndexable (fullPath, false);
 					AddIndexableTask (indexable, fullPath);
 				}
 				if (IsMailDir (srcpath))
@@ -359,7 +363,7 @@ namespace Beagle.Daemon.KMailQueryable {
 		/** 
 		 * Create an indexable from a maildir message
 		 */
-		public Indexable MaildirMessageToIndexable (string filename)
+		public Indexable MaildirMessageToIndexable (string filename, bool crawl)
 		{
 			//Logger.Log.Debug ("+ indexing maildir mail:" + filename);
 			String folder = GetFolderMaildir(filename);
@@ -369,6 +373,7 @@ namespace Beagle.Daemon.KMailQueryable {
 			indexable.HitType = "MailMessage";
 			indexable.MimeType = "message/rfc822";
 			indexable.CacheContent = false;
+			indexable.Crawled = crawl;
 
 			indexable.AddProperty (Property.NewUnsearched ("fixme:client", "kmail"));
 			indexable.AddProperty (Property.NewUnsearched ("fixme:account", account_name));
@@ -393,7 +398,8 @@ namespace Beagle.Daemon.KMailQueryable {
 			indexable.Timestamp = message.Date.ToUniversalTime ();
 			indexable.HitType = "MailMessage";
 			indexable.MimeType = "message/rfc822";
-			indexable.CacheContent = false;
+			indexable.CacheContent = true;
+			indexable.Crawled = true; // mbox files will be stored in temp files, so flush them when done
 
 			indexable.AddProperty (Property.NewUnsearched ("fixme:client", "kmail"));
 			indexable.AddProperty (Property.NewUnsearched ("fixme:account", account_name));

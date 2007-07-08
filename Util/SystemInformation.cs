@@ -138,6 +138,12 @@ namespace Beagle.Util {
 			if (! use_screensaver)
 				return;
 
+			if (! Conf.Indexing.IndexFasterOnScreensaver) {
+				cached_screensaver_running = false;
+				cached_screensaver_idle_time = 0;
+				return;
+			}
+
 			if ((DateTime.Now - screensaver_time).TotalSeconds < screensaver_poll_delay)
 				return;
 
@@ -179,7 +185,7 @@ namespace Beagle.Util {
 
 		///////////////////////////////////////////////////////////////
 
-		const double acpi_poll_delay = 30;
+		public const double acpi_poll_delay = 30;
 		const string ac_present_string = "on-line";
 
 		private static readonly string[] proc_ac_state_filenames = new string[] {

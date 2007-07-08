@@ -18,7 +18,7 @@ HAP_CSFILES =						\
 	$(srcdir)/HtmlAgilityPack/MixedCodeDocument.cs	\
 	$(srcdir)/HtmlAgilityPack/tools.cs
 
-include entagged-sharp/entagged-sharp.sources
+include TagLib/TagLib.sources
 
 # Local copy of http://svn.myrealbox.com/viewcvs/trunk/mcs/class/Managed.Windows.Forms/System.Windows.Forms.RTF/
 SWF_RTF_CSFILES =						\
@@ -46,7 +46,6 @@ SWF_RTF_CSFILES =						\
 
 CSFILES = 				\
 	$(srcdir)/AssemblyInfo.cs	\
-	$(ENTAGGED_CSFILES)		\
 	$(HAP_CSFILES)			\
 	$(SWF_RTF_CSFILES)		\
 	$(srcdir)/FilterArchive.cs	\
@@ -79,10 +78,8 @@ CSFILES = 				\
 	$(srcdir)/FilterDocbook.cs	\
 	$(srcdir)/FilterMonodoc.cs	\
 	$(srcdir)/FilterDesktop.cs	\
-	$(srcdir)/FilterDirectory.cs	\
 	$(srcdir)/FilterMail.cs		\
 	$(srcdir)/FilterMusic.cs	\
-	$(srcdir)/FilterImLog.cs	\
 	$(srcdir)/FilterKonqHistory.cs	\
 	$(srcdir)/FilterShellscript.cs	\
 	$(srcdir)/FilterRuby.cs		\
@@ -103,7 +100,12 @@ CSFILES = 				\
 	$(srcdir)/FilterKNotes.cs	\
 	$(srcdir)/FilterKOrganizer.cs	\
 	$(srcdir)/FilterLabyrinth.cs	\
-	$(srcdir)/FilterScribus.cs
+	$(srcdir)/FilterScribus.cs	\
+	$(srcdir)/FilterM3U.cs		\
+	$(srcdir)/FilterPls.cs		\
+	$(srcdir)/FilterPidginLog.cs	\
+	$(srcdir)/FilterKopeteLog.cs	\
+	$(srcdir)/FilterIgnore.cs
 
 if ENABLE_GSF_SHARP
 CSFILES += 				\
@@ -136,7 +138,13 @@ ASSEMBLIES =				\
 
 RESOURCES =
 
-$(TARGET): $(CSFILES)
+if INTERNAL_TAGLIB
+CSFILES += $(TAGLIB_CSFILES)
+else
+ASSEMBLIES += $(TAGLIB_SHARP_LIBS)
+endif
+
+$(TARGET): $(CSFILES) $(LOCAL_ASSEMBLIES)
 	$(CSC) -out:$@ $(CSFLAGS) $(CSFILES) $(ASSEMBLIES) $(RESOURCES)
 
 all: $(TARGET)

@@ -45,6 +45,9 @@ namespace Beagle.Filters {
 		public FilterSvg ()
 		{
 			SetVersion (1);
+			// FIXME: Should really set FileType as "image"
+			// But this does not extract common image properties,
+			// so will confuse everybody
 		}
 
 		protected override void RegisterSupportedTypes ()
@@ -124,15 +127,10 @@ namespace Beagle.Filters {
 						}
 					}
 				} catch (System.Xml.XmlException e) {
-					if (reader.ReadState == ReadState.Error) {
-						Logger.Log.Error ("Fatal error parsing xml file {0}", FileInfo.FullName);
-						Logger.Log.Debug (e);
-						Error ();
-						return;
-					} else {
-						Logger.Log.Debug ("Non-Fatal error parsing xml file {0}", FileInfo.FullName);
-						Logger.Log.Debug (e.Message);
-					}
+					Logger.Log.Error ("Fatal error parsing xml file {0}", FileInfo.FullName);
+					Logger.Log.Debug (e);
+					Error ();
+					return;
 				}
 			}
 			

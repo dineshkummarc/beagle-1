@@ -1,7 +1,7 @@
 //
 // LuceneQueryable.cs
 //
-// Copyright (C) 2004-2005 Novell, Inc.
+// Copyright (C) 2004-2007 Novell, Inc.
 //
 
 //
@@ -26,6 +26,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 
 using Beagle.Util;
@@ -125,7 +126,7 @@ namespace Beagle.Daemon {
 			get { return driver.TopDirectory; }
 		}
 
-		protected string IndexFingerprint {
+		public string IndexFingerprint {
 			get { return driver.Fingerprint; }
 		}
 
@@ -169,6 +170,11 @@ namespace Beagle.Daemon {
 		{
 			// Accept all queries by default.
 			return true;
+		}
+
+		virtual public bool HasUri (Uri uri)
+		{
+			return Driver.HasUri (uri);
 		}
 
 		/////////////////////////////////////////
@@ -375,14 +381,7 @@ namespace Beagle.Daemon {
 			QueryableStatus status = new QueryableStatus ();
 
 			status.ProgressPercent = this.ProgressPercent;
-
-			// If we're in read-only mode, query the driver
-			// and not the indexer for the item count.
-			if (indexer == null)
-				status.ItemCount = driver.GetItemCount ();
-			else
-				status.ItemCount = indexer.GetItemCount ();
-
+			status.ItemCount = driver.GetItemCount ();
 			status.IsIndexing = this.IsIndexing;
 
 			return status;
@@ -459,16 +458,6 @@ namespace Beagle.Daemon {
 			writer.Close ();
 		}
 
-		// Everything needed to write the attributes of a file after all its children
-		// is indexed
-		private class ParentIndexableInfo {
-			public Indexable Indexable;
-			public IndexerAddedReceipt Receipt;
-			public DateTime LastChildIndexTime;
-			public int NumChildLeft;
-		}
-
-		private Hashtable parent_indexable_table = UriFu.NewHashtable ();
 
 		//////////////////////////////////////////////////////////////////////////////////
 
@@ -485,22 +474,17 @@ namespace Beagle.Daemon {
 		// will come back w/ an internal Uri.  In order for change
 		// notification to work correctly, we have to map it to
 		// an external Uri.
-		virtual protected void PostAddHook (Indexable indexable, IndexerAddedReceipt receipt)
+		// Return the remapped uri.
+		virtual protected Uri PostAddHook (Indexable indexable, IndexerAddedReceipt receipt)
 		{
-			// Does nothing by default
+			// By default, remapped uri is the indexable uri
+			return indexable.Uri;
 		}
 
-		// Inform backends that the indexable is completely indexed including all children
-		// Pass in the top-level parent indexable, indexeradded receipt for that indexable
-		// and the time when the receipt about the last child indexing was received
-		virtual protected void PostChildrenIndexedHook (Indexable indexable, IndexerAddedReceipt receipt, DateTime Mtime)
+		virtual protected Uri PostRemoveHook (Indexable indexable)
 		{
-			// Does nothing by default
-		}
-
-		virtual protected void PostRemoveHook (Indexable indexable, IndexerRemovedReceipt receipt)
-		{
-			// Does nothing by default
+			// By default, remapped uri is the indexable uri
+			return indexable.Uri;
 		}
 
 		//////////////////////////////////////////////////////////////////////////////////
@@ -524,11 +508,7 @@ namespace Beagle.Daemon {
 			{
 				if (queryable.PreAddIndexableHook (indexable)) {
 					queryable.AddIndexable (indexable);
-
-					if (Priority == Scheduler.Priority.Immediate)
-						queryable.Flush ();
-					else
-						queryable.ConditionalFlush ();
+					queryable.ConditionalFlush ();
 				}
 			}
 
@@ -807,8 +787,8 @@ namespace Beagle.Daemon {
 		// Other hooks
 
 		// If this returns true, a task will automatically be created to
-		// add the child.
-		virtual protected bool PreChildAddHook (Indexable child)
+		// add the indexable
+		virtual protected bool PreFilterGeneratedAddHook (Indexable indexable)
 		{
 			return true;
 		}
@@ -824,8 +804,7 @@ namespace Beagle.Daemon {
 
 		protected void AddIndexable (Indexable indexable)
 		{
-			if (indexable.Source == null)
-				indexable.Source = QueryDriver.GetQueryable (this).Name;
+			indexable.Source = QueryDriver.GetQueryable (this).Name;
 
 			lock (request_lock)
 				pending_request.Add (indexable);
@@ -847,7 +826,7 @@ namespace Beagle.Daemon {
 		protected bool ConditionalFlush ()
 		{
 			lock (request_lock) {
-				if (pending_request.Count > 37) { // a total arbitrary magic number
+				if (pending_request.Count > LuceneCommon.RequestFlushThreshold) {
 					Flush ();
 					return true;
 				}
@@ -857,18 +836,33 @@ namespace Beagle.Daemon {
 
 		protected void Flush ()
 		{
+			Flush (false);
+		}
+
+		protected void Flush (bool continue_only)
+		{
 			IndexerRequest flushed_request;
 
-			lock (request_lock) {
-				if (pending_request.IsEmpty)
-					return;
+			if (continue_only) {
+				// if the request is merely to signal indexhelper to continue indexing,
+				// then sent a fake indexerrequest but then use the previous request to retrieve
+				// deferred indexables
+				flushed_request = new IndexerRequest ();
+				flushed_request.ContinueIndexing = true;
 
-				flushed_request = pending_request;
-				pending_request = new IndexerRequest ();
+				// Do not pass this through PreFlushHook since this is a fake request
+			} else {
+				lock (request_lock) {
+					if (pending_request.IsEmpty)
+						return;
 
-				// We hold the request_lock when calling PreFlushHook, so
-				// that no other requests can come in until it exits.
-				PreFlushHook (flushed_request);
+					flushed_request = pending_request;
+					pending_request = new IndexerRequest ();
+
+					// We hold the request_lock when calling PreFlushHook, so
+					// that no other requests can come in until it exits.
+					PreFlushHook (flushed_request);
+				}
 			}
 
 			IndexerReceipt [] receipts;
@@ -876,8 +870,16 @@ namespace Beagle.Daemon {
 
 			PostFlushHook (flushed_request, receipts);
 
+			if (continue_only) {
+				flushed_request = pending_request;
+			}
+
 			// Silently return if we get a null back.  This is probably
-			// a bad thing to do.
+			// a bad thing to do. If IndexHelper is shutdown because of
+			// memory blowup or is crashed, then null is returned. Silently
+			// returning means ignoring the indexables in the IndexHelper's
+			// queue (which could be more than what was sent in the last request,
+			// since there could be some deferred-indexables too).
 			if (receipts == null)
 				return;
 
@@ -887,6 +889,7 @@ namespace Beagle.Daemon {
 				return;
 
 			// Update the cached count of items in the driver
+			// FIXME: Verify that this still works after all the deferred-indexable fu
 			driver.SetItemCount (indexer.GetItemCount ());
 
 			// Something happened, so schedule an optimize just in case.
@@ -897,159 +900,91 @@ namespace Beagle.Daemon {
 
 			ArrayList added_uris = new ArrayList ();
 			ArrayList removed_uris  = new ArrayList ();
-
-			bool[] indexable_added_receipt_index = new bool [receipts.Length];
-			int[] child_added_receipt_count = new int [receipts.Length];
+			bool indexer_indexable_receipt = false;
 
 			for (int i = 0; i < receipts.Length; ++i) {
-				child_added_receipt_count [i] = 0;
-				indexable_added_receipt_index [i] = false;
 
 				if (receipts [i] is IndexerAddedReceipt) {
+					
+					IndexerAddedReceipt r;
+					r = (IndexerAddedReceipt) receipts [i];
+					Indexable indexable = flushed_request.RetrieveRequestIndexable (r);
 
-					// Process IndexerAddedReceipt after knowing if there are any
-					// child of the indexable yet to be indexed
-					indexable_added_receipt_index [i] = true;
+					if (indexable == null) {
+						Log.Debug ("Should not happen! Previously requested indexable with id #{0} has eloped!", r.Id);
+						continue;
+					}
+
+					// Add the Uri to the list for our change data
+					// *before* doing any post-processing.
+					// This ensures that we have internal uris when
+					// we are remapping.
+					added_uris.Add (indexable.Uri);
+					
+					// Call the appropriate hook
+					Uri notification_uri = indexable.Uri;
+					try {
+						// Map from internal->external Uris in the PostAddHook
+						notification_uri = PostAddHook (indexable, r);
+					} catch (Exception ex) {
+						Logger.Log.Warn (ex, "Caught exception in PostAddHook '{0}' '{1}' '{2}'",
+								 indexable.Uri, r.FilterName, r.FilterVersion);
+					}
+
+					// Every added Uri also needs to be listed as removed,
+					// to avoid duplicate hits in the query.  Since the
+					// removed Uris need to be external Uris, we add them
+					// to the list *after* post-processing.
+					removed_uris.Add (notification_uri);
 
 				} else if (receipts [i] is IndexerRemovedReceipt) {
 
 					IndexerRemovedReceipt r;
 					r = (IndexerRemovedReceipt) receipts [i];
-					HandleRemoveReceipt (r, flushed_request.GetByUri (r.Uri), removed_uris);
-					
-				} else if (receipts [i] is IndexerChildIndexablesReceipt) {
-					
-					IndexerChildIndexablesReceipt r;
-					r = (IndexerChildIndexablesReceipt) receipts [i];
-					HandleChildIndexableReceipt (r, child_added_receipt_count, i);
-				}
-			}
 
-			// First process the child receipts
-			for (int i = 0; i < receipts.Length; ++i) {
-				if (child_added_receipt_count [i] == 0)
-					continue;
-
-				IndexerChildIndexablesReceipt r;
-				r = (IndexerChildIndexablesReceipt) receipts [i];
-
-				if (r.Children == null)
-					continue;
-
-				// Use first child to get parent uri since all children will share same parent
-				Indexable child = (Indexable) r.Children [0];
-				ParentIndexableInfo info;
-
-				Uri parent_uri = child.ParentUri;
-				info = (ParentIndexableInfo) parent_indexable_table [parent_uri];
-				if (info != null) {
-					info.NumChildLeft += r.Children.Count;
-					if (Debug)
-						Log.Debug ("Add {2} children to {0}. (to-index {1})",
-							   info.Indexable.Uri,
-							   info.NumChildLeft,
-							   r.Children.Count);
-					continue;
-				}
-
-				// Need to figure out the indexeraddedreceipt for r.indexable
-				IndexerAddedReceipt added_receipt = null;
-
-				// FIXME: Huge assumption on how LuceneIndexingDriver works
-				// Assuming that IndexingDriver sends the addedreceipt for the
-				// main indexable and the childreceipts for added children in
-				// the same response.
-				int j = 0;
-				for (; j < receipts.Length; ++j) {
-					if (! indexable_added_receipt_index [j])
+					Indexable indexable = flushed_request.RetrieveRequestIndexable (r);
+					if (indexable == null) { // Should never happen
+						Log.Warn ("Unable to match indexable-remove #{0} to any request!", r.Id);
 						continue;
-
-					added_receipt = (IndexerAddedReceipt) receipts [j];
-					if (UriFu.Equals (added_receipt.Uri, parent_uri))
-						break;
-				}
-
-				// Just being cautious
-				if (j == receipts.Length) {
-					if (Debug) {
-						Log.Debug ("Strange! {0} not contained in:", 
-							    parent_uri);
-						for (j = 0; j < receipts.Length; ++j) {
-							if (! indexable_added_receipt_index [j])
-								continue;
-							added_receipt = (IndexerAddedReceipt) receipts [j];
-							Log.Debug ("---- {0}", added_receipt.Uri);
-						}
 					}
-					Log.Warn ("Ignoring child indexable {0}, good luck!",
-						   child.Uri);
-					continue;
+
+					// Call the appropriate hook
+					Uri notification_uri = indexable.Uri;
+					try {
+						notification_uri = PostRemoveHook (indexable);
+					} catch (Exception ex) {
+						Logger.Log.Warn (ex, "Caught exception in PostRemoveHook '{0}'",
+								 indexable.Uri);
+					}
+
+					// Add the removed Uri to the list for our
+					// change data.  This will be an external Uri
+					// when we are remapping.
+					removed_uris.Add (notification_uri);
+					
+				} else if (receipts [i] is IndexerIndexablesReceipt) {
+					indexer_indexable_receipt = true;
 				}
-
-				// Store the parent-child info for use when child is done indexing
-				info = new ParentIndexableInfo ();
-				info.NumChildLeft = r.Children.Count;
-				info.LastChildIndexTime = child.Timestamp;
-				info.Indexable = flushed_request.GetByUri (parent_uri);
-				info.Receipt = new IndexerAddedReceipt (added_receipt.Uri,
-									added_receipt.FilterName,
-									added_receipt.FilterVersion);
-
-				parent_indexable_table [info.Indexable.Uri] = info;
-				if (Debug)
-					Log.Debug ("Add {2} children to {0}. (to-index {1})",
-						    info.Indexable.Uri,
-						    info.NumChildLeft,
-						    r.Children.Count);
 			}
 
-			// Process these after knowing what all child indexable receipts were present
-			for (int i = 0; i < receipts.Length; ++i) {
-				if (! indexable_added_receipt_index [i])
-					continue;
-
-				IndexerAddedReceipt r = (IndexerAddedReceipt) receipts [i];
-				if (Debug)
-					Log.Debug ("AddedReceipt for {0}", r.Uri);
-
-				// Add the Uri to the list for our change data
-				// before doing any post-processing.
-				// This ensures that we have internal uris when
-				// we are remapping.
-				added_uris.Add (r.Uri);
-				
-				// Call the appropriate hook
-				try {
-					HandleAddReceipt (r, flushed_request.GetByUri (r.Uri));
-				} catch (Exception ex) {
-					Logger.Log.Warn (ex, "Caught exception in PostAddHook or PostChildrenIndexedHook '{0}' '{1}' '{2}'",
-							 r.Uri, r.FilterName, r.FilterVersion);
+			if (! continue_only) {
+				lock (request_lock) {
+					pending_request.DeferredIndexables = flushed_request.DeferredIndexables;
 				}
-
-				// Every added Uri also needs to be listed as removed,
-				// to avoid duplicate hits in the query.  Since the
-				// removed Uris need to be external Uris, we add them
-				// to the list *after* post-processing.
-				removed_uris.Add (r.Uri);
 			}
 
-			ArrayList to_remove = new ArrayList ();
-			// Find indexables whose all children are indexed
-			foreach (ParentIndexableInfo info in parent_indexable_table.Values) {
-				if (info.NumChildLeft > 0)
-					continue;
-
-				if (Debug)
-					Log.Debug ("{0} has no more children left, removing", info.Indexable.Uri);
-				PostChildrenIndexedHook (info.Indexable, info.Receipt, info.LastChildIndexTime);
-				to_remove.Add (info.Indexable.Uri);
+			if (indexer_indexable_receipt) {
+				Log.Debug ("Indexing of indexer generated indexables is paused. Scheduling job to continue.");
+				// Create a task asking the indexer to continue indexing
+				Scheduler.Task task;
+				task = Scheduler.TaskFromHook (new Scheduler.TaskHook (ContinueIndexerIndexableIndexing));
+				// Schedule it so that it is the immediate next task to be scheduled
+				task.Priority = Scheduler.Priority.Immediate;
+				task.SubPriority = 100;
+				task.Source = this;
+				task.Tag = "Continue indexing generated indexables from " + IndexName;
+				ThisScheduler.Add (task);
 			}
-
-			foreach (Uri uri in to_remove)
-				parent_indexable_table.Remove (uri);
-			if (Debug)
-				Log.Debug ("parent_indexable_table now contains {0} parent-child", 
-					   parent_indexable_table.Values.Count);
 
 			if (fa_store != null)
 				fa_store.CommitTransaction ();
@@ -1065,96 +1000,10 @@ namespace Beagle.Daemon {
 			}
 		}
 
-		private void HandleAddReceipt (IndexerAddedReceipt r,
-					  Indexable indexable)
+		// Ouch! What a name ?!
+		private void ContinueIndexerIndexableIndexing (Scheduler.Task task)
 		{
-			// Map from internal->external Uris in the PostAddHook
-			IndexerAddedReceipt receipt_copy = new IndexerAddedReceipt (
-							r.Uri,
-							r.FilterName,
-							r.FilterVersion);
-			PostAddHook (indexable, r);
-
-			// Handle child indexables
-			ParentIndexableInfo info;
-
-			// Check if this indexable has any children
-			info = (ParentIndexableInfo) parent_indexable_table [indexable.Uri];
-
-			// Indexable has children, they are already taken care of
-			if (info != null)
-				return;
-
-			Uri parent_uri = indexable.ParentUri;
-			if (parent_uri != null) {
-				// Indexable is itself a child
-				info = (ParentIndexableInfo) parent_indexable_table [parent_uri];
-			}
-
-			if (info == null)
-				// No children, not a child
-				PostChildrenIndexedHook (indexable, receipt_copy, indexable.Timestamp);
-			else {
-				// This indexable is a child registered earlier
-				info.NumChildLeft --;
-				info.LastChildIndexTime = indexable.Timestamp;
-				if (Debug)
-					Log.Debug ("Finished indexing child for {0} ({1} child left)", info.Indexable.Uri, info.NumChildLeft);
-			}
-			
-		}
-
-		private void HandleRemoveReceipt (IndexerRemovedReceipt r,
-						  Indexable indexable,
-						  ArrayList removed_uris)
-		{
-			// Drop the removed item from the text cache
-			TextCache.UserCache.Delete (r.Uri);
-			
-			// Call the appropriate hook
-			try {
-				PostRemoveHook (indexable, r);
-			} catch (Exception ex) {
-				Logger.Log.Warn (ex, "Caught exception in PostRemoveHook '{0}'",
-						 r.Uri);
-			}
-
-			// Add the removed Uri to the list for our
-			// change data.  This will be an external Uri
-			// when we are remapping.
-			removed_uris.Add (r.Uri);
-		}
-
-		private void HandleChildIndexableReceipt (IndexerChildIndexablesReceipt r,
-							  int[] child_receipt_count,
-							  int receipt_index)
-		{
-			foreach (Indexable child in r.Children) {
-				bool please_add_a_new_task = false;
-
-				try {
-					please_add_a_new_task = PreChildAddHook (child);
-				} catch (InvalidOperationException ex) {
-					// Queryable does not support adding children
-				} catch (Exception ex) {
-					Logger.Log.Warn (ex, "Caught exception in PreChildAddHook '{0}'", child.DisplayUri);
-				}
-
-				if (! please_add_a_new_task) {
-					child.Cleanup ();
-					continue;
-				}
-
-				if (Debug)
-					Log.Debug ("Adding child {0} to parent {1}", child.Uri, child.ParentUri);
-
-				Scheduler.Task task = NewAddTask (child);
-				task.SubPriority = 1;
-				ThisScheduler.Add (task);
-
-				// value at 'receipt_index' = number of successful children
-				child_receipt_count [receipt_index] ++;
-			}
+			Flush (true);
 		}
 
 		//////////////////////////////////////////////////////////////////////////////////

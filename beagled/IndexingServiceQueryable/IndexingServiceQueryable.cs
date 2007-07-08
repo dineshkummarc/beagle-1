@@ -240,16 +240,18 @@ namespace Beagle.Daemon.IndexingServiceQueryable {
 			ThisScheduler.Add (task);
 		}
 
-		protected override void PostAddHook (Indexable indexable, IndexerAddedReceipt receipt)
+		protected override Uri PostAddHook (Indexable indexable, IndexerAddedReceipt receipt)
 		{
 			FileInfo meta_file = indexable.LocalState ["MetaFile"] as FileInfo;
 			if (meta_file == null)
-				return;
+				return indexable.Uri;
 
 			meta_file.Delete ();
 
 			lock (pending_files)
 				pending_files.Remove (indexable.ContentUri.LocalPath);
+
+			return indexable.Uri;
 		}
 
 		private class IndexableGenerator : IIndexableGenerator {
@@ -294,9 +296,31 @@ namespace Beagle.Daemon.IndexingServiceQueryable {
 		{
 			IndexingServiceRequest isr = (IndexingServiceRequest) msg;
 
+			LuceneQueryable backend = this;
+
+			if (isr.Source != null) {
+				Queryable target = QueryDriver.GetQueryable (isr.Source);
+
+				if (target == null) {
+					string err = String.Format ("Unable to find backend matching '{0}'", isr.Source);
+
+					Log.Error (err);
+					return new ErrorResponse (err);
+				}
+
+				if (! (target.IQueryable is LuceneQueryable)) {
+					string err = String.Format ("Backend '{0}' is not an indexed backend", isr.Source);
+
+					Log.Error (err);
+					return new ErrorResponse (err);
+				}
+
+				backend = (LuceneQueryable) target.IQueryable;
+			}
+
 			foreach (Uri uri in isr.ToRemove) {
 				Log.Debug ("IndexingService: Removing {0}", uri);
-				Scheduler.Task task = NewRemoveTask (uri);
+				Scheduler.Task task = backend.NewRemoveTask (uri);
 				ThisScheduler.Add (task);
 			}
 
@@ -306,7 +330,7 @@ namespace Beagle.Daemon.IndexingServiceQueryable {
 			if (isr.ToAdd.Count > 0) {
 				Log.Debug ("IndexingService: Adding {0} indexables.", isr.ToAdd.Count);
 				IIndexableGenerator ind_gen = new IndexableGenerator (isr.ToAdd);
-				Scheduler.Task task = NewAddTask (ind_gen);
+				Scheduler.Task task = backend.NewAddTask (ind_gen);
 				task.Priority = Scheduler.Priority.Immediate;
 				ThisScheduler.Add (task);
 			}

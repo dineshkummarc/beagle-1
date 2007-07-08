@@ -1,7 +1,7 @@
 //
 // Property.cs
 //
-// Copyright (C) 2004 Novell, Inc.
+// Copyright (C) 2004-2007 Novell, Inc.
 //
 
 //
@@ -39,7 +39,70 @@ namespace Beagle {
 		Keyword  = 2,
 		Date     = 3
 	}
+
+	/* IEnumerable class to serialize properties with non-private namespace. */
+	public class PropertyList : IEnumerable {
+		private ArrayList property_list;
+		
+		public PropertyList ()
+		{
+		        property_list = new ArrayList ();
+		}
+		
+		public PropertyList (ArrayList list)
+		{
+		        property_list = list;
+		}
+		
+		public IEnumerator GetEnumerator ()
+		{
+		        return new PropertyListEnumerator (property_list);
+		}
+		
+		public void Add (object o)
+		{
+		        property_list.Add (o);
+		}
+	}
 	
+	internal class PropertyListEnumerator : IEnumerator {
+		private ArrayList property_list;
+		int position = -1; // Position is before the first element initially
+		
+		public PropertyListEnumerator (ArrayList list)
+		{
+		        property_list = list;
+		}
+		
+		public bool MoveNext ()
+		{
+		        position ++;
+		        while (position < property_list.Count) {
+		    	    Property prop = (Property) property_list [position];
+		    	    if (prop != null && ! prop.Key.StartsWith (Property.PrivateNamespace))
+		    		    break;
+		    	    position ++;
+		        }
+		
+		        return (position < property_list.Count);
+		}
+		
+		public void Reset ()
+		{
+		        position = -1;
+		}
+		
+		public object Current {
+		        get {
+				try {
+					return property_list [position];
+				} catch (IndexOutOfRangeException) {
+					throw new InvalidOperationException();
+				}
+			}
+		}
+	}
+
 	public class Property : IComparable, ICloneable {
 		
 		PropertyType type;
@@ -48,6 +111,7 @@ namespace Beagle {
 		bool         is_searched;
 		bool         is_mutable;
 		bool	     is_stored;
+		bool         is_persistent;
 
 		// Commonly used property keys
 		public const string PrivateNamespace = "_private:";
@@ -97,11 +161,20 @@ namespace Beagle {
 			set { is_mutable = value; }
 		}
 
-		// When IsStored is false, the property will be stored as an "unstored lucene field".
+		// When IsStored is false, the property will be stored as an
+		// "unstored lucene field".
 		[XmlAttribute]
 		public bool IsStored {
 			get { return is_stored; }
 			set { is_stored = value; }
+		}
+
+		// When true, this property is persisted across documents being
+		// readded, for instance if a file is touched on disk.
+		[XmlAttribute]
+		public bool IsPersistent {
+			get { return is_persistent; }
+			set { is_persistent = value; }
 		}
 
 		/////////////////////////////////////

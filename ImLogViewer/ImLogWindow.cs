@@ -93,13 +93,12 @@ namespace ImLogViewer {
 			// Find the buddy
 			ImBuddy buddy = null;
 
-			if (client == ImClient.Gaim)
+			if (client == ImClient.Pidgin)
 				buddy = new GaimBuddyListReader ().Search (speaker);
 			else if (client == ImClient.Kopete)
 				buddy = new KopeteBuddyListReader ().Search (speaker);
 			else if (client == ImClient.Konversation) {
 				int pos = speaker.IndexOf ('_');
-				string server, channel;
 
 				// speaker of the form irc.gimp.net_#mono-dev
 				if (pos == -1)
@@ -185,8 +184,8 @@ namespace ImLogViewer {
 				ImLog log = null;
 				StreamReader reader = new StreamReader (file);
 				
-				if (client == ImClient.Gaim)
-					log = new GaimLog (new FileInfo (file), reader);
+				if (client == ImClient.Pidgin)
+					log = new PidginLog (new FileInfo (file), reader);
 				else if (client == ImClient.Kopete)
 					log = new KopeteLog (new FileInfo (file), reader);
 				else if (client == ImClient.Konversation)
@@ -245,10 +244,11 @@ namespace ImLogViewer {
 			}
 
 			if (preview == null)
-				return ((ImLog.Utterance) log.Utterances [0]).Text;
+				preview = ((ImLog.Utterance) log.Utterances [0]).Text;
 
 			if (preview.Length > 50)
-				return preview.Substring (0, 50) + "...";
+				preview = preview.Substring (0, 50) + "...";
+
 			return preview;
 		}
 
