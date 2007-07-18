@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<UserCombinePreferences filename="/home/postlund/Kod/beagle-tbird-soc07/beagle-tbird-soc07.mds">
+  <Files>
+    <File filename="./Util/Mork/MorkTypes.cs" />
+    <File filename="./Util/Mork/MorkDatabase.cs" />
+    <File filename="./Util/Mork/MorkReader.cs" />
+    <File filename="./tests/examples/Mork.cs" />
+    <File filename="./Util/Mork/MorkUtils.cs" />
+    <File filename="./Util/Mork/MorkStorage.cs" />
+  </Files>
+  <Views>
+    <ViewMemento Id="MonoDevelop.Ide.Gui.Pads.ProjectPad">
+      <TreeView>
+        <Node expanded="True">
+          <Node name="beagle-tbird-soc07" expanded="True">
+            <Node name="beagled" expanded="True" />
+            <Node name="Util" expanded="True">
+              <Node name="Mork" expanded="True">
+                <Node name="MorkDatabase.cs" expanded="False" selected="True" />
+              </Node>
+              <Node name="Thunderbird" expanded="True">
+                <Node name="Utilities" expanded="True" />
+              </Node>
+              <Node name="Trackers" expanded="True" />
+            </Node>
+          </Node>
+        </Node>
+      </TreeView>
+    </ViewMemento>
+    <ViewMemento Id="MonoDevelop.Ide.Gui.Pads.ClassPad">
+      <TreeView>
+        <Node expanded="True">
+          <Node name="beagle-tbird-soc07" expanded="False" selected="True" />
+        </Node>
+      </TreeView>
+    </ViewMemento>
+    <ViewMemento Id="MonoQuery.DatabasePad">
+      <TreeView>
+        <Node expanded="False" />
+      </TreeView>
+    </ViewMemento>
+    <ViewMemento Id="MonoDevelop.NUnit.TestPad">
+      <TreeView>
+        <Node expanded="False" />
+      </TreeView>
+    </ViewMemento>
+  </Views>
+  <Properties>
+    <Properties>
+      <Property key="ActiveConfiguration" value="Debug" />
+      <Property key="ActiveWindow" value="/home/postlund/Kod/beagle-tbird-soc07/Util/Mork/MorkDatabase.cs" />
+    </Properties>
+  </Properties>
+</UserCombinePreferences>

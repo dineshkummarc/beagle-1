@@ -33,6 +33,7 @@ namespace Beagle.Util.Thunderbird.Utilities {
 		private Stream stream;
 		private byte[] buffer;
 		private byte[] left_overs = null;
+		private bool end_of_file = false;
 		private long bytes_in_buffer = -1;
 		private long current_position = -1;
 		private long current_marker = -1;
@@ -61,14 +62,17 @@ namespace Beagle.Util.Thunderbird.Utilities {
 		{
 		}
 		
-		public int Read ()
+		public virtual int Read ()
 		{
+			CheckOpen ();
+			
+			if (EOF)
+				return EndOfFile;
+			
 			// Move one step ahead
 			current_position++;
 			
-			if (stream == null) {
-				return -1;
-			} else if (bytes_in_buffer == -1) {
+			if (bytes_in_buffer == -1) {
 				bytes_in_buffer = stream.Read (buffer, 0, buffer.Length);
 			} else if (!EOF && current_position >= bytes_in_buffer) {
 				
@@ -89,35 +93,43 @@ namespace Beagle.Util.Thunderbird.Utilities {
 				// Read data from stream and reset current position
 				bytes_in_buffer = stream.Read (buffer, 0, buffer.Length);
 				current_position = 0;
-				
-			} else if (EOF && current_position >= bytes_in_buffer) {
-
-				return -1;	// End of file
 			} 
+			
+			if (Current == EndOfFile)
+				end_of_file = true;
 			
 			return buffer [current_position];
 		}
 		
-		public void IgnoreLine ()
+		public virtual void IgnoreLine ()
 		{
+			CheckOpen ();
 			while (!EOF && Current != 10)
 				Read ();
+		}
+		
+		public virtual void Reset ()
+		{
+			Array.Clear (buffer, 0, buffer.Length);
+			left_overs = null;
+			end_of_file = false;
+			bytes_in_buffer = -1;
+			current_position = -1;
+			current_marker = -1;
 		}
 
 		public virtual void Close ()
 		{
 			if (stream != null)
 				stream.Close ();
-			Array.Clear (buffer, 0, buffer.Length);
-			left_overs = null;
-			bytes_in_buffer = -1;
-			current_position = -1;
-			current_marker = -1;
+			Reset ();
+			end_of_file = true;
 			file_length = -1;
 		}
 		
 		public void SetMarker ()
 		{
+			CheckOpen ();
 			left_overs = null;
 			current_marker = (current_position < 0 ? 0 : current_position);
 		}
@@ -127,6 +139,7 @@ namespace Beagle.Util.Thunderbird.Utilities {
 		// according to situation (since its just an empty buffer).
 		private long GetCutLength (uint cut_start, uint cut_end)
 		{
+			CheckOpen ();
 			long len = (current_position - current_marker) +
 					(left_overs != null ? left_overs.Length : 0);
 			
@@ -135,6 +148,8 @@ namespace Beagle.Util.Thunderbird.Utilities {
 		
 		public byte[] GetFromMarker (uint cut_start, uint cut_end)
 		{
+			CheckOpen ();
+			
 			long len = current_position - current_marker, 
 				left = (left_overs != null ? left_overs.Length : 0);
 			long buf_length = GetCutLength (cut_start, cut_end);
@@ -168,6 +183,7 @@ namespace Beagle.Util.Thunderbird.Utilities {
 		
 		public bool Match (params int[] values)
 		{
+			CheckOpen ();
 			if (values == null)
 				throw new ArgumentNullException ("values");
 			
@@ -181,8 +197,15 @@ namespace Beagle.Util.Thunderbird.Utilities {
 		
 		public void ResetMarker ()
 		{
+			CheckOpen ();
 			current_marker = -1;
 			left_overs = null;
+		}
+		
+		protected void CheckOpen ()
+		{
+			if (stream == null || !stream.CanRead)
+				throw new IOException ("stream is not open or readable");
 		}
 		
 		public int Current {
@@ -195,33 +218,52 @@ namespace Beagle.Util.Thunderbird.Utilities {
 		}
 		
 		public long MarkerPosition {
-			get { return current_marker; }
+			get { 
+				CheckOpen ();
+				return current_marker;
+			}
+		}
+		
+		public long MarkerLength {
+			get {
+				CheckOpen ();
+				return (current_position - current_marker) + 
+						(left_overs != null ? left_overs.Length : 0);
+			}
 		}
 		
 		public bool ActiveMarker {
-			get { return (current_marker < 0 ? false : true); }
+			get { 
+				CheckOpen ();
+				return (current_marker < 0 ? false : true);
+			}
 		}
 		
 		public long Position {
-			get { return stream.Position + current_position; }
+			get { 
+				CheckOpen ();
+				return ((stream.Position / buffer.Length) * buffer.Length) + current_position; 
+			}
 		}
 		
 		public long InternalPosition {
-			get { return current_position; }
+			get {
+				CheckOpen ();
+				return current_position;
+			}
 		}
 		
 		public long Length {
-			get { return file_length; }
+			get {
+				CheckOpen ();
+				return file_length;
+			}
 		}
 		
 		public bool EOF {
-			get { 
-				if (buffer == null && stream == null)
-					return true;
-				else if (file_length == stream.Position) 
-					return (current_position >= bytes_in_buffer ? true : false);
-			
-				return false;
+			get {
+				CheckOpen ();
+				return end_of_file;
 			}
 		}
 	}

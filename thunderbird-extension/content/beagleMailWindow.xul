@@ -1,0 +1,195 @@
+<?xml version="1.0"?>
+
+<!--
+//
+// beagleMailWindow.xul: Overlay for folder and message menu
+//
+// Copyright (C) 2007 Pierre Östlund
+//
+
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation
+// the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom the
+// Software is furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+// DEALINGS IN THE SOFTWARE.
+//
+-->
+
+<?xml-stylesheet href="chrome://beagle/skin/overlay.css" type="text/css"?>
+<?xml-stylesheet href="chrome://beagle/content/beagle.css" type="text/css"?>
+<!DOCTYPE overlay SYSTEM "chrome://beagle/locale/beagle.dtd">
+
+<overlay id="beagle-window-overlay" 
+		xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+	<stringbundleset id="stringbundleset">
+		<stringbundle id="bundle_beagle" src="chrome://beagle/locale/strings.properties"/>
+	</stringbundleset>
+
+	<script type="application/x-javascript">
+	<![CDATA[
+		var indexer = Components.classes ['@beagle-project.org/services/indexer;1']
+			.getService (Components.interfaces.nsIBeagleIndexer);
+		var settings = Components.classes ['@beagle-project.org/services/settings;1']
+			.getService (Components.interfaces.nsIBeagleSettings);
+
+		function getSelectedFolder ()
+		{
+			var selectedFolders = GetSelectedMsgFolders ();
+			if (selectedFolders == null || selectedFolders.length < 1)
+				return null;
+			
+			return selectedFolders [0];
+		}
+
+		function onIndexFillFolderMenu ()
+		{
+			// We don't generate the menu if we are disabled
+			if (!settings.getBoolPref ('Enabled'))
+				return;
+			
+			var folder = getSelectedFolder ();
+			if (!folder)
+				return;
+				
+			try {
+				var noindexing = document.getElementById ('folderPaneContext-noindexing');
+				var removefolder = document.getElementById ('folderPaneContext-removeIndexedFolder');
+				var removefolderrecursive = 
+					document.getElementById ('folderPaneContext-removeIndexedFolderRecursive');
+				var shouldNotIndex = indexer.isFolderUserMarked (folder);
+				
+				// Show a nice little "checked mark" in item is not supposed to be indexed
+				if (shouldNotIndex) 
+					noindexing.setAttribute ('checked', 'true');
+				else
+					noindexing.setAttribute ('checked', 'false');
+				noindexing.hidden = false;
+					
+				// Show the "remove" option if current folder is indexed
+				if (indexer.isFolderIndexed (folder)) {
+					removefolder.hidden = false;
+					removefolderrecursive.hidden = false;
+				} else {
+					removefolder.hidden = true;
+					removefolderrecursive.hidden = true;
+				}
+				
+				// Show the separator
+				var sep = document.getElementById ('folderPaneContext-beaglesep-folder');
+				sep.hidden = false;
+			} catch (ex) {
+			}
+		}
+
+		function onIndexFillMessageMenu ()
+		{
+			dump ("test3\n");
+		}
+		
+		function onRemoveIndexedFolder ()
+		{
+			try {
+				// We remove folder non-recursive and ask if user marks should be removed as well
+				gBeagleUnindex.RemoveFolder (getSelectedFolder (), false, true);
+			} catch (ex) {
+			}
+		}
+
+		function onRemoveIndexedFolderRecursive ()
+		{			
+			try {				
+				// We remove folder recursively and ask if user marks should be removed as well
+				gBeagleUnindex.RemoveFolder (getSelectedFolder (), true, true);
+			} catch (ex) {
+			}
+		}
+		
+		function onRemoveIndexedMessage ()
+		{
+			dump ("onRemoveIndexedMessage\n");
+		}
+		
+		function onNoFolderIndexing ()
+		{
+			try {
+				var folder = getSelectedFolder ();
+				if (folder) {
+					folder.QueryInterface (Components.interfaces.nsIMsgFolder);
+					var userMarked = indexer.isFolderUserMarked (folder);
+					if (userMarked) {
+						// We reset userMarked but also the "indexed" flag to make sure content
+						// gets indexed when done (only the folder, not the content)
+						indexer.resetFolder (folder, true, false, false);
+					} else
+						indexer.markFolderAsUserMarked (folder);
+				}
+			} catch (ex) {
+			}
+		}
+		
+		function onNoMessageIndexing ()
+		{
+			dump ("onNoMessageIndexing\n");
+		}
+
+	]]>
+	</script>
+	
+	<!-- These menu options will show up when right-clicking a message -->
+	<popup id="messagePaneContext" onpopupshowing="onIndexFillFolderMenu ();">
+		<menuseparator id="messagePaneContext-beaglesep-message"
+				insertafter="messagePaneContext-sep-saveAs"/>
+		<menuitem id="messagePaneContext-removeIndexedMessage"
+				label="&beaglemessageview.removemessage;"
+				oncommand="onRemoveIndexedMessage ();"
+				insertafter="messagePaneContext-sep-saveAs"/>
+		<menuitem id="messagePaneContext-noindexing"
+				label="&beaglemessageview.noindexing;"
+				oncommand="onNoMessageIndexing ();"
+				insertafter="messagePaneContext-sep-saveAs"
+				type="checkbox"
+				autocheck="false"/>
+	</popup>
+	
+	<!-- These menu options will show up when right-clicking a folder -->
+	<popup id="folderPaneContext" 
+			onpopupshowing="onIndexFillFolderMenu (); return fillFolderPaneContextMenu ();">
+			
+		<menuseparator id="folderPaneContext-beaglesep-folder" 
+				insertafter="folderPaneContext-sep2"
+				hidden="true"/> 
+		<menuitem id="folderPaneContext-removeIndexedFolder" 
+				label="&beaglefoldertree.removefolder;" 
+				oncommand="onRemoveIndexedFolder ();"
+				insertafter="folderPaneContext-sep2"
+				hidden="true"/>
+		<menuitem id="folderPaneContext-removeIndexedFolderRecursive" 
+				label="&beaglefoldertree.removefolderrecursive;" 
+				oncommand="onRemoveIndexedFolderRecursive ();"
+				insertafter="folderPaneContext-sep2"
+				hidden="true"/>
+		<menuitem id="folderPaneContext-noindexing"
+				label="&beaglefoldertree.noindexing;"
+				oncommand="onNoFolderIndexing ();"
+				insertafter="folderPaneContext-sep2"
+				hidden="true"
+				type="checkbox"
+				autocheck="false"/>
+	</popup>
+
+</overlay>
+

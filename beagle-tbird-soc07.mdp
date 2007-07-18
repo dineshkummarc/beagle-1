@@ -13,7 +13,6 @@
       <CodeGeneration genwarnings="False" ducky="False" culture="" ctype="BooCompilerParameters" />
     </Configuration>
   </Configurations>
-  <DeployTargets />
   <Contents>
     <File name="./beagled/ThunderbirdQueryable/IThunderbirdModule.cs" subtype="Code" buildaction="Nothing" />
     <File name="./beagled/ThunderbirdQueryable/ModuleManager.cs" subtype="Code" buildaction="Nothing" />
@@ -46,6 +45,12 @@
     <File name="./Util/Thunderbird/Utilities/IO.cs" subtype="Code" buildaction="Nothing" />
     <File name="./Util/Thunderbird/Utilities/Paths.cs" subtype="Code" buildaction="Nothing" />
     <File name="./Util/Thunderbird/Utilities/RangeList.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Mork/MorkParser.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Mork/MorkReader.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Mork/MorkStorage.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Mork/MorkTypes.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Mork/MorkUtils.cs" subtype="Code" buildaction="Nothing" />
+    <File name="./Util/Mork/MorkDatabase.cs" subtype="Code" buildaction="Nothing" />
   </Contents>
-  <References />
+  <DeployTargets />
 </Project>
