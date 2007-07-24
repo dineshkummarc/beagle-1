@@ -157,6 +157,10 @@ var gBeagleDataCollector = {
 			for (var j = 0; j < allFolders.Count (); j++) {
 				var folder = allFolders.QueryElementAt (j, Components.interfaces.nsIMsgFolder);
 				
+				// We don't bother if there's nothing to index
+				if (folder.getTotalMessages (false) == 0)
+					continue;
+				
 				// We only need to index a folder if it isn't already indexed and if the user
 				// hasn't explicitly excluded it
 				if (!gBeagleIndexer.isFolderIndexed (folder) && gBeagleIndexer.shouldIndexFolder (folder))
@@ -179,6 +183,8 @@ var gBeagleDataCollector = {
 			gBeagleQueue.forceProcess ();
 			return;
 		}
+		
+		dump ('Processing messages in ' + this.CurrentFolder.prettyName + "\n");
 		
 		// We have a valid folder to enumerate over, make sure we have a valid enumerator as well
 		if (this.CurrentEnumerator == null)
@@ -207,6 +213,7 @@ var gBeagleDataCollector = {
 			// else. It's also stored across sessions.
 			gBeagleIndexer.markFolderAsIndexed (this.CurrentFolder);
 			this.CurrentFolder.getMsgDatabase (null).Commit (1);
+			dump ('Finished indexing ' + this.CurrentFolder.prettyName + "\n");
 			this.CurrentFolder = null;
 		}
 		this.CurrentEnumerator = null;

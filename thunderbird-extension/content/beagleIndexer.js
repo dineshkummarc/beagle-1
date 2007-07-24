@@ -246,18 +246,34 @@ function addToIndex (hdr)
 	var properties = new Array ();
 	
 	var serverType = hdr.folder.server.type, type = null;
+	
+	// We must ensure that all elements exist. Some of them might throw an exception in various
+	// set-ups, so we have to catch them and default to something.
 	properties ['Author'] = hdr.author;
 	properties ['Charset'] = hdr.Charset;
 	properties ['Date'] = hdr.dateInSeconds;
 	properties ['Folder'] = hdr.folder.name;
 	properties ['FolderURL'] = hdr.folder.folderURL;
-	properties ['HasOffline'] = hdr.folder.hasMsgOffline (hdr.messageKey);
+	
+	try {
+		properties ['HasOffline'] = hdr.folder.hasMsgOffline (hdr.messageKey);
+	} catch (ex) {
+		dump ('Failed to parse HasOffline: ' + ex + "\n");
+		properties ['HasOffline'] = 'false';
+	}
+	
 	properties ['MessageId'] = hdr.messageId;
 	properties ['MessageSize'] = hdr.messageSize;
 	properties ['OfflineSize'] = hdr.offlineMessageSize;
 	properties ['Recipients'] = hdr.recipients;
 	properties ['Subject'] = hdr.subject;
-	properties ['Uri'] = hdr.folder.getUriForMsg (hdr);
+	
+	try {
+		properties ['Uri'] = hdr.folder.getUriForMsg (hdr); 
+	} catch (ex) { 
+		properties ['Uri'] = null;
+		dump ('Failed to parse uri: ' + ex + "\n");
+	}
 	
 	switch (serverType) {
 	case 'none': // local account
@@ -273,8 +289,10 @@ function addToIndex (hdr)
 	}
 	
 	// Write everything to file
-	if (type)
+	if (type) {
+		dump ('Writing ' + type + ' to file. Subject: ' + properties ['Subject'] + "\n");
 		writeHashTableToNextFile (properties, type);
+	}
 }
 
 function dropFolderFromIndex (folder)
