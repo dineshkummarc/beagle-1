@@ -307,12 +307,16 @@ function handleFolder (folder, recursive, remove, userMarked)
 			handleFolder (currentFolder, false, remove, userMarked);
 		}
 	} else {
-		try {
+	    try {
 			currentItem.value = folder.prettyName;
 			
 			// Update user interface
 			current_folder++;
 			updateWindow ();
+
+			gBeagleIndexer.resetFolder (folder, userMarked, false, false);
+			if (remove)
+				gBeagleQueue.removeFolder (folder);
 			
 			// Only process content if we have any content (getMessages will throw an exception otherwise)
 			if (folder.getTotalMessages (false) > 0) {		
@@ -325,10 +329,8 @@ function handleFolder (folder, recursive, remove, userMarked)
 					updateWindow ();
 					gBeagleIndexer.resetHdr (hdr, userMarked);
 				}
+				folder.getMsgDatabase (null).Commit (1);
 			}
-			gBeagleIndexer.resetFolder (folder, userMarked, false, false);
-                        if (remove)
-			    gBeagleQueue.removeFolder (folder);
 		} catch (ex) {
 		}
 	}

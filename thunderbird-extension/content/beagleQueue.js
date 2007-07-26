@@ -92,12 +92,6 @@ function addHdr (hdr)
 	if (!indexer.shouldIndexHdr (hdr) || !indexer.shouldIndexFolder (hdr.folder)) 
 		return false;
 
-	// Add header to queue (no duplicats though)
-	/*if (queue_add.GetIndexOf (hdr) == -1)  {
-		indexer.markHdrAsIndexed (hdr);
-		queue_add.AppendElement (hdr);
-		totalAdded++;
-	}*/
 	add (hdr);
 	
 	process ();
@@ -111,11 +105,6 @@ function removeHdr (hdr)
 		.getService (Components.interfaces.nsIBeagleIndexer);
 	
 	if (hdr instanceof Components.interfaces.nsIMsgDBHdr) {
-		/*if (queue_remove.GetIndexOf (hdr) == -1) {
-			indexer.markHdrAsIndexed (hdr);
-			queue_remove.AppendElement (hdr);
-			totalRemoved++;
-		}*/
 		remove (hdr);
 
 		process ();
@@ -132,12 +121,7 @@ function removeFolder (folder)
 		.getService (Components.interfaces.nsIBeagleIndexer);
 	
 	if (folder instanceof Components.interfaces.nsIMsgFolder) {
-		if (queue_remove.GetIndexOf (folder) == -1) {
-			indexer.markFolderAsIndexed (folder);
-			queue_remove.AppendElement (folder);
-			totalRemoved++;
-		}
-
+		remove (folder);
 		process ();
 
 		return true;
@@ -154,17 +138,8 @@ function moveHdr (oldHdr, newHdr)
 	if (!indexer.shouldIndexHdr (oldHdr) || !indexer.shouldIndexHdr (newHdr))
 		return false;
 	
-	if (queue_remove.GetIndexOf (oldHdr) == -1) {
-		indexer.markHdrAsIndexed (oldHdr);
-		queue_remove.AppendElement (oldHdr);
-		totalRemoved++;
-	}
-	
-	if (queue_add.GetIndexOf (newHdr) == -1) {
-		indexer.markHdrAsIndexer (newHdr);
-		queue_add.AppendElement (newHdr);
-		totalAdded++;
-	}
+	remove (oldHdr);
+	add (newHdr);
 	processs ();
 	
 	return true;
@@ -177,18 +152,9 @@ function moveFolder (oldFolder, newFolder)
 	
 	if (!indexer.shouldIndexFolder (oldFolder) || !indexer.shouldIndexFolder (newFolder))
 		return false;
-	
-	if (queue_remove.GetIndexOf (oldFolder) == -1) {
-		indexer.markFolderAsIndexed (oldFolder);
-		queue_remove.AppendElement (oldFolder);
-		totalRemoved++;
-	}
-	
-	if (queue_add.GetIndexOf (newFolder) == -1) {
-		indexer.markFolderAsIndexed (newFolder);
-		queue_add.AppendElement (newFolder);
-		totalAdded++;
-	}
+		
+	remove (oldFolder);
+	add (newFolder);
 	process ();
 		
 	return true;

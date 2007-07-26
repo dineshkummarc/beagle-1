@@ -63,7 +63,8 @@ var gBeagleDataTracker = {
 	{
 		if (!item)
 			return;
-			
+		
+		dump ("Adding new messages and restarting loop\n");
 		gBeagleMainloop.Restart (20);
 		try {
 			var hdr = item.QueryInterface (Components.interfaces.nsIMsgDBHdr);
@@ -78,6 +79,7 @@ var gBeagleDataTracker = {
 	// Message _or_ folder removed
 	itemDeleted: function (item)
 	{
+		dump ("Removing message(s) or folder and restarting loop\n");
 		gBeagleMainloop.Restart (20);
 		if (item instanceof Components.interfaces.nsIMsgDBHdr) {
 			gBeagleQueue.removeHdr (item)
@@ -88,6 +90,7 @@ var gBeagleDataTracker = {
 	
 	itemMoveCopyCompleted: function (move, items, dest)
 	{
+		dump ("Moving/copying message(s)/folder and restarting loop\n");
 		gBeagleMainloop.Restart (20);
 		
 		// There can be at most one folder in "items", so we check for that
@@ -128,6 +131,7 @@ var gBeagleDataTracker = {
 	
 	folderRenamed: function (oldFolder, newFolder)
 	{
+		dump ("Renaming folder and restarting loop\n");
 		gBeagleMainloop.Restart (20);
 		gBeagleQueue.moveFolder (oldFolder, newFolder);
 	},
@@ -160,7 +164,7 @@ var gBeagleDataCollector = {
 				// We don't bother if there's nothing to index
 				if (folder.getTotalMessages (false) == 0)
 					continue;
-				
+
 				// We only need to index a folder if it isn't already indexed and if the user
 				// hasn't explicitly excluded it
 				if (!gBeagleIndexer.isFolderIndexed (folder) && gBeagleIndexer.shouldIndexFolder (folder))

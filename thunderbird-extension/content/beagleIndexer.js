@@ -168,9 +168,9 @@ function resetFolder (folder, userMarked, recursive, content)
 {
 	if (folder instanceof Components.interfaces.nsIMsgFolder) {
 		// We only update with a new value if we already have one
-		if (folder.getStringProperty (BEAGLE_INDEX_PROPERTY) != '')
+		if (folder.getStringProperty (BEAGLE_INDEX_PROPERTY) != '') 
 			folder.setStringProperty (BEAGLE_INDEX_PROPERTY, '');
-		
+
 		if (userMarked)
 			resetFolderUserMarked (folder);
 	} else 
@@ -254,6 +254,7 @@ function addToIndex (hdr)
 	properties ['Date'] = hdr.dateInSeconds;
 	properties ['Folder'] = hdr.folder.name;
 	properties ['FolderURL'] = hdr.folder.folderURL;
+	properties ['FolderFile'] = hdr.folder.path.unixStyleFilePath;
 	
 	try {
 		properties ['HasOffline'] = hdr.folder.hasMsgOffline (hdr.messageKey);
@@ -264,12 +265,13 @@ function addToIndex (hdr)
 	
 	properties ['MessageId'] = hdr.messageId;
 	properties ['MessageSize'] = hdr.messageSize;
+	properties ['MessageOffset'] = hdr.messageOffset;
 	properties ['OfflineSize'] = hdr.offlineMessageSize;
 	properties ['Recipients'] = hdr.recipients;
 	properties ['Subject'] = hdr.subject;
 	
 	try {
-		properties ['Uri'] = hdr.folder.getUriForMsg (hdr); 
+		properties ['Uri'] = hdr.folder.getUriForMsg (hdr);
 	} catch (ex) { 
 		properties ['Uri'] = null;
 		dump ('Failed to parse uri: ' + ex + "\n");
@@ -284,6 +286,18 @@ function addToIndex (hdr)
 		type = 'MailMessage';
 		break;
 	case 'rss':
+		// We usually have the content body available but hasMsgOffline still reports false. Just
+		// default to true until this mess has been cleared out.
+		properties ['HasOffline'] = true;
+		
+		try {
+			var db = hdr.folder.getMsgDatabase (null);
+			var urls = db.dBFolderInfo.getCharPtrProperty ('feedUrl');
+			properties ['FeedURL'] = urls.substring (urls.lastIndexOf ('|')+1);
+		} catch (ex) {
+			properties ['FeedURL'] = 'Unknown';
+		}
+		properties ['MessageKey'] = hdr.messageKey;
 		type = 'FeedItem';
 		break;
 	}
@@ -354,7 +368,7 @@ function writeHashTableToNextFile (hashtable, type)
 	
 	stream.write ('<' + type + ">\n", type.length + 3);
 	for (var key in hashtable) {
-		var line = '<' + key + '>' + hashtable [key] + '</' + key + ">\n";
+		var line = '<' + key + '><![CDATA[' + hashtable [key] + ']]></' + key + ">\n";
 		stream.write (line, line.length);
 	}
 	stream.write ("</" + type + ">\n", type.length + 4);
@@ -374,7 +388,7 @@ function newOutputFilename ()
 	
 	do {
 		file.initWithPath (gBeagleSettings.getCharPref ('DestinationDirectory') +
-			"/ToIndex/object" + object_count++);	
+			"/ToIndex/" + object_count++);	
 	} while (file.exists ());
 
 	return file.path;

@@ -150,7 +150,9 @@
 					for (var j = 0; j < allFolders.Count (); j++) {
 						var folder = allFolders.QueryElementAt (j, Ci.nsIMsgFolder);
 						
-						if (indexer.isFolderIndexed (folder) || !indexer.shouldIndexFolder (folder))
+						if (indexer.isFolderIndexed (folder)
+							|| !indexer.shouldIndexFolder (folder) 
+							|| folder.getTotalMessages (false) == 0)
 							indexedFolders++;
 						
 						totalFolders++;
