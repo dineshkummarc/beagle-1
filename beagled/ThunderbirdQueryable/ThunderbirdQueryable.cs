@@ -33,6 +33,7 @@ using System.Collections;
 using Beagle.Util;
 using Mono.Unix.Native;
 using GMime;
+using Mime = GMime.Utils;
 
 [assembly: Beagle.Daemon.IQueryableTypes (typeof (Beagle.Daemon.ThunderbirdQueryable.ThunderbirdQueryable))]
 
@@ -284,7 +285,7 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 				stream = new StreamFs (fd, offset, offset + size);
 				parser = new Parser (stream);
 				msg = parser.ConstructMessage ();
-			} catch (Exception e) {
+			} catch {
 			} finally {
 				if (stream != null)
 					stream.Dispose ();
@@ -299,12 +300,12 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 		{
 			GMime.Message message = new GMime.Message (true);
 			
-			message.Subject = GetText (document, "Subject");
-			message.Sender = GetText (document, "Author");
+			message.Subject = Mime.HeaderDecodeText (GetText (document, "Subject"));
+			message.Sender = Mime.HeaderDecodePhrase (GetText (document, "Author"));
 			message.MessageId = GetText (document, "MessageId");
 			message.SetDate (DateTimeUtil.UnixToDateTimeUtc (Convert.ToInt64 (GetText (document, "Date"))), 0);
-			message.AddRecipientsFromString ("To", GetText (document, "Recipients"));
-			
+			message.AddRecipientsFromString ("To", Mime.HeaderDecodePhrase (GetText (document, "Recipients")));
+
 			return message;
 		}
 		
@@ -327,7 +328,7 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 
 			if (message == null)
 				message = GetStubMessage (document);
-			
+				
 			Indexable indexable = new Indexable (new Uri (GetText (document, "Uri")));
 			indexable.HitType = "MailMessage";
 			indexable.MimeType = "message/rfc822";
@@ -345,38 +346,92 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 			return indexable;
 		}
 		
-		private static StringReader GetRssBody (string file, int position, int len)
+		// ReadLine in stream requires the more "fancy" line ending "\r\n", which we do't have. So we use this
+		// implementation instead.
+		private static string ReadLine (System.IO.Stream stream)
 		{
+			// We usually only need to cover UTF-8 and iso-8859-1, so we initially make the buffer big
+			// enough for this (and expand later if needed)
+			byte[] str = new byte [10];
+			int pos = 0, c = stream.ReadByte ();
+			
+			while (c != -1 && c != 10) {
+				// Do we need to grow?
+				if (pos == str.Length) {
+					// We grow with 50% of current size
+					byte[] tmp = new byte [str.Length + (int) 0.5 * str.Length];
+					Array.Copy (str, 0, tmp, 0, str.Length);
+				}
+				
+				str [pos++] = (byte) c;
+				c = stream.ReadByte ();
+			}
+			
+			return (str != null ? Encoding.UTF8.GetString (str, 0, pos) : string.Empty);
+		}
+		
+		// This spell "charset="
+		private static readonly int [] CHARSET = new int [] { 99, 104, 97, 114, 115, 101, 116 };
+		private static StringReader GetRssBody (string file, int position, int len, out string encoding_str)
+		{
+			// We must assure at least this happens before we leave
+			encoding_str = null;
+			
 			// Check if file exists to begin with
 			if (!File.Exists (file))
 				return null;
-		
-			FileStream stream = new FileStream (file, FileMode.Open);
-			stream.Position = position;
+			
+			//FileStream stream = new FileStream (file, FileMode.Open);
+			StreamReader stream = new StreamReader (file);
+			stream.BaseStream.Position = position;
 			
 			// We want to skip http headers since we are not interested in those. The normal scenario is
 			// that a content begins once two newlines have been found. This is a bit different in 
 			// Thunderbird though. Thunderbird specific headers are added first, then two newlines 
 			// followed by http headers and then another three newlines followed by the content. So we
 			// want to find the three newlines and read from there.
+			//
+			// Extra note here: We need to pull charset used here, otherwise we might end up with ASCII
+			// instead of UTF-8 in some cases and that will really mess things up.
 			byte[] buffer = null;
-			int c, header_length = 0, newlines = 0;
+			int c, header_length = 0, newlines = 0, charset_pos = 0;
+			Encoding enc = Encoding.UTF8;
 			try {
 				do {
-					c = stream.ReadByte ();
+					c = stream.BaseStream.ReadByte ();
 					newlines = (c == 10 ? ++newlines : 0);
 					header_length++;
+					
+					// This is a way to avoid using a lot of string allocations. We compare
+					// current character with the ones in CHARSET. If we match all characters
+					// in order, we know that what follows is the encoding.
+					if (charset_pos == CHARSET.Length) {
+						encoding_str = ReadLine (stream.BaseStream);
+						newlines++; // We must compensate this
+						header_length += encoding_str.Length+1; // ...and this
+						charset_pos = 0;
+					} else if (charset_pos > CHARSET.Length-1)
+						charset_pos = 0; // Just in case
+					else if (CHARSET [charset_pos] == c)
+						charset_pos++;
+					else
+						charset_pos = 0;
+					
 				} while (c != -1 && newlines != 3);
 				
 				// We now know what to read
 				buffer = new byte [len - header_length];
-				stream.Read (buffer, 0, buffer.Length);
+				stream.BaseStream.Read (buffer, 0, buffer.Length);
+				
+				// We need to use correct encoding
+				enc = Encoding.GetEncoding (encoding_str);
 			} catch {
 			} finally {
 				stream.Close ();
 			}
 			
-			return new StringReader (Encoding.ASCII.GetString (buffer));
+			
+			return new StringReader (enc.GetString (buffer));
 		}
 		
 		private string ExtractUrl (string url)
@@ -389,6 +444,7 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 		
 		private Indexable ToAddRssIndexable (XmlDocument document)
 		{
+			string encoding_str = null;
 			StringReader reader = null;
 			
 			if (ToBool (GetText (document, "HasOffline"))) {
@@ -396,18 +452,17 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 					// RSS does not use OfflineSize but MessageSize instead (for some reason...)
 					int offset = Convert.ToInt32 (GetText (document, "MessageOffset")),
 						size = Convert.ToInt32 (GetText (document, "MessageSize"));
-					reader = GetRssBody (GetText (document, "FolderFile"), offset, size);
+					reader = GetRssBody (GetText (document, "FolderFile"), offset, size, out encoding_str);
 				} catch (Exception e) {
 					Logger.Log.Debug (e, "Failed to parse RSS body");
 				}
 			}
 			
+			// We cannot use the URI provided by Thunderbird here due to limitations in in the URI-class
+			// implementation. We have to make up something unique and use another property with the
+			// correct URI (see fixme:uri below).
 			Uri uri = new Uri (String.Format ("{0}/?id={1}",
 				GetText (document, "FolderURL"), GetText (document, "MessageKey")));
-			
-			// FeedURL är inte tillgänglig första nedladdningen. Generera en annan URI!
-			//Uri uri = new Uri (String.Format ("{0}/id={1}", 
-			//	GetText (document, "FeedURL"), GetText (document, "MessageKey")));
 			Indexable indexable = new Indexable (uri);
 			indexable.HitType = "FeedItem";
 			indexable.MimeType = "text/html";
@@ -422,14 +477,20 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 			
 			indexable.AddProperty (Property.NewKeyword ("dc:identifier", ExtractUrl (GetText (document, "MessageId"))));
 			indexable.AddProperty (Property.NewKeyword ("dc:source", GetText (document, "FeedURL")));
-			indexable.AddProperty (Property.New ("dc:publisher", GetText (document, "Author")));
+			indexable.AddProperty (Property.New ("dc:publisher", Mime.HeaderDecodePhrase (GetText (document, "Author"))));
 			
 			// The title will be added by the filter. In case we add it twice we will just get
 			// an empty tile in the search tool (a bug maybe?).
-			if (reader != null) 
+			if (reader != null) {
+				// If we got an encoding, make sure we use that
+				if (!String.IsNullOrEmpty (encoding_str)) {
+					indexable.AddProperty (Property.New (
+						String.Format ("{0}encoding", StringFu.UnindexedNamespace), encoding_str));
+				}
+				
 				indexable.SetTextReader (reader);
-			else
-				indexable.AddProperty (Property.New ("dc:title", GetText (document, "Subject")));
+			} else
+				indexable.AddProperty (Property.New ("dc:title", Mime.HeaderDecodePhrase (GetText (document, "Subject"))));
 			
 			return indexable;
 		}
