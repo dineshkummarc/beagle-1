@@ -133,16 +133,17 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 			queryable.ThisScheduler.Add (task);
 		}
 
-		public void RemoveFolder (string folderURL)
+		public void RemoveFolder (string folderPath)
 		{
-			if (queryable.ThisScheduler.ContainsByTag (folderURL)) {
-				Logger.Log.Debug ("Not adding task for already running {0}", folderURL);
+			if (queryable.ThisScheduler.ContainsByTag (folderPath)) {
+				Logger.Log.Debug ("Not adding task for already running {0}", folderPath);
 				return;
 			}
 			
-			Property prop = Property.NewUnsearched ("fixme:folderURL", folderURL);
+			Console.WriteLine ("REMOVE: {0}", folderPath);
+			Property prop = Property.NewUnsearched ("fixme:folderPath", folderPath);
 			Scheduler.Task task = queryable.NewRemoveByPropertyTask (prop);
-			task.Tag = folderURL;
+			task.Tag = folderPath;
 			task.Priority = Scheduler.Priority.Immediate;
 			queryable.ThisScheduler.Add (task);
 		}
@@ -271,6 +272,15 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 			return Convert.ToBoolean (str);
 		}
 		
+		// We cannot use the URI provided by Thunderbird due to limitations  in the URI-class implementation. 
+		// We have to make up something unique and use another property with the correct URI.
+		private Uri GenerateUniqueUri (XmlDocument document)
+		{
+			return new Uri (String.Format ("{0}/?id={1}",
+				GetText (document, "FolderFile"), 
+				GetText (document, "MessageKey")));
+		}
+		
 		private GMime.Message GetGMimeMessage (string file, int offset, int size)
 		{
 			GMime.Message msg = null;
@@ -328,8 +338,8 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 
 			if (message == null)
 				message = GetStubMessage (document);
-				
-			Indexable indexable = new Indexable (new Uri (GetText (document, "Uri")));
+			
+			Indexable indexable = new Indexable (GenerateUniqueUri (document));
 			indexable.HitType = "MailMessage";
 			indexable.MimeType = "message/rfc822";
 			indexable.Timestamp = DateTimeUtil.UnixToDateTimeUtc (Convert.ToInt64 (GetText (document, "Date")));
@@ -339,7 +349,8 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 			
 			indexable.AddProperty (Property.NewUnsearched ("fixme:client", "Thunderbird"));
 			indexable.AddProperty (Property.NewUnsearched ("fixme:folder", GetText (document, "Folder")));
-			indexable.AddProperty (Property.NewUnsearched ("fixme:folderURL", GetText (document, "FolderURL")));
+			indexable.AddProperty (Property.NewUnsearched ("fixme:folderPath", GetText (document, "FolderPath")));
+			indexable.AddProperty (Property.NewUnsearched ("fixme:uri", GetText (document, "Uri")));
 			
 			message.Dispose ();
 			
@@ -458,12 +469,7 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 				}
 			}
 			
-			// We cannot use the URI provided by Thunderbird here due to limitations in in the URI-class
-			// implementation. We have to make up something unique and use another property with the
-			// correct URI (see fixme:uri below).
-			Uri uri = new Uri (String.Format ("{0}/?id={1}",
-				GetText (document, "FolderURL"), GetText (document, "MessageKey")));
-			Indexable indexable = new Indexable (uri);
+			Indexable indexable = new Indexable (GenerateUniqueUri (document));
 			indexable.HitType = "FeedItem";
 			indexable.MimeType = "text/html";
 			indexable.Timestamp = DateTimeUtil.UnixToDateTimeUtc (Convert.ToInt64 (GetText (document, "Date")));
@@ -472,7 +478,7 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 			
 			indexable.AddProperty (Property.NewUnsearched ("fixme:client", "Thunderbird"));
 			indexable.AddProperty (Property.NewUnsearched ("fixme:folder", GetText (document, "Folder")));
-			indexable.AddProperty (Property.NewUnsearched ("fixme:folderURL", GetText (document, "FolderURL").Substring (8)));
+			indexable.AddProperty (Property.NewUnsearched ("fixme:folderPath", GetText (document, "FolderPath")));
 			indexable.AddProperty (Property.NewUnsearched ("fixme:uri", GetText (document, "Uri")));
 			
 			indexable.AddProperty (Property.NewKeyword ("dc:identifier", ExtractUrl (GetText (document, "MessageId"))));
@@ -497,10 +503,9 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 		
 		private Indexable ToRemoveMessageIndexable (XmlDocument document)
 		{
-			Uri uri = new Uri (GetText (document, "Uri"));
-			Indexable indexable = new Indexable (IndexableType.Remove, uri);
-			
-			return indexable;
+			Uri uri = GenerateUniqueUri (document);
+
+			return new Indexable (IndexableType.Remove, uri);
 		}
 		
 		public Indexable GetNextIndexable ()
@@ -518,7 +523,7 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 			else if (name.Equals (REMOVE_MESSAGE))
 				return ToRemoveMessageIndexable (document);
 			else if (name.Equals (REMOVE_FOLDER))
-				indexer.RemoveFolder (GetText (document, "FolderURL"));
+				indexer.RemoveFolder (GetText (document, "FolderPath"));
 
 			return null;
 		}

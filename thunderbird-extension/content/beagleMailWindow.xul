@@ -45,6 +45,7 @@
 			.getService (Components.interfaces.nsIBeagleIndexer);
 		var settings = Components.classes ['@beagle-project.org/services/settings;1']
 			.getService (Components.interfaces.nsIBeagleSettings);
+		var messenger = Components.classes ['@mozilla.org/messenger;1'].getService (Components.interfaces.nsIMessenger);
 
 		function getSelectedFolder ()
 		{
@@ -53,6 +54,28 @@
 				return null;
 			
 			return selectedFolders [0];
+		}
+		
+		function getSelectedMessages ()
+		{
+			try {
+				var view = GetDBView ();
+				var uris = {};
+				var count = {};
+				view.getURIsForSelection (uris, count);
+				var msgs = Components.classes ['@mozilla.org/supports-array;1']
+					.createInstance (Components.interfaces.nsISupportsArray);
+				
+				for (var i = 0; i < count.value; i++) {
+					var uri = uris.value [i];
+					msgs.AppendElement (messenger.msgHdrFromURI (uri));
+				}
+				
+				return msgs;
+			} catch (ex) {
+			}
+			
+			return null;
 		}
 
 		function onIndexFillFolderMenu ()
@@ -72,7 +95,7 @@
 					document.getElementById ('folderPaneContext-removeIndexedFolderRecursive');
 				var shouldNotIndex = indexer.isFolderUserMarked (folder);
 				
-				// Show a nice little "checked mark" in item is not supposed to be indexed
+				// Show a nice little "checked mark" if item is not supposed to be indexed
 				if (shouldNotIndex) 
 					noindexing.setAttribute ('checked', 'true');
 				else
@@ -94,75 +117,189 @@
 			} catch (ex) {
 			}
 		}
+		
+		function allMarkedForExclusion (msgs)
+		{
+			var enum = msgs.Enumerate ();
+			
+			while (1) {
+				var hdr = enum.currentItem ();
+				if (!indexer.isHdrUserMarked (hdr))
+					break;
+			
+				try {
+					enum.next ();
+				} catch (ex) {
+					return true;
+				}
+			}
+			
+			return false;
+		}
+		
+		function allMarkedAsNotIndexed (msgs)
+		{
+			var enum = msgs.Enumerate ();
+			
+			while (1) {
+				var hdr = enum.currentItem ();
+				if (indexer.isHdrIndexed (hdr))
+					break;
+				
+				try {
+					enum.next ();
+				} catch (ex) {
+					return true;
+				}
+			}
+			
+			return false;
+		}
 
 		function onIndexFillMessageMenu ()
 		{
-			dump ("test3\n");
+			// We don't generate the menu if we are disabled
+			if (!settings.getBoolPref ('Enabled'))
+				return;
+			
+			var messages = getSelectedMessages ();
+			if (!messages)
+				return;
+			
+			try {
+				var removemessages = document.getElementById ('threadPaneContext-removeIndexedMessage');
+				var noindexing = document.getElementById ('threadPaneContext-noindexing');
+				
+				// If all selected messages has the "do not index" flag, show the check mark. Otherwise don't.
+				if (allMarkedForExclusion (messages)) 
+					noindexing.setAttribute ('checked', 'true');
+				else
+					noindexing.setAttribute ('checked', 'false');
+				noindexing.hidden = false;
+				
+				// We only show the "remove"-item if we have at least one indexed message
+				removemessages.hidden = allMarkedAsNotIndexed (messages);
+			} catch (ex) {
+			}
 		}
 		
 		function onRemoveIndexedFolder ()
 		{
 			try {
+				var folder = getSelectedFolder ();
+				if (!folder)
+					return;
+				
 				// We remove folder non-recursive and ask if user marks should be removed as well
-				gBeagleUnindex.RemoveFolder (getSelectedFolder (), false, true);
+				gBeagleUnindex.RemoveFolder (folder, false, true);
 			} catch (ex) {
 			}
 		}
 
 		function onRemoveIndexedFolderRecursive ()
 		{			
-			try {				
+			try {
+				var folder = getSelectedFolder ();
+				if (!folder)
+					return;
+							
 				// We remove folder recursively and ask if user marks should be removed as well
-				gBeagleUnindex.RemoveFolder (getSelectedFolder (), true, true);
+				gBeagleUnindex.RemoveFolder (folder, true, true);
 			} catch (ex) {
 			}
 		}
 		
 		function onRemoveIndexedMessage ()
 		{
-			dump ("onRemoveIndexedMessage\n");
+			try {
+				var msgs = getSelectedMessages ();
+				if (!msgs)
+					return;
+					
+				// We remove messages and ask is user marks should be removed as well
+				gBeagleUnindex.RemoveHdrs (msgs, true);
+			} catch (ex) {
+			}
 		}
 		
 		function onNoFolderIndexing ()
 		{
 			try {
 				var folder = getSelectedFolder ();
-				if (folder) {
-					folder.QueryInterface (Components.interfaces.nsIMsgFolder);
-					var userMarked = indexer.isFolderUserMarked (folder);
-					if (userMarked) {
-						// We reset userMarked but also the "indexed" flag to make sure content
-						// gets indexed when done (only the folder, not the content)
-						indexer.resetFolder (folder, true, false, false);
-					} else
-						indexer.markFolderAsUserMarked (folder);
-				}
+				if (!folder)
+					return;
+					
+				folder.QueryInterface (Components.interfaces.nsIMsgFolder);
+				var userMarked = indexer.isFolderUserMarked (folder);
+				if (userMarked) {
+					// We reset userMarked but also the "indexed" flag to make sure content
+					// gets indexed when done (only the folder, not the content)
+					indexer.resetFolder (folder, true, false, false);
+				} else
+					indexer.markFolderAsUserMarked (folder);
 			} catch (ex) {
+			}
+		}
+		
+		function setUserMarked (msgs, userMarked)
+		{
+			var done = false;
+			var enum = msgs.Enumerate ();
+			
+			while (!done) {
+				var hdr = enum.currentItem ();
+				
+				if (userMarked) 
+					indexer.markHdrAsUserMarked (hdr);
+				else
+					indexer.resetHdrUserMarked (hdr);
+			
+				try {
+					enum.next ();
+				} catch (ex) {
+					done = true;
+				}
 			}
 		}
 		
 		function onNoMessageIndexing ()
 		{
-			dump ("onNoMessageIndexing\n");
+			try {
+				var msgs = getSelectedMessages ();
+				if (!msgs)
+					return;
+				
+				var userMarked = !allMarkedForExclusion (msgs);
+				setUserMarked (msgs, userMarked);
+				
+				if (!userMarked) {
+					var hdr = msgs.QueryElementAt (0, Components.interfaces.nsIMsgDBHdr);
+					indexer.resetFolder (hdr.folder, false, false, false);
+				}
+					
+			} catch (ex) {
+			}
 		}
 
 	]]>
 	</script>
 	
 	<!-- These menu options will show up when right-clicking a message -->
-	<popup id="messagePaneContext" onpopupshowing="onIndexFillFolderMenu ();">
-		<menuseparator id="messagePaneContext-beaglesep-message"
-				insertafter="messagePaneContext-sep-saveAs"/>
-		<menuitem id="messagePaneContext-removeIndexedMessage"
+	<popup id="threadPaneContext" 
+			onpopupshowing="onIndexFillMessageMenu (); return fillThreadPaneContextMenu();">
+		<menuseparator id="threadPaneContext-beaglesep-message"/>
+		<menuitem id="threadPaneContext-removeIndexedMessage"
 				label="&beaglemessageview.removemessage;"
 				oncommand="onRemoveIndexedMessage ();"
-				insertafter="messagePaneContext-sep-saveAs"/>
-		<menuitem id="messagePaneContext-noindexing"
+				insertbefore="threadPaneContext-beaglesep-message"
+				hidden="true"/>
+		<menuitem id="threadPaneContext-noindexing"
 				label="&beaglemessageview.noindexing;"
 				oncommand="onNoMessageIndexing ();"
-				insertafter="messagePaneContext-sep-saveAs"
+				insertafter="threadPaneContext-beaglesep-message"
 				type="checkbox"
-				autocheck="false"/>
+				autocheck="false"
+				hidden="true"/>
 	</popup>
 	
 	<!-- These menu options will show up when right-clicking a folder -->

@@ -171,7 +171,7 @@ function onLoad ()
 		remove = true;
 	case HDR_MODE_UNINDEX:
 		prepareHdrs (window.arguments [1], window.arguments [2]);
-		handleHdrs (window.arguments [1], window.arguments [2]);
+		handleHdrs (window.arguments [1], window.arguments [2], remove);
 		break;
 	case EVERYTHING_MODE_REMOVE:
 		remove = true;
@@ -267,7 +267,12 @@ function prepareFolder (folder, recursive, gui)
 
 function prepareHdrs (hdrs)
 {
-
+	// Pretty easy, huh?
+	folder_count = 1;
+	message_count = hdrs.Count ();
+	current_folder = 0;
+	current_message = 0;
+	prepareDone ();
 }
 
 function prepareEverything ()
@@ -336,9 +341,38 @@ function handleFolder (folder, recursive, remove, userMarked)
 	}
 }
 
-function handleHdrs (hdrs, userMarked)
+function handleHdrs (hdrs, userMarked, remove)
 {
-
+	var folder = null;
+	
+	for (var i = 0; i < hdrs.Count (); i++) {
+		var hdr = hdrs.QueryElementAt (i, Components.interfaces.nsIMsgDBHdr);
+		if (!hdr)
+			continue;
+		
+		// We save the folder so we can mark it as "unindexed". Otherwise the extension won't try to re-index
+		// the content of the folder.
+		if (!folder)
+			folder = hdr.folder;
+		
+		// We only remove in case the message is indexed
+		var isIndexed = gBeagleIndexer.isHdrIndexed (hdr);
+		if (isIndexed) {
+			if (remove)
+				gBeagleQueue.removeHdr (hdr);
+			else
+				gBeagleIndexer.resetHdr (hdr, false);
+		}
+		if (userMarked)
+			gBeagleIndexer.resetHdrUserMarked (hdr);
+		
+		current_message++;
+		updateWindow ();
+	}
+	
+	// Reset folder
+	if (folder) 
+		gBeagleIndexer.resetFolder (folder, false, false, false);
 }
 
 function handleEverything (remove, userMarked)

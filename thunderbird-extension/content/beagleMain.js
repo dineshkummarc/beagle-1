@@ -254,8 +254,8 @@ var gBeagleMainloop = {
 	{
 		this.Timer.cancel ();
 		this.Timer.initWithCallback (this, 
-									seconds * 1000,
-									Components.interfaces.nsITimer.TYPE_REPEATING_SLACK);
+			seconds * 1000,
+			Components.interfaces.nsITimer.TYPE_REPEATING_SLACK);
 		this.IsRunning = true;
 	},
 	

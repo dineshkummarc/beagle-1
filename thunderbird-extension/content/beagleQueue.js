@@ -68,7 +68,7 @@ function remove (obj)
 		.getService (Components.interfaces.nsIBeagleIndexer);
 	
 	if (obj instanceof Components.interfaces.nsIMsgDBHdr)
-		indexer.resetHdr (obj);
+		indexer.resetHdr (obj, false);
 	else if (obj instanceof Components.interfaces.nsIMsgFolder)
 		indexer.resetFolder (obj, false, false, false);
 	else 

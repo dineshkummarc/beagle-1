@@ -27,7 +27,7 @@
 const BEAGLE_INDEX_PROPERTY = 'beagleIndex';
 const BEAGLE_SHOULDNOTINDEX_PROPERTY = 'beagleNoIndex';
 
-var object_count = 0;
+var object_count = -1;
 
 // Checks if an account should be indexed by pulling its type and checks if that type is enabled
 // for indexing.
@@ -342,6 +342,13 @@ function dropHdrFromIndex (hdr)
 	var properties = new Array ();
 	properties ['Uri'] = hdr.folder.getUriForMsg (hdr);
 	
+	if (hdr.folder.server.type == 'rss') {
+		properties ['Type'] = 'FeedItem';
+		properties ['FolderURL'] = hdr.folder.folderURL;
+		properties ['MessageKey'] = hdr.messageKey;
+	} else
+		properties ['Type'] = 'MailMessage';
+	
 	writeHashTableToNextFile (properties, 'DeleteHdr');
 }
 
@@ -376,9 +383,41 @@ function writeHashTableToNextFile (hashtable, type)
 	stream.close ();
 }
 
+function findLastOutputFile ()
+{
+	var gBeagleSettings = Components.classes ['@beagle-project.org/services/settings;1']
+		.getService (Components.interfaces.nsIBeagleSettings);
+	var dir = Components.classes ['@mozilla.org/file/local;1']
+		.getService (Components.interfaces.nsILocalFile);
+	
+	try {
+		dir.initWithPath (gBeagleSettings.getCharPref ('DestinationDirectory') + "/ToIndex");
+		
+		var enumerator = dir.directoryEntries;
+		while (enumerator.hasMoreElements ()) {
+			var file = enumerator.getNext ().QueryInterface (Components.interfaces.nsIFile);
+			if (!file || !file.isFile ())
+				continue;
+			
+			var number = parseInt (file.leafName);
+			if (object_count == -1 || object_count > number)
+				object_count = number;
+		}
+		
+		if (object_count == -1)
+			object_count = 0;
+	} catch (ex) {
+		// We default to 0 (zero)
+		object_count = 0;
+	}
+}
+
 // Figure out what our next object name is (we don't overwrite existing files)
 function newOutputFilename () 
 {
+	if (object_count == -1)
+		findLastOutputFile ();
+	
 	var gBeagleSettings = Components.classes ['@beagle-project.org/services/settings;1']
 		.getService (Components.interfaces.nsIBeagleSettings);
 	var file = Components.classes ["@mozilla.org/file/local;1"]
