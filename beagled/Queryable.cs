@@ -37,6 +37,7 @@ namespace Beagle.Daemon {
 
 		private QueryableFlavor flavor;
 		private IQueryable iqueryable;
+		private IMetadataHelper ihelper;
 
 		public Queryable (QueryableFlavor _flavor,
 				  IQueryable _iqueryable)
@@ -44,11 +45,25 @@ namespace Beagle.Daemon {
 			flavor = _flavor;
 			iqueryable = _iqueryable;
 		}
+
+		public Queryable (QueryableFlavor _flavor,
+				  IMetadataHelper _ihelper)
+		{
+			flavor = _flavor;
+			ihelper = _ihelper;
+		}
 		
 		public void Start ()
 		{
-			if (! Shutdown.ShutdownRequested)
-				iqueryable.Start ();
+			if (! Shutdown.ShutdownRequested) {
+				if (iqueryable != null) {
+					iqueryable.Start ();
+					return;
+				}
+
+				Queryable target_queryable = QueryDriver.GetQueryable (flavor.DependsOn);
+				ihelper.Start (target_queryable.IQueryable);
+			}
 		}
 
 		public string Name {
@@ -60,16 +75,25 @@ namespace Beagle.Daemon {
 		}
 
 		public string DependsOn {
-			get { return flavor.DependsOn; }
+			get {
+				if (ihelper != null)
+					return flavor.DependsOn;
+				return null;
+			}
 		}
 
 		public IQueryable IQueryable {
 			get { return iqueryable; }
 		}
 
+		public IMetadataHelper IMetadataHelper {
+			get { return ihelper; }
+		}
+
 		public bool AcceptQuery (Query query)
 		{
-			return query != null
+			return iqueryable != null
+				&& query != null
 				&& (query.IsIndexListener || ! query.IsEmpty)
 				&& query.AllowsDomain (Domain)
 				&& iqueryable.AcceptQuery (query);
@@ -77,6 +101,9 @@ namespace Beagle.Daemon {
 				    
 		public void DoQuery (Query query, IQueryResult result, IQueryableChangeData change_data)
 		{
+			if (iqueryable == null)
+				return;
+
 			try {
 				iqueryable.DoQuery (query, result, change_data);
 			} catch (Exception ex) {
@@ -86,7 +113,7 @@ namespace Beagle.Daemon {
 
 		public string GetSnippet (string[] query_terms, Hit hit)
 		{
-			if (hit == null)
+			if (iqueryable == null || hit == null)
 				return null;
 
 			// Sanity-check: make sure this Hit actually came out of this Queryable
@@ -106,7 +133,12 @@ namespace Beagle.Daemon {
 
 		public QueryableStatus GetQueryableStatus ()
 		{
-		        QueryableStatus status = iqueryable.GetQueryableStatus ();
+		        QueryableStatus status;
+
+			if (iqueryable != null)
+				status = iqueryable.GetQueryableStatus ();
+			else
+				status = ihelper.GetHelperStatus ();
 
 			if (status == null)
 				status = new QueryableStatus ();

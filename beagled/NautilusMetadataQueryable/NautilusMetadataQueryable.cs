@@ -49,15 +49,13 @@ namespace Beagle.Daemon.NautilusMetadataQueryable {
 			nautilus_dir = Path.Combine (Path.Combine (PathFinder.HomeDir, ".nautilus"), "metafiles");
 		}
 
-		public override void Start () 
+		public override void Start (IQueryable target_queryable)
 		{
-                        base.Start ();
+                        base.Start (target_queryable);
 
-			// The FSQ
-			Queryable queryable = QueryDriver.GetQueryable ("Files");
-			this.target_queryable = (FileSystemQueryable.FileSystemQueryable) queryable.IQueryable;
+			this.target_queryable = (FileSystemQueryable.FileSystemQueryable) target_queryable;
 
-			string fsq_fingerprint = target_queryable.IndexFingerprint;
+			string fsq_fingerprint = this.target_queryable.IndexFingerprint;
 			InitFileAttributesStore ("NautilusMetadata", fsq_fingerprint);
 
 			if (! Directory.Exists (nautilus_dir))

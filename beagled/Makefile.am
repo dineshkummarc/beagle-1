@@ -533,6 +533,21 @@ $(EVO_DLL_TARGET): $(EVO_DLL_CSFILES) $(DAEMON_DLL_LOCAL_ASSEMBLIES) $(DAEMON_DL
 ############################################################
 
 ###
+### Zeroconf broadcast and discovery
+###
+
+ZEROCONF_TARGET = Beagle.Network.dll
+ZEROCONF_ASSEMBLIES = $(AVAHI_SHARP_LIBS) $(PLUGIN_ASSEMBLIES)
+ZEROCONF_CSFLAGS = $(PLUGIN_CSFLAGS)
+ZEROCONF_CSFILES = Zeroconf.cs
+
+$(ZEROCONF_TARGET): $(ZEROCONF_CSFILES)
+	$(CSC) -out:$@ $(ZEROCONF_CSFLAGS) $(ZEROCONF_CSFILES) \
+		$(ZEROCONF_ASSEMBLIES)
+
+############################################################
+
+###
 ### Thunderbird backend
 ###
 
@@ -592,6 +607,12 @@ DAEMON_LOCAL_ASSEMBLIES =			\
 	../BeagleClient/Beagle.dll		\
 	./$(PLUGIN_TARGET)			\
 	./$(DAEMON_DLL_TARGET)
+
+if ENABLE_AVAHI
+DAEMON_CSFLAGS += -define:ENABLE_AVAHI
+
+DAEMON_LOCAL_ASSEMBLIES += $(ZEROCONF_TARGET)
+endif
 
 DAEMON_ASSEMBLIES =				\
 	$(BEAGLED_LIBS)				\
@@ -921,6 +942,10 @@ ALL_TARGETS +=				\
 	$(EVO_DLL_TARGET)
 endif
 
+if ENABLE_AVAHI
+ALL_TARGETS += $(ZEROCONF_TARGET)
+endif
+
 man_MANS = 				\
 	beagled.1			\
 	beagle-build-index.8		\
@@ -957,9 +982,7 @@ endif
 
 	@sed -e "s|\#installed=1|installed=1|" < $(INDEX_HELPER_WRAPPER) > $(INDEX_HELPER_WRAPPER).tmp
 	$(INSTALL_SCRIPT) $(INDEX_HELPER_WRAPPER).tmp $(DESTDIR)$(pkglibdir)/$(INDEX_HELPER_WRAPPER)
-	@rm -f $(INDEX_HELPER_WRAPPER).tmp
-
-	$(INSTALL_DATA) $(PLUGIN_TARGET)                 $(DESTDIR)$(pkglibdir)
+	@rm -f $(INDEX_HELPER_WRAPPAVAHI$(INSTALL_DATA) $(PLUGIN_TARGET)                 $(DESTDIR)$(pkglibdir)
 	$(INSTALL_DATA) $(PLUGIN_TARGET).mdb             $(DESTDIR)$(pkglibdir)
 	$(INSTALL_DATA) $(DAEMON_DLL_TARGET)             $(DESTDIR)$(pkglibdir)
 	$(INSTALL_DATA) $(DAEMON_DLL_TARGET).mdb         $(DESTDIR)$(pkglibdir)
@@ -979,12 +1002,18 @@ endif
 	$(INSTALL_DATA) $(MANAGE_INDEX_TARGET).mdb       $(DESTDIR)$(pkglibdir)
 	$(INSTALL_DATA) $(REMOVABLE_INDEX_TARGET)        $(DESTDIR)$(pkglibdir)
 	$(INSTALL_DATA) $(REMOVABLE_TARGET).mdb          $(DESTDIR)$(pkglibdir)
+if ENABLE_AVAHI
+	$(INSTALL_DATA) $(ZEROCONF_TARGET) 	 	 $(DESTDIR)$(pkglibdir)
+endif
 if ENABLE_THUNDERBIRD
 	$(INSTALL_DATA) $(THUNDERBIRD_TARGET)                 $(DESTDIR)$(BACKENDDIR)
 	$(INSTALL_DATA) $(THUNDERBIRD_TARGET).mdb             $(DESTDIR)$(BACKENDDIR)
 endif
 
 uninstall-local:
+if ENABLE_AVAHI
+	rm -rf $(DESTDIR)$(pkglibdir)/$(ZEROCONF_TARGET)
+endif
 if ENABLE_THUNDERBIRD
 	rm -f $(DESTDIR)$(BACKENDDIR)/$(THUNDERBIRD_TARGET)
 	rm -f $(DESTDIR)$(BACKENDDIR)/$(THUNDERBIRD_TARGET).mdb
@@ -1097,6 +1126,8 @@ CLEANFILES = \
 	$(BUILD_INDEX_TARGET)			\
 	$(BUILD_INDEX_TARGET).mdb		\
 	$(BUILD_INDEX_WRAPPER)			\
+	$(ZEROCONF_TARGET)			\
+	$(ZEROCONF_TARGET).mdb			\
 	$(THUNDERBIRD_TARGET)			\
 	$(THUNDERBIRD_TARGET).mdb		\
 	$(REMOVABLE_INDEX_TARGET)		\

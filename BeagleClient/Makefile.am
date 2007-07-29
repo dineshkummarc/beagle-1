@@ -37,6 +37,13 @@ ASSEMBLIES = 						\
 	-r:Mono.Posix					\
 	$(LOCAL_ASSEMBLIES:%=-r:%)
 
+if ENABLE_AVAHI
+CSFILES +=                              \
+	$(srcdir)/MDnsBrowser.cs
+CSFLAGS += -define:ENABLE_AVAHI
+ASSEMBLIES += -pkg:avahi-sharp
+endif
+
 RESOURCES =
 
 $(TARGET): $(CSFILES) $(LOCAL_ASSEMBLIES) $(RESOURCES)

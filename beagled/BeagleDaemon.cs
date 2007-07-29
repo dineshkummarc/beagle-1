@@ -38,6 +38,10 @@ using Beagle.Util;
 using Log = Beagle.Util.Log;
 using Stopwatch = Beagle.Util.Stopwatch;
 
+#if ENABLE_AVAHI
+using Beagle.Network;
+#endif
+
 namespace Beagle.Daemon {
 	class BeagleDaemon {
 
@@ -228,6 +232,11 @@ namespace Beagle.Daemon {
 			// Test if the FileAdvise stuff is working: This will print a
 			// warning if not.  The actual advice calls will fail silently.
 			FileAdvise.TestAdvise ();
+
+#if ENABLE_NETWORKING
+			Zeroconf.Publish (4000);
+			Logger.Log.Debug  ("Zeroconf service published after {0}", stopwatch);
+#endif
 
 			Conf.WatchForUpdates ();
 
@@ -648,6 +657,10 @@ namespace Beagle.Daemon {
 
 		private static void OnShutdown ()
 		{
+#if ENABLE_NETWORKING
+			Zeroconf.Stop ();
+#endif
+
 			// Stop our Inotify threads
 			Inotify.Stop ();
 

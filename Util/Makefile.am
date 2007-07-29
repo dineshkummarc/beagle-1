@@ -19,6 +19,10 @@ if OS_FREEBSD
 CSFLAGS += -define:OS_FREEBSD
 endif
 
+if ENABLE_AVAHI
+CSFLAGS += -define:ENABLE_AVAHI
+endif
+
 EXTSTR = ExternalStringsHack.cs
 EXTSTR_IN = $(srcdir)/$(EXTSTR).in
 $(EXTSTR): $(EXTSTR_IN)
@@ -64,6 +68,7 @@ UTIL_CSFILES = 			        	\
 	$(srcdir)/NautilusTools.cs      	\
 	$(srcdir)/Note.cs               	\
 	$(srcdir)/OperaHistory.cs		\
+	$(srcdir)/Password.cs			\
 	$(srcdir)/PathFinder.cs			\
 	$(srcdir)/PullingReader.cs      	\
 	$(srcdir)/ReflectionFu.cs		\
@@ -131,6 +136,10 @@ UTIL_CSFILES +=					\
 	$(srcdir)/ChmFile.cs
 endif
 
+if ENABLE_AVAHI
+UTIL_CSFILES += $(srcdir)/MDnsService.cs
+endif
+
 UTIL_ASSEMBLIES =				\
 	$(BEAGLED_LIBS)				\
 	-r:System.Data				\
@@ -138,8 +147,6 @@ UTIL_ASSEMBLIES =				\
 	-r:Mono.Posix				\
 	-r:System.Web				\
 	-r:ICSharpCode.SharpZipLib
-
-
 
 if ENABLE_INOTIFY
 INOTIFY_EXE = Inotify.exe

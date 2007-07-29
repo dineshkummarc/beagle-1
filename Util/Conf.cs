@@ -26,11 +26,13 @@
 
 using System;
 using System.Collections;
+using System.Collections.Specialized;
 using System.IO;
 using System.Diagnostics;
 using System.Reflection;
 using System.Xml.Serialization;
 using System.Text.RegularExpressions;
+using Mono.Unix;
 
 using Beagle.Util;
 
@@ -657,9 +659,44 @@ namespace Beagle.Util {
 		[ConfigSection (Name="networking")]
 		public class NetworkingConfig: Section 
 		{
-			private ArrayList neighborhoodNodes = new ArrayList ();
+			private ArrayList neighborhoodNodes = new ArrayList (); // avahi
 			private ArrayList globalNodes = new ArrayList ();
+
+			private ArrayList avahi_beagle_nodes = new ArrayList ();
+			private bool avahi_share_index = false; // off by default
+			private bool avahi_password_required = true;
+			private string avahi_password = String.Empty;
+			private string avahi_index_name = String.Format ("{0}'s Beagle Index on {1}",
+				UnixEnvironment.UserName,
+				UnixEnvironment.MachineName);
 			
+			[XmlArray]
+			[XmlArrayItem (ElementName="AvahiNode", Type=typeof (Service))]
+			public ArrayList AvahiNodes {
+				get { return avahi_beagle_nodes; }
+				set { avahi_beagle_nodes = value; }
+			}
+
+			public bool ShareIndex {
+				get { return avahi_share_index; }
+				set { avahi_share_index = value; }
+			}
+
+			public bool PasswordRequired {
+				get { return avahi_password_required; }
+				set { avahi_password_required = value; }
+			}
+
+			public string Password {
+				get { return avahi_password; }
+				set { avahi_password = value; }
+			}
+
+			public string IndexName {
+				get { return avahi_index_name; }
+				set { avahi_index_name = value; }
+			}
+
 			[XmlArray]
 			[XmlArrayItem(ElementName="NeighborhoodNodes", Type=typeof(string))]
 			public ArrayList NeighborhoodNodes {
@@ -689,6 +726,10 @@ namespace Beagle.Util {
 				foreach (string nb in globalNodes)
 					output += " - " + nb + "\n";				
 
+				output += "\nAvahi Nodes:\n";
+
+				foreach (Service s in avahi_beagle_nodes)
+					output += " -" + s.ToString () + "\n";
 				return true;
 			}
 

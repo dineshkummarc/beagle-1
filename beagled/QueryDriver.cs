@@ -157,20 +157,38 @@ namespace Beagle.Daemon {
 						continue;
 					}
 
-					IQueryable iq = null;
-					try {
-						iq = Activator.CreateInstance (type) as IQueryable;
-					} catch (Exception e) {
-						Logger.Log.Error (e, "Caught exception while instantiating {0} backend", flavor.Name);
-					}
+					if (flavor.DependsOn == null) {
+						IQueryable iq = null;
+						try {
+							iq = Activator.CreateInstance (type) as IQueryable;
+						} catch (Exception e) {
+							Logger.Log.Error (e, "Caught exception while instantiating {0} backend", flavor.Name);
+						}
 
-					if (iq != null) {
-						Queryable q = new Queryable (flavor, iq);
-						queryables.Add (q);
-						iqueryable_to_queryable [iq] = q;
-						++count;
-						type_accepted = true;
-						break;
+						if (iq != null) {
+							Queryable q = new Queryable (flavor, iq);
+							queryables.Add (q);
+							iqueryable_to_queryable [iq] = q;
+							++count;
+							type_accepted = true;
+							break;
+						}
+					} else {
+						IMetadataHelper imh = null;
+						try {
+							imh = Activator.CreateInstance (type) as IMetadataHelper;
+						} catch (Exception e) {
+							Logger.Log.Error (e, "Caught exception while instantiating {0} metadata helper", flavor.Name);
+						}
+
+						if (imh != null) {
+							Queryable q = new Queryable (flavor, imh);
+							queryables.Add (q);
+							// No need to add to iqueryable_to_queryable
+							++count;
+							type_accepted = true;
+							break;
+						}
 					}
 				}
 

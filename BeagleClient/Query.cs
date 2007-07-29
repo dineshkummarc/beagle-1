@@ -79,6 +79,12 @@ namespace Beagle {
 		public delegate void Finished ();
 		public event Finished FinishedEvent;
 
+		// Avahi
+		private MDnsBrowser mdns_browser = null;
+
+		public delegate void FoundUnknownHost (object sender, MDnsEventArgs args);
+		public event FoundUnknownHost FoundUnknownHostEvent;
+
 		public Query () : base (true)
 		{
 			this.RegisterAsyncResponseHandler (typeof (HitsAddedResponse), OnHitsAdded);
@@ -86,6 +92,14 @@ namespace Beagle {
 			this.RegisterAsyncResponseHandler (typeof (FinishedResponse), OnFinished);
 			this.RegisterAsyncResponseHandler (typeof (ErrorResponse), OnError);
 			this.RegisterAsyncResponseHandler (typeof (SearchTermResponse), OnSearchTerms);
+
+#if ENABLE_AVAHI
+			// setup mdns discovery
+			mdns_browser = new MDnsBrowser ();
+			mdns_browser.HostFound += new MDnsEventHandler (OnHostFound);
+			mdns_browser.HostRemoved += new MDnsEventHandler (OnHostRemoved);
+			mdns_browser.Start ();
+#endif
 		}
 
 		public Query (string str) : this ()
@@ -144,6 +158,40 @@ namespace Beagle {
 			SearchTermResponse response = (SearchTermResponse) r;
 			ProcessSearchTermResponse (response);
 		}
+
+#if ENABLE_AVAHI
+		private void OnHostFound (object sender, MDnsEventArgs args)
+		{
+			// Here we should add this host to the current query if
+			// we recognize it as a pre-registered host.
+			foreach (object o in Conf.Networking.AvahiNodes) {
+				Service known = (Service) o;
+				if (known.Cookie == args.Service.Cookie && 
+				    known.Name == args.Service.Name) {
+					/*
+					 *  Here is where we add the host to
+					 *  the current query!!!
+					 */
+					Logger.Log.Debug ("Known Host {0}. Adding to query.",
+					                  known.Name);
+					return;
+				}
+			}
+		        
+		        Logger.Log.Debug ("Unknown host has been detected. Warning user.");
+		
+		        // This is a new, unique host that has never
+		        // been seen before, so we'll fire this event.
+		        if (FoundUnknownHostEvent != null)
+				FoundUnknownHostEvent (this, args);
+		}
+		
+		private void OnHostRemoved (object sender, MDnsEventArgs args)
+		{
+		        // This host should now be removed from the current query
+		}
+#endif
+ 
 
 		///////////////////////////////////////////////////////////////
 
