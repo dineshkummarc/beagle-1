@@ -366,36 +366,12 @@ OPERA_QUERYABLE_CSFILES =					\
 	$(operaqueryable)/OperaIndexer.cs			\
 	$(operaqueryable)/OperaQueryable.cs
 
-httplistener = $(srcdir)/webserver
-HTTPLISTENER_CSFILES = \
-	$(httplistener)/AuthenticationSchemes.cs		\
-	$(httplistener)/AuthenticationSchemeSelector.cs	\
-	$(httplistener)/ChunkedInputStream.cs			\
-	$(httplistener)/ChunkStream.cs				\
-	$(httplistener)/EndPointListener.cs			\
-	$(httplistener)/EndPointManager.cs			\
-	$(httplistener)/HttpConnection.cs			\
-	$(httplistener)/HttpListenerBasicIdentity.cs		\
-	$(httplistener)/HttpListenerContext.cs			\
-	$(httplistener)/HttpListener.cs				\
-	$(httplistener)/HttpListenerException.cs		\
-	$(httplistener)/HttpListenerPrefixCollection.cs		\
-	$(httplistener)/HttpListenerRequest.cs			\
-	$(httplistener)/HttpListenerResponse.cs			\
-	$(httplistener)/HttpStreamAsyncResult.cs		\
-	$(httplistener)/ListenerAsyncResult.cs			\
-	$(httplistener)/ListenerPrefix.cs			\
-	$(httplistener)/RequestStream.cs			\
-	$(httplistener)/ResponseStream.cs			\
-	$(httplistener)/WebHeaderCollection.cs		
-
 nautilusqueryable = $(srcdir)/NautilusMetadataQueryable
 NAUTILUS_QUERYABLE_CSFILES =					\
 	$(nautilusqueryable)/NautilusMetadataQueryable.cs
 
 DAEMON_DLL_CSFILES = 						\
 	$(LUCENE_CSFILES)					\
-	$(HTTPLISTENER_CSFILES)					\
 	$(KMAIL_QUERYABLE_CSFILES)				\
 	$(FILE_SYSTEM_QUERYABLE_CSFILES)			\
 	$(PIDGIN_QUERYABLE_CSFILES)				\

@@ -34,17 +34,10 @@ using Beagle;
 
 namespace Beagle.Daemon {
 
-	public interface IMetadataHelper {
-
-		void Start (IQueryable target_queryable);
-
-		QueryableStatus GetHelperStatus ();
-	}
-
 	// An abstract class which doesn't have any storage backing it.
 	// These backends exist solely to add property change indexables to
 	// existing backends.
-	public abstract class ExternalMetadataQueryable : IMetadataHelper {
+	public abstract class ExternalMetadataQueryable : IQueryable {
 
 		private FileAttributesStore fa_store;
 
@@ -56,11 +49,27 @@ namespace Beagle.Daemon {
 			get { return Scheduler.Global; }
 		}
 
-		public virtual void Start (IQueryable target_queryable)
+		public virtual void Start ()
 		{
 		}
 
-		public QueryableStatus GetHelperStatus ()
+		public bool AcceptQuery (Query query)
+		{
+			// Always return false; there is nothing backing this
+			// backend.
+			return false;
+		}
+
+		public void DoQuery (Query query, IQueryResult result, IQueryableChangeData data)
+		{
+		}
+
+		public string GetSnippet (string[] query_terms, Hit hit)
+		{
+			return null;
+		}
+
+		public QueryableStatus GetQueryableStatus ()
 		{
 			QueryableStatus status = new QueryableStatus ();
 
