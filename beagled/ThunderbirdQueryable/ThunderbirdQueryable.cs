@@ -1,5 +1,5 @@
 //
-// ThunderbirdQueryable.cs: The backend starting point
+// ThunderbirdQueryable.cs: This is the Thunderbird backend
 //
 // Copyright (C) 2007 Pierre Östlund
 //
@@ -28,6 +28,7 @@ using System;
 using System.IO;
 using System.Xml;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Collections;
 using Beagle.Util;
@@ -39,17 +40,28 @@ using Mime = GMime.Utils;
 
 namespace Beagle.Daemon.ThunderbirdQueryable {
 	
-	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = false)]
+	[QueryableFlavor (Name = "Thunderbird", Domain = QueryDomain.Local, RequireInotify = true)]
 	public class ThunderbirdQueryable : LuceneQueryable {
+	
+		// History:
+		// 1: Initial version used to force reindex due to changes in URI scheme
+		private const int MINOR_VERSION = 1;
+	
 		private ThunderbirdIndexer indexer = null;
 		private string overriden_toindex = null;
 		
-		public ThunderbirdQueryable () : base ("ThunderbirdIndex")
+		public ThunderbirdQueryable () : base ("ThunderbirdIndex", MINOR_VERSION)
 		{
 			// In case we use another directory
 			overriden_toindex = Environment.GetEnvironmentVariable ("TOINDEX_DIR");
 			
 			GMime.Global.Init ();
+			
+			Inotify.Subscribe (IndexDirectory, 
+				OnInotifyEvent, 
+				Inotify.EventType.Create | 
+				Inotify.EventType.Delete |
+				Inotify.EventType.DeleteSelf);
 		}
 		
 		public override void Start ()
@@ -66,7 +78,6 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 			
 			string toindex_dir = ToIndexDirectory;
 			if (!Directory.Exists (toindex_dir)) {
-				GLib.Timeout.Add (60000, new GLib.TimeoutHandler (IndexDataCheck));
 				Logger.Log.Debug ("No Thunderbird data to index in {0}", toindex_dir);
 				return;
 			}
@@ -78,13 +89,36 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 			Logger.Log.Debug ("Thunderbird backend done in {0}s", watch.ElapsedTime);
 		}
 		
-		private bool IndexDataCheck ()
+		private void OnInotifyEvent (
+				Inotify.Watch watch,
+				string path,
+				string subitem,
+				string srcpath,
+				Inotify.EventType type)
 		{
-			if (!Directory.Exists (ToIndexDirectory))
-				return true;
+			// Stop watching if we were deleted
+			if ((type & Inotify.EventType.DeleteSelf) != 0) {
+				watch.Unsubscribe ();
+				return;
+			}
 			
-			StartWorker ();
-			return false;
+			// We want a directory
+			if ((type & Inotify.EventType.IsDirectory) == 0)
+				return;
+			
+			// We are only watching one directory, so we only have to check for ToIndex
+			// as subitem
+			if (subitem != "ToIndex")
+				return;
+			
+			// We only have to watch for creation of the ToIndex directory here, so that
+			// the indexing process can be started. The Indexer will automatically clean
+			// up if the ToIndex diretory is deleted (we still display a status message
+			// here though)
+			if ((type & Inotify.EventType.Create) != 0)
+				ExceptionHandlingThread.Start (new ThreadStart (StartWorker));
+			else if ((type & Inotify.EventType.Delete) != 0) 
+				Logger.Log.Debug ("Stopping the Thunderbird indexing process; ToIndex disappeared");
 		}
 		
 		// This is the directory where all metafiles goes
@@ -113,7 +147,10 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 		public void Start ()
 		{
 			// Make sure we catch file system changes
-			Inotify.Subscribe (queryable.ToIndexDirectory, OnInotifyEvent, Inotify.EventType.Create);
+			Inotify.Subscribe (queryable.ToIndexDirectory, 
+				OnInotifyEvent, 
+				Inotify.EventType.Create | 
+				Inotify.EventType.DeleteSelf);
 			
 			// Start the indexable generator and begin adding things to the index
 			LaunchIndexable ();
@@ -122,8 +159,7 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 		private void LaunchIndexable ()
 		{
 			// Cancel running task before adding a new one
-			if (indexable_generator != null && queryable.ThisScheduler.ContainsByTag (TAG))
-				queryable.ThisScheduler.GetByTag (TAG).Cancel ();
+			CancelIndexable ();
 			
 			// Add the new indexable generator
 			indexable_generator = new ThunderbirdIndexableGenerator (this, queryable.ToIndexDirectory);
@@ -132,18 +168,23 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 			task.Tag = TAG;
 			queryable.ThisScheduler.Add (task);
 		}
-
-		public void RemoveFolder (string folderPath)
+		
+		private void CancelIndexable ()
 		{
-			if (queryable.ThisScheduler.ContainsByTag (folderPath)) {
-				Logger.Log.Debug ("Not adding task for already running {0}", folderPath);
+			if (indexable_generator != null && queryable.ThisScheduler.ContainsByTag (TAG))
+				queryable.ThisScheduler.GetByTag (TAG).Cancel ();
+		}
+
+		public void RemoveFolder (string folderFile)
+		{
+			if (queryable.ThisScheduler.ContainsByTag (folderFile)) {
+				Logger.Log.Debug ("Not adding task for already running {0}", folderFile);
 				return;
 			}
 			
-			Console.WriteLine ("REMOVE: {0}", folderPath);
-			Property prop = Property.NewUnsearched ("fixme:folderPath", folderPath);
+			Property prop = Property.NewUnsearched ("fixme:folderFile", folderFile);
 			Scheduler.Task task = queryable.NewRemoveByPropertyTask (prop);
-			task.Tag = folderPath;
+			task.Tag = folderFile;
 			task.Priority = Scheduler.Priority.Immediate;
 			queryable.ThisScheduler.Add (task);
 		}
@@ -155,6 +196,13 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 				string srcpath,
 				Inotify.EventType type)
 		{
+			// Stop watching if we are deleted. We should unsubscribe to the Inotify watcher
+			// here to, but that gives an exception. Why?
+			if ((type & Inotify.EventType.DeleteSelf) != 0) {
+				CancelIndexable ();
+				return;
+			}
+		
 			// We need to have a filename
 			if (subitem == null)
 				return;
@@ -272,9 +320,10 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 			return Convert.ToBoolean (str);
 		}
 		
-		// We cannot use the URI provided by Thunderbird due to limitations  in the URI-class implementation. 
-		// We have to make up something unique and use another property with the correct URI.
-		private Uri GenerateUniqueUri (XmlDocument document)
+		// We cannot use the URIs provided by Thunderbird due to limitations  in the URI-class 
+		// implementation. We have to make up something unique and use another property with 
+		// the correct URI (fixme:uri).
+		private static Uri GenerateUniqueUri (XmlDocument document)
 		{
 			return new Uri (String.Format ("{0}/?id={1}",
 				GetText (document, "FolderFile"), 
@@ -322,7 +371,7 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 		private Indexable ToAddMailMessageIndexable (XmlDocument document)
 		{
 			GMime.Message message = null;
-
+			
 			// Check if the entire message is available
 			if (ToBool (GetText (document, "HasOffline"))) {
 				// We must make sure we don't get an exception here since we can fallback to
@@ -347,9 +396,9 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 			indexable.Crawled = true;
 			indexable.SetBinaryStream (message.Stream);
 			
-			indexable.AddProperty (Property.NewUnsearched ("fixme:client", "Thunderbird"));
+			indexable.AddProperty (Property.NewUnsearched ("fixme:client", "thunderbird"));
 			indexable.AddProperty (Property.NewUnsearched ("fixme:folder", GetText (document, "Folder")));
-			indexable.AddProperty (Property.NewUnsearched ("fixme:folderPath", GetText (document, "FolderPath")));
+			indexable.AddProperty (Property.NewUnsearched ("fixme:folderFile", GetText (document, "FolderFile")));
 			indexable.AddProperty (Property.NewUnsearched ("fixme:uri", GetText (document, "Uri")));
 			
 			message.Dispose ();
@@ -378,6 +427,8 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 				c = stream.ReadByte ();
 			}
 			
+			// We _know_ that the stream comes from a StreamReader, which uses UTF8 by
+			// default. So we use that here when parsing our string.
 			return (str != null ? Encoding.UTF8.GetString (str, 0, pos) : string.Empty);
 		}
 		
@@ -476,9 +527,9 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 			indexable.CacheContent = true;
 			indexable.Crawled = true;
 			
-			indexable.AddProperty (Property.NewUnsearched ("fixme:client", "Thunderbird"));
+			indexable.AddProperty (Property.NewUnsearched ("fixme:client", "thunderbird"));
 			indexable.AddProperty (Property.NewUnsearched ("fixme:folder", GetText (document, "Folder")));
-			indexable.AddProperty (Property.NewUnsearched ("fixme:folderPath", GetText (document, "FolderPath")));
+			indexable.AddProperty (Property.NewUnsearched ("fixme:folderFile", GetText (document, "FolderFile")));
 			indexable.AddProperty (Property.NewUnsearched ("fixme:uri", GetText (document, "Uri")));
 			
 			indexable.AddProperty (Property.NewKeyword ("dc:identifier", ExtractUrl (GetText (document, "MessageId"))));
@@ -516,15 +567,15 @@ namespace Beagle.Daemon.ThunderbirdQueryable {
 			
 			// Compare our document element type to expected ones
 			string name = document.DocumentElement.Name;
-			if (name.Equals (ADD_MAILMESSAGE))
+			if (name.Equals (ADD_MAILMESSAGE)) 
 				return ToAddMailMessageIndexable (document);
 			else if (name.Equals (ADD_RSS))
 				return ToAddRssIndexable (document);
 			else if (name.Equals (REMOVE_MESSAGE))
 				return ToRemoveMessageIndexable (document);
-			else if (name.Equals (REMOVE_FOLDER))
-				indexer.RemoveFolder (GetText (document, "FolderPath"));
-
+			else if (name.Equals (REMOVE_FOLDER)) 
+				indexer.RemoveFolder (GetText (document, "FolderFile"));
+				
 			return null;
 		}
 		

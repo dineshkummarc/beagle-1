@@ -1,7 +1,7 @@
 //
-// ThunderbirdProfileIndexer.cs: Begins the indexing process and makes sure all accounts are indexed
+// Thunderbird.cs: Basic Thunderbird routines
 //
-// Copyright (C) 2007 Pierre Östlund
+// Copyright (C) 2006 Novell, Inc.
 //
 
 //
@@ -25,15 +25,42 @@
 //
 
 using System;
-using Beagle.Util.Thunderbird;
+using System.IO;
+using Beagle.Util;
 
-namespace Beagle.Daemon.ThunderbirdQueryable {
-	
-	public class ThunderbirdProfileIndexer {
+namespace Beagle.Util {
+
+	public static class Thunderbird {
+		private static readonly string [] exec_names = new string [] {
+			"thunderbird",
+			"mozilla-thunderbird"
+		};
 		
-		public ThunderbirdProfileIndexer (ThunderbirdQueryable queryable, string path)
+		public static string ExecutableName {
+			get {
+				foreach (string name in exec_names) {
+					foreach (string path in PathFinder.Paths) {
+						string executable = Path.Combine (path, name);
+						
+						if (File.Exists (executable))
+							return executable;
+							
+					}
+				}
+				
+				return string.Empty;
+			}
+		}
+		
+		public static SafeProcess GetSafeProcess (params string[] args)
 		{
-			throw new NotImplementedException ();
+			SafeProcess p = new SafeProcess ();
+			
+			p.Arguments = new string [1 + args.Length];
+			p.Arguments [0] = ExecutableName;
+			Array.Copy (args, 0, p.Arguments, 1, args.Length);
+			
+			return p;
 		}
 	}
 }

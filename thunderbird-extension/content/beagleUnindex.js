@@ -37,6 +37,8 @@ var gBeagleIndexer = Components.classes ['@beagle-project.org/services/indexer;1
 	.getService (Components.interfaces.nsIBeagleIndexer);
 var gBeagleQueue = Components.classes ['@beagle-project.org/services/queue;1']
 	.getService (Components.interfaces.nsIBeagleQueue);
+var eventQueue = Components.classes ['@mozilla.org/event-queue;1']
+	.getService (Components.interfaces.nsIEventQueue);
 
 //
 //	Call one of the following functions to remove or unindex content
@@ -139,7 +141,7 @@ var gBeagleUnindex = {
 			else if (ret == 2)
 				return;
 		}
-			
+		
 		window.openDialog ('chrome://beagle/content/beagleUnindex.xul',
 							'UnindexWindow',
 							'chrome,modal=yes,resizable=no',
@@ -152,6 +154,11 @@ var gBeagleUnindex = {
 //
 
 function onLoad ()
+{
+	window.setTimeout (function () { startProcessing () }, 0);
+}
+
+function startProcessing ()
 {
 	// Make sure we have arguments (we should always have that)
 	if (!window.arguments || window.arguments.length < 1) {
@@ -198,10 +205,10 @@ function getUserMarkedChoice ()
 				prompts.BUTTON_POS_2 * prompts.BUTTON_TITLE_CANCEL;
 	var check = {value: true}
 	var button = prompts.confirmEx (window, 
-									bundle.getString ('userMarkedContent'),
-									bundle.getString ('removeUserMarkedContent'),
-									flags,
-									null, null, null, null, check);
+		bundle.getString ('userMarkedContent'),
+		bundle.getString ('removeUserMarkedContent'),
+		flags,
+		null, null, null, null, check);
 		
 	return button;
 }

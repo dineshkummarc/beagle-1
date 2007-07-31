@@ -250,10 +250,8 @@ function addToIndex (hdr)
 	// We must ensure that all elements exist. Some of them might throw an exception in various
 	// set-ups, so we have to catch them and default to something.
 	properties ['Author'] = hdr.author;
-	properties ['Charset'] = hdr.Charset;
 	properties ['Date'] = hdr.dateInSeconds;
 	properties ['Folder'] = hdr.folder.name;
-	properties ['FolderURL'] = hdr.folder.folderURL;
 	properties ['FolderFile'] = hdr.folder.path.unixStyleFilePath;
 	
 	try {
@@ -269,6 +267,7 @@ function addToIndex (hdr)
 	properties ['OfflineSize'] = hdr.offlineMessageSize;
 	properties ['Recipients'] = hdr.recipients;
 	properties ['Subject'] = hdr.subject;
+	properties ['MessageKey'] = hdr.messageKey;
 	
 	try {
 		properties ['Uri'] = hdr.folder.getUriForMsg (hdr);
@@ -297,7 +296,6 @@ function addToIndex (hdr)
 		} catch (ex) {
 			properties ['FeedURL'] = 'Unknown';
 		}
-		properties ['MessageKey'] = hdr.messageKey;
 		type = 'FeedItem';
 		break;
 	}
@@ -324,7 +322,7 @@ function dropFolderFromIndex (folder)
 		return;
 
 	var properties = new Array ();
-	properties ['FolderURL'] = folder.folderURL;
+	properties ['FolderFile'] = folder.path.unixStyleFilePath;
 	
 	writeHashTableToNextFile (properties, 'DeleteFolder');
 }
@@ -341,14 +339,10 @@ function dropHdrFromIndex (hdr)
 	
 	var properties = new Array ();
 	properties ['Uri'] = hdr.folder.getUriForMsg (hdr);
-	
-	if (hdr.folder.server.type == 'rss') {
-		properties ['Type'] = 'FeedItem';
-		properties ['FolderURL'] = hdr.folder.folderURL;
-		properties ['MessageKey'] = hdr.messageKey;
-	} else
-		properties ['Type'] = 'MailMessage';
-	
+
+	properties ['FolderFile'] = hdr.folder.path.unixStyleFilePath;
+	properties ['MessageKey'] = hdr.messageKey;
+
 	writeHashTableToNextFile (properties, 'DeleteHdr');
 }
 

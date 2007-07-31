@@ -128,17 +128,7 @@ UTIL_CSFILES = 			        	\
 
 if ENABLE_THUNDERBIRD
 UTIL_CSFILES +=					\
-	$(srcdir)/Thunderbird/AccountManager.cs \
-	$(srcdir)/Thunderbird/IManager.cs       \
-	$(srcdir)/Thunderbird/ProfileManager.cs \
-	$(srcdir)/Thunderbird/PropertyStore.cs  \
-	$(srcdir)/Thunderbird/Preferences/INIFileParser.cs\
-	$(srcdir)/Thunderbird/Preferences/PreferenceParser.cs\
-	$(srcdir)/Thunderbird/Utilities/Convert.cs\
-	$(srcdir)/Thunderbird/Utilities/FileReader.cs\
-	$(srcdir)/Thunderbird/Utilities/IO.cs   \
-	$(srcdir)/Thunderbird/Utilities/Paths.cs\
-	$(srcdir)/Thunderbird/Utilities/RangeList.cs
+	$(srcdir)/Thunderbird.cs
 endif
 
 if HAS_LIBCHM 
@@ -228,16 +218,7 @@ uninstall-local:
 COND_CS_FILES =				\
 	$(srcdir)/ChmFile.cs		\
 	$(srcdir)/Galago.cs		\
-        $(srcdir)/Thunderbird/AccountManager.cs \
-        $(srcdir)/Thunderbird/IManager.cs       \
-        $(srcdir)/Thunderbird/ProfileManager.cs \
-        $(srcdir)/Thunderbird/PropertyStore.cs  \
-        $(srcdir)/Thunderbird/Preferences/INIFileParser.cs\
-        $(srcdir)/Thunderbird/Preferences/PreferenceParser.cs\
-        $(srcdir)/Thunderbird/Utilities/Convert.cs\
-        $(srcdir)/Thunderbird/Utilities/IO.cs   \
-        $(srcdir)/Thunderbird/Utilities/Paths.cs\
-        $(srcdir)/Thunderbird/Utilities/RangeList.cs
+        $(srcdir)/Thunderbird.cs
 
 
 EXTRA_DIST =			\

@@ -24,15 +24,22 @@
 // DEALINGS IN THE SOFTWARE.
 //
 
-var queue_add = Components.classes ['@mozilla.org/supports-array;1']
+var queueAdd = Components.classes ['@mozilla.org/supports-array;1']
 	.createInstance (Components.interfaces.nsISupportsArray);
-var queue_remove = Components.classes ['@mozilla.org/supports-array;1']
+var queueRemove = Components.classes ['@mozilla.org/supports-array;1']
 	.createInstance (Components.interfaces.nsISupportsArray);
 var observerService = Components.classes ['@mozilla.org/observer-service;1']
 	.getService(Components.interfaces.nsIObserverService);
 
 var totalAdded = 0;
 var totalRemoved = 0;
+
+function notify (data)
+{
+	var self = Components.classes ['@beagle-project.org/services/queue;1']
+		.getService (Components.interfaces.nsIBeagleQueue);
+	observerService.notifyObservers (self, "beagle-queue", data);
+}
 
 function init ()
 {
@@ -42,7 +49,7 @@ function init ()
 // obj is either nsIMsgDBHdr or nsIMsgFolder
 function add (obj)
 {
-	if (queue_add.GetIndexOf (obj) != -1)
+	if (queueAdd.GetIndexOf (obj) != -1)
 		return;
 	
 	var indexer = Components.classes ['@beagle-project.org/services/indexer;1']
@@ -55,13 +62,14 @@ function add (obj)
 	else 
 		return;
 	
-	queue_add.AppendElement (obj);
+	queueAdd.AppendElement (obj);
 	totalAdded++;
+	notify ('add');
 }
 
 function remove (obj)
 {
-	if (queue_remove.GetIndexOf (obj) != -1)
+	if (queueRemove.GetIndexOf (obj) != -1)
 		return;
 	
 	var indexer = Components.classes ['@beagle-project.org/services/indexer;1']
@@ -74,8 +82,9 @@ function remove (obj)
 	else 
 		return;
 	
-	queue_remove.AppendElement (obj);
+	queueRemove.AppendElement (obj);
 	totalRemoved++;
+	notify ('remove');
 }
 
 // add, remove* and move* all return true if the object was added to the queue. If the object was
@@ -183,16 +192,16 @@ function forceProcess ()
 		.getService (Components.interfaces.nsIBeagleIndexer);
 	
 	// Add new items to the beagle database
-	for (var i = 0; i < queue_add.Count (); i++) {
-		var msg = queue_add.GetElementAt (i).QueryInterface (Components.interfaces.nsIMsgDBHdr);
+	for (var i = 0; i < queueAdd.Count (); i++) {
+		var msg = queueAdd.GetElementAt (i).QueryInterface (Components.interfaces.nsIMsgDBHdr);
 		if (!msg)
 			continue;
 		indexer.addToIndex (msg);
 	}
 	
 	// Remove old items from the beagle database
-	for (var i = 0; i < queue_remove.Count (); i++) {
-		var obj = queue_remove.GetElementAt (i);
+	for (var i = 0; i < queueRemove.Count (); i++) {
+		var obj = queueRemove.GetElementAt (i);
 		
 		if (obj instanceof Components.interfaces.nsIMsgDBHdr) {
 			obj.QueryInterface (Components.interfaces.nsIMsgDBHdr);
@@ -203,15 +212,15 @@ function forceProcess ()
 		}
 	}
 	
-	queue_add.Clear ();
-	queue_remove.Clear ();
+	queueAdd.Clear ();
+	queueRemove.Clear ();
 	
 	dump ("Done processing " + count + " items\n");
 }
 
 function getQueueCount ()
 {
-	return queue_add.Count () + queue_remove.Count ();
+	return queueAdd.Count () + queueRemove.Count ();
 }
 
 // This observer will check if the application is about to quit and process any remaining

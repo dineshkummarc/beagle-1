@@ -43,7 +43,7 @@
 	</stringbundleset>
 	
 	<script src="beagleUnindex.js"/>
-		
+	
 	<script type="application/x-javascript">
 	<![CDATA[
 		const Cc = Components.classes;

@@ -8,5 +8,5 @@ statusbarpanel#beagle-icon[status="disabled"] {
 }
 
 statusbarpanel#beagle-icon[status="error"] {
-  list-style-image: url("chrome://beagle/skin/beagle-disabled.png");
+  list-style-image: url("chrome://beagle/skin/beagle-error.png");
 }

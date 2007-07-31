@@ -8,13 +8,12 @@ all: $(PROJECT).xpi
 
 JAR_FILES =					\
 	content/beagle.css			\
-	content/beagle.js			\
-	content/beagle.xul			\
 	content/beagleIndexer.js		\
 	content/beagleMailWindow.xul		\
-	content/beagleMain.js			\
+	content/beagleMessenger.xul		\
 	content/beaglePrefs.xul			\
 	content/beagleQueue.js			\
+	content/beagleService.js		\
 	content/beagleSettings.js		\
 	content/beagleUnindex.js		\
 	content/beagleUnindex.xul		\
