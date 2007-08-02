@@ -37,142 +37,11 @@
 			style="width: 350px"
 			onload="load (); refreshStats ();"
 			xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+	<prefpane id="pref-indexing" 
+		label="&beagleprefs.indexing;" 
+		image="chrome://messenger/skin/preferences/advanced.png">
 		
-	<stringbundleset id="stringbundleset">
-		<stringbundle id="bundle_beagle" src="chrome://beagle/locale/strings.properties"/>
-	</stringbundleset>
-	
-	<script src="beagleUnindex.js"/>
-	
-	<script type="application/x-javascript">
-	<![CDATA[
-		const Cc = Components.classes;
-		const Ci = Components.interfaces;
-
-		// These are arbitrary values. We should really tweak these values.
-		const BEAGLE_INDEX_SPEED = new Array (
-			// [Batch count, index delay, queue count]
-			[1,			60,		10],	// Very slow 
-			[5,			30,		5],		// Slow
-			[10,		10,		10],	// Normal
-			[20,		5,		20],	// Fast
-			[100,		1,		100],	// Very fast
-			[9999999,	1,		1]		// Instant
-		);
-
-		var settings = Cc ['@beagle-project.org/services/settings;1']
-			.getService (Ci.nsIBeagleSettings);
-
-		function load ()
-		{
-			var batch = settings.getIntPref ('IndexBatchCount');
-			var queue = settings.getIntPref ('IndexQueueCount');
-			var delay = settings.getIntPref ('IndexDelay');
-			var group = document.getElementById ('speed-group');
-
-			for (var i = 0; i < BEAGLE_INDEX_SPEED.length; i++) {
-				var speed = BEAGLE_INDEX_SPEED [i];
-				
-				if (batch == speed [0] && delay == speed [1] && queue == speed [2]) {
-					group.selectedIndex = i;
-					return;
-				}
-			}
-			
-			group.selectedIndex = BEAGLE_INDEX_SPEED.length;
-			var custom = document.getElementById ('custom-settings');
-			custom.setAttribute ('style', 'visibility: visible;');
-		}
-
-		function onSpeedChange (radio)
-		{
-			var element = document.getElementById ('custom-settings');
-			var pref = Cc ['@mozilla.org/preferences-service;1'].getService (Ci.nsIPrefBranch);
-			var batchCount = settings.getIntPref ('IndexBatchCount');
-			var queueCount = settings.getIntPref ('IndexQueueCount');
-			var delay = settings.getIntPref ('IndexDelay');
-			
-			if (parseInt (radio.id) >= 0 && parseInt (radio.id) <= 5) {
-				var speed = BEAGLE_INDEX_SPEED [radio.id];
-				batchCount = speed [0];
-				delay = speed [1];
-				queueCount = speed [2];
-				element.setAttribute ('style', 'visibility: hidden;');
-			} else 
-				element.setAttribute ('style', 'visibility: visible;');
-			
-			// Update with new values
-			pref.setIntPref ('beagle.index.batch_count', batchCount);
-			pref.setIntPref ('beagle.index.queue_count', queueCount);
-			pref.setIntPref ('beagle.index.delay', delay);
-		}
-		
-		function onDelIndex ()
-		{
-			gBeagleUnindex.RemoveEverything (true);
-		}
-		
-		function onUnindex ()
-		{
-			gBeagleUnindex.UnindexEverything (true);
-		}
-		
-		function refreshStats ()
-		{
-			var bundle = document.getElementById ('bundle_beagle');
-			var status = document.getElementById ('indexingstatus');
-			var added = document.getElementById ('itemsadded');
-			var removed = document.getElementById ('itemsremoved');
-			var queued = document.getElementById ('itemsqueued');
-			var beagleQueue = Cc ['@beagle-project.org/services/queue;1']
-				.getService (Ci.nsIBeagleQueue);
-			
-			added.value = beagleQueue.totalAdded;
-			removed.value = beagleQueue.totalRemoved;
-			queued.value = beagleQueue.getQueueCount ();
-			
-			// Figure out if all mailboxes have been indexed
-			try {
-				var indexedFolders = 0;
-				var totalFolders = 0;
-				var indexer = Cc ['@beagle-project.org/services/indexer;1']
-					.getService (Ci.nsIBeagleIndexer);
-				var accountmanager = Cc ['@mozilla.org/messenger/account-manager;1']
-					.getService (Ci.nsIMsgAccountManager);
-				var accounts = accountmanager.accounts;
-				
-				for (var i = 0; i < accounts.Count (); i++) {
-					var account = accounts.QueryElementAt (i, Ci.nsIMsgAccount);
-					var allFolders = Cc ['@mozilla.org/supports-array;1']
-						.createInstance (Ci.nsISupportsArray);
-					account.incomingServer.rootFolder.ListDescendents (allFolders);
-					
-					for (var j = 0; j < allFolders.Count (); j++) {
-						var folder = allFolders.QueryElementAt (j, Ci.nsIMsgFolder);
-						
-						if (indexer.isFolderIndexed (folder)
-							|| !indexer.shouldIndexFolder (folder) 
-							|| folder.getTotalMessages (false) == 0)
-							indexedFolders++;
-						
-						totalFolders++;
-					}
-				}
-				
-				if (indexedFolders == totalFolders)
-					status.value = bundle.getString ('indexIdle');
-				else
-					status.value = bundle.getFormattedString ('indexWorking', 
-						[ totalFolders - indexedFolders ]);
-				
-			} catch (ex) {
-				status.value = bundle.getString ('failedGetStatus');
-			}
-		}
-	]]>
-	</script>
-
-	<prefpane id="pref-indexing" label="&beagleprefs.indexing;" image="chrome://messenger/skin/preferences/advanced.png">
 		<preferences>
 			<preference id="pref-enabled" name="beagle.enabled" type="bool"/>
 			<preference id="pref-batchcount" name="beagle.index.batch_count" type="int"/>
@@ -222,7 +91,10 @@
 			</grid>
 		</groupbox>
 	</prefpane>
-	<prefpane id="pref-privacy" label="&beagleprefs.privacy;" image="chrome://messenger/skin/preferences/privacy.png">
+	<prefpane id="pref-privacy" 
+		label="&beagleprefs.privacy;"
+		image="chrome://messenger/skin/preferences/privacy.png">
+		
 		<preferences>
 			<preference id="pref-local" name="beagle.enable.local" type="bool"/>
 			<preference id="pref-imap" name="beagle.enable.imap" type="bool"/>
@@ -254,7 +126,9 @@
 			</vbox>
 		</groupbox>
 	</prefpane>
-	<prefpane id="pref-stats" label="&beagleprefs.status;" image="chrome://messenger/skin/preferences/general.png">
+	<prefpane id="pref-stats" 
+		label="&beagleprefs.status;" 
+		image="chrome://messenger/skin/preferences/general.png">
 		<groupbox flex="0">
 			<caption>
 				<label value="&beagleprefs.stats;"/>
@@ -267,7 +141,7 @@
 				<rows>
 					<row>
 						<label value="&beagleprefs.indexingstatus;"/>
-						<label id="indexingstatus"/>
+						<vbox id="indexingstatus"/>
 					</row>
 					<row>
 						<label value="&beagleprefs.itemsadded;"/>
@@ -288,5 +162,173 @@
 			<button label="&beagleprefs.refresh;" oncommand="refreshStats ();"/>
 		</hbox>
 	</prefpane>
+	
+	<stringbundleset id="stringbundleset">
+		<stringbundle id="bundle_beagle" src="chrome://beagle/locale/strings.properties"/>
+	</stringbundleset>
+	
+	<script src="beagleUnindex.js"/>
+	
+	<script type="application/x-javascript">
+	<![CDATA[
+		const Cc = Components.classes;
+		const Ci = Components.interfaces;
+
+		// These are arbitrary values. We should really tweak these values.
+		const BEAGLE_INDEX_SPEED = new Array (
+			// [Batch count, index delay, queue count]
+			[1,			60,		10],	// Very slow 
+			[5,			30,		5],		// Slow
+			[10,		10,		10],	// Normal
+			[20,		5,		20],	// Fast
+			[100,		1,		100],	// Very fast
+			[9999999,	1,		1]		// Instant
+		);
+
+		var settings = Cc ['@beagle-project.org/services/settings;1']
+			.getService (Ci.nsIBeagleSettings);
+
+		function load ()
+		{
+			
+			var batch = settings.getIntPref ('IndexBatchCount');
+			var queue = settings.getIntPref ('IndexQueueCount');
+			var delay = settings.getIntPref ('IndexDelay');
+			var group = document.getElementById ('speed-group');
+
+			window.setTimeout ('autoUpdate ()', 1000);
+
+			for (var i = 0; i < BEAGLE_INDEX_SPEED.length; i++) {
+				var speed = BEAGLE_INDEX_SPEED [i];
+				
+				if (batch == speed [0] && delay == speed [1] && queue == speed [2]) {
+					group.selectedIndex = i;
+					return;
+				}
+			}
+			
+			group.selectedIndex = BEAGLE_INDEX_SPEED.length;
+			var custom = document.getElementById ('custom-settings');
+			custom.setAttribute ('style', 'visibility: visible;');
+		}
+		
+		function autoUpdate ()
+		{
+			refreshStats ();
+			window.setTimeout ('autoUpdate ()', 1000);
+		}
+
+		function onSpeedChange (radio)
+		{
+			var element = document.getElementById ('custom-settings');
+			var pref = Cc ['@mozilla.org/preferences-service;1'].getService (Ci.nsIPrefBranch);
+			var batchCount = settings.getIntPref ('IndexBatchCount');
+			var queueCount = settings.getIntPref ('IndexQueueCount');
+			var delay = settings.getIntPref ('IndexDelay');
+			
+			if (parseInt (radio.id) >= 0 && parseInt (radio.id) <= 5) {
+				var speed = BEAGLE_INDEX_SPEED [radio.id];
+				batchCount = speed [0];
+				delay = speed [1];
+				queueCount = speed [2];
+				element.setAttribute ('style', 'visibility: hidden;');
+			} else 
+				element.setAttribute ('style', 'visibility: visible;');
+			
+			// Update with new values
+			pref.setIntPref ('beagle.index.batch_count', batchCount);
+			pref.setIntPref ('beagle.index.queue_count', queueCount);
+			pref.setIntPref ('beagle.index.delay', delay);
+		}
+		
+		function onDelIndex ()
+		{
+			gBeagleUnindex.RemoveEverything (true);
+		}
+		
+		function onUnindex ()
+		{
+			gBeagleUnindex.UnindexEverything (true);
+		}
+		
+		function clearIndexingStatus ()
+		{
+			var elem = document.getElementById ('indexingstatus');
+			
+			while (elem.hasChildNodes ()) 
+				elem.removeChild (elem.firstChild);
+		}
+		
+		function createDescription (text)
+		{
+			var desc = document.createElement ('description');
+			var text = document.createTextNode (text);
+			desc.appendChild (text);
+			return desc;
+		}
+		
+		function refreshStats ()
+		{
+			var bundle = document.getElementById ('bundle_beagle');
+			var status = document.getElementById ('indexingstatus');
+			var added = document.getElementById ('itemsadded');
+			var removed = document.getElementById ('itemsremoved');
+			var queued = document.getElementById ('itemsqueued');
+			var beagleQueue = Cc ['@beagle-project.org/services/queue;1']
+				.getService (Ci.nsIBeagleQueue);
+			var remaining = new Array ();
+			
+			added.value = beagleQueue.totalAdded;
+			removed.value = beagleQueue.totalRemoved;
+			queued.value = beagleQueue.getQueueCount ();
+			
+			// Figure out if all mailboxes have been indexed
+			try {
+				var indexedFolders = 0;
+				var totalFolders = 0;
+				var indexer = Cc ['@beagle-project.org/services/indexer;1']
+					.getService (Ci.nsIBeagleIndexer);
+				var accountmanager = Cc ['@mozilla.org/messenger/account-manager;1']
+					.getService (Ci.nsIMsgAccountManager);
+				var accounts = accountmanager.accounts;
+				
+				clearIndexingStatus ();
+				for (var i = 0; i < accounts.Count (); i++) {
+					var account = accounts.QueryElementAt (i, Ci.nsIMsgAccount);
+					var allFolders = Cc ['@mozilla.org/supports-array;1']
+						.createInstance (Ci.nsISupportsArray);
+					account.incomingServer.rootFolder.ListDescendents (allFolders);
+					
+					for (var j = 0; j < allFolders.Count (); j++) {
+						var folder = allFolders.QueryElementAt (j, Ci.nsIMsgFolder);
+						
+						if (indexer.isFolderIndexed (folder)
+							|| !indexer.shouldIndexFolder (folder) 
+							|| folder.getTotalMessages (false) == 0)
+							indexedFolders++;
+						else
+							remaining [remaining.length] = folder.prettyName;
+							
+						totalFolders++;
+					}
+				}
+				
+				if (indexedFolders == totalFolders)
+					status.appendChild (createDescription (bundle.getString ('indexIdle')));
+				else {
+					var status_str = bundle.getFormattedString 
+						('indexWorking', [ totalFolders - indexedFolders ]);
+					status.appendChild (createDescription (status_str));
+					
+					for (var i = 0; i < (remaining.length > 5 ? 5 : remaining.length); i++) 
+						status.appendChild (createDescription (remaining [i]));
+				}
+				
+			} catch (ex) {
+				status.value = bundle.getString ('failedGetStatus');
+			}
+		}
+	]]>
+	</script>
 </prefwindow>
 

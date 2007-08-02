@@ -58,7 +58,7 @@ EXTRA_DIST =					\
 	$(COMPONENT_FILES)			\
 	$(XPI_FILES)
 
-CLEAN_FILES =					\
+CLEANFILES =					\
 	chrome/$(PROJECT).jar			\
 	components/*.xpt			\
 	$(PROJECT).xpi				

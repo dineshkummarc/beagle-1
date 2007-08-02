@@ -300,13 +300,17 @@ var gBeagleDataTracker = {
 			return;
 		
 		dump ("Adding new messages and restarting loop\n");
-		restart (20);
+		restart (10);
+		
+		// New approach here: mark folder as not indexed and let main loop find new messages.
+		// Doing it this way will make sure we don't hammer the system since we take
+		// advantage of the indexing queue.
 		try {
 			var hdr = item.QueryInterface (Components.interfaces.nsIMsgDBHdr);
 			if (!hdr)
 				return;
 			
-			gBeagleQueue.addHdr (hdr);
+			gBeagleIndexer.resetFolder (hdr.folder, false, false, false);
 		} catch (ex) {
 		}
 	},
@@ -315,7 +319,7 @@ var gBeagleDataTracker = {
 	itemDeleted: function (item)
 	{
 		dump ("Removing message(s) or folder and restarting loop\n");
-		restart (20);
+		restart (10);
 		if (item instanceof Components.interfaces.nsIMsgDBHdr) {
 			gBeagleQueue.removeHdr (item)
 		} else if (item instanceof Components.interfaces.nsIMsgFolder) {
@@ -326,7 +330,7 @@ var gBeagleDataTracker = {
 	itemMoveCopyCompleted: function (move, items, dest)
 	{
 		dump ("Moving/copying message(s)/folder and restarting loop\n");
-		restart (20);
+		restart (10);
 		
 		// There can be at most one folder in "items", so we check for that
 		var folder = items.GetElementAt (0);
@@ -367,7 +371,7 @@ var gBeagleDataTracker = {
 	folderRenamed: function (oldFolder, newFolder)
 	{
 		dump ("Renaming folder and restarting loop\n");
-		restart (20);
+		restart (10);
 		gBeagleQueue.moveFolder (oldFolder, newFolder);
 	},
 	
