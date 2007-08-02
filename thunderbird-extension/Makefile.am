@@ -40,6 +40,7 @@ XPI_FILES =					\
 	components/BeagleIndexer.js		\
 	components/BeagleQueue.js		\
 	components/BeagleSettings.js		\
+	components/BeagleCommandLine.js		\
 	$(COMPONENT_FILES)
 
 chrome/$(PROJECT).jar: $(JAR_FILES)

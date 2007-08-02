@@ -280,7 +280,31 @@
 			} catch (ex) {
 			}
 		}
+		
+		// The code below belongs to the "open-message-from-command-line"-code. The reason
+		// why this code is placed here is because of the MsgOpenNewWindowForMessage-function,
+		// which will do everything we want. This code will be removed once we have proper
+		// support for opening from command line.
+		var observer = Components.classes['@mozilla.org/observer-service;1']
+			.getService(Components.interfaces.nsIObserverService);
+		
+		var gBeagleCommandLineObserver = {
+			observe: function (subject, topic, data)
+			{
+				if (!data)
+					return;
+					
+				var messenger = Components.classes ['@mozilla.org/messenger;1']
+					.getService (Components.interfaces.nsIMessenger);
+				var hdr = messenger.msgHdrFromURI (data);
+				MsgOpenNewWindowForMessage (data, hdr.folder.URI);
+			}
+		};
+		
+		observer.addObserver (gBeagleCommandLineObserver, 'beagle-open-uri', false);
 
+		// Tell the world that we are done (mainly to make the "open from command line"-hack to work)
+		observer.notifyObservers (null, 'beagle-loaded', null);
 	]]>
 	</script>
 	

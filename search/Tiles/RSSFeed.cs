@@ -73,7 +73,7 @@ namespace Search.Tiles {
 			}
 			
 			// Here's the Thunderbird specific part
-			SafeProcess p = Thunderbird.GetSafeProcess ("-mail", Hit.GetFirstProperty ("fixme:uri"));
+			SafeProcess p = Thunderbird.GetSafeProcess ("-viewbeagle", Hit.GetFirstProperty ("fixme:uri"));
 			
 			try {
 				p.Start ();

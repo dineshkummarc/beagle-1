@@ -133,7 +133,7 @@ namespace Search.Tiles {
 				p.Arguments [1] = (hit.ParentUri != null ? hit.EscapedParentUri : hit.EscapedUri);
 #if ENABLE_THUNDERBIRD
 			} else if (client == "thunderbird")
-				p = Thunderbird.GetSafeProcess ("-mail", hit.GetFirstProperty ("fixme:uri"));
+				p = Thunderbird.GetSafeProcess ("-viewbeagle", hit.GetFirstProperty ("fixme:uri"));
 #endif
 
 			return p;
