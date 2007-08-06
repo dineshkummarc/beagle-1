@@ -233,7 +233,7 @@ namespace Beagle.Daemon {
 			// warning if not.  The actual advice calls will fail silently.
 			FileAdvise.TestAdvise ();
 
-#if ENABLE_NETWORKING
+#if ENABLE_AVAHI
 			Zeroconf.Publish (4000);
 			Logger.Log.Debug  ("Zeroconf service published after {0}", stopwatch);
 #endif
@@ -657,7 +657,7 @@ namespace Beagle.Daemon {
 
 		private static void OnShutdown ()
 		{
-#if ENABLE_NETWORKING
+#if ENABLE_AVAHI
 			Zeroconf.Stop ();
 #endif
 
