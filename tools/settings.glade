@@ -438,7 +438,7 @@
             <child>
               <widget class="GtkLabel" id="label1">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">Search</property>
+                <property name="label" translatable="yes">Searching</property>
               </widget>
               <packing>
                 <property name="type">tab</property>
@@ -731,6 +731,7 @@
                                 <property name="use_underline">True</property>
                                 <property name="response_id">0</property>
                                 <property name="draw_indicator">True</property>
+                                <signal name="toggled" handler="OnGlobalAccessToggled"/>
                               </widget>
                               <packing>
                                 <property name="expand">False</property>
@@ -791,6 +792,7 @@
                                             <property name="label" translatable="yes">Require a password to search this computer remotely.</property>
                                             <property name="response_id">0</property>
                                             <property name="draw_indicator">True</property>
+                                            <signal name="toggled" handler="OnRequirePasswordToggled"/>
                                           </widget>
                                           <packing>
                                             <property name="expand">False</property>

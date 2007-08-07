@@ -51,6 +51,9 @@ public class SettingsDialog
 	////////////////////////////////////////////////////////////////
 	// Widgets
 
+	[Widget] Gtk.Window settings_dialog;
+	[Widget] Notebook notebook;
+
 	[Widget] VBox administration_frame;
 
 	[Widget] CheckButton allow_root_toggle;
@@ -69,8 +72,6 @@ public class SettingsDialog
 		
 	[Widget] Button display_up_button;
 	[Widget] Button display_down_button;
-
-	[Widget] Gtk.Window settings_dialog;
 
 	[Widget] ScrolledWindow include_sw;
 	[Widget] ScrolledWindow exclude_sw;
@@ -131,15 +132,6 @@ public class SettingsDialog
 		networking_view.Selection.Changed += new EventHandler (OnHostSelected);
 		networking_view.Show ();
                 networking_sw.Child = networking_view;
-
-                allow_global_access_toggle.Toggled += delegate (object sender, EventArgs a) {
-                        networking_settings_box.Sensitive = allow_global_access_toggle.Active;
-                };
-		
-                require_password_toggle.Toggled += delegate (object sender, EventArgs a) {
-                        networking_password_box.Sensitive = require_password_toggle.Active;
-                };
-
 		networking_box.Show ();
 #endif
 
@@ -150,6 +142,30 @@ public class SettingsDialog
 #if ENABLE_AVAHI
 		Conf.Subscribe (typeof (Conf.NetworkingConfig), new Conf.ConfigUpdateHandler (OnConfigurationChanged));
 #endif
+
+		ParseArgs (args);
+	}
+
+	private void ParseArgs (string[] args)
+	{
+		if (args.Length < 1)
+			return;
+		
+		foreach (string s in args) {
+			switch (s) {
+			case "--searching":
+				notebook.Page = 0;
+				return;
+			case "--indexing":
+				notebook.Page = 1;
+				return;
+#if ENABLE_AVAHI
+			case "--networking":
+				notebook.Page = 2;
+				return;
+#endif
+			}
+		}
 	}
 
 	public void Run ()
@@ -558,6 +574,20 @@ public class SettingsDialog
 #if ENABLE_AVAHI
 		remove_host_button.Sensitive = true;
 #endif  
+	}
+	
+	private void OnGlobalAccessToggled (object o, EventArgs args)
+	{
+#if ENABLE_AVAHI
+		networking_settings_box.Sensitive = allow_global_access_toggle.Active;
+#endif
+	}
+	
+	private void OnRequirePasswordToggled (object o, EventArgs args)
+	{
+#if ENABLE_AVAHI
+		networking_password_box.Sensitive = require_password_toggle.Active;
+#endif
 	}
 
 	////////////////////////////////////////////////////////////////
@@ -1321,7 +1351,7 @@ public class SettingsDialog
                                 browser.HostRemoved += new MDNSEventHandler (OnHostRemoved);
                                 browser.Start ();
                         } catch (Exception e) {
-                                Console.Error.WriteLine ("Avahi Daemon must be unavailable. Hiding MDns stuff.");
+                                //Console.Error.WriteLine ("Avahi Daemon must be unavailable. Hiding MDns stuff.");
                                 static_radio_button.Toggle ();                                
                                 icon_view.Visible = false;
                                 mdns_radio_button.Visible = false;
@@ -1354,7 +1384,7 @@ public class SettingsDialog
                                             args.Service.IsProtected,
                                             args.Address.Host,
                                             args.Address.Port);
-                        Console.WriteLine ("Port: {0}", args.Address.Port);
+
                         icon_view.QueueDraw ();
                 }
 

@@ -7,6 +7,7 @@
 using System;
 using System.Reflection;
 using System.Collections;
+using System.Diagnostics;
 
 using Gtk;
 using Mono.Unix;
@@ -534,20 +535,22 @@ namespace Search {
 			m.Pixbuf = WidgetFu.LoadThemeIcon ("network-workgroup", 48);
 			m.Title = Catalog.GetString ("There are computers near you running Beagle");
 			m.Message = Catalog.GetString ("You can select to search other computers from the \"Search\" menu.");
+			m.AddAction ("Configure", OnNetworkConfigure);
 			notification_area.Display (m);
+		}
 
-			// Launch beagle-settings when this button is clicked
-			// FIXME: This is VERY BUGGY and INCOMPLETE!
-			/*System.Diagnostics.Process p = new System.Diagnostics.Process ();
+		private void OnNetworkConfigure (object o, EventArgs args)
+		{
+			Process p = new Process ();
 			p.StartInfo.UseShellExecute = false;
 			p.StartInfo.FileName = "beagle-settings";
-			p.StartInfo.Arguments = "--network-tab";
-                        
+			p.StartInfo.Arguments = "--networking";
+
 			try {
 				p.Start ();
 			} catch (Exception e) {
 				Console.WriteLine ("Could not start beagle-settings: {0}", e);
-			}*/                        
+			}
                 }
 #endif
 
