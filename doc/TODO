@@ -1,0 +1,62 @@
+
+Filters
+=======
+
+We need filters:
+
+   - MS Word/Powerpoint/Excel (clahey has bindings in Mono cvs for
+     libgsf)
+   - RTF
+   - mp3, ogg (and any other audio format that can carry metadata)
+   - pdf, postscript
+   - png, jpeg (and any other image format that can carry metadata)
+   - dvi (and maybe .tex -- we could just strip out the markup)
+   - Man pages
+   - Texinfo
+   - XML documentation format used by MonoDoc
+   - Code (throw away the code, extract comments and maybe strings)
+   - Abiword
+   - Gnumeric
+
+- The OpenOffice filter should notice when files are encrypted and fail
+  gracefully.
+
+
+Indexing
+========
+
+Filesystem
+----------
+
+* It would be cool if the crawler could descend into
+  compressed/tarred/zipped files.  Perhaps it could use the GNOME VFS
+  methods for this?
+
+
+Misc
+----
+
+* beagled is badly behaved!  It redirects stdout/stderr to /dev/null.
+  It should also do more initialization before forking.
+
+* Backends should be able to publish information to be returned by "ping".
+
+* We need better configure-time checks for missing dependencies.
+
+* A relatively easy project for someone would be to write a little
+  viewer for IM Logs that could be launched by clicking on an IM Log
+  tile.  There is code in Util/ImLog.cs for parsing gaim logs.
+
+Mail
+----
+
+* It would be cool if the mail crawler could index MIME attachments
+  on mails in an mbox.  The mail indexer today just indexes the
+  text/plain parts of a mail; at the very least it could index the
+  HTML parts of a mail message.
+
+Configuration
+-------------
+
+beagle-config GUI (fredrik?)
+Hardening FSQ against breakage (root-inside-root, etc)
