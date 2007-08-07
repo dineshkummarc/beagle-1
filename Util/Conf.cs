@@ -26,6 +26,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Specialized;
 using System.IO;
 using System.Diagnostics;
 using System.Reflection;
@@ -47,9 +48,8 @@ namespace Beagle.Util {
 		public static IndexingConfig Indexing = null;
 		public static DaemonConfig Daemon = null;
 		public static SearchingConfig Searching = null;
-#if ENABLE_AVAHI
+
 		public static NetworkingConfig Networking = null;
-#endif
 
 		private static string configs_dir;
 		private static Hashtable mtimes;
@@ -69,7 +69,6 @@ namespace Beagle.Util {
 			subscriptions = new Hashtable (3);
 
 			configs_dir = Path.Combine (PathFinder.StorageDir, "config");
-
 			if (!Directory.Exists (configs_dir))
 				Directory.CreateDirectory (configs_dir);
 
@@ -150,12 +149,10 @@ namespace Beagle.Util {
 		        Searching = (SearchingConfig) temp;
 			NotifySubscribers (Searching);
 
-#if ENABLE_AVAHI
-                        LoadFile (typeof (NetworkingConfig), Networking, out temp, force);
-                        Networking = (NetworkingConfig) temp;
-                        NotifySubscribers (Networking);
-#endif
-
+			LoadFile (typeof (NetworkingConfig), Networking, out temp, force);
+		    	Networking = (NetworkingConfig) temp;
+			NotifySubscribers (Networking);
+			
 			watching_for_updates = true;
 		}
 
@@ -608,61 +605,137 @@ namespace Beagle.Util {
 				output = "Could not find requested exclude to remove.";
 				return false;
 			}
-
 		}
 
-#if ENABLE_AVAHI
 		[ConfigSection (Name="networking")]
-		public class NetworkingConfig : Section
+		public class NetworkingConfig: Section 
 		{
-			private bool share_index = false; // off by default;
-			public bool ShareIndex {
-				get { return this.share_index; }
-				set { this.share_index = value; }
-			}
-			
-			private bool password_required = true;
-			public bool PasswordRequired {
-				get { return password_required; }
-				set { password_required = value; }
-			}
-			
-			private string index_name = String.Format ("{0}'s Beagle Index on {1}", 
-								   UnixEnvironment.UserName,
-								   UnixEnvironment.MachineName);
-			
-			public string IndexName {
-				get { return this.index_name; }
-				set { this.index_name = value; }
-			}
-			
-			private string password = "";
-			public string Password {
-				get { return this.password; }
-				set { this.password = value; }
-			}
-			
-			private ArrayList beagle_nodes = new ArrayList ();
+			private ArrayList neighborhoodNodes = new ArrayList (); // avahi
+			private ArrayList globalNodes = new ArrayList ();
+
+			private ArrayList avahi_beagle_nodes = new ArrayList ();
+			private bool avahi_share_index = false; // off by default
+			private bool avahi_password_required = true;
+			private string avahi_password = String.Empty;
+			private string avahi_index_name = String.Format ("{0}'s Beagle Index on {1}",
+				UnixEnvironment.UserName,
+				UnixEnvironment.MachineName);
 			
 			[XmlArray]
-			[XmlArrayItem (ElementName="BeagleNode", Type=typeof (MDNSService))]
-			public ArrayList BeagleNodes {
-				get { return beagle_nodes; }
-				set { beagle_nodes = value; }
+			[XmlArrayItem (ElementName="AvahiNode", Type=typeof (MDNSService))]
+			public ArrayList AvahiNodes {
+				get { return avahi_beagle_nodes; }
+				set { avahi_beagle_nodes = value; }
 			}
-                
+
+			public bool ShareIndex {
+				get { return avahi_share_index; }
+				set { avahi_share_index = value; }
+			}
+
+			public bool PasswordRequired {
+				get { return avahi_password_required; }
+				set { avahi_password_required = value; }
+			}
+
+			public string Password {
+				get { return avahi_password; }
+				set { avahi_password = value; }
+			}
+
+			public string IndexName {
+				get { return avahi_index_name; }
+				set { avahi_index_name = value; }
+			}
+
+			[XmlArray]
+			[XmlArrayItem(ElementName="NeighborhoodNodes", Type=typeof(string))]
+			public ArrayList NeighborhoodNodes {
+				get { return neighborhoodNodes; }
+				set { neighborhoodNodes = value; }
+			}
+			
+			[XmlArray]
+			[XmlArrayItem(ElementName="GlobalNodes", Type=typeof(string))]
+			public ArrayList GlobalNodes {
+				get { return globalNodes; }
+				set { globalNodes = value; }
+			}
+
 			[ConfigOption (Description="List Networked Beagle Daemons to query", IsMutator=false)]
 			internal bool ListBeagleNodes (out string output, string [] args)
 			{
 				output = "Current list of Networked Beagle Daemons to query:\n";
 				
-				foreach (MDNSService s in beagle_nodes)
-					output += " - " + s.ToString () + "\n";
+				output += "Neighborhood Domain:\n";
+
+				foreach (string nb in neighborhoodNodes)
+					output += " - " + nb + "\n";
+					
+				output += "\nGlobal Domain:\n";
+
+				foreach (string nb in globalNodes)
+					output += " - " + nb + "\n";				
+
+				output += "\nAvahi Nodes:\n";
+
+				foreach (MDNSService s in avahi_beagle_nodes)
+					output += " -" + s.ToString () + "\n";
+				return true;
+			}
+
+			[ConfigOption (Description="Add a Networked Beagle Daemon to the 'Neighborhood' domain", Params=1, ParamsDescription="HostName:PortNo")]
+			internal bool AddNeighborhoodBeagleNode (out string output, string [] args)
+			{
+				string node = args[0];
 				
+				if (((string[])node.Split(':')).Length < 2)
+					node = args [0].Trim() + ":4000";
+							
+				neighborhoodNodes.Add(node);			
+				output = "Networked Beagle Daemon \"" + node +"\" added to Neighborhood.";
+				return true;
+			}
+			
+			[ConfigOption (Description="Add a Networked Beagle Daemon to the 'Global' domain", Params=1, ParamsDescription="HostName:PortNo")]
+			internal bool AddGlobalBeagleNode (out string output, string [] args)
+			{
+				string node = args[0];
+				
+				if (((string[])node.Split(':')).Length < 2)
+					node = args [0].Trim() + ":4000";
+							
+				globalNodes.Add(node);			
+				output = "Networked Beagle Daemon \"" + node +"\" added to Global.";
+				return true;
+			}
+
+			[ConfigOption (Description="Remove a configured Networked Beagle Daemon from the 'Neighborhood' domain.", Params=1, ParamsDescription="HostName:PortNo")]
+			internal bool DelNeighborhoodBeagleNode (out string output, string [] args)
+			{
+				string node = args[0];
+				
+				if (((string[])node.Split(':')).Length < 2)
+					node = args [0].Trim() + ":4000";
+							
+				neighborhoodNodes.Remove(node);					
+				output = "Networked Beagle Daemon \"" + node +"\" removed from Neighborhood.";
+				return true;
+			}
+			
+			[ConfigOption (Description="Remove a configured Networked Beagle Daemon from the 'Neighborhood' domain.", Params=1, ParamsDescription="HostName:PortNo")]
+			internal bool DelGlobalBeagleNode (out string output, string [] args)
+			{
+				string node = args[0];
+				
+				if (((string[])node.Split(':')).Length < 2)
+					node = args [0].Trim() + ":4000";
+							
+				globalNodes.Remove(node);					
+				output = "Networked Beagle Daemon \"" + node +"\" removed from Global.";
 				return true;
 			}
 		}
-#endif
 
 		public class Section {
 			[XmlIgnore]
@@ -683,6 +756,7 @@ namespace Beagle.Util {
 		public class ConfigException : Exception {
 			public ConfigException (string msg) : base (msg) { }
 		}
+
 	}
 
 	//////////////////////////////////////////////////////////////////////

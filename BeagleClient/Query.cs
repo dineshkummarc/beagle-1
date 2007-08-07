@@ -28,6 +28,7 @@
 using System;
 using System.IO;
 using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 using System.Xml.Serialization;
 
@@ -40,7 +41,8 @@ namespace Beagle {
 		Local        = 1,
 		System       = 2,
 		Neighborhood = 4,
-		Global       = 8
+		Global       = 8,
+		All          = 15 /* 1 | 2 | 4 | 8 */
 	}
 
 	public class Query : RequestMessage {
@@ -65,6 +67,8 @@ namespace Beagle {
 #endif
 
 		private bool is_index_listener = false;
+		
+		private int nodes_finished;
 
 		// Events to make things nicer to clients
 		public delegate void HitsAdded (HitsAddedResponse response);
@@ -73,7 +77,10 @@ namespace Beagle {
 		public delegate void HitsSubtracted (HitsSubtractedResponse response);
 		public event HitsSubtracted HitsSubtractedEvent;
 
-		public delegate void Finished (FinishedResponse response);
+		public delegate void NodeFinished (FinishedResponse response);
+		public event NodeFinished NodeFinishedEvent;
+		
+		public delegate void Finished ();
 		public event Finished FinishedEvent;
 
 #if ENABLE_AVAHI
@@ -124,15 +131,28 @@ namespace Beagle {
 		private void OnFinished (ResponseMessage r)
 		{
 			FinishedResponse response = (FinishedResponse) r;
-
-			if (this.FinishedEvent != null)
-				this.FinishedEvent (response);
+	
+			if (this.NodeFinishedEvent != null)
+				this.NodeFinishedEvent (response);
+				
+			if (++nodes_finished == clients.Count && this.FinishedEvent != null) {
+				Logger.Log.Debug ("Query: All nodes finished."); 
+				this.FinishedEvent ();
+			}
 		}
 
 		private void OnError (ResponseMessage r)
 		{
 			ErrorResponse response = (ErrorResponse) r;
+			
+			Logger.Log.Warn ("Query: Error returned by a client: " + response.ErrorMessage );
+			
+			if (++nodes_finished == clients.Count && this.FinishedEvent != null) {
+				Logger.Log.Debug ("Query: All nodes done."); 
+				this.FinishedEvent ();
+			}
 
+			//TODO: Ignore errorresponses from network nodes or let user decide
 			throw new ResponseMessageException (response);
 		}
 
@@ -147,7 +167,7 @@ namespace Beagle {
                 {
                         // Here we should add this host to the current query if
                         // we recognize it as a pre-registered host.
-                        foreach (object o in Conf.Networking.BeagleNodes) {
+                        foreach (object o in Conf.Networking.AvahiNodes) {
                                 MDNSService known = (MDNSService) o;
                                 
 				if (known.Cookie == args.Service.Cookie && known.Name == args.Service.Name) {
@@ -398,14 +418,58 @@ namespace Beagle {
 			set { domainFlags = value; }
 		}
 
+		private Dictionary<string, bool> hosts_added = new Dictionary<string, bool> ();
+
 		public void AddDomain (Beagle.QueryDomain d)
 		{
 			domainFlags |= d;
+
+			ArrayList hosts_to_add = null;
+
+			switch (d) {
+				case QueryDomain.Neighborhood:
+					hosts_to_add = Conf.Networking.NeighborhoodNodes;
+					break;
+				case QueryDomain.Global:
+					hosts_to_add = Conf.Networking.GlobalNodes;
+					break;
+			}
+
+			if (hosts_to_add == null && d <= Beagle.QueryDomain.System) {
+				SetLocal (true);
+				return;
+			}
+
+			foreach (string url in hosts_to_add) {
+				if (hosts_added.ContainsKey (url))
+					continue;
+
+				hosts_added [url] = true;
+				Logger.Log.Debug ( "Query: Adding " + url + " to query");
+				SetRemote (url);
+			}
+		}
+
+		public void AddRemoteDomain (Beagle.QueryDomain d, string url)
+		{
+			if (d <= Beagle.QueryDomain.System)
+				throw new Exception ("I meant _remote_ domain!");
+
+			domainFlags |= d;
+			if (! hosts_added.ContainsKey (url)) {
+				hosts_added [url] = true;
+				SetRemote (url);
+			}
 		}
 
 		public void RemoveDomain (Beagle.QueryDomain d)
 		{
 			domainFlags &= ~d;
+
+			if (d <= Beagle.QueryDomain.System)
+				SetLocal (false);
+			else
+				throw new NotImplementedException ("Removing already added remote domains not supported");
 		}
 
 		public bool AllowsDomain (Beagle.QueryDomain d)

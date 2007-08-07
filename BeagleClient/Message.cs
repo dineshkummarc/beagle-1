@@ -63,8 +63,11 @@ namespace Beagle {
 		private static object type_lock = new object ();
 
 		private Hashtable handlers = new Hashtable ();
-		private string client_name;
-		private Client client;
+
+		//A list of clients which will receive this message 
+		protected Hashtable clients = new Hashtable ();
+		//How many clients have completed all comms
+		protected int clients_finished;
 
 		[XmlIgnore]
 		public bool Keepalive;
@@ -76,25 +79,39 @@ namespace Beagle {
 
 		// This is why names arguments (like in python) are a good idea.
 
-		public RequestMessage (bool keepalive, string client_name)
+		public RequestMessage (bool keepalive, bool local, string client_name)
 		{
 			this.Keepalive = keepalive;
-			this.client_name = client_name;
+
+			if (local)
+				this.clients.Add ("local", new ClientContainer (true, typeof(UnixSocketClient), client_name));
 		}
 
-		public RequestMessage (bool keepalive) : this (keepalive, null)
+		public RequestMessage (bool keepalive, string client_name)
+			: this (keepalive, true, client_name)
 		{
-
 		}
 
-		public RequestMessage (string client_name) : this (false, client_name)
+		public RequestMessage (bool keepalive) : this (keepalive, true, null)
 		{
+		}
 
+		// Recommended: Use this only when local = false
+		public RequestMessage (bool keepalive, bool local) : this (keepalive, local, null)
+		{
+		}
+
+		public RequestMessage (string client_name) : this (false, true, client_name)
+		{
 		}
 
 		public RequestMessage () : this (false, null)
 		{
-
+		}
+		
+		~RequestMessage ()
+		{
+			this.Close ();
 		}
 
 		public static Type[] Types {
@@ -110,8 +127,12 @@ namespace Beagle {
 
 		public void Close ()
 		{
-			if (this.client != null)
-				this.client.Close ();
+			lock (clients) {
+				foreach (ClientContainer c in this.clients.Values) {
+					if (c.client != null)
+						c.client.Close ();
+				}
+			}
 		}
 
 		public void RegisterAsyncResponseHandler (Type t, AsyncResponseHandler handler)
@@ -145,38 +166,101 @@ namespace Beagle {
 			}
 		}
 
-		public void SendAsync ()
+		// Again an irritating long list of overloaded methods instead of named parameters
+		public void SetLocal (bool local)
 		{
-			if (this.client != null)
-				this.client.Close ();
-			this.client = new Client (this.client_name);
-			this.client.AsyncResponseEvent += OnAsyncResponse;
-			this.client.ClosedEvent += OnClosedEvent;
-			this.client.SendAsync (this);
+			SetLocal (local, null);
+		}
+
+		public void SetLocal (string client_name)
+		{
+			SetLocal (true, client_name);
+		}
+
+		public void SetLocal (bool local, string client_name)
+		{
+			lock (this.clients) {
+				if (! local) {
+					if (this.clients.Contains ("local"))
+						this.clients.Remove ("local");
+				} else {
+					if (! this.clients.Contains ("local"))
+						this.clients.Add ("local", new ClientContainer (true, typeof(UnixSocketClient), client_name));
+				}
+			}
+		}
+
+		// url: host:port
+		public void SetRemote (string url)
+		{
+			// Hashtable will replace existing clientcontainer (if any), which will
+			// in turn close the clients when GC will collect them
+			lock (this.clients)
+				this.clients [url] = new ClientContainer (false, typeof (HttpClient), url);
+		}
+
+		virtual public void SendAsync ()
+		{
+			lock (clients) {
+				if (this.clients.Count == 0)
+					// FIXME: Throw a custom exception and catch it upwards, also better message
+					throw new Exception ("No where to send data, add local querydomain or add neighbourhood domain with some hosts");
+
+				foreach (ClientContainer c in this.clients.Values) {
+					if (c.client != null)
+						c.client.Close ();
+					
+					c.CreateClient ();
+					c.client.AsyncResponseEvent += OnAsyncResponse;
+					c.client.ClosedEvent += OnClosedEvent;
+					c.client.SendAsync (this);
+				}
+			}
 		}
 
 		public void SendAsyncBlocking ()
 		{
-			this.client = new Client (this.client_name);
-			this.client.AsyncResponseEvent += OnAsyncResponse;
-			this.client.ClosedEvent += OnClosedEvent;
-			this.client.SendAsyncBlocking (this);
+			lock (clients) {
+				if (this.clients.Count == 0)
+					// FIXME: Throw a custom exception and catch it upwards, also better message
+					throw new Exception ("No where to send data, add local querydomain or add neighbourhood domain with some hosts");
+
+				foreach (ClientContainer c in this.clients.Values) {
+					c.CreateClient ();
+					c.client.AsyncResponseEvent += OnAsyncResponse;
+					c.client.ClosedEvent += OnClosedEvent;
+					c.client.SendAsyncBlocking (this);
+				}
+			}
 		}
 
-		public ResponseMessage Send ()
+		public ResponseMessage[] Send ()
 		{
-			Client client = new Client (this.client_name);
-			ResponseMessage resp = client.Send (this);
-			client.Close ();
+			ArrayList responses = new ArrayList ();
+			
+			foreach (ClientContainer c in clients.Values)
+			{
+				c.CreateClient ();
+				//Logger.Log.Debug ("Sending message");
+				ResponseMessage resp = c.client.Send (this);
+				//Logger.Log.Debug ("Got reply");
+				c.client.Close ();
+				//Logger.Log.Debug ("Closed client");
+	
+				// Add some nice syntactic sugar by throwing an
+				// exception if the response is an error.
+				
+				//TODO: Maybe it's not right to throw an exception anymore (silently fail)? Or maybe throw
+				//exceptions only for local fails?
+				ErrorResponse err = resp as ErrorResponse;		
 
-			// Add some nice syntactic sugar by throwing an
-			// exception if the response is an error.
-			ErrorResponse err = resp as ErrorResponse;
+				if (err != null)	
+					throw new ResponseMessageException (err);
 
-			if (err != null)
-				throw new ResponseMessageException (err);
-
-			return resp;
+				responses.Add (resp);
+			}
+			
+			return (ResponseMessage []) responses.ToArray (typeof (ResponseMessage));
 		}
 
 	}
@@ -296,6 +380,28 @@ namespace Beagle {
 			}
 
 			return sb.ToString ();
+		}
+	}
+
+	internal class ClientContainer
+	{
+		public bool local;
+		private System.Type clienttype;
+		private string id;
+		
+		public Client client;
+	
+	
+		public ClientContainer (bool local, System.Type client_type, string id)
+		{
+			this.local = local;
+			this.clienttype = client_type;
+			this.id = id;
+		}
+		
+		public void CreateClient ()
+		{
+			client = (Client) System.Activator.CreateInstance (clienttype, new object[] { id });
 		}
 	}
 

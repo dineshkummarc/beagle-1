@@ -49,6 +49,7 @@ namespace Beagle.Daemon {
 		private static bool arg_replace = false;
 		private static bool arg_disable_scheduler = false;
 		private static bool arg_indexing_test_mode = false;
+		private static bool arg_server = false;
 		private static bool arg_heap_shot = false;
 		private static bool arg_heap_shot_snapshots = true;
 
@@ -63,7 +64,7 @@ namespace Beagle.Daemon {
 			Logger.Log.Debug ("Starting messaging server");
 
 			try {
-				server = new Server ("socket");
+				server = new Server ("socket", arg_server);
 				server.Start ();
 			} catch (InvalidOperationException) {
 				return false;
@@ -161,7 +162,8 @@ namespace Beagle.Daemon {
 				"  --indexing-test-mode\tRun in foreground, and exit when fully indexed.\n" +
 				"  --indexing-delay <t>\tWait 't' seconds before indexing.  (Default 60 seconds)\n" +
 				"  --disable-scheduler\tDisable the use of the scheduler.\n" +
-				"  --disable-text-cache\tDisable the use of the text cache used to provide snippets.\n";
+				"  --disable-text-cache\tDisable the use of the text cache used to provide snippets.\n" +
+				"  --server\t\tEnable remote queries to the daemon.\n";
 
 			Console.WriteLine (usage);
 		}
@@ -418,6 +420,10 @@ namespace Beagle.Daemon {
 
 				case "--disable-text-cache":
 					disable_textcache = true;
+					break;
+					
+				case "--server":
+					arg_server = true;
 					break;
 				
 				case "--version":
