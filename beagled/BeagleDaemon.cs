@@ -227,6 +227,11 @@ namespace Beagle.Daemon {
 			// warning if not.  The actual advice calls will fail silently.
 			FileAdvise.TestAdvise ();
 
+#if ENABLE_AVAHI
+                        Beagle.Daemon.Network.Zeroconf.Publish (4000);
+                        Logger.Log.Debug  ("Zeroconf service published after {0}", stopwatch);
+#endif
+
 			Conf.WatchForUpdates ();
 
 			stopwatch.Stop ();
@@ -241,6 +246,7 @@ namespace Beagle.Daemon {
 				Scheduler.Global.EmptyQueueEvent += OnEmptySchedulerQueue;
 				Scheduler.Global.Add (null); // pulse the scheduler
 			}
+
 			return false;
 		}
 
@@ -642,6 +648,9 @@ namespace Beagle.Daemon {
 
 		private static void OnShutdown ()
 		{
+#if ENABLE_AVAHI
+			Beagle.Daemon.Network.Zeroconf.Stop ();
+#endif			
 			// Stop our Inotify threads
 			Inotify.Stop ();
 

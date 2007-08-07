@@ -31,6 +31,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Xml.Serialization;
 using System.Text.RegularExpressions;
+using Mono.Unix;
 
 using Beagle.Util;
 
@@ -46,6 +47,9 @@ namespace Beagle.Util {
 		public static IndexingConfig Indexing = null;
 		public static DaemonConfig Daemon = null;
 		public static SearchingConfig Searching = null;
+#if ENABLE_AVAHI
+		public static NetworkingConfig Networking = null;
+#endif
 
 		private static string configs_dir;
 		private static Hashtable mtimes;
@@ -65,6 +69,7 @@ namespace Beagle.Util {
 			subscriptions = new Hashtable (3);
 
 			configs_dir = Path.Combine (PathFinder.StorageDir, "config");
+
 			if (!Directory.Exists (configs_dir))
 				Directory.CreateDirectory (configs_dir);
 
@@ -144,6 +149,12 @@ namespace Beagle.Util {
 			LoadFile (typeof (SearchingConfig), Searching, out temp, force);
 		        Searching = (SearchingConfig) temp;
 			NotifySubscribers (Searching);
+
+#if ENABLE_AVAHI
+                        LoadFile (typeof (NetworkingConfig), Networking, out temp, force);
+                        Networking = (NetworkingConfig) temp;
+                        NotifySubscribers (Networking);
+#endif
 
 			watching_for_updates = true;
 		}
@@ -600,6 +611,59 @@ namespace Beagle.Util {
 
 		}
 
+#if ENABLE_AVAHI
+		[ConfigSection (Name="networking")]
+		public class NetworkingConfig : Section
+		{
+			private bool share_index = false; // off by default;
+			public bool ShareIndex {
+				get { return this.share_index; }
+				set { this.share_index = value; }
+			}
+			
+			private bool password_required = true;
+			public bool PasswordRequired {
+				get { return password_required; }
+				set { password_required = value; }
+			}
+			
+			private string index_name = String.Format ("{0}'s Beagle Index on {1}", 
+								   UnixEnvironment.UserName,
+								   UnixEnvironment.MachineName);
+			
+			public string IndexName {
+				get { return this.index_name; }
+				set { this.index_name = value; }
+			}
+			
+			private string password = "";
+			public string Password {
+				get { return this.password; }
+				set { this.password = value; }
+			}
+			
+			private ArrayList beagle_nodes = new ArrayList ();
+			
+			[XmlArray]
+			[XmlArrayItem (ElementName="BeagleNode", Type=typeof (MDNSService))]
+			public ArrayList BeagleNodes {
+				get { return beagle_nodes; }
+				set { beagle_nodes = value; }
+			}
+                
+			[ConfigOption (Description="List Networked Beagle Daemons to query", IsMutator=false)]
+			internal bool ListBeagleNodes (out string output, string [] args)
+			{
+				output = "Current list of Networked Beagle Daemons to query:\n";
+				
+				foreach (MDNSService s in beagle_nodes)
+					output += " - " + s.ToString () + "\n";
+				
+				return true;
+			}
+		}
+#endif
+
 		public class Section {
 			[XmlIgnore]
 			public bool SaveNeeded = false;
@@ -619,7 +683,6 @@ namespace Beagle.Util {
 		public class ConfigException : Exception {
 			public ConfigException (string msg) : base (msg) { }
 		}
-
 	}
 
 	//////////////////////////////////////////////////////////////////////

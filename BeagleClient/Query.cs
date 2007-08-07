@@ -60,6 +60,10 @@ namespace Beagle {
 		private QueryPart_Or hit_type_part = null;
 		private QueryPart_Or source_part = null;
 
+#if ENABLE_AVAHI
+		private MDNSBrowser mdns_browser = null;
+#endif
+
 		private bool is_index_listener = false;
 
 		// Events to make things nicer to clients
@@ -72,6 +76,11 @@ namespace Beagle {
 		public delegate void Finished (FinishedResponse response);
 		public event Finished FinishedEvent;
 
+#if ENABLE_AVAHI
+		public delegate void HostFound (object o, MDNSEventArgs args);
+		public event HostFound UnknownHostFoundEvent;
+#endif
+
 		public Query () : base (true)
 		{
 			this.RegisterAsyncResponseHandler (typeof (HitsAddedResponse), OnHitsAdded);
@@ -79,6 +88,14 @@ namespace Beagle {
 			this.RegisterAsyncResponseHandler (typeof (FinishedResponse), OnFinished);
 			this.RegisterAsyncResponseHandler (typeof (ErrorResponse), OnError);
 			this.RegisterAsyncResponseHandler (typeof (SearchTermResponse), OnSearchTerms);
+
+#if ENABLE_AVAHI
+                        mdns_browser = new MDNSBrowser ();
+                        mdns_browser.HostFound += new MDNSEventHandler (OnHostFound);
+                        mdns_browser.HostRemoved += new MDNSEventHandler (OnHostRemoved);
+                        mdns_browser.Start ();
+#endif
+
 		}
 
 		public Query (string str) : this ()
@@ -124,6 +141,35 @@ namespace Beagle {
 			SearchTermResponse response = (SearchTermResponse) r;
 			ProcessSearchTermResponse (response);
 		}
+
+#if ENABLE_AVAHI
+                private void OnHostFound (object sender, MDNSEventArgs args)
+                {
+                        // Here we should add this host to the current query if
+                        // we recognize it as a pre-registered host.
+                        foreach (object o in Conf.Networking.BeagleNodes) {
+                                MDNSService known = (MDNSService) o;
+                                
+				if (known.Cookie == args.Service.Cookie && known.Name == args.Service.Name) {
+					// Here is where we add the host to the current query!!!
+                                        Logger.Log.Debug ("Known Host {0}. Adding to query.", known.Name);
+                                        return;
+                                }
+                        }
+                        
+                        Logger.Log.Debug ("Unknown host has been detected. Warning user.");
+
+                        // This is a new, unique host that has never
+                        // been seen before, so we'll fire this event.
+                        if (UnknownHostFoundEvent != null)
+                                UnknownHostFoundEvent (this, args);
+                }
+
+                private void OnHostRemoved (object sender, MDNSEventArgs args)
+                {
+                        // This host should now be removed from the current query
+                }
+#endif
 
 		///////////////////////////////////////////////////////////////
 

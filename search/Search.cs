@@ -336,6 +336,9 @@ namespace Search {
 					TotalMatches = -1;
 					current_query.HitsAddedEvent -= OnHitsAdded;
 					current_query.HitsSubtractedEvent -= OnHitsSubtracted;
+#if ENABLE_AVAHI
+					current_query.UnknownHostFoundEvent -= OnUnknownHostFound;
+#endif
 					current_query.Close ();
 				}
 
@@ -356,6 +359,9 @@ namespace Search {
 				current_query.HitsAddedEvent += OnHitsAdded;
 				current_query.HitsSubtractedEvent += OnHitsSubtracted;
 				current_query.FinishedEvent += OnFinished;
+#if ENABLE_AVAHI
+				current_query.UnknownHostFoundEvent += OnUnknownHostFound;
+#endif
 
 				current_query.SendAsync ();
 				spinner.Start ();
@@ -457,6 +463,9 @@ namespace Search {
 				TotalMatches = -1;
 				current_query.HitsAddedEvent -= OnHitsAdded;
 				current_query.HitsSubtractedEvent -= OnHitsSubtracted;
+#if ENABLE_AVAHI
+				current_query.UnknownHostFoundEvent -= OnUnknownHostFound;
+#endif
 				current_query.Close ();
 				current_query = null;
 			}
@@ -517,6 +526,30 @@ namespace Search {
 
 			CheckNoMatch ();
 		}
+
+#if ENABLE_AVAHI
+                private void OnUnknownHostFound (object sender, MDNSEventArgs args)
+                {
+			NotificationMessage m = new NotificationMessage ();
+			m.Pixbuf = WidgetFu.LoadThemeIcon ("network-workgroup", 48);
+			m.Title = Catalog.GetString ("There are computers near you running Beagle");
+			m.Message = Catalog.GetString ("You can select to search other computers from the \"Search\" menu.");
+			notification_area.Display (m);
+
+			// Launch beagle-settings when this button is clicked
+			// FIXME: This is VERY BUGGY and INCOMPLETE!
+			/*System.Diagnostics.Process p = new System.Diagnostics.Process ();
+			p.StartInfo.UseShellExecute = false;
+			p.StartInfo.FileName = "beagle-settings";
+			p.StartInfo.Arguments = "--network-tab";
+                        
+			try {
+				p.Start ();
+			} catch (Exception e) {
+				Console.WriteLine ("Could not start beagle-settings: {0}", e);
+			}*/                        
+                }
+#endif
 
 		private void CheckNoMatch ()
 		{
