@@ -102,7 +102,6 @@ namespace Beagle {
                         mdns_browser.HostRemoved += new MDNSEventHandler (OnHostRemoved);
                         mdns_browser.Start ();
 #endif
-
 		}
 
 		public Query (string str) : this ()
@@ -307,8 +306,7 @@ namespace Beagle {
 			return false;
 		}
 
-		[XmlArrayItem (ElementName="MimeType",
-			       Type=typeof (string))]
+		[XmlArrayItem (ElementName="MimeType", Type=typeof (string))]
 		[XmlArray (ElementName="MimeTypes")]
 		public ArrayList MimeTypes {
 			get { return mimeTypes; }

@@ -200,7 +200,7 @@ public class SettingsDialog
 			exclude_view.AddItem (exclude_item);
 
 #if ENABLE_AVAHI
-                foreach (MDNSService s in Conf.Networking.BeagleNodes)
+                foreach (MDNSService s in Conf.Networking.AvahiNodes)
                         networking_view.AddNode (s);
                                                                 
                 allow_global_access_toggle.Active = Conf.Networking.ShareIndex;
@@ -228,7 +228,7 @@ public class SettingsDialog
 		Conf.Indexing.Excludes = exclude_view.Excludes;
 
 #if ENABLE_AVAHI
-                Conf.Networking.BeagleNodes = networking_view.Nodes;
+                Conf.Networking.AvahiNodes = networking_view.Nodes;
                 Conf.Networking.ShareIndex = allow_global_access_toggle.Active;
                 Conf.Networking.PasswordRequired = require_password_toggle.Active;
                 Conf.Networking.IndexName = index_name_entry.Text;

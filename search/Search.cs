@@ -488,7 +488,7 @@ namespace Search {
 			}
 		}
 
-		private void OnFinished (FinishedResponse response)
+		private void OnFinished ()
 		{
 			spinner.Stop ();
 			view.Finished (grab_focus);
