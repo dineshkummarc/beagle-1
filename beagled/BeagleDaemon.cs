@@ -39,6 +39,7 @@ using Log = Beagle.Util.Log;
 using Stopwatch = Beagle.Util.Stopwatch;
 
 namespace Beagle.Daemon {
+
 	class BeagleDaemon {
 
 		public static Thread MainLoopThread = null;
@@ -58,6 +59,10 @@ namespace Beagle.Daemon {
 			get { return disable_textcache; }
 			set { disable_textcache = value; }
 		}
+
+#if ENABLE_AVAHI
+		private static Beagle.Daemon.Network.Zeroconf zeroconf = null;
+#endif
 
 		public static bool StartServer ()
 		{
@@ -230,8 +235,8 @@ namespace Beagle.Daemon {
 			FileAdvise.TestAdvise ();
 
 #if ENABLE_AVAHI
-                        Beagle.Daemon.Network.Zeroconf.Publish (4000);
-                        Logger.Log.Debug  ("Zeroconf service published after {0}", stopwatch);
+			if (arg_server)
+                	        zeroconf = new Beagle.Daemon.Network.Zeroconf ();
 #endif
 
 			Conf.WatchForUpdates ();
@@ -655,7 +660,8 @@ namespace Beagle.Daemon {
 		private static void OnShutdown ()
 		{
 #if ENABLE_AVAHI
-			Beagle.Daemon.Network.Zeroconf.Stop ();
+			if (arg_server)
+				zeroconf.Dispose ();
 #endif			
 			// Stop our Inotify threads
 			Inotify.Stop ();

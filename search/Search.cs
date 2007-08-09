@@ -501,6 +501,7 @@ namespace Search {
 		{
 			foreach (Hit hit in response.Hits) {
 				Tile tile = TileActivatorOrg.MakeTile (hit, current_query);
+
 				if (tile == null) {
 					Console.WriteLine ("No tile found for: {0} ({1})", hit.Uri, hit.Type);
 					continue;
@@ -510,6 +511,7 @@ namespace Search {
 					continue;
 
 				view.AddHit (tile);
+
 				if (pages.CurrentPageWidget != panes)
 					pages.CurrentPage = pages.PageNum (panes);
 			}
@@ -529,8 +531,9 @@ namespace Search {
 		}
 
 #if ENABLE_AVAHI
-                private void OnUnknownHostFound (object sender, MDNSEventArgs args)
+                private void OnUnknownHostFound (object sender, AvahiEventArgs args)
                 {
+			Console.WriteLine ("Warn user blleeeh");
 			NotificationMessage m = new NotificationMessage ();
 			m.Pixbuf = WidgetFu.LoadThemeIcon ("network-workgroup", 48);
 			m.Title = Catalog.GetString ("There are computers near you running Beagle");

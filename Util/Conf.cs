@@ -48,7 +48,6 @@ namespace Beagle.Util {
 		public static IndexingConfig Indexing = null;
 		public static DaemonConfig Daemon = null;
 		public static SearchingConfig Searching = null;
-
 		public static NetworkingConfig Networking = null;
 
 		private static string configs_dir;
@@ -608,132 +607,114 @@ namespace Beagle.Util {
 		}
 
 		[ConfigSection (Name="networking")]
-		public class NetworkingConfig: Section 
+		public class NetworkingConfig : Section 
 		{
-			private ArrayList neighborhoodNodes = new ArrayList (); // avahi
-			private ArrayList globalNodes = new ArrayList ();
+			// Index sharing service is disabled by default
+			private bool service_enabled = false;
 
-			private ArrayList avahi_beagle_nodes = new ArrayList ();
-			private bool avahi_share_index = false; // off by default
-			private bool avahi_password_required = true;
-			private string avahi_password = String.Empty;
-			private string avahi_index_name = String.Format ("{0}'s Beagle Index on {1}",
-				UnixEnvironment.UserName,
-				UnixEnvironment.MachineName);
+			// Password protect our local indexes
+			private bool password_required = true;
+
+			// The name and password for the local network service
+			private string service_name = String.Format ("{0} ({1})", UnixEnvironment.UserName, UnixEnvironment.MachineName);
+			private string service_password = String.Empty;
+
+			// This is a list of registered and paired nodes which
+			// the local client can search
+			private ArrayList network_services = new ArrayList ();
 			
-			[XmlArray]
-			[XmlArrayItem (ElementName="AvahiNode", Type=typeof (MDNSService))]
-			public ArrayList AvahiNodes {
-				get { return avahi_beagle_nodes; }
-				set { avahi_beagle_nodes = value; }
-			}
-
-			public bool ShareIndex {
-				get { return avahi_share_index; }
-				set { avahi_share_index = value; }
+			public bool ServiceEnabled {
+				get { return service_enabled; }
+				set { service_enabled = value; }
 			}
 
 			public bool PasswordRequired {
-				get { return avahi_password_required; }
-				set { avahi_password_required = value; }
+				get { return password_required; }
+				set { password_required = value; }
 			}
 
-			public string Password {
-				get { return avahi_password; }
-				set { avahi_password = value; }
+			public string ServiceName {
+				get { return service_name; }
+				set { service_name = value; }
 			}
 
-			public string IndexName {
-				get { return avahi_index_name; }
-				set { avahi_index_name = value; }
+			public string ServicePassword {
+				get { return service_password; }
+				set { service_password = value; }
 			}
 
 			[XmlArray]
-			[XmlArrayItem(ElementName="NeighborhoodNodes", Type=typeof(string))]
-			public ArrayList NeighborhoodNodes {
-				get { return neighborhoodNodes; }
-				set { neighborhoodNodes = value; }
+			[XmlArrayItem (ElementName="NetworkService", Type=typeof (NetworkService))]
+			public ArrayList NetworkServices {
+				get { return network_services; }
+				set { network_services = value; }
+			}
+
+			[ConfigOption (Description="List available network services for querying", IsMutator=false)]
+			internal bool ListNetworkServices (out string output, string [] args)
+			{
+				output = "Currently registered network services:\n";
+
+				foreach (NetworkService service in network_services)
+					output += " - " + service.ToString () + "\n";
+
+#if ENABLE_AVAHI
+				output += "\n";
+				output += "Available network services:\n";
+				
+				try {
+				
+				AvahiBrowser browser = new AvahiBrowser ();
+				//browser.Start ();
+
+				foreach (NetworkService service in browser.GetServicesBlocking ())
+					output += " - " + service.ToString () + "\n";
+
+				browser.Dispose ();
+
+				} catch (Exception e) {
+					Console.WriteLine (e);
+				}
+#endif
+
+				return true;
+			}
+
+			[ConfigOption (Description="Add a network service for querying", Params=2, ParamsDescription="name, hostname:port")]
+			internal bool AddNetworkService (out string output, string [] args)
+			{
+				string name = args [0];
+				string uri = args [1];
+				
+				if (uri.Split (':').Length < 2)
+					uri = uri.Trim() + ":4000";
+				
+				NetworkService service = new NetworkService (name, new Uri (uri), false, null);
+				network_services.Add (service);
+				
+				output = "Network service '" + service + "' added";
+
+				return true;
 			}
 			
-			[XmlArray]
-			[XmlArrayItem(ElementName="GlobalNodes", Type=typeof(string))]
-			public ArrayList GlobalNodes {
-				get { return globalNodes; }
-				set { globalNodes = value; }
-			}
-
-			[ConfigOption (Description="List Networked Beagle Daemons to query", IsMutator=false)]
-			internal bool ListBeagleNodes (out string output, string [] args)
+			[ConfigOption (Description="Remove a network service from querying", Params=1, ParamsDescription="name")]
+			internal bool RemoveNetworkService (out string output, string [] args)
 			{
-				output = "Current list of Networked Beagle Daemons to query:\n";
-				
-				output += "Neighborhood Domain:\n";
+				string name = args[0];
 
-				foreach (string nb in neighborhoodNodes)
-					output += " - " + nb + "\n";
+				foreach (NetworkService service in network_services) {
+					if (service.Name != name)
+						continue;
+
+					network_services.Remove (service);
+					output = "Network service '" + service.Name + "' removed";
 					
-				output += "\nGlobal Domain:\n";
+					return true;
+				}
 
-				foreach (string nb in globalNodes)
-					output += " - " + nb + "\n";				
+				output = "Network service '" + name + "' not found in registered services";
 
-				output += "\nAvahi Nodes:\n";
-
-				foreach (MDNSService s in avahi_beagle_nodes)
-					output += " -" + s.ToString () + "\n";
-				return true;
-			}
-
-			[ConfigOption (Description="Add a Networked Beagle Daemon to the 'Neighborhood' domain", Params=1, ParamsDescription="HostName:PortNo")]
-			internal bool AddNeighborhoodBeagleNode (out string output, string [] args)
-			{
-				string node = args[0];
-				
-				if (((string[])node.Split(':')).Length < 2)
-					node = args [0].Trim() + ":4000";
-							
-				neighborhoodNodes.Add(node);			
-				output = "Networked Beagle Daemon \"" + node +"\" added to Neighborhood.";
-				return true;
-			}
-			
-			[ConfigOption (Description="Add a Networked Beagle Daemon to the 'Global' domain", Params=1, ParamsDescription="HostName:PortNo")]
-			internal bool AddGlobalBeagleNode (out string output, string [] args)
-			{
-				string node = args[0];
-				
-				if (((string[])node.Split(':')).Length < 2)
-					node = args [0].Trim() + ":4000";
-							
-				globalNodes.Add(node);			
-				output = "Networked Beagle Daemon \"" + node +"\" added to Global.";
-				return true;
-			}
-
-			[ConfigOption (Description="Remove a configured Networked Beagle Daemon from the 'Neighborhood' domain.", Params=1, ParamsDescription="HostName:PortNo")]
-			internal bool DelNeighborhoodBeagleNode (out string output, string [] args)
-			{
-				string node = args[0];
-				
-				if (((string[])node.Split(':')).Length < 2)
-					node = args [0].Trim() + ":4000";
-							
-				neighborhoodNodes.Remove(node);					
-				output = "Networked Beagle Daemon \"" + node +"\" removed from Neighborhood.";
-				return true;
-			}
-			
-			[ConfigOption (Description="Remove a configured Networked Beagle Daemon from the 'Neighborhood' domain.", Params=1, ParamsDescription="HostName:PortNo")]
-			internal bool DelGlobalBeagleNode (out string output, string [] args)
-			{
-				string node = args[0];
-				
-				if (((string[])node.Split(':')).Length < 2)
-					node = args [0].Trim() + ":4000";
-							
-				globalNodes.Remove(node);					
-				output = "Networked Beagle Daemon \"" + node +"\" removed from Global.";
-				return true;
+				return false;
 			}
 		}
 

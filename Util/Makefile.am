@@ -62,6 +62,7 @@ UTIL_CSFILES = 			        	\
 	$(srcdir)/Logger.cs             	\
 	$(srcdir)/MultiReader.cs        	\
 	$(srcdir)/NautilusTools.cs      	\
+	$(srcdir)/NetworkService.cs		\
 	$(srcdir)/Note.cs               	\
 	$(srcdir)/OperaHistory.cs		\
 	$(srcdir)/Password.cs			\
@@ -137,8 +138,7 @@ endif
 if ENABLE_AVAHI
 CSFLAGS += -define:ENABLE_AVAHI
 UTIL_CSFILES += 				\
-	$(srcdir)/MDNSBrowser.cs		\
-	$(srcdir)/MDNSService.cs
+	$(srcdir)/AvahiBrowser.cs
 UTIL_ASSEMBLIES += $(AVAHI_SHARP_LIBS)
 endif
 

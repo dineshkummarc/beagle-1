@@ -1,5 +1,5 @@
 //
-// MDNSService.cs
+// NetworkService.cs
 //
 // Copyright (C) 2006 Kyle Ambroff <kwa@icculus.org>
 //
@@ -24,59 +24,53 @@
 // DEALINGS IN THE SOFTWARE.
 //
 
-
 using System;
 using System.Collections;
 using System.Xml.Serialization;
 
 namespace Beagle.Util
 {
-        public class MDNSService
+        public class NetworkService
         {
                 private string name = null;
                 private string uri = null;
                 private string cookie = null;
-                private bool isprotected;
+                private bool is_protected;
                 
-                [XmlAttribute ("name")]
+                [XmlAttribute ("Name")]
                 public string Name {
                         get { return name; }
                         set { name = value; }
                 }
                 
-                [XmlAttribute ("uri")]
+                [XmlAttribute ("Uri")]
                 public string UriString {
                         get { return uri; }
                         set { uri = value; }
                 }
 
-                [XmlAttribute ("password")]
+                [XmlAttribute ("Password")]
                 public bool IsProtected {
-                        get { return isprotected; }
-                        set { isprotected = value; }
+                        get { return is_protected; }
+                        set { is_protected = value; }
                 }
 
-                [XmlAttribute ("cookie")]
+                [XmlAttribute ("Cookie")]
                 public string Cookie {
                         get { return cookie; }
                         set { cookie = value; }
                 }
 
-                public MDNSService (string name, Uri uri, bool isprotected, string cookie)
-                {
-                        this.name = name;
-                        this.uri = UriFu.UriToEscapedString (uri);
-                        this.isprotected = isprotected;
-                        this.cookie = cookie;
-                }
-
-                public MDNSService ()
+                public NetworkService ()
                 {                        
                 }
 
-                public override string ToString ()
+                public NetworkService (string name, Uri uri, bool is_protected, string cookie)
                 {
-                        return String.Format ("{1} ({0})", uri, name);
+                        this.name = name;
+                        this.uri = UriFu.UriToEscapedString (uri);
+                        this.is_protected = is_protected;
+                        this.cookie = cookie;
                 }
 
                 public System.Uri GetUri ()
@@ -84,9 +78,14 @@ namespace Beagle.Util
                         return UriFu.EscapedStringToUri (uri);
                 }
 
-                public void SetUri (System.Uri u)
+                public void SetUri (System.Uri uri)
                 {
-                        uri = UriFu.UriToEscapedString (u);
+                        this.uri = UriFu.UriToEscapedString (uri);
+                }
+
+                public override string ToString ()
+                {
+                        return String.Format ("{1} ({0})", uri, name);
                 }
         }
 }

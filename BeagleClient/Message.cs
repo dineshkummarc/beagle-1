@@ -25,9 +25,10 @@
 //
 
 using System;
-using System.Collections;
-using System.Reflection;
 using System.Text;
+using System.Reflection;
+using System.Collections;
+using System.Collections.Generic;
 using System.Xml.Serialization;
 
 using Beagle.Util;
@@ -35,18 +36,20 @@ using Beagle.Util;
 namespace Beagle {
 
 	public abstract class Message {
+
 		protected static Type[] GetTypes (Type parent_type, Type attr_type)
 		{
 			ArrayList types = new ArrayList ();
 
-			foreach (Assembly ass in AppDomain.CurrentDomain.GetAssemblies ())
-				types.AddRange (ReflectionFu.GetTypesFromAssemblyAttribute (ass, attr_type));
+			foreach (Assembly a in AppDomain.CurrentDomain.GetAssemblies ())
+				types.AddRange (ReflectionFu.GetTypesFromAssemblyAttribute (a, attr_type));
 
 			return (Type[]) types.ToArray (typeof (Type));
 		}
 	}
 
 	public class RequestWrapper {
+
 		public RequestMessage Message;
 
 		// Needed by the XmlSerializer for deserialization
@@ -59,14 +62,16 @@ namespace Beagle {
 	}
 	
 	public abstract class RequestMessage : Message {
+
 		private static Type[] request_types = null;
 		private static object type_lock = new object ();
 
 		private Hashtable handlers = new Hashtable ();
 
-		//A list of clients which will receive this message 
+		// A list of clients which will receive this message 
 		protected Hashtable clients = new Hashtable ();
-		//How many clients have completed all comms
+
+		// How many clients have completed
 		protected int clients_finished;
 
 		[XmlIgnore]
@@ -129,8 +134,8 @@ namespace Beagle {
 		{
 			lock (clients) {
 				foreach (ClientContainer c in this.clients.Values) {
-					if (c.client != null)
-						c.client.Close ();
+					if (c.Client != null)
+						c.Client.Close ();
 				}
 			}
 		}
@@ -207,13 +212,13 @@ namespace Beagle {
 					throw new Exception ("No where to send data, add local querydomain or add neighbourhood domain with some hosts");
 
 				foreach (ClientContainer c in this.clients.Values) {
-					if (c.client != null)
-						c.client.Close ();
+					if (c.Client != null)
+						c.Client.Close ();
 					
 					c.CreateClient ();
-					c.client.AsyncResponseEvent += OnAsyncResponse;
-					c.client.ClosedEvent += OnClosedEvent;
-					c.client.SendAsync (this);
+					c.Client.AsyncResponseEvent += OnAsyncResponse;
+					c.Client.ClosedEvent += OnClosedEvent;
+					c.Client.SendAsync (this);
 				}
 			}
 		}
@@ -227,9 +232,9 @@ namespace Beagle {
 
 				foreach (ClientContainer c in this.clients.Values) {
 					c.CreateClient ();
-					c.client.AsyncResponseEvent += OnAsyncResponse;
-					c.client.ClosedEvent += OnClosedEvent;
-					c.client.SendAsyncBlocking (this);
+					c.Client.AsyncResponseEvent += OnAsyncResponse;
+					c.Client.ClosedEvent += OnClosedEvent;
+					c.Client.SendAsyncBlocking (this);
 				}
 			}
 		}
@@ -242,9 +247,9 @@ namespace Beagle {
 			{
 				c.CreateClient ();
 				//Logger.Log.Debug ("Sending message");
-				ResponseMessage resp = c.client.Send (this);
+				ResponseMessage resp = c.Client.Send (this);
 				//Logger.Log.Debug ("Got reply");
-				c.client.Close ();
+				c.Client.Close ();
 				//Logger.Log.Debug ("Closed client");
 	
 				// Add some nice syntactic sugar by throwing an
@@ -266,6 +271,7 @@ namespace Beagle {
 	}
 
 	public abstract class RequestMessageExecutor {
+		
 		public delegate void AsyncResponse (ResponseMessage response);
 		public event AsyncResponse AsyncResponseEvent;
 
@@ -283,6 +289,7 @@ namespace Beagle {
 
 	[AttributeUsage (AttributeTargets.Class)]
 	public class RequestMessageAttribute : Attribute {
+
 		private Type message_type;
 
 		public RequestMessageAttribute (Type message_type)
@@ -296,6 +303,7 @@ namespace Beagle {
 	}
 
 	public class ResponseWrapper {
+
 		public ResponseMessage Message;
 
 		// Needed by the XmlSerializer for deserialization
@@ -308,6 +316,7 @@ namespace Beagle {
 	}
 
 	public abstract class ResponseMessage : Message {
+
 		private static Type[] response_types = null;
 		private static object type_lock = new object ();
 
@@ -326,6 +335,7 @@ namespace Beagle {
 	public class EmptyResponse : ResponseMessage { }
 
 	public class ErrorResponse : ResponseMessage {
+
 		public string ErrorMessage;
 		public string Details;
 
@@ -385,23 +395,30 @@ namespace Beagle {
 
 	internal class ClientContainer
 	{
-		public bool local;
-		private System.Type clienttype;
-		private string id;
+		private System.Type client_type;
+		private bool local = false;
+		private string id = null;
 		
-		public Client client;
-	
-	
+		private Client client = null;
+
 		public ClientContainer (bool local, System.Type client_type, string id)
 		{
 			this.local = local;
-			this.clienttype = client_type;
+			this.client_type = client_type;
 			this.id = id;
 		}
 		
 		public void CreateClient ()
 		{
-			client = (Client) System.Activator.CreateInstance (clienttype, new object[] { id });
+			client = (Client) System.Activator.CreateInstance (client_type, new object[] { id });
+		}
+
+		public Client Client {
+			get { return client; }
+		}
+
+		public bool Local {
+			get { return local; }
 		}
 	}
 

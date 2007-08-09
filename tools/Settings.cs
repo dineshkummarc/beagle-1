@@ -25,10 +25,11 @@
 //
 
 using System;
-using System.Collections;
 using System.IO;
-using System.Reflection;
 using System.Threading;
+using System.Reflection;
+using System.Collections;
+using System.Collections.Generic;
 
 using Mono.Unix;
 using Mono.Unix.Native;
@@ -200,13 +201,13 @@ public class SettingsDialog
 			exclude_view.AddItem (exclude_item);
 
 #if ENABLE_AVAHI
-                foreach (MDNSService s in Conf.Networking.AvahiNodes)
+                foreach (NetworkService s in Conf.Networking.NetworkServices)
                         networking_view.AddNode (s);
                                                                 
-                allow_global_access_toggle.Active = Conf.Networking.ShareIndex;
+                allow_global_access_toggle.Active = Conf.Networking.ServiceEnabled;
                 require_password_toggle.Active = Conf.Networking.PasswordRequired;
-                index_name_entry.Text = Conf.Networking.IndexName;
-                string password = Conf.Networking.Password.PadRight (12);
+                index_name_entry.Text = Conf.Networking.ServiceName;
+                string password = Conf.Networking.ServicePassword.PadRight (12);
                 password_entry.Text = password.Substring (0, 12);
 #endif
 	}
@@ -228,11 +229,11 @@ public class SettingsDialog
 		Conf.Indexing.Excludes = exclude_view.Excludes;
 
 #if ENABLE_AVAHI
-                Conf.Networking.AvahiNodes = networking_view.Nodes;
-                Conf.Networking.ShareIndex = allow_global_access_toggle.Active;
+                Conf.Networking.ServiceEnabled = allow_global_access_toggle.Active;
+                Conf.Networking.ServiceName = index_name_entry.Text;
                 Conf.Networking.PasswordRequired = require_password_toggle.Active;
-                Conf.Networking.IndexName = index_name_entry.Text;
-                Conf.Networking.Password = Password.Encode (password_entry.Text);
+                Conf.Networking.ServicePassword = Password.Encode (password_entry.Text);
+                Conf.Networking.NetworkServices = networking_view.Nodes;
 #endif
 
 		Conf.Save (true);
@@ -508,7 +509,6 @@ public class SettingsDialog
 	private void OnAddHostClicked (object o, EventArgs args) 	 
 	{
 #if ENABLE_AVAHI
-                MDNSService [] new_nodes = null;
                 string error_message = null;
                 bool throw_error = false;
 
@@ -519,13 +519,17 @@ public class SettingsDialog
                         dialog.Destroy ();
                         return;
                 }
-                
-                new_nodes = dialog.SelectedHosts;
+
+		ICollection<NetworkService> new_nodes = dialog.GetSelectedHosts ();
+		
+		foreach (NetworkService s in new_nodes)
+			Console.WriteLine (s.Name);
+
                 dialog.Destroy ();
                 
                 // Check if the new entry matches an existing netbeagle entry
-                foreach (MDNSService old_node in networking_view.Nodes) {
-                        foreach (MDNSService node in new_nodes) {
+                foreach (NetworkService old_node in networking_view.Nodes) {
+                        foreach (NetworkService node in new_nodes) {
                                 if (node == old_node) {
                                         throw_error = true;
                                         error_message = Catalog.GetString ("Remote host already present in the list.");
@@ -541,7 +545,7 @@ public class SettingsDialog
                                                               Catalog.GetString ("Netbeagle Node not added"),
                                                               error_message);
                 } else {
-                        foreach (MDNSService node in new_nodes)
+                        foreach (NetworkService node in new_nodes)
                                 networking_view.AddNode (node);
                 }
 #endif
@@ -786,7 +790,7 @@ public class SettingsDialog
 	  	 
 		public NetworkingView ()
 		{ 	 
-			store = new ListStore (typeof (MDNSService));
+			store = new ListStore (typeof (NetworkService));
 			this.Model = store;
 
 			TreeViewColumn column = new TreeViewColumn ();
@@ -808,28 +812,28 @@ public class SettingsDialog
                 public void NameCellFunc (TreeViewColumn col, CellRenderer cell, TreeModel model, TreeIter iter) 
                 {
                         CellRendererText renderer = (CellRendererText) cell;
-                        MDNSService s = (MDNSService) model.GetValue (iter, 0);
+                        NetworkService s = (NetworkService) model.GetValue (iter, 0);
                         renderer.Markup = s.Name;
                 }
                 
                 public void AddressCellFunc (TreeViewColumn col, CellRenderer cell, TreeModel model, TreeIter iter)
                 {
                         CellRendererText renderer = (CellRendererText) cell;
-                        MDNSService s = (MDNSService) model.GetValue (iter, 0);
+                        NetworkService s = (NetworkService) model.GetValue (iter, 0);
                         renderer.Markup = String.Format ("{0}:{1}", s.GetUri ().Host, s.GetUri ().Port);
                 }
 	  	 
-		public void AddNode (MDNSService service) 	 
+		public void AddNode (NetworkService service) 	 
 		{ 	 
 			nodes.Add (service); 	 
 			store.AppendValues (service); 	 
 		} 	 
 		
 
-		private MDNSService find_node; 	 
+		private NetworkService find_node; 	 
 		private TreeIter found_iter; 	 
 
-		public void RemoveNode (MDNSService service) 	 
+		public void RemoveNode (NetworkService service) 	 
 		{ 	 
 			find_node = service; 	 
 			found_iter = TreeIter.Zero; 	 
@@ -842,7 +846,7 @@ public class SettingsDialog
 	  	
 		private bool ForeachFindNode (TreeModel model, TreePath path, TreeIter iter) 	 
 		{ 	 
-			if ((MDNSService) model.GetValue (iter, 0) == find_node) { 	 
+			if ((NetworkService) model.GetValue (iter, 0) == find_node) { 	 
 				found_iter = iter; 	 
 				return true; 	 
 			} 	 
@@ -859,7 +863,7 @@ public class SettingsDialog
 				return; 	 
 			}
 
-			MDNSService node = (MDNSService)model.GetValue(iter, 0); 	 
+			NetworkService node = (NetworkService)model.GetValue(iter, 0); 	 
 			
 			store.Remove (ref iter); 	 
 			nodes.Remove (node); 	 
@@ -1271,53 +1275,47 @@ public class SettingsDialog
                 [Glade.Widget] private SpinButton port_spin_button;
                 [Glade.Widget] private IconView icon_view;
                 
-                private MDNSBrowser browser;
+                private AvahiBrowser browser;
 
                 private ListStore store;
                 private Gdk.Pixbuf unlocked_icon;
                 private Gdk.Pixbuf locked_icon;
                 
-                public MDNSService [] SelectedHosts {
-                        get {
-                                MDNSService [] hosts;
-                                
-                                if (this.mdns_radio_button.Active == false) {
-                                        Uri uri = new Uri (String.Format ("http://{0}:{1}", 
-                                                                          address_entry.Text, 
-                                                                          port_spin_button.ValueAsInt));
-                                        bool pw_required = (password_entry.Text.Length > 0) ? true : false;
-                                        string name;
-                                        if (name_entry.Text.Length > 0)
-                                                name = name_entry.Text;
-                                        else
-                                                name = "Unnamed";
+                public ICollection<NetworkService> GetSelectedHosts ()
+		{
+			List<NetworkService> services = new List<NetworkService> ();
+                        
+			if (this.mdns_radio_button.Active == false) {
+				Uri uri = new Uri (String.Format ("http://{0}:{1}", address_entry.Text, port_spin_button.ValueAsInt));
+				bool pw_required = (password_entry.Text.Length > 0) ? true : false;
+				string name = null;
+				
+				if (name_entry.Text.Length > 0)
+					name = name_entry.Text;
+				else
+					name = "Unnamed";
 
-                                        hosts = new MDNSService [] {
-                                                new MDNSService (name, uri, pw_required, "X")
-                                        };
-                                } else {
-                                        TreeIter iter;
-                                        ArrayList list = new ArrayList ();
-                                        
-                                        try {                                                
-                                                foreach (TreePath path in icon_view.SelectedItems) {
-                                                        if (store.GetIter (out iter, path) == false)
-                                                                continue;
-                                                        
-                                                        string name = (string) store.GetValue (iter, COL_NAME);
-                                                        MDNSService s = (MDNSService) browser.AvailableHosts [name];
-                                                        list.Add (s);
-                                                }       
-                                        } catch (Exception e) {
-                                                Console.Error.WriteLine (e.Message);
-                                        }
-                                        
-                                        
-                                        hosts = (MDNSService[]) list.ToArray (typeof (MDNSService));
-                                }
-                                return hosts;
-                        }
-                }
+				services.Add (new NetworkService (name, uri, pw_required, "X"));
+			} else {
+				TreeIter iter;
+
+				foreach (TreePath path in icon_view.SelectedItems) {
+					if (store.GetIter (out iter, path) == false)
+						continue;
+					
+					// FIXME: Searching by name is not the most correct thing to do
+					string name = (string) store.GetValue (iter, COL_NAME);
+					Console.WriteLine ("+ " + name);
+
+					NetworkService s = (NetworkService) browser.GetServiceByName (name);
+					
+					if (s != null)
+						services.Add (s);
+				}
+			}
+			
+			return services;
+		}
                 
                 public AddHostDialog (Gtk.Window parent) : base (null, parent, DialogFlags.DestroyWithParent)
                 {
@@ -1346,9 +1344,9 @@ public class SettingsDialog
                         this.ShowAll ();
 
                         try {
-                                browser = new MDNSBrowser ();
-                                browser.HostFound += new MDNSEventHandler (OnHostFound);
-                                browser.HostRemoved += new MDNSEventHandler (OnHostRemoved);
+                                browser = new AvahiBrowser ();
+                                browser.HostFound += new AvahiEventHandler (OnHostFound);
+                                browser.HostRemoved += new AvahiEventHandler (OnHostRemoved);
                                 browser.Start ();
                         } catch (Exception e) {
                                 //Console.Error.WriteLine ("Avahi Daemon must be unavailable. Hiding MDns stuff.");
@@ -1377,7 +1375,7 @@ public class SettingsDialog
                         store.SetSortColumnId (COL_NAME, SortType.Ascending);
                 }
 
-                private void OnHostFound (object sender, MDNSEventArgs args)
+                private void OnHostFound (object sender, AvahiEventArgs args)
                 {
                         store.AppendValues (args.Name, 
                                             (args.Service.IsProtected == true) ? locked_icon : unlocked_icon,
@@ -1388,7 +1386,7 @@ public class SettingsDialog
                         icon_view.QueueDraw ();
                 }
 
-                private void OnHostRemoved (object sender, MDNSEventArgs args)
+                private void OnHostRemoved (object sender, AvahiEventArgs args)
                 {
                         find_node = args.Address.Host;
                        found_iter = TreeIter.Zero;

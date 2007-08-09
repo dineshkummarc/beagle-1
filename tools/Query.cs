@@ -52,6 +52,7 @@ public class QueryTool {
 	private static DateTime lastQueryTime = DateTime.Now;
 
 	private static MainLoop main_loop = null;
+
 	// CLI args
 	private static bool keep_running = false;
 	private static bool verbose = false;
@@ -60,11 +61,6 @@ public class QueryTool {
 	private static bool listener = false;
 	private static DateTime start_date = DateTime.MinValue;
 	private static DateTime end_date = DateTime.MinValue;
-
-	// FIXME: This is a mess ... what does local, global or neighborhood exactly mean ?
-	private static bool query_local = true;
-	private static bool query_neighborhood = false;
-	private static bool query_global = false;
 
 	private static void OnHitsAdded (HitsAddedResponse response)
 	{
@@ -361,20 +357,10 @@ public class QueryTool {
 				System.Environment.Exit (0);
 				break;
 
-			case "--local":
-				if (++i >= args.Length) PrintUsageAndExit ();
-				if (args [i].ToLower () == "no")
-					query_local = false;
-				else
-					query_local = true;
-				break;
-
 			case "--network":
 				if (++i >= args.Length) PrintUsageAndExit ();
 				if (args [i].ToLower () == "yes")
-					query_neighborhood = true;
-				else
-					query_neighborhood = false;
+					query.AddDomain (QueryDomain.Neighborhood);
 				break;
 
 			default:
@@ -383,23 +369,13 @@ public class QueryTool {
 				query_str.Append (args [i]);
 				
 				break;
-				
 			}
 
 			++i;
 		}
 
-		if (!query_local)
-			query.RemoveDomain (QueryDomain.Local);
-		if (query_neighborhood)
-			query.AddDomain (QueryDomain.Neighborhood);
-		if (query_global)
-			query.AddDomain (QueryDomain.Global);
-
 		if (listener) {
-
 			query.IsIndexListener = true;
-
 		} else {
 		
 			if (query_str.Length > 0)
@@ -420,7 +396,6 @@ public class QueryTool {
 
 		query.HitsAddedEvent += OnHitsAdded;
 		query.HitsSubtractedEvent += OnHitsSubtracted;
-
 
 		if (! keep_running)
 			query.FinishedEvent += OnFinished;
