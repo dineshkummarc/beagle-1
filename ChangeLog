@@ -1,4 +1,164 @@
 ------------------------------------------------------------------------
+r3905 | joeshaw | 2007-08-27 13:43:22 -0400 (Mon, 27 Aug 2007) | 1 line
+Changed paths:
+   M /branches/beagle-0.2.16/NEWS
+   M /branches/beagle-0.2.16/configure.in
+
+Update version to 0.2.18 and update NEWS
+------------------------------------------------------------------------
+r3904 | joeshaw | 2007-08-27 13:22:59 -0400 (Mon, 27 Aug 2007) | 6 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/EvolutionDataServerQueryable/CalContainer.cs
+   M /branches/beagle-0.2.16/beagled/EvolutionDataServerQueryable/EvolutionDataServerQueryable.cs
+   M /branches/beagle-0.2.16/configure.in
+
+Update for evolution-sharp API changes introduced in 0.13.3, patch from
+JP Rosevear.  Now require evolution-sharp 0.13.3.  Handle
+EntryPointNotFoundException in addition to DllNotFoundException when
+starting up the e-d-s backend.
+
+
+------------------------------------------------------------------------
+r3902 | joeshaw | 2007-08-27 10:57:25 -0400 (Mon, 27 Aug 2007) | 5 lines
+Changed paths:
+   M /branches/beagle-0.2.16/BeagleClient/Client.cs
+
+Merge r3837 from the trunk:
+
+Fix bug 463803 – beagle-search fails if daemon is restarted
+
+
+------------------------------------------------------------------------
+r3901 | joeshaw | 2007-08-27 10:56:21 -0400 (Mon, 27 Aug 2007) | 6 lines
+Changed paths:
+   M /branches/beagle-0.2.16/Filters/FilterPdf.cs
+
+Merge r3825 from the trunk:
+
+Adds support for PDF keywords in PDF filter. Allows ":" in PDF metadata.
+Fixes #463003. Patch from Joseph Benavidez.
+
+
+------------------------------------------------------------------------
+r3900 | joeshaw | 2007-08-27 10:54:00 -0400 (Mon, 27 Aug 2007) | 6 lines
+Changed paths:
+   M /branches/beagle-0.2.16/Util/DigikamTags.cs
+
+Merge r3801 from the trunk:
+
+Fixes #454656. Fix the sql string used to retrieve tag information from
+digikam db. 
+
+
+------------------------------------------------------------------------
+r3899 | joeshaw | 2007-08-27 10:53:13 -0400 (Mon, 27 Aug 2007) | 6 lines
+Changed paths:
+   M /branches/beagle-0.2.16/search/Tiles/WebHistory.cs
+
+Merge r3792 from the trunk:
+
+* search/Tiles/WebHistory.cs - If dc:title is null or empty show the the
+host name as the title.
+
+
+------------------------------------------------------------------------
+r3898 | joeshaw | 2007-08-27 10:48:47 -0400 (Mon, 27 Aug 2007) | 7 lines
+Changed paths:
+   M /branches/beagle-0.2.16/Filters/FilterDocbook.cs
+   M /branches/beagle-0.2.16/Filters/FilterText.cs
+
+Merge r3740 from the trunk:
+
+Ignore legal.xml files in docbook filter.
+
+(Also fixes a bug in the text filter)
+
+
+------------------------------------------------------------------------
+r3897 | joeshaw | 2007-08-27 10:46:50 -0400 (Mon, 27 Aug 2007) | 7 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/FilterFactory.cs
+
+Merge r3738 from the trunk:
+
+Always print an error message if filtering fails, otherwise users have
+no clue wwhats going on.
+
+
+
+------------------------------------------------------------------------
+r3896 | joeshaw | 2007-08-27 10:42:34 -0400 (Mon, 27 Aug 2007) | 6 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/LifereaQueryable/LifereaQueryable.cs
+
+Merge r3718 from the trunk:
+
+Add support for the ~/.liferea_1.2 directory to the Liferea backend.
+bgo #426573.
+
+
+------------------------------------------------------------------------
+r3895 | joeshaw | 2007-08-27 10:41:44 -0400 (Mon, 27 Aug 2007) | 5 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/beagled.in
+
+Merge in r3711 from the trunk:
+
+Fix mdb command-line arguments.  Beagle part of bxc #81556
+
+
+------------------------------------------------------------------------
+r3894 | joeshaw | 2007-08-27 10:39:16 -0400 (Mon, 27 Aug 2007) | 17 lines
+Changed paths:
+   M /branches/beagle-0.2.16/Filters/FilterMail.cs
+   M /branches/beagle-0.2.16/beagled/BuildIndex.cs
+   M /branches/beagle-0.2.16/beagled/ExtractContent.cs
+
+Merge r3857 from the trunk:
+
+Fix a problem where processing large number of maildir files on the file
+system would cause file descriptors to run out.  The glib-sharp binding
+(at least up until 2.10) batches and unrefs disposed managed wrappers in
+a glib timeout, which requires that a main loop be running.  While
+beagled has one, beagle-build-index and beagle-extract-content do not.
+So work around the problem by running "while
+(GLib.MainContext.Pending()) GLib.MainContext.Iteration();" after
+processing a batch of files, to ensure that wrappers are collected.
+This fixes bgo #466891.
+
+In the mail filter, log GMime initialization error messages better and
+don't continuously retry to reinitialize.  If it's broken, it's going to
+stay broken and we don't need to flood the logs with this.
+
+
+------------------------------------------------------------------------
+r3882 | kkubasik | 2007-08-23 23:33:20 -0400 (Thu, 23 Aug 2007) | 7 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/FileSystemQueryable/DirectoryModel.cs
+
+backport from trunk, original comment:
+Now that we provide ample warning about inotify watch availability, no
+longer recrawl directories that don't have inotify watches.  This fixes
+the problem where Beagle aggressively recrawls the same directories over
+and over when the user has insufficient inotify watches and the
+screensaver is active.
+
+------------------------------------------------------------------------
+r3881 | kkubasik | 2007-08-23 23:28:28 -0400 (Thu, 23 Aug 2007) | 2 lines
+Changed paths:
+   M /branches/beagle-0.2.16/Util/Inotify.cs
+
+Update from trunk
+
+------------------------------------------------------------------------
+r3714 | dbera | 2007-05-10 13:48:21 -0400 (Thu, 10 May 2007) | 2 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/BuildIndex.cs
+
+Add the transaction patch to the branch, just in case.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
 r3697 | joeshaw | 2007-05-08 15:09:07 -0400 (Tue, 08 May 2007) | 1 line
 Changed paths:
    M /branches/beagle-0.2.16/configure.in
