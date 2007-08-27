@@ -86,8 +86,11 @@ namespace Beagle.Daemon.EvolutionDataServerQueryable {
 			// e-d-s libraries.
 			try {
 				// This is a no-op
-				CalUtil.FreeGlueCompGLibSList (IntPtr.Zero);
+				CalUtil.datetime_to_icaltimetype (new DateTime ());
 			} catch (DllNotFoundException ex) {
+				Logger.Log.Error (ex, "Unable to start EvolutionDataServer backend: Unable to find or open libraries:");
+				return;
+			} catch (EntryPointNotFoundException ex) {
 				Logger.Log.Error (ex, "Unable to start EvolutionDataServer backend: Unable to find or open libraries:");
 				return;
 			} finally {
