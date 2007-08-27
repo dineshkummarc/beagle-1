@@ -1,4 +1,47 @@
 
+VErsion 0.2.18
+27 August 2007
+
+Notable changes:
+
+* Build and run against evolution-sharp 0.13.3.
+
+* No longer recrawl directories if we can't set up an inotify watch.
+  This fixes the looping bug of death when the screensaver kicks in.
+
+* Greatly improve indexing overhead with the beagle-build-index tool.
+
+* Display a warning in the log if the number of inotify watches runs
+  out.
+
+* Fix a problem in which beagle-search wouldn't work after a daemon
+  restart.  [bgo #463803]
+
+* Fix a bug in which processing large numbers of maildir files could
+  cause beagled to run out of file descriptors.  [bgo #466891]
+
+* Add support for the ~/.liferea_1.2 directory to the Liferea
+  backend.  [bgo #426573]
+
+* Add support for PDF keywords, and allow colons in PDF metadata.
+  [bgo #463003]
+
+* Ignore legal.xml files in the Docbook filter, since they're largely
+  content-less and frequently duplicated.
+
+* Fix the SQL used to retrieve tag information from the Digikam DB.
+  [bgo #454656]
+
+* Improve error reporting throughout.
+
+Contributors to this release: Joe Shaw, Debajyoti Bera, Lukas Lipka,
+Joseph Benavidez, JP Rosevear.
+
+Full set of changes:
+http://svn.gnome.org/viewcvs/*checkout*/beagle/tags/BEAGLE_0_2_18/ChangeLog
+
+------------------------------------------------------
+
 Version 0.2.17
 8 May 2007
 
