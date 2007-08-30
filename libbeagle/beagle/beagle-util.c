@@ -25,6 +25,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -61,33 +62,45 @@ char *
 beagle_util_get_socket_path (const char *client_name)
 {
 	const gchar *beagle_home;
-	gchar *socket_dir;
+	const gchar *beagle_storage_dir;
+	gchar *socket_dir; /* this is same as remote_storage_dir in PathFinder.cs */
 	gchar *socket_path;
 	struct stat buf;
 	
 	if (!client_name) 
 		client_name = "socket";
 
-	beagle_home = g_getenv ("BEAGLE_HOME");
-	if (beagle_home == NULL)
-		beagle_home = g_get_home_dir ();
+	/* Follow the C# API: First try BEAGLE_STORAGE */
+	beagle_storage_dir = g_getenv ("BEAGLE_STORAGE");
 
-	if (! beagle_util_is_path_on_block_device (beagle_home) ||
+	/* Then try BEAGLE_HOME/.beagle */
+	if (beagle_storage_dir == NULL) {
+		beagle_home = g_getenv ("BEAGLE_HOME");
+	
+		/* Finally, beagle home is home dir */
+		if (beagle_home == NULL)
+			beagle_home = g_get_home_dir ();
+
+		/* Construct beagle storage dir */
+		beagle_storage_dir = g_build_filename (beagle_home, ".beagle", NULL);
+	}
+
+	if (! beagle_util_is_path_on_block_device (beagle_storage_dir) ||
 	    getenv ("BEAGLE_SYNCHRONIZE_LOCALLY") != NULL) {
-		gchar *remote_storage_dir = g_build_filename (beagle_home, ".beagle", "remote_storage_dir", NULL);
+		gchar *remote_storage_dir_location_file = g_build_filename (beagle_storage_dir, "remote_storage_dir", NULL);
 		gchar *tmp;
 
-		if (! g_file_test (remote_storage_dir, G_FILE_TEST_EXISTS)) {
-			g_free (remote_storage_dir);
+		if (! g_file_test (remote_storage_dir_location_file, G_FILE_TEST_EXISTS)) {
+			g_free (remote_storage_dir_location_file);
 			return NULL;
 		}
 
-		if (! g_file_get_contents (remote_storage_dir, &socket_dir, NULL, NULL)) {
-			g_free (remote_storage_dir);
+		if (! g_file_get_contents (remote_storage_dir_location_file, &socket_dir, NULL, NULL)) {
+			g_free (remote_storage_dir_location_file);
 			return NULL;
 		}
 
-		g_free (remote_storage_dir);
+		g_free (remote_storage_dir_location_file);
 
 		/* There's a newline at the end that we want to strip off */
 		tmp = strrchr (socket_dir, '\n');
@@ -99,7 +112,7 @@ beagle_util_get_socket_path (const char *client_name)
 			return NULL;
 		}
 	} else {
-		socket_dir = g_build_filename (beagle_home, ".beagle", NULL);
+		socket_dir = g_build_filename (beagle_storage_dir, NULL);
 	}
 
 	socket_path = g_build_filename (socket_dir, client_name, NULL);
@@ -144,3 +157,29 @@ beagle_util_daemon_is_running (void)
 	
 	return TRUE;
 }
+
+char*
+_beagle_util_set_c_locale ()
+{
+	char *old_locale, *saved_locale;
+
+	/* Get the name of the current locale.  */
+	old_locale = setlocale (LC_ALL, NULL);
+
+	/* Copy the name so it won't be clobbered by setlocale. */
+	saved_locale = strdup (old_locale);
+
+	/* Now it is safe to change the locale temporarily. */
+	setlocale (LC_ALL, "C");
+
+	return saved_locale;
+}
+
+void _beagle_util_reset_locale (char *old_locale)
+{
+	/* Restore the original locale. */
+	setlocale (LC_ALL, old_locale);
+
+	free (old_locale);
+}
+
