@@ -27,6 +27,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
@@ -48,9 +49,13 @@ namespace Beagle.Daemon.EvolutionMailQueryable {
 		private static ArrayList excludes = new ArrayList ();
 
 		static EvolutionMailIndexableGenerator () {
-			foreach (ExcludeItem exclude in Conf.Indexing.Excludes)
-				if (exclude.Type == ExcludeType.MailFolder)
-					excludes.Add (exclude);
+			Config config = ConfigManager.Get (ConfigManager.Names.DaemonConfig);
+			List<string[]> values = ConfigManager.GetListOptionValues (config, ConfigManager.Names.ExcludeMailfolder);
+			if (values == null)
+				return;
+
+			foreach (string[] item in values)
+				excludes.Add (item [0].ToLower ());
 		}
 
 		protected EvolutionMailQueryable queryable;

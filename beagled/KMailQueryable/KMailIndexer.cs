@@ -83,9 +83,6 @@ namespace Beagle.Daemon.KMailQueryable {
 			excludes.Add ("drafts");
 
 			Config config = ConfigManager.Get (ConfigManager.Names.DaemonConfig);
-			if (config == null)
-				return;
-
 			List<string[]> values = ConfigManager.GetListOptionValues (config, ConfigManager.Names.ExcludeMailfolder);
 			if (values == null)
 				return;
