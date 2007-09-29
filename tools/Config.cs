@@ -26,17 +26,13 @@
 
 using System;
 using System.IO;
-using System.Diagnostics;
 using System.Collections;
-using System.Collections.Specialized;
+using System.Collections.Generic;
 using System.Reflection;
 
 using Beagle;
 using Beagle.Daemon;
 using Beagle.Util;
-
-//using Gtk;
-using GLib;
 
 // Assembly information
 [assembly: AssemblyTitle ("beagle-config")]
@@ -49,156 +45,31 @@ public static class ConfigTool {
 		VersionFu.PrintHeader ();
 
 		string usage =
-			"Usage: beagle-config [OPTIONS]\n" +
-			"   or: beagle-config <SECTION>\n" +
-			"   or: beagle-config <SECTION> <SECTIONOPTION> [PARAMS]\n\n" +
+			"Usage: \n" + 
+			"     beagle-config [OPTIONS]\n" +
+			" * to list sections:\n" +
+			"     beagle-config --list-sections\n" +
+			" * to list options in a section:\n" +
+			"     beagle-config SECTION\n" +
+			" * to view current values of an option:\n" +
+			"     beagle-config SECTION SECTIONOPTION\n" +
+			" * to change values of a boolean or a string options:\n" +
+			"     beagle-config SECTION SECTIONOPTION VALUE\n" +
+			" * to add values to a list option:\n" +
+			"     beagle-config SECTION SECTIONOPTION PARAMS\n" +
+			" * to remove a value from a list option:\n" +
+			"     beagle-config SECTION SECTIONOPTION - PARAMS\n\n" +
 			"Options:\n" +
+			"  --list-sections\t\tList the available sections.\n" +
 			"  --beagled-reload-config\tAsk the beagle daemon to reload\n" +
 			"                         \tthe configuration file.\n" +
-			"  --list-sections\t\tList all available configuration sections.\n" +
+			"  --list-backends\t\tList the available backends.\n" +
 			"  --help\t\t\tPrint this usage message.\n" +
-			"  --version\t\t\tPrint version information.\n\n" +
-			"If a section is specified with no options, then a list of the available commands for that section is shown.\n";
+			"  --version\t\t\tPrint version information.\n\n";
 
 		Console.WriteLine (usage);
 
 		System.Environment.Exit (0);
-	}
-
-	private static void ListSectionsAndExit ()
-	{
-		Console.WriteLine ("Available configuration sections: ");
-		foreach (string key in Conf.Sections.Keys)
-			Console.WriteLine (" - {0}", key);
-
-		System.Environment.Exit (0);
-	}
-	
-	private static void ListSectionOptionsAndExit (string sectionname, Hashtable options)
-	{
-		Console.WriteLine ("Available options for section '{0}':", sectionname);
-		foreach (string key in options.Keys) {
-			Console.Write (" - {0}", key);
-			if (options [key] != null)
-				Console.Write (" ({0})", options [key]);
-
-			Console.WriteLine ();
-		}
-		if (sectionname == "daemon")
-			Console.WriteLine (" - ListBackends (List enabled and disabled backends)");
-		
-		System.Environment.Exit (0);
-	}
-
-	private static void ReloadConfigAndExit ()
-	{
-		try {
-			ReloadConfigRequest request = new ReloadConfigRequest ();
-			request.Send ();
-			Console.WriteLine ("ReloadConfig request was sent successfully.");
-			System.Environment.Exit (0);
-		} catch (Exception e) {
-			Console.Error.WriteLine ("ERROR: Could not send ReloadConfig request: {0}", e.Message);
-			System.Environment.Exit (-1);
-		}
-	}
-		
-	public static void Main (string [] args)
-	{
-		if (args.Length == 0)
-			PrintUsageAndExit ();
-
-		int i = 0;
-		while (i < args.Length) {
-			switch (args [i]) {
-			case "--list-sections":
-				Conf.Load ();
-				ListSectionsAndExit ();
-				return;
-
-			case "--reload":
-			case "--beagled-reload-config":
-				ReloadConfigAndExit ();
-				return;
-
-			case "--help":
-			case "--usage":
-				PrintUsageAndExit ();
-				return;
-
-			case "--version":
-				VersionFu.PrintVersion ();
-				Environment.Exit (0);
-				break;
-
-			default:
-				break;
-			}
-			++i;
-		}
-
-		Conf.Load ();
-
-		string sectionname = args [0];
-
-		if (! Conf.Sections.ContainsKey (sectionname)) {
-			Console.Error.WriteLine ("ERROR: Invalid section name '{0}'", sectionname);
-			Environment.Exit (-1);
-		}
-
-		Conf.Section section = (Conf.Section) Conf.Sections [sectionname];
-		Hashtable options = Conf.GetOptions (section);
-
-		// No option specified?
-		if (args.Length == 1)
-			ListSectionOptionsAndExit (sectionname, options);
-		
-		string optionname = args [1];
-		if (! options.ContainsKey (optionname)) {
-			if (sectionname == "daemon" && optionname == "ListBackends") {
-				ListBackends ();
-				Environment.Exit (0);
-			} else {
-				Console.Error.WriteLine ("ERROR: Invalid option name '{0}'", optionname);
-				Environment.Exit (-2);
-			}
-		}
-
-		//
-		// Invoke the method the user has chosen
-		//
-
-		// Pack the remaining command line params into an array used for
-		// params of the method.
-		string [] optionparams = new string [args.Length - 2];
-		int j, k;
-		for (j = 0, k = 2; k < args.Length; j++, k++)
-			optionparams [j] = args [k];
-
-		// Invoke the method
-		string output = null;
-		bool result = false;
-
-		try {
-			result = Conf.InvokeOption (section, optionname, optionparams, out output);
-		} catch (Exception e) {
-			Console.Error.WriteLine("ERROR: Command execution failed - caught exception.");
-			Console.Error.WriteLine(e.Message);
-			Environment.Exit (-3);
-		}
-
-		// Read the result and show the output
-		if (result == true)
-			Console.WriteLine (output);
-		else {
-			Console.Error.WriteLine ("ERROR: Command execution failed.");
-			Console.Error.WriteLine (output);
-			Environment.Exit (-4);
-		}
-
-		Conf.Save ();
-		Environment.Exit (0);
-
 	}
 
 	private static void ListBackends ()
@@ -240,8 +111,21 @@ public static class ConfigTool {
 		bool found_any = false;
 
 		Console.WriteLine ("Allowed backends:");
+
+		Config config = ConfigManager.Load ("daemon");
+		Option opt;
+		ArrayList denied_backends = new ArrayList ();
+
+		if (config != null && (opt = config ["DeniedBackends"]) != null) {
+			List<string[]> denied_backends_list = ConfigManager.GetListOptionValues (config, opt.Name);
+			if (denied_backends_list != null) {
+				foreach (string[] val in denied_backends_list)
+					denied_backends.Add (val [0]);
+			}
+		}
+
 		foreach (string name in backends) {
-			if (Conf.Daemon.DeniedBackends.Contains (name))
+			if (denied_backends.Contains (name))
 				continue;
 			Console.WriteLine (" - {0}", name);
 			found_any = true;
@@ -255,7 +139,7 @@ public static class ConfigTool {
 		found_any = false;
 
 		Console.WriteLine ("Denied backends:");
-		foreach (string name in Conf.Daemon.DeniedBackends) {
+		foreach (string name in denied_backends) {
 			Console.WriteLine (" - {0}", name);
 			found_any = true;
 		}
@@ -264,4 +148,203 @@ public static class ConfigTool {
 			Console.WriteLine (" (none)");
 	}
 
+	public static void Main (string [] args)
+	{
+		if (args.Length == 0)
+			PrintUsageAndExit ();
+
+		for (int i = 0; i < args.Length; i ++) {
+			switch (args [i]) {
+			case "--list-sections":
+				ListSectionsAndExit ();
+				return;
+
+			case "--list-backends":
+				ListBackends ();
+				return;
+
+			case "--reload":
+			case "--beagled-reload-config":
+				ReloadConfigAndExit ();
+				return;
+
+			case "--help":
+			case "--usage":
+				PrintUsageAndExit ();
+				return;
+
+			case "--version":
+				VersionFu.PrintVersion ();
+				Environment.Exit (0);
+				break;
+
+			default:
+				break;
+			}
+		}
+
+		Config config = ConfigManager.Load (args [0]);
+
+		if (config == null) {
+			Console.WriteLine ("No section found: " + args [0]);
+			return;
+		}
+
+		if (args.Length >= 2) {
+			try {
+				if (HandleArgs (config, args))
+					ConfigManager.Save (config);
+			} catch (ArgumentException e) {
+				Console.WriteLine ("** Error: " + e.Message);
+			}
+
+			return;
+		}
+			
+		foreach (Option option in config.Options.Values)
+			ShowOption (config, option);
+	}
+
+	private static void ListSectionsAndExit ()
+	{
+		Console.WriteLine ("Listing sections ...");
+	}
+
+	private static void ReloadConfigAndExit ()
+	{
+		try {
+			ReloadConfigRequest request = new ReloadConfigRequest ();
+			request.Send ();
+			Console.WriteLine ("ReloadConfig request was sent successfully.");
+			System.Environment.Exit (0);
+		} catch (Exception e) {
+			Console.Error.WriteLine ("ERROR: Could not send ReloadConfig request: {0}", e.Message);
+			System.Environment.Exit (-1);
+		}
+	}
+		
+	private static bool HandleArgs (Config config, string[] args)
+	{
+		Option option = (Option) config.Options [args [1]];
+		if (option == null) {
+			Console.WriteLine ("Error: No option {0}", args [1]);
+			return false;
+		}
+
+		if (args.Length == 2) {
+			ShowOption (config, option);
+			return false;
+		}
+
+		return SetOption (config, option, args);
+	}
+
+	private static void ShowOption (Config config, Option option)
+	{
+		if (option.Type == OptionType.Bool) {
+			Console.WriteLine ("  - {0}={2} ({1})",
+					    option.Name,
+					    option.Description,
+					    ConfigManager.GetOption (config, option.Name, true));
+
+		} else if (option.Type == OptionType.String) {
+			Console.WriteLine ("  - {0}={2} ({1})",
+					    option.Name,
+					    option.Description,
+					    ConfigManager.GetOption (config, option.Name, String.Empty));
+
+		} else if (option.Type == OptionType.List) {
+			Console.WriteLine ("  - {0} : ({1})", option.Name, option.Description);
+
+			Console.Write ("    Parameters:");
+			string[] param_names = ConfigManager.GetListOptionParams (config, option.Name);
+
+			for (int j = 0; j < param_names.Length; ++j)
+				Console.Write (" [{0}] ", param_names [j]);
+			Console.WriteLine ();
+
+			List<string[]> items = ConfigManager.GetListOptionValues (config, option.Name);
+			if (items == null)
+				return;
+
+			Console.WriteLine ("    Values:");
+			foreach (string[] item in items) {
+				DisplayListItem (param_names, item);
+			}
+		}
+	}
+
+	private static void DisplayListItem (string[] param_names, string[] item)
+	{
+		Console.Write ("\t- ");
+		for (int j = 0; j < param_names.Length; ++j)
+			Console.Write ("[{0}]", item [j]);
+		Console.WriteLine ();
+	}
+
+	private static bool SetOption (Config config, Option option, string[] args)
+	{
+		if (option.Type == OptionType.Bool) {
+			if (args.Length != 3) {
+				Console.WriteLine ("Error: Require {0} boolean argument(s)", 1);
+				return false;
+			}
+
+			Console.WriteLine ("Changed:");
+			ShowOption (config, option);
+			ConfigManager.SetOption (config, option.Name, Convert.ToBoolean (args [2]));
+			Console.WriteLine ("  to:");
+			ShowOption (config, option);
+
+			return true;
+
+		} else if (option.Type == OptionType.String) {
+			if (args.Length != 3) {
+				Console.WriteLine ("Error: Require {0} string argument(s)", 1);
+				return false;
+			}
+
+			Console.WriteLine ("Changed:");
+			ShowOption (config, option);
+			ConfigManager.SetOption (config, option.Name, args [2]);
+			Console.WriteLine ("  to:");
+			ShowOption (config, option);
+
+			return true;
+
+		} else if (option.Type == OptionType.List) {
+			return SetListOption (config, option, args);
+		}
+
+		return false;
+	}
+
+	private static bool SetListOption (Config config, Option option, string[] args)
+	{
+		if (args [2] == "-")
+			return RemoveListOption (config, option, args);
+
+		string[] new_args = new string[args.Length - 2];
+		Array.Copy (args, 2, new_args, 0, args.Length - 2);
+
+		return ConfigManager.AddListOptionValue (config, option.Name, new_args);
+	}
+
+	private static bool RemoveListOption (Config config, Option option, string[] args)
+	{
+		string[] new_args = new string[args.Length - 3];
+		Array.Copy (args, 3, new_args, 0, args.Length - 3);
+
+		bool to_save = false;
+
+		if (ConfigManager.RemoveListOptionValue (config, option.Name, new_args)) {
+			Console.WriteLine ("Removing:");
+			to_save = true;
+			DisplayListItem (ConfigManager.GetListOptionParams (config, option.Name), new_args);
+		} else {
+			Console.WriteLine ("No such option exists");
+		}
+
+		return to_save;
+	}
 }

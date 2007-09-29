@@ -700,7 +700,7 @@ namespace Beagle.Daemon {
 			bool success = false;
 
 			do {
-				prefix = String.Format ("http://*:{0}/", port);
+				prefix = String.Format ("http://127.0.0.1:{0}/", port);
 				success = true;
 
 				try {	

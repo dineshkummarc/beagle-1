@@ -26,6 +26,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.IO;
 
@@ -39,10 +40,6 @@ namespace Beagle.Daemon.FileSystemQueryable {
 
 		private static bool Debug = false;
 		
-		// All user defined excludes, used for determining deltas
-		// when the configuration is reloaded.
-		private ArrayList excludes = new ArrayList ();
-
 		// User defined paths to exclude
 		private ArrayList exclude_paths = new ArrayList ();
 		
@@ -116,45 +113,29 @@ namespace Beagle.Daemon.FileSystemQueryable {
 		
 		/////////////////////////////////////////////////////////////
 
-		private void AddExclude (ExcludeItem exclude)
+		private void AddExclude (string value, bool is_pattern)
 		{
 			if (Debug)
-				Logger.Log.Debug ("FileNameFilter: Adding ExcludeItem (value={0}, type={1})", exclude.Value, exclude.Type);
+				Logger.Log.Debug ("FileNameFilter: Adding ExcludeItem (value={0}, type={1})", value, (is_pattern ? "Pattern" : "Path"));
 
-			switch (exclude.Type) {
-			case ExcludeType.Path:
-				exclude_paths.Add (exclude);
-				queryable.RemoveDirectory (exclude.Value);
-				break;
-			case ExcludeType.Pattern:
-				exclude_patterns.Add (exclude);
-				break;
-			default: 
-				return;
+			if (! is_pattern) {
+				exclude_paths.Add (value);
+				queryable.RemoveDirectory (value);
+			} else {
+				exclude_patterns.Add (value);
 			}
-
-			excludes.Add (exclude);
 		}
 
-		private bool RemoveExclude (ExcludeItem exclude)
+		private void RemoveExclude (string value, bool is_pattern)
 		{
 			if (Debug)
-				Logger.Log.Debug ("FileNameFilter: Removing ExcludeItem (value={0}, type={1})", exclude.Value, exclude.Type);
+				Logger.Log.Debug ("FileNameFilter: Removing ExcludeItem (value={0}, type={1})", value, (is_pattern ? "Pattern" : "Path"));
 
-			switch (exclude.Type) {
-			case ExcludeType.Path:
-				exclude_paths.Remove (exclude);
-				break;
-			case ExcludeType.Pattern:
-				exclude_patterns.Remove (exclude);
-				break;
-			default: 
-				return false;
+			if (! is_pattern) {
+				exclude_paths.Remove (value);
+			} else {
+				exclude_patterns.Remove (value);
 			}
-			
-			excludes.Remove (exclude);
-
-			return true;
 		}
 		
 		/////////////////////////////////////////////////////////////
@@ -174,37 +155,76 @@ namespace Beagle.Daemon.FileSystemQueryable {
 
 		private void LoadConfiguration () 
 		{
-			foreach (ExcludeItem exclude in Conf.Indexing.Excludes)
-				AddExclude (exclude);
+			Config config = ConfigManager.Get (ConfigManager.Names.FilesQueryableConfig);
 
-			Conf.Subscribe (typeof (Conf.IndexingConfig), OnConfigurationChanged);
+			List<string[]> values = ConfigManager.GetListOptionValues (config, ConfigManager.Names.ExcludeSubdirectory);
+			foreach (string[] exclude in values)
+				AddExclude (exclude [0], false);
+
+			values = ConfigManager.GetListOptionValues (config, ConfigManager.Names.ExcludePattern);
+			foreach (string[] exclude in values)
+				AddExclude (exclude [0], true);
+
+			ConfigManager.Subscribe (ConfigManager.Names.FilesQueryableConfig, OnConfigurationChanged);
 		}
 
-		private void OnConfigurationChanged (Conf.Section section)
+		private void OnConfigurationChanged (Config config)
 		{
-			ArrayList exclude_paths_removed = new ArrayList ();
+			if (config == null || config.Name != ConfigManager.Names.FilesQueryableConfig)
+				return;
 
-			IList excludes_wanted = Conf.Indexing.Excludes;
-			IList excludes_to_add, excludes_to_remove;
+			ArrayList exclude_paths_removed = new ArrayList ();
 			bool clear_fs_state = false;
 
-			ArrayFu.IntersectListChanges (excludes_wanted, 
-						      excludes, 
-						      out excludes_to_add, 
-						      out excludes_to_remove);
+			List<string[]> values = ConfigManager.GetListOptionValues (config, ConfigManager.Names.ExcludeSubdirectory);
+			if (values != null) {
+				ArrayList subdirs = new ArrayList (values.Count);
+				foreach (string[] value in subdirs)
+					subdirs.Add (value [0]);
 
-			// Process any excludes we think we should remove
-			foreach (ExcludeItem exclude in excludes_to_remove) {
-				if (exclude.Type == ExcludeType.Pattern)
-					clear_fs_state = true;
-				else if (exclude.Type == ExcludeType.Path)
-					exclude_paths_removed.Add (exclude.Value);
-				RemoveExclude (exclude);
+				IList excludes_wanted = subdirs;
+				IList excludes_to_add, excludes_to_remove;
+
+				ArrayFu.IntersectListChanges (excludes_wanted, 
+							      exclude_paths, 
+						      	      out excludes_to_add, 
+						      	      out excludes_to_remove);
+
+				// Process any excludes we think we should remove
+				foreach (string path in excludes_to_remove) {
+					exclude_paths_removed.Add (path);
+					RemoveExclude (path, false);
+				}
+
+				// Process any excludes we found to be new
+				foreach (string path in excludes_to_add)
+					AddExclude (path, true);
 			}
 
-			// Process any excludes we found to be new
-			foreach (ExcludeItem exclude in excludes_to_add)
-				AddExclude (exclude);
+			values = ConfigManager.GetListOptionValues (config, ConfigManager.Names.ExcludePattern);
+			if (values != null) {
+				ArrayList patterns = new ArrayList (values.Count);
+				foreach (string[] value in patterns)
+					patterns.Add (value [0]);
+
+				IList excludes_wanted = patterns;
+				IList excludes_to_add, excludes_to_remove;
+
+				ArrayFu.IntersectListChanges (excludes_wanted, 
+							      exclude_patterns,
+						      	      out excludes_to_add, 
+						      	      out excludes_to_remove);
+
+				// Process any excludes we think we should remove
+				foreach (string pattern in excludes_to_remove) {
+					clear_fs_state = true;
+					RemoveExclude (pattern, true);
+				}
+
+				// Process any excludes we found to be new
+				foreach (string pattern in excludes_to_add)
+					AddExclude (pattern, true);
+			}
 
 			// If an exclude pattern is removed, we need to recrawl everything
 			// so that we can index those files which were previously ignored.

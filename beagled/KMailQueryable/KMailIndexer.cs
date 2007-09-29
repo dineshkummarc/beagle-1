@@ -27,6 +27,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 
 using Beagle.Util;
@@ -81,9 +82,16 @@ namespace Beagle.Daemon.KMailQueryable {
 			excludes.Add ("trash");
 			excludes.Add ("drafts");
 
-			foreach (ExcludeItem item in Conf.Indexing.Excludes)
-				if (item.Type == ExcludeType.MailFolder)
-					excludes.Add (item.Value.ToLower ());
+			Config config = ConfigManager.Get (ConfigManager.Names.DaemonConfig);
+			if (config == null)
+				return;
+
+			List<string[]> values = ConfigManager.GetListOptionValues (config, ConfigManager.Names.ExcludeMailfolder);
+			if (values == null)
+				return;
+
+			foreach (string[] item in values)
+				excludes.Add (item [0].ToLower ());
 		}
 
 		/**

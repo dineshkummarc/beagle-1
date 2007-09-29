@@ -26,6 +26,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -1407,22 +1408,34 @@ namespace Beagle.Daemon.FileSystemQueryable {
 		
 		private void LoadConfiguration () 
 		{
-			if (Conf.Indexing.IndexHomeDir)
+			Config config = ConfigManager.Get (ConfigManager.Names.FilesQueryableConfig);
+
+			if (ConfigManager.GetOption (config, ConfigManager.Names.IndexHomeDir, true))
 				AddRoot (PathFinder.HomeDir);
 			
-			foreach (string root in Conf.Indexing.Roots)
-				AddRoot (root);
+			List<string[]> roots = ConfigManager.GetListOptionValues (config, ConfigManager.Names.Roots);
+			foreach (string[] root in roots)
+				AddRoot (root [0]);
 			
-			Conf.Subscribe (typeof (Conf.IndexingConfig), OnConfigurationChanged);
+			ConfigManager.Subscribe (ConfigManager.Names.FilesQueryableConfig, OnConfigurationChanged);
 		}
 		
-		private void OnConfigurationChanged (Conf.Section section)
+		private void OnConfigurationChanged (Config config)
 		{
-			ArrayList roots_wanted = new ArrayList (Conf.Indexing.Roots);
+			if (config == null || config.Name != ConfigManager.Names.FilesQueryableConfig)
+				return;
+
+			List<string[]> values = ConfigManager.GetListOptionValues (config, ConfigManager.Names.Roots);
+			if (values == null)
+				values = new List<string[]> (0);
+
+			ArrayList roots_wanted = new ArrayList (values.Count);
+			foreach (string[] root in values)
+				roots_wanted.Add (root [0]);
 			
-			if (Conf.Indexing.IndexHomeDir)
+			if (ConfigManager.GetOption (config, ConfigManager.Names.IndexHomeDir, true))
 				roots_wanted.Add (PathFinder.HomeDir);
-			
+
 			IList roots_to_add, roots_to_remove;
 			ArrayFu.IntersectListChanges (roots_wanted, Roots, out roots_to_add, out roots_to_remove);
 

@@ -43,6 +43,7 @@ namespace Beagle.Util {
 		// No instantiation
 		private Conf () { }
 
+		/*
 		public static Hashtable Sections;
 		
 		public static IndexingConfig Indexing = null;
@@ -301,6 +302,7 @@ namespace Beagle.Util {
 
 			return result;
 		}
+		*/
 
 		[ConfigSection (Name="searching")]
 		public class SearchingConfig : Section {
