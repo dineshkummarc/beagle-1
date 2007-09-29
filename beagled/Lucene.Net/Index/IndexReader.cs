@@ -42,7 +42,7 @@ namespace Lucene.Net.Index
 	/// </summary>
 	/// <author>  Doug Cutting
 	/// </author>
-	/// <version>  $Id$
+	/// <version>  $Id: IndexReader.cs,v 1.4 2006/10/02 17:08:52 joeshaw Exp $
 	/// </version>
 	public abstract class IndexReader
 	{

@@ -50,66 +50,11 @@ namespace Beagle.Daemon
 {
 	class BuildIndex 
 	{
-		bool arg_recursive = false;
-		bool arg_delete = false;
-		bool arg_cache_text = false;
-		bool arg_disable_filtering = false;
-		bool arg_disable_restart = false;
-		bool arg_disable_directories = false;
-		bool arg_debug = false;
-		bool arg_disable_on_battery = false;
-
-		protected bool Recursive {
-			get { return arg_recursive; }
-			set { arg_recursive = value; }
-		}
-
-		protected bool EnableDelete {
-			get { return arg_delete; }
-			set { arg_delete = value; }
-		}
-
-		protected bool CacheText {
-			get { return arg_cache_text; }
-			set { arg_cache_text = value; }
-		}
-
-		protected bool DisableFiltering {
-			get { return arg_disable_filtering; }
-			set { arg_disable_filtering = value; }
-		}
-
-		protected bool DisableRestart {
-			get { return arg_disable_restart; }
-			set { arg_disable_restart = value; }
-		}
-
-		protected bool HandleDeletions {
-			get { return arg_delete; }
-			set { arg_delete = value; }
-		}
-
-		protected bool IndexDirectories {
-			get { return ! arg_disable_directories; }
-			set { arg_disable_directories = !value; }
-		}
-
-		protected string Source {
-			get { return arg_source; }
-			set { arg_source = value; }
-		}
-
-		string arg_output, arg_tag, arg_source;
-
-		protected string Target {
-			get { return arg_output; }
-			set { arg_output = value; }
-		}
-
-		protected string Tag {
-			get { return arg_tag; }
-			set { arg_tag = value; }
-		}
+		static bool arg_recursive, arg_delete, arg_debug;
+		static bool arg_cache_text, arg_disable_filtering;
+		static bool arg_disable_restart, arg_disable_directories;
+		static bool arg_disable_on_battery;
+		static string arg_output, arg_tag, arg_source;
 
 		/////////////////////////////////////////////////////////
 
@@ -132,31 +77,38 @@ namespace Beagle.Daemon
 
 		/////////////////////////////////////////////////////////
 		
-		FileAttributesStore_Sqlite backing_fa_store;
-		FileAttributesStore fa_store;
+		static FileAttributesStore_Sqlite backing_fa_store;
+		static FileAttributesStore fa_store;
 
-		LuceneIndexingDriver driver;
+		static LuceneIndexingDriver driver;
 
-		bool indexing = true, restart = false;
+		static bool indexing = true, restart = false;
 
-		protected ArrayList allowed_patterns = new ArrayList ();
-		protected ArrayList denied_patterns = new ArrayList ();
+		static ArrayList allowed_patterns = new ArrayList ();
+		static ArrayList denied_patterns = new ArrayList ();
 
-		protected Queue pending_files = new Queue ();
-		protected Queue pending_directories = new Queue ();
-		protected IndexerRequest pending_request;
+		static Queue pending_files = new Queue ();
+		static Queue pending_directories = new Queue ();
+		static IndexerRequest pending_request;
 		
 		const int BATCH_SIZE = 30;
 		
 		/////////////////////////////////////////////////////////
-
-		public BuildIndex (string[] args)
+		
+		static void Main (string [] args)
 		{
-			ProcessParams (args);
+			try {
+				DoMain (args);
+			} catch (Exception ex) {
+				Logger.Log.Error (ex, "Unhandled exception thrown.  Exiting immediately.");
+				Environment.Exit (1);
+			}
 		}
 
-		private void GetParams (string[] args)
+		static void DoMain (string [] args)
 		{
+			SystemInformation.SetProcessName ("beagle-build-index");
+
 			if (args.Length < 2)
 				PrintUsage ();
 		
@@ -264,12 +216,9 @@ namespace Beagle.Daemon
 					break;
 				}
 			}
-		}
-
-		protected virtual void ProcessParams (string[] args)
-		{
-			GetParams (args);
-
+			
+			/////////////////////////////////////////////////////////
+				
 			if (arg_output == null) {
 				Logger.Log.Error ("--target must be specified");
 				Environment.Exit (1);
@@ -331,10 +280,6 @@ namespace Beagle.Daemon
 			denied_patterns.Add (new ExcludeItem (ExcludeType.Pattern, "*.aux"));
 			denied_patterns.Add (new ExcludeItem (ExcludeType.Pattern, "*.tmp"));
 
-		}
-
-		protected void DoBuildIndex ()
-		{
 			Log.Always ("Starting beagle-build-index (pid {0}) at {1}", Process.GetCurrentProcess ().Id, DateTime.Now);
 
 			// Set system priorities so we don't slow down the system
@@ -389,7 +334,7 @@ namespace Beagle.Daemon
 		
 		/////////////////////////////////////////////////////////////////
 		
-		void IndexWorker ()
+		static void IndexWorker ()
 		{
 			Logger.Log.Debug ("Starting IndexWorker");
 
@@ -403,7 +348,7 @@ namespace Beagle.Daemon
 			indexing = false;
 		}
 
-		void DoIndexing ()
+		static void DoIndexing ()
 		{
 			int count_dirs = 0;
 			int count_files = 0;
@@ -489,10 +434,10 @@ namespace Beagle.Daemon
 			Logger.Log.Debug ("Optimizing index");
 			driver.OptimizeNow ();
 		}
-
+		
 		/////////////////////////////////////////////////////////////////
 
-		protected virtual void AddToRequest (Indexable indexable)
+		static void AddToRequest (Indexable indexable)
 		{
 			if (indexable == null)
 				return;
@@ -530,11 +475,21 @@ namespace Beagle.Daemon
 				reschedule = FlushIndexer (driver);
 				Console.WriteLine (reschedule);
 
+				// Super Lame Hack: gtk-sharp up to 2.10 requires a main loop
+				// to dispose of any managed wrappers around GObjects.  Since
+				// we don't have one, we'll process all the pending items in
+				// a loop here.  This is particularly an issue with maildirs,
+				// because we need the loop to clean up after GMime.  Without
+				// it, GMime's streams are never completely unref'd, the
+				// file descriptors aren't closed, and we run out and crash.
+				while (GLib.MainContext.Pending ())
+					GLib.MainContext.Iteration ();
+
 			} while (reschedule);
 		}
 
 		// This is mostly a copy of LuceneQueryable.Flush + FSQ.PostAddHooks/PostRemoveHook
-		private bool FlushIndexer (IIndexer indexer)
+		static bool FlushIndexer (IIndexer indexer)
 		{
 			IndexerRequest flushed_request;
 			if (pending_request.IsEmpty)
@@ -613,7 +568,7 @@ namespace Beagle.Daemon
 			return false;
 		}
 
-		Indexable FileToIndexable (FileInfo file)
+		static Indexable FileToIndexable (FileInfo file)
 		{
 			if (!file.Exists || Ignore (file) || fa_store.IsUpToDateAndFiltered (file.FullName))
 				return null;
@@ -621,8 +576,6 @@ namespace Beagle.Daemon
 			// Create the indexable and add the standard properties we
 			// use in the FileSystemQueryable.
 			Uri uri = UriFu.PathToFileUri (file.FullName);
-			uri = RemapUri (uri);
-
 			Indexable indexable = new Indexable (uri);
 			indexable.Timestamp = file.LastWriteTimeUtc;
 			indexable.Crawled = true;
@@ -635,7 +588,7 @@ namespace Beagle.Daemon
 			return indexable;
 		}
 
-		Indexable DirectoryToIndexable (DirectoryInfo dir, Queue modified_directories)
+		static Indexable DirectoryToIndexable (DirectoryInfo dir, Queue modified_directories)
 		{
 			if (!dir.Exists)
 				return null;
@@ -654,8 +607,6 @@ namespace Beagle.Daemon
 			// Create the indexable and add the standard properties we
 			// use in the FileSystemQueryable.
 			Uri uri = UriFu.PathToFileUri (dir.FullName);
-			uri = RemapUri (uri);
-
 			Indexable indexable = new Indexable (uri);
 			indexable.MimeType = "inode/directory";
 			indexable.NoContent = true;
@@ -713,7 +664,7 @@ namespace Beagle.Daemon
 		private const string IsDirectoryPropKey = "beagle:IsDirectory";
 
 		// Returns a list of all files and directories in dir
-		ICollection GetAllItemsInDirectory (DirectoryInfo dir)
+		static ICollection GetAllItemsInDirectory (DirectoryInfo dir)
 		{
 			// form the query
 			string parent_uri_str = UriFu.PathToFileUri (dir.FullName).ToString ();
@@ -764,7 +715,7 @@ namespace Beagle.Daemon
 			return match_list;
 		}
 
-		private Dirent DocumentToDirent (Document doc)
+		static private Dirent DocumentToDirent (Document doc)
 		{
 			string path;
 			bool is_dir = false;
@@ -786,7 +737,7 @@ namespace Beagle.Daemon
 
 		/////////////////////////////////////////////////////////////////
 
-		void MemoryMonitorWorker ()
+		static void MemoryMonitorWorker ()
 		{
 			int vmrss_original = SystemInformation.VmRss;
 
@@ -817,7 +768,7 @@ namespace Beagle.Daemon
 		
 		// From BeagleDaemon.cs
 
-		void SetupSignalHandlers ()
+		static void SetupSignalHandlers ()
 		{
 			// Force OurSignalHandler to be JITed
 			OurSignalHandler (-1);
@@ -829,7 +780,7 @@ namespace Beagle.Daemon
 				Mono.Unix.Native.Stdlib.signal (Mono.Unix.Native.Signum.SIGQUIT, OurSignalHandler);
 		}
 		
-		void OurSignalHandler (int signal)
+		static void OurSignalHandler (int signal)
 		{
 			// This allows us to call OurSignalHandler w/o doing anything.
 			// We want to call it once to ensure that it is pre-JITed.
@@ -879,11 +830,6 @@ namespace Beagle.Daemon
 		
 		/////////////////////////////////////////////////////////
 		
-		protected virtual Uri RemapUri (Uri uri)
-		{
-			return uri;
-		}
-
 		static bool Ignore (DirectoryInfo directory)
 		{
 			if (directory.Name.StartsWith ("."))
@@ -892,7 +838,7 @@ namespace Beagle.Daemon
 			return false;
 		}
 
-		bool Ignore (FileInfo file)
+		static bool Ignore (FileInfo file)
 		{
 			if (file.Name.StartsWith ("."))
 				return true;
@@ -916,21 +862,5 @@ namespace Beagle.Daemon
 			
 			return false;
 		}
-
-#if BUILD_INDEX_MAIN
-		static void Main (string [] args)
-		{
-			try {
-				SystemInformation.SetProcessName ("beagle-build-index");
-				BuildIndex build_index = new BuildIndex (args);
-
-				build_index.DoBuildIndex ();
-			} catch (Exception ex) {
-				Logger.Log.Error (ex, "Unhandled exception thrown.  Exiting immediately.");
-				Environment.Exit (1);
-			}
-		}
-#endif
-
 	}
 }

@@ -13,9 +13,10 @@ AM_INIT_AUTOMAKE(beagle, 0.3.0)
 ###
 
 MONO_REQUIRED=1.1.13.5
+MONODOC_REQUIRED=1.1.13.5
 GTK_SHARP_REQUIRED=2.4.0
 GMIME_SHARP_REQUIRED=2.2.0
-EVOLUTION_SHARP_REQUIRED=0.12
+EVOLUTION_SHARP_REQUIRED=0.13.3
 GSF_SHARP_REQUIRED=0.6
 GTK_REQUIRED=2.6.0
 AVAHI_SHARP_REQUIRED=0.6.10
@@ -40,7 +41,7 @@ fi
 AC_PATH_PROG(BASH, bash)
 AC_SUBST(BASH)
 
-# mozilla extension uses zip to create the jar/xpi files
+# firefox extension uses zip to create the jar/xpi files
 AC_PATH_PROG(ZIP, zip, no)
 if test "x$ZIP" = "xno"; then
 	AC_MSG_ERROR([You need to install the zip program])
@@ -119,7 +120,7 @@ AM_CONDITIONAL(ENABLE_XDG_OPEN, test "x$XDG_OPEN" != "xno")
 AC_PROG_INTLTOOL([0.23])
 GETTEXT_PACKAGE=beagle
 AC_SUBST(GETTEXT_PACKAGE)
-ALL_LINGUAS="ar bg ca cs da de dz el en_CA en_GB es fi fr gl he hi hu it ja ka ko lt lv mk nb nl pa pl pt_BR ru sl sr sr@Latn sv th tr uk vi zh_CN zh_HK zh_TW"
+ALL_LINGUAS="ar bg ca cs da de dz el en_CA en_GB es eu fi fr gl he hi hu it ja ka ko lt lv mk nb nl pa pl pt pt_BR ru sl sr sr@Latn sv th tr uk vi zh_CN zh_HK zh_TW"
 AM_GLIB_GNU_GETTEXT
 AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [Name of the package for translations])
 
@@ -192,10 +193,11 @@ LDFLAGS="$OLD_LDFLAGS"
 LIBS="$OLD_LIBS"
 
 dnl ----------------------------------------------
+
 AC_ARG_ENABLE([thunderbird],
-	AC_HELP_STRING([--enable-thunderbird], [Enable Thunderbird Mail Backend (default no)]),
-	enable_tbird=$enableval,
-	enable_tbird=no)
+        AC_HELP_STRING([--disable-thunderbird], [Disable Thunderbird Mail Backend (default no)]),
+        enable_tbird=$enableval,
+        enable_tbird=yes)
 AM_CONDITIONAL(ENABLE_THUNDERBIRD, test "x$enable_tbird" = "xyes")
 
 dnl -------------------------------------------------------
@@ -249,11 +251,9 @@ fi
 dnl ----------------------------------------------
 
 dnl "Open With" Menu (Requires GTK 2.8)
-	PKG_CHECK_MODULES(OPEN_WITH,
-[
-	gtk-sharp-2.0 >= 2.8
-],OPEN_WITH=yes,OPEN_WITH=no)
-AM_CONDITIONAL(ENABLE_OPEN_WITH, test "x$OPEN_WITH" != "xno")
+PKG_CHECK_MODULES(OPEN_WITH, gtk-sharp-2.0 >= 2.8, open_with=yes, open_with=no)
+AM_CONDITIONAL(ENABLE_OPEN_WITH, test "x$open_with" != "xno")
+
 dnl ----------------------------------------------
 
 dnl evolution support
@@ -421,73 +421,46 @@ AM_CONDITIONAL(ENABLE_BLUDGEON, test "x$enable_bludgeon" = "xyes")
 	
 dnl ----------------------------------------------
 dnl Epiphany Extension
-dnl Much of this is cut&pasted from epiphany-extensions/configure.ac
 
 AC_ARG_ENABLE([epiphany-extension],
 	AC_HELP_STRING([--enable-epiphany-extension], [Enable Epiphany Extension (default auto)]),
 	enable_epiphany_extension=$enableval,
 	enable_epiphany_extension=auto)
 
-if $PKG_CONFIG --exists epiphany-2.16; then
-        EPIPHANY_MAJOR=2.16
-        EPIPHANY_REQUIRED=2.16.0
-elif $PKG_CONFIG --exists epiphany-2.14; then
-        EPIPHANY_MAJOR=2.14
-        EPIPHANY_REQUIRED=2.14.0
-elif $PKG_CONFIG --exists epiphany-1.8; then
-	EPIPHANY_MAJOR=1.8
-	EPIPHANY_REQUIRED=1.7.0
-elif $PKG_CONFIG --exists epiphany-1.6; then
-	EPIPHANY_MAJOR=1.6
-	EPIPHANY_REQUIRED=1.6.0
-else
-	enable_epiphany_extension="no (Epiphany not installed)"
-fi
+if test "x$enable_epiphany_extension" != "xno"; then
+	AC_MSG_CHECKING([for Epiphany])
+	AC_MSG_RESULT()
+	VALID_EPIPHANY_VERSIONS="2.20 2.19 2.18 2.17 2.16 2.15 2.14 1.8 1.6"
+	for v in $VALID_EPIPHANY_VERSIONS; do
+	
+		AC_MSG_CHECKING([for Epiphany $v])
+		PKG_CHECK_EXISTS(epiphany-$v, found_ephy=yes, found_ephy=no)
+		if test "x$found_ephy" = "xyes"; then
+			EPIPHANY_MAJOR=$v
+			AC_MSG_RESULT([yes])
+			break
+		else
+			AC_MSG_RESULT([no])
+		fi
+	done
 
-if test "x$enable_epiphany_extension" = "xyes"; then
-
-LIBXML_REQUIRED=2.6.0
-LIBGLIB_REQUIRED=2.4.0
-LIBGTK_REQUIRED=2.4.0
-
-AC_SUBST(EPIPHANY_REQUIRED)
-AC_SUBST(LIBXML_REQUIRED)
-AC_SUBST(LIBGLIB_REQUIRED)
-AC_SUBST(LIBGTK_REQUIRED)
-
-PKG_CHECK_MODULES(EPIPHANY_DEPENDENCY, 
-		  libxml-2.0 >= $LIBXML_REQUIRED \
-		  libglade-2.0 \
-		  glib-2.0 >= $LIBGLIB_REQUIRED \
-		  gmodule-2.0 \
-		  gtk+-2.0 >= $LIBGTK_REQUIRED \
-		  epiphany-$EPIPHANY_MAJOR >= $EPIPHANY_REQUIRED,
-		  have_epiphany_dependencies=yes,
-		  have_epiphany_dependencies=no)
-AC_SUBST(EPIPHANY_DEPENDENCY_CFLAGS)
-AC_SUBST(EPIPHANY_DEPENDENCY_LIBS)
-
-EPIPHANY_EXTENSIONS_DIR="`$PKG_CONFIG --variable=extensionsdir epiphany-$EPIPHANY_MAJOR`"
-AC_SUBST([EPIPHANY_EXTENSIONS_DIR])
-EPIPHANY_PREFIX="`$PKG_CONFIG --variable=prefix epiphany-$EPIPHANY_MAJOR`"
-AC_SUBST(EPIPHANY_PREFIX)
-
-if test "x$have_epiphany_dependencies" = "xno"; then
-	enable_epiphany_extension="no (missing dependencies)"
-elif test "x$enable_epiphany_extension" != "xyes"; then
-	enable_epiphany_extension="disabled"
-fi
-
+	if test "x$found_ephy" = "xno"; then
+		if test "x$enable_epiphany_extension" = "xyes"; then
+			AC_MSG_ERROR([Epiphany (and/or its development files) could not be found])
+		else
+			enable_epiphany_extension="no (Epiphany not installed)"
+		fi
+	else
+		EPIPHANY_EXTENSION_INIT($EPIPHANY_MAJOR)
+		if test "$EPIPHANY_HAS_PYTHON" != "1"; then
+			enable_epiphany_extension="no (Epiphany lacks Python support)"
+		else
+			enable_epiphany_extension="yes"
+		fi
+	fi
 fi
 
 AM_CONDITIONAL(ENABLE_EPIPHANY_EXTENSION, test "x$enable_epiphany_extension" = "xyes")
-
-AC_ARG_ENABLE([epiphany-extension-install],
-	AS_HELP_STRING([--enable-epiphany-extension-install],[Install Epiphany Extension]),
-	[install_epiphany_extension=$enableval],
-	[install_epiphany_extension=yes])
-
-AM_CONDITIONAL([INSTALL_EPIPHANY_EXTENSION], [test "x$install_epiphany_extension" = "xyes"])
 
 dnl ----------------------------------------------
 
@@ -497,6 +470,39 @@ PKG_CHECK_MODULES(GALAGO, galago-sharp >= 0.5 , enable_galago=yes, enable_galago
 AM_CONDITIONAL(ENABLE_GALAGO, test "x$enable_galago" = "xyes")
 AC_SUBST(GALAGO_LIBS)
 
+dnl ----------------------------------------------
+
+dnl Zeroconf support
+
+AC_ARG_ENABLE([avahi],
+        AC_HELP_STRING([--disable-avahi], [Disable Avahi (default auto)]),
+        enable_avahi=$enableval,
+        enable_avahi=auto)
+
+PKG_CHECK_MODULES(AVAHI_SHARP, avahi-sharp >= $AVAHI_SHARP_REQUIRED,
+                  have_avahi_dependencies=yes, have_avahi_dependencies=no)
+AC_SUBST(AVAHI_SHARP_LIBS)
+
+if test "x$have_avahi_dependencies" = "xno"; then
+
+	dnl error out if user has explicitly requested avahi support
+	if test "x$enable_avahi" = "xyes"; then
+		AC_MSG_ERROR([Could not find Avahi dependencies])
+	fi
+
+	enable_avahi="no (missing dependencies)"
+
+else
+
+	if test "x$enable_avahi" != "xno"; then
+		enable_avahi="yes"
+	else
+		enable_avahi="no (disabled)"
+	fi
+
+fi
+
+AM_CONDITIONAL(ENABLE_AVAHI, test "x$enable_avahi" = "xyes")
 
 dnl ----------------------------------------------
 
@@ -519,22 +525,6 @@ if test ! "x$KDE_CONFIG" = "xno"; then
 	kde_prefix_print="$KDE_PREFIX"
 fi
 AC_SUBST(KDE_PREFIX)
-
-dnl Zeroconf support
-
-AC_ARG_ENABLE([avahi],
-        AC_HELP_STRING([--enable-avahi], [Enable Avahi (default disabled)]),
-        enable_avahi=$enableval,
-        enable_avahi=no)
-
-AM_CONDITIONAL(ENABLE_AVAHI, test "x$enable_avahi" = "xyes")
-
-if test "x$enable_avahi" = "xyes"; then
-	dnl -------------------------------------------------------
-	dnl Avahi version requirements
-        PKG_CHECK_MODULES(AVAHI_SHARP, avahi-sharp >= $AVAHI_SHARP_REQUIRED)
-        AC_SUBST(AVAHI_SHARP_LIBS)
-fi
 
 dnl ----------------------------------------------
 
@@ -559,6 +549,34 @@ AM_CONDITIONAL(HAS_LIBCHM, test "x$has_libchm" = "xyes")
 if test "x$has_libchm" = "xyes"; then
 	BEAGLE_DEFINES="$BEAGLE_DEFINES -define:HAVE_LIBCHM"
 fi
+
+dnl ----------------------------------------------
+
+dnl Monodoc
+
+AC_ARG_ENABLE(docs,
+	AC_HELP_STRING([--disable-docs],
+	[Do not build documentation (default yes)]),
+	with_docs=$enableval,
+	with_docs=yes)
+
+if test "x$with_docs" = "xyes"; then
+	AC_PATH_PROG(MONODOCER, monodocer, no)
+	if test "x$MONODOCER" = "xno"; then
+		AC_MSG_ERROR([You need to install monodoc, or pass --disable-docs to configure to skip documentation installation])
+	fi
+
+	AC_PATH_PROG(MDASSEMBLER, mdassembler, no)
+	if test "x$MDASSEMBLER" = "xno"; then
+		AC_MSG_ERROR([You need to install mdassembler, or pass --disable-docs to configure to skip documentation installation])
+	fi
+
+	AM_CONDITIONAL(BUILD_DOCS, true)
+else
+	AC_MSG_NOTICE([not building Beagle csharp API documentation])
+	AM_CONDITIONAL(BUILD_DOCS, false)
+fi
+
 
 dnl ----------------------------------------------
 
@@ -592,9 +610,11 @@ tools/beagle-settings.desktop.in
 search/Makefile
 search/beagle-search.desktop.in
 ImLogViewer/Makefile
-ContactViewer/Makefile
 epiphany-extension/Makefile
-mozilla-extension/Makefile
+firefox-extension/Makefile
+thunderbird-extension/Makefile
+doc/Makefile
+doc/api/Makefile
 bludgeon/Makefile
 beagle-0.0.pc
 beagle-daemon.pc
@@ -604,38 +624,31 @@ po/Makefile.in
 ])
 
 echo "
-	Beagle Version:           ${VERSION}
+	Beagle version:           ${VERSION}
 	Target OS:		  ${os}
-	inotify?		  ${enable_inotify}
+	Inotify:		  ${enable_inotify}
 
 	Prefix:			  ${prefix}
-	GNOME Prefix:             ${GNOME_PREFIX}
-	KDE Prefix:		  ${kde_prefix_print}
+	GNOME prefix:             ${GNOME_PREFIX}
+	KDE prefix:		  ${kde_prefix_print}
 
-	Evolution support?	  ${enable_evo}
+	evolution-sharp?	  ${enable_evo}
 	gsf-sharp?		  ${enable_gsf_sharp}
-	wv1?			  ${enable_wv1}
 	galago-sharp?		  ${enable_galago}
+	avahi-sharp		  ${enable_avahi}
+	wv1?			  ${enable_wv1}
 	libchm?			  ${has_libchm} 
-	Thunderbird backend? 	  ${enable_tbird}
 
-	Mozilla Extension?	  yes
+	Firefox Extension?	  yes
 	Epiphany Extension?	  ${enable_epiphany_extension}
+	Thunderbird Extension? 	  ${enable_tbird}
 
 	Local taglib-sharp?       ${internal_taglib}
 	Local SqliteClient?	  ${use_local_sqlite}
 	Sqlite version:		  ${SQLITE_MAJ_VER}.x
 
 	Monitor screensaver       ${have_xss}
+	beagle-search GUI	  ${enable_gui}
 
-	Enable avahi              ${enable_avahi}
-	Enable beagle-search GUI  ${enable_gui}
-	Enable \"Open With\" menu   ${OPEN_WITH}
+	Build docs?               ${with_docs}
 "
-echo
-
-if test "x$enable_epiphany_extension" = "xyes"; then
-   echo "NOTE: The Beagle Epiphany Extension Is Totally Insecure!"
-   echo "      Use it at your own risk!"
-   echo
-fi

@@ -48,11 +48,6 @@ namespace Beagle.IndexHelper {
 		private static DateTime last_activity;
 		private static Server server;
 
-		private static bool cache_text = true;
-		public static bool CacheText {
-			get { return cache_text; }
-		}
-
 		// Current state with filtering.
 		public static Uri CurrentDisplayUri;
 		public static Uri CurrentContentUri;
@@ -86,11 +81,6 @@ namespace Beagle.IndexHelper {
 		private static void DoMain (string [] args)
 		{
 			SystemInformation.SetProcessName ("beagled-helper");
-
-			foreach (string arg in args) {
-				if (arg == "--no-textcache")
-					cache_text = false;
-			}
 
 			bool run_by_hand = (Environment.GetEnvironmentVariable ("BEAGLE_RUN_HELPER_BY_HAND") != null);
 			bool log_in_fg = (Environment.GetEnvironmentVariable ("BEAGLE_LOG_IN_THE_FOREGROUND_PLEASE") != null);

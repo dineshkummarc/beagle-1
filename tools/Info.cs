@@ -105,7 +105,7 @@ public class InfoTool {
 			get_version = get_sched_info = get_index_status = get_is_indexing = true;
 
 		try {
-			response = (DaemonInformationResponse) ((ResponseMessage [] ) request.Send ())[0];
+			response = (DaemonInformationResponse) request.Send ();
 		} catch (Beagle.ResponseMessageException) {
 			Console.WriteLine ("Could not connect to the daemon.");
 			return 1;
@@ -160,14 +160,10 @@ public class InfoTool {
 			bool has_filter = false;
 
 			foreach (FilterFlavor flavor in filter.SupportedFlavors) {
-				if (flavor.MimeType != null && (! flavor.MimeType.StartsWith ("beagle"))) {
-					sb.Append ("  - " + flavor.MimeType + "\n");
-					has_filter = true;
-				}
-				if (flavor.Extension != null) {
-					sb.Append ("  - *" + flavor.Extension + "\n");
-					has_filter = true;
-				}
+				sb.Append ("  - ");
+				sb.Append (flavor);
+				sb.Append ("\n");
+				has_filter = true;
 			}
 
 			if (has_filter)

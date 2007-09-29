@@ -51,6 +51,7 @@ namespace Beagle.Filters {
 	public class FilterMail : Beagle.Daemon.Filter, IDisposable {
 
 		private static bool gmime_initialized = false;
+		private static bool gmime_broken = false;
 
 		private GMime.Message message;
 		private PartHandler handler;
@@ -73,18 +74,39 @@ namespace Beagle.Filters {
 		protected override void RegisterSupportedTypes ()
 		{
 			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("message/rfc822"));
+
+			// Add the list of user requested maildir directories
+			// This is useful if beagle (xdgmime) does not correctly detect the mimetypes
+			// of several maildir files as message/rfc822
+			foreach (Conf.IndexingConfig.Maildir maildir in Conf.Indexing.Maildirs) {
+				FilterFlavor flavor =
+					new FilterFlavor (new Uri (maildir.Directory + "/*").ToString (),
+							  maildir.Extension,
+							  null,
+							  1 /* Should be more than priority of text filter */);
+				AddSupportedFlavor (flavor);
+			}
 		}
 
 		protected override void DoOpen (FileInfo info)
 		{
 			if (!gmime_initialized) {
+				gmime_initialized = true;
+
+				// Only try initialization once; if it fails, it'll never work.
 				try {
 					GMime.Global.Init ();
-					gmime_initialized = true;
-				} catch {
+				} catch (Exception e) {
+					Log.Error (e, "Unable to initialize GMime");
+					gmime_broken = true;
 					Error ();
 					return;
 				}
+			}
+
+			if (gmime_broken) {
+				Error ();
+				return;
 			}
 
 			int mail_fd = Mono.Unix.Native.Syscall.open (info.FullName, Mono.Unix.Native.OpenFlags.O_RDONLY);
@@ -352,7 +374,12 @@ namespace Beagle.Filters {
 							// Even for mails found on disk, MailMessage hitype is set
 							child.HitType = "MailMessage";
 							child.MimeType = mime_type;
-							child.CacheContent = false;
+
+							// If this is the richest part we found for multipart emails, add its content to textcache
+							if (this.depth == 1 && this.count == 0)
+								child.CacheContent = true;
+							else
+								child.CacheContent = false;
 
 							string filename = ((GMime.Part) part).Filename;
 

@@ -58,8 +58,7 @@ namespace Beagle.IndexHelper {
 
 				if (indexer == null) {
 					indexer = new LuceneIndexingDriver (remote_request.RemoteIndexName,
-									    remote_request.RemoteIndexMinorVersion,
-									    IndexHelperTool.CacheText);
+									    remote_request.RemoteIndexMinorVersion);
 					indexer.DisableTextCache = IndexHelperTool.DisableTextCache;
 
 					indexer_table [remote_request.RemoteIndexName] = indexer;

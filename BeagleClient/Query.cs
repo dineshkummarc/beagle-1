@@ -1,7 +1,7 @@
 //
 // Query.cs
 //
-// Copyright (C) 2004-2005 Novell, Inc.
+// Copyright (C) 2004-2007 Novell, Inc.
 //
 
 //
@@ -27,9 +27,9 @@
 
 using System;
 using System.IO;
+using System.Text;
 using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 using System.Xml.Serialization;
 
 using Beagle.Util;
@@ -41,49 +41,31 @@ namespace Beagle {
 		Local        = 1,
 		System       = 2,
 		Neighborhood = 4,
-		Global       = 8,
-		All          = 15 /* 1 | 2 | 4 | 8 */
+		Global       = 8
 	}
 
 	public class Query : RequestMessage {
 
-		// FIXME: This is a good default when on an airplane.
-		private Beagle.QueryDomain domainFlags = QueryDomain.Local | QueryDomain.System; 
-
 		private ArrayList parts = new ArrayList ();
-		private ArrayList mimeTypes = new ArrayList ();
-		private ArrayList hitTypes = new ArrayList ();
-		private ArrayList searchSources = new ArrayList ();
 
 		private ArrayList exact_text = null;
 		private ArrayList stemmed_text = null;
 
-		private QueryPart_Or mime_type_part = null;
-		private QueryPart_Or hit_type_part = null;
-		private QueryPart_Or source_part = null;
+		// FIXME: This is a good default when on an airplane.
+		private QueryDomain domain_flags = QueryDomain.Local | QueryDomain.System;
 
-		private bool is_index_listener = false;
-		
-		private int nodes_finished;
-
-		// Events to make things nicer to clients
 		public delegate void HitsAdded (HitsAddedResponse response);
 		public event HitsAdded HitsAddedEvent;
 
 		public delegate void HitsSubtracted (HitsSubtractedResponse response);
 		public event HitsSubtracted HitsSubtractedEvent;
 
-		public delegate void NodeFinished (FinishedResponse response);
-		public event NodeFinished NodeFinishedEvent;
-		
-		public delegate void Finished ();
+		public delegate void Finished (FinishedResponse response);
 		public event Finished FinishedEvent;
 
-		// Avahi
-		private MDnsBrowser mdns_browser = null;
-
-		public delegate void FoundUnknownHost (object sender, MDnsEventArgs args);
-		public event FoundUnknownHost FoundUnknownHostEvent;
+#if ENABLE_AVAHI
+		public event AvahiEventHandler UnknownHostFoundEvent;
+#endif
 
 		public Query () : base (true)
 		{
@@ -92,14 +74,6 @@ namespace Beagle {
 			this.RegisterAsyncResponseHandler (typeof (FinishedResponse), OnFinished);
 			this.RegisterAsyncResponseHandler (typeof (ErrorResponse), OnError);
 			this.RegisterAsyncResponseHandler (typeof (SearchTermResponse), OnSearchTerms);
-
-#if ENABLE_AVAHI
-			// setup mdns discovery
-			mdns_browser = new MDnsBrowser ();
-			mdns_browser.HostFound += new MDnsEventHandler (OnHostFound);
-			mdns_browser.HostRemoved += new MDnsEventHandler (OnHostRemoved);
-			mdns_browser.Start ();
-#endif
 		}
 
 		public Query (string str) : this ()
@@ -129,27 +103,13 @@ namespace Beagle {
 		{
 			FinishedResponse response = (FinishedResponse) r;
 	
-			if (this.NodeFinishedEvent != null)
-				this.NodeFinishedEvent (response);
-				
-			if (++nodes_finished == clients.Count && this.FinishedEvent != null) {
-				Logger.Log.Debug ("Query: All nodes finished."); 
-				this.FinishedEvent ();
-			}
+			if (this.FinishedEvent != null)
+				this.FinishedEvent (response);
 		}
 
 		private void OnError (ResponseMessage r)
 		{
 			ErrorResponse response = (ErrorResponse) r;
-			
-			Logger.Log.Warn ("Query: Error returned by a client: " + response.ErrorMessage );
-			
-			if (++nodes_finished == clients.Count && this.FinishedEvent != null) {
-				Logger.Log.Debug ("Query: All nodes done."); 
-				this.FinishedEvent ();
-			}
-
-			//TODO: Ignore errorresponses from network nodes or let user decide
 			throw new ResponseMessageException (response);
 		}
 
@@ -158,40 +118,6 @@ namespace Beagle {
 			SearchTermResponse response = (SearchTermResponse) r;
 			ProcessSearchTermResponse (response);
 		}
-
-#if ENABLE_AVAHI
-		private void OnHostFound (object sender, MDnsEventArgs args)
-		{
-			// Here we should add this host to the current query if
-			// we recognize it as a pre-registered host.
-			foreach (object o in Conf.Networking.AvahiNodes) {
-				Service known = (Service) o;
-				if (known.Cookie == args.Service.Cookie && 
-				    known.Name == args.Service.Name) {
-					/*
-					 *  Here is where we add the host to
-					 *  the current query!!!
-					 */
-					Logger.Log.Debug ("Known Host {0}. Adding to query.",
-					                  known.Name);
-					return;
-				}
-			}
-		        
-		        Logger.Log.Debug ("Unknown host has been detected. Warning user.");
-		
-		        // This is a new, unique host that has never
-		        // been seen before, so we'll fire this event.
-		        if (FoundUnknownHostEvent != null)
-				FoundUnknownHostEvent (this, args);
-		}
-		
-		private void OnHostRemoved (object sender, MDnsEventArgs args)
-		{
-		        // This host should now be removed from the current query
-		}
-#endif
- 
 
 		///////////////////////////////////////////////////////////////
 
@@ -209,6 +135,7 @@ namespace Beagle {
 		// that they will work for you!  Listener queries should only be
 		// used for debugging and testing.
 
+		private bool is_index_listener = false;
 		public bool IsIndexListener {
 			set { is_index_listener = value; }
 			get { return is_index_listener; }
@@ -232,8 +159,7 @@ namespace Beagle {
 		// the daemon.
 		public void AddText (string str)
 		{
-			QueryPart_Human part;
-			part = new QueryPart_Human ();
+			QueryPart_Human part = new QueryPart_Human ();
 			part.QueryString = str;
 			AddPart (part);
 		}
@@ -277,206 +203,24 @@ namespace Beagle {
 						
 		///////////////////////////////////////////////////////////////
 
-		// This API is DEPRECATED.
-		// The mime type is now stored in the beagle:MimeType property.
-		// To restrict on mime type, just do a normal property query.
-
-		public void AddMimeType (string str)
+		public void AddDomain (QueryDomain domain)
 		{
-			mimeTypes.Add (str);
-
-			if (mime_type_part == null) {
-				mime_type_part = new QueryPart_Or ();
-				AddPart (mime_type_part);
-			}
-
-			// Create a part for this mime type.
-			QueryPart_Property part;
-			part = new QueryPart_Property ();
-			part.Type = PropertyType.Keyword;
-			part.Key = "beagle:MimeType";
-			part.Value = str;
-			mime_type_part.Add (part);
+			domain_flags |= domain;
 		}
 
-		public bool AllowsMimeType (string str)
+		public void RemoveDomain (QueryDomain domain)
 		{
-			if (mimeTypes.Count == 0)
-				return true;
-			foreach (string mt in mimeTypes)
-				if (str == mt)
-					return true;
-			return false;
+			domain_flags &= ~domain;
 		}
 
-		[XmlArrayItem (ElementName="MimeType",
-			       Type=typeof (string))]
-		[XmlArray (ElementName="MimeTypes")]
-		public ArrayList MimeTypes {
-			get { return mimeTypes; }
-		}
-
-		public bool HasMimeTypes {
-			get { return mimeTypes.Count > 0; }
-		}
-
-		///////////////////////////////////////////////////////////////
-
-		// This API is DEPRECATED.
-		// The hit type is now stored in the beagle:HitType property.
-		// To restrict on type, just do a normal property query.
-
-		public void AddHitType (string str)
+		public bool AllowsDomain (QueryDomain domain)
 		{
-			hitTypes.Add (str);
-
-			if (hit_type_part == null) {
-				hit_type_part = new QueryPart_Or ();
-				AddPart (hit_type_part);
-			}
-
-			// Add a part for this hit type.
-			QueryPart_Property part;
-			part = new QueryPart_Property ();
-			part.Type = PropertyType.Keyword;
-			part.Key = "beagle:HitType";
-			part.Value = str;
-			hit_type_part.Add (part);
+			return (domain_flags & domain) != 0;
 		}
-
-		public bool AllowsHitType (string str)
-		{
-			if (hitTypes.Count == 0)
-				return true;
-			foreach (string ht in hitTypes)
-				if (str == ht)
-					return true;
-			return false;
-		}
-
-		[XmlArrayItem (ElementName="HitType",
-			       Type=typeof(string))]
-		[XmlArray (ElementName="HitTypes")]
-		public ArrayList HitTypes {
-			get { return hitTypes; }
-		}
-
-		[XmlIgnore]
-		public bool HasHitTypes {
-			get { return hitTypes.Count > 0; }
-		}
-
-		///////////////////////////////////////////////////////////////
-
-		// This API is DEPRECATED.
-		// The source is now stored in the beagle:Source property.
-		// To restrict on source, just do a normal property query.
-
-		public void AddSource (string str)
-		{
-			searchSources.Add (str);
-
-			if (source_part == null) {
-				source_part = new QueryPart_Or ();
-				AddPart (source_part);
-			}
-
-			// Add a part for this source type.
-			QueryPart_Property part;
-			part = new QueryPart_Property ();
-			part.Type = PropertyType.Keyword;
-			part.Key = "beagle:Source";
-			part.Value = str;
-			source_part.Add (part);
-		}
-		
-
-		public bool AllowsSource (string str)
-		{
-			if (searchSources.Count == 0)
-				return true;
-			foreach (string ss in searchSources)
-				if (str == ss)
-					return true;
-			return false;
-		}
-
-		[XmlArrayItem (ElementName="Source",
-			       Type=typeof (string))]
-		[XmlArray (ElementName="Sources")]
-		public ArrayList Sources {
-			get { return searchSources; }
-		}
-
-		[XmlIgnore]
-		public bool HasSources {
-			get { return searchSources.Count > 0; }
-		}
-
-		///////////////////////////////////////////////////////////////
 
 		public QueryDomain QueryDomain {
-			get { return domainFlags; }
-			set { domainFlags = value; }
-		}
-
-		private Dictionary<string, bool> hosts_added = new Dictionary<string, bool> ();
-
-		public void AddDomain (Beagle.QueryDomain d)
-		{
-			domainFlags |= d;
-
-			ArrayList hosts_to_add = null;
-
-			switch (d) {
-				case QueryDomain.Neighborhood:
-					hosts_to_add = Conf.Networking.NeighborhoodNodes;
-					break;
-				case QueryDomain.Global:
-					hosts_to_add = Conf.Networking.GlobalNodes;
-					break;
-			}
-
-			if (hosts_to_add == null && d <= Beagle.QueryDomain.System) {
-				SetLocal (true);
-				return;
-			}
-
-			foreach (string url in hosts_to_add) {
-				if (hosts_added.ContainsKey (url))
-					continue;
-
-				hosts_added [url] = true;
-				Logger.Log.Debug ( "Query: Adding " + url + " to query");
-				SetRemote (url);
-			}
-		}
-
-		public void AddRemoteDomain (Beagle.QueryDomain d, string url)
-		{
-			if (d <= Beagle.QueryDomain.System)
-				throw new Exception ("I meant _remote_ domain!");
-
-			domainFlags |= d;
-			if (! hosts_added.ContainsKey (url)) {
-				hosts_added [url] = true;
-				SetRemote (url);
-			}
-		}
-
-		public void RemoveDomain (Beagle.QueryDomain d)
-		{
-			domainFlags &= ~d;
-
-			if (d <= Beagle.QueryDomain.System)
-				SetLocal (false);
-			else
-				throw new NotImplementedException ("Removing already added remote domains not supported");
-		}
-
-		public bool AllowsDomain (Beagle.QueryDomain d)
-		{
-			return (domainFlags & d) != 0;
+			get { return domain_flags; }
+			set { domain_flags = value; }
 		}
 
 		///////////////////////////////////////////////////////////////
@@ -491,9 +235,7 @@ namespace Beagle {
 
 		[XmlIgnore]
 		public bool IsEmpty {
-			get { return parts.Count == 0
-				      && mimeTypes.Count == 0
-				      && searchSources.Count == 0; }
+			get { return parts.Count == 0; }
 		}
 
 		public override string ToString ()

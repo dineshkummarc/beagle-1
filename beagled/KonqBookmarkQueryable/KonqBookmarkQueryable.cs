@@ -326,6 +326,7 @@ namespace Beagle.Daemon.KBookmarkQueryable {
 				string elementname = reader.Name;
 				if (elementname == "title") {
 					string title = reader.ReadString ();
+					current_folder_title = title;
 					folder_stack.Add (title);
 					ResetCurrentFolder ();
 					reader.ReadEndElement ();

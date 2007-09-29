@@ -8,9 +8,12 @@ CSFLAGS = 						\
 	-define:PKGLIBDIR=$(pkglibdir)			\
 	$(BEAGLE_DEFINES)
 
+if ENABLE_AVAHI
+CSFLAGS += -define:ENABLE_AVAHI
+endif
+
 CSFILES = 						\
 	$(srcdir)/AssemblyInfo.cs			\
-	$(srcdir)/Client.cs				\
 	$(srcdir)/Hit.cs                		\
 	$(srcdir)/IIndexableGenerator.cs       		\
 	$(srcdir)/Indexable.cs          		\
@@ -25,24 +28,18 @@ CSFILES = 						\
 	$(srcdir)/QueryableStatus.cs			\
 	$(srcdir)/RemoteControl.cs			\
 	$(srcdir)/Snippet.cs				\
+	$(srcdir)/Transport.cs				\
+	$(srcdir)/UnixTransport.cs			\
 	$(srcdir)/Versioned.cs
 
 LOCAL_ASSEMBLIES =					\
 	../Util/Util.dll
-
 
 ASSEMBLIES = 						\
 	$(BEAGLED_LIBS)                 		\
 	$(SHARPZIPLIBS_LIBS)				\
 	-r:Mono.Posix					\
 	$(LOCAL_ASSEMBLIES:%=-r:%)
-
-if ENABLE_AVAHI
-CSFILES +=                              \
-	$(srcdir)/MDnsBrowser.cs
-CSFLAGS += -define:ENABLE_AVAHI
-ASSEMBLIES += -pkg:avahi-sharp
-endif
 
 RESOURCES =
 

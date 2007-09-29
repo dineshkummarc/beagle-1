@@ -29,14 +29,14 @@ using System.Text;
 using System.Security.Cryptography;
 
 namespace Beagle.Util {
+
         public class Password
         {
                 public static string Encode (string password)
                 {
-                        Byte [] password_bytes;
-                        Byte [] encoded_bytes;
-                        
-                        
+                        Byte [] password_bytes = null;
+                        Byte [] encoded_bytes = null;
+                                                
                         MD5 md5 = new MD5CryptoServiceProvider ();
                         password_bytes = ASCIIEncoding.Default.GetBytes (password);
                         encoded_bytes = md5.ComputeHash (password_bytes);

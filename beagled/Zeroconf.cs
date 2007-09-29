@@ -1,7 +1,8 @@
 //
-// Zeroconf.cs
+//  Zeroconf.cs
 //
-// Copyright (C) 2006 Kyle Ambroff <kambroff@csus.edu>
+//  Copyright (c) 2006 Kyle Ambroff <kambroff@csus.edu>
+//  Copyright (c) 2007 Lukas Lipka <lukaslipka@gmail.com>
 //
 
 //
@@ -32,113 +33,92 @@ using Avahi;
 
 using Beagle.Util;
 
-namespace Beagle.Network
-{        
-        public class Zeroconf
-        {
-                public static string DOMAIN = "local";
+namespace Beagle.Daemon.Network {        
+
+        public class Zeroconf : IDisposable {
+
+		public static string DOMAIN = "local";
                 public static string PROTOCOL = "_beagle._tcp";
+		
+                private string name = null;
+                private ushort port = 4000;
+                private bool enabled = false;
 
-                // Service name, such as "Kyle's Beagle Index"
-                private static string name;
-                private static ushort port;
-                private static bool enabled = false;
-
-                public static string Name {
-                        get { return name; }
-                }
-
-                public static ushort Port {
-                        get { return port; }
-                }
-
-                public static bool Enabled {
-                        get { return enabled; }
-                }
-
-                private static Publisher publisher;
+                private EntryGroup entry_group = null;
+                private Client client = null;
+                private int collisions = 0;
                 
-                // no instantiation
-                private Zeroconf () {}
+                public Zeroconf ()
+		{
+			Logger.Log.Debug ("Zeroconf: Service started...");
+
+			LoadConfiguration ();
+                        Conf.Subscribe (typeof (Conf.NetworkingConfig), new Conf.ConfigUpdateHandler (OnConfigurationChanged));
+		}
                 
-                public static void ConfigurationChanged (Conf.Section section)
+
+                public void Dispose ()
                 {
-                        Logger.Log.Debug ("Networking Configuration Changed");
-                        Conf.NetworkingConfig net_conf = (Conf.NetworkingConfig) section;
+			Logger.Log.Debug ("Zeroconf: Service stopped...");
 
-                        if (enabled != net_conf.ShareIndex) {
-                                enabled = net_conf.ShareIndex;
+			if (entry_group != null) {
+				entry_group.Dispose ();
+				entry_group = null;
+			}
+
+			if (client != null) {
+				client.Dispose ();
+				client = null;
+			}
+                }
+
+		private void LoadConfiguration ()
+		{
+			if (String.IsNullOrEmpty (name))
+				name = Conf.Networking.ServiceName;
+
+			// Check to see if our enabled status hasn't changed
+                        if (enabled != Conf.Networking.ServiceEnabled) {
+                                enabled = Conf.Networking.ServiceEnabled;
                                 
-                                if (enabled)
-                                        publisher.Shutdown ();
-                                else                                        
-                                        Publish (port);
+                                if (enabled) {
+					try {
+						Publish ();
+					} catch (ClientException) {
+						Log.Error ("Could not start avahi");
+						return;
+					}
+				} else
+					Unpublish ();
                                 
-                                Logger.Log.Info("Networking: Index sharing over the network {0}", 
-                                                enabled ? "Enabled" : "Disabled");
+                                Logger.Log.Info ("Zeroconf: Index sharing is {0}", enabled ? "enabled" : "disabled");
                         }
 
-                        // handle index name changes
-                        if (String.Compare (name, net_conf.IndexName) != 0) {
-                                publisher.Update ();
-                        }
+                        // Handle index name changes
+                        if (String.Compare (name, Conf.Networking.ServiceName) != 0)
+				Update ();
                 }
 
-                public static void Publish (ushort p)
+		private void OnConfigurationChanged (Conf.Section section)
                 {
-                        port = p;
-                        Publish ();
-                }
+			LoadConfiguration ();
+		}
 
-                public static void Publish ()
-                {                        
-                        publisher = new Publisher ();
-                        publisher.Publish ();
-                        
-                        Conf.Subscribe (typeof (Conf.NetworkingConfig), new Conf.ConfigUpdateHandler (ConfigurationChanged));
-                }
-
-                public static void Stop ()
-                {
-                        publisher.Shutdown ();
-                        publisher = null;
-                }
-        }
-
-        public class Publisher
-        {
-                EntryGroup entry_group;
-                Client client;
-
-                private int collisions;
-                
-                public void Publish ()
+                private void Publish ()
                 {
                         if (client == null)
                                 client = new Client ();
                         
                         try {
-                                if (entry_group != null)
-                                        entry_group.Reset ();
-                                else {
-                                        entry_group = new EntryGroup (client);
-                                        entry_group.StateChanged += OnEntryGroupStateChanged;
+				string [] args = new string [] { "Password=" + (Conf.Networking.PasswordRequired ? "true" : "false") };
+					
+				if (collisions > 0)
+					name += String.Format (" ({0})", collisions);
                                         
-                                        string [] args = new string [] {
-                                                "Password=" + (Conf.Networking.PasswordRequired ? "true" : "false")
-                                        };
-                                        
-                                        string name = Conf.Networking.IndexName;
-                                        if (collisions > 0)
-                                                name += String.Format (" ({0})", collisions);
-                                        
-                                        entry_group.AddService (name,
-                                                                Zeroconf.PROTOCOL,
-                                                                Zeroconf.DOMAIN,
-                                                                Zeroconf.Port,
-                                                                args);
-                                        entry_group.Commit ();                               
-                                }
+				entry_group = new EntryGroup (client);
+				entry_group.AddService (name, PROTOCOL, DOMAIN, port, args);
+				entry_group.StateChanged += OnEntryGroupStateChanged;
+				entry_group.Commit ();                               
                         } catch (ClientException e) {
                                 if (e.ErrorCode == ErrorCode.Collision) {
                                         HandleCollision ();
@@ -147,55 +127,57 @@ namespace Beagle.Network
                                         throw;
                                 }
                         } catch (Exception e) {
-                                Logger.Log.Error ("Failed to publish\nException {0}\n{1}",
-                                                  e.Message,
-                                                  e.StackTrace);
-                                // FIXME: Shutdown or unpublish
-                        }
+                                Logger.Log.Error (e, "Zeroconf: Failed to publish service - '{0}'", name);
+                                // FIXME: Shutdown or unpublish the service
+			}
                 }
 
-                public void UnPublish ()
+                private void Unpublish ()
                 {
-                        if (entry_group == null)
-                                return;
-                        
-                        entry_group.Reset ();
+			if (entry_group == null)
+				return;
+
+                        //entry_group.Reset ();
                         entry_group.Dispose ();
-                        entry_group = null;
+			entry_group = null;
                 }
 
-                public void Update ()
+                private void Update ()
                 {
-                        //entry_group.UpdateService (Conf.Networking.IndexName,
-                        //                           Zeroconf.PROTOCOL,
-                        //                           Zeroconf.DOMAIN);
-                        // Do this to get around a bug in avahi-sharp ?
-                        entry_group.Dispose ();
-                        entry_group = null;
+                        //entry_group.UpdateService (Conf.Networking.ServiceName, Zeroconf.PROTOCOL, Zeroconf.DOMAIN);
+
+                        // FIXME: Do this to get around a bug in avahi-sharp
+			Unpublish ();
                         Publish ();
                 }
 
                 private void HandleCollision ()
                 {
-                        Logger.Log.Info ("(MDNS) IndexName collision.");
-                        UnPublish ();
+                        Logger.Log.Info ("Zeroconf: Service name collision - '{0}'", name);
+
+                        Unpublish ();
                         collisions++;
                         Publish ();       
                 }
                 
                 private void OnEntryGroupStateChanged (object sender, EntryGroupStateArgs args)
                 {
-                        Logger.Log.Debug ("Zeroconf Publisher state changed: ({0})", args.State);
-                        if (args.State == EntryGroupState.Collision) {
+                        Logger.Log.Debug ("Zeroconf: Service state changed: {0}", args.State);
+
+                        if (args.State == EntryGroupState.Collision)
                                 HandleCollision ();
-                        }
                 }
 
-                public void Shutdown ()
-                {
-                        entry_group.Reset ();
-                        entry_group.Dispose ();
-                        //Logger.Log.Debug ("Zeroconf Publisher shutdown.");
+		public string Name {
+                        get { return name; }
+                }
+
+                public ushort Port {
+                        get { return port; }
+                }
+
+                public bool Enabled {
+                        get { return enabled; }
                 }
         }
 }

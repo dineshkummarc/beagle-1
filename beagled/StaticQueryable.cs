@@ -37,15 +37,10 @@ using Beagle.Util;
 namespace Beagle.Daemon {
 
 	[PropertyKeywordMapping (Keyword="ext", PropertyName="beagle:FilenameExtension", IsKeyword=true, Description="File extension, e.g. ext:jpeg. Use ext: to search in files with no extension.")]
-	[PropertyKeywordMapping (Keyword="media", PropertyName="fixme:media_name", IsKeyword=false, Description="Name of removable media.")]
+
 	public class StaticQueryable : LuceneQueryable 	{
 		
 		protected TextCache text_cache;
-
-		private Conf.IndexingConfig.RemovableMediaInfo  removable_media_info = null;
-		public Conf.IndexingConfig.RemovableMediaInfo RemovableMedia {
-			set { removable_media_info = value; }
-		}
 		
 		public StaticQueryable (string index_name, string index_path, bool read_only_mode) : base (index_path, read_only_mode)
 		{
@@ -60,7 +55,7 @@ namespace Beagle.Daemon {
 			}
 		}
 
-		override public string GetSnippet (string[] query_terms, Hit hit) 
+		override public ISnippetReader GetSnippet (string[] query_terms, Hit hit, bool full_text) 
 		{
 			if (text_cache == null)
 				return null;
@@ -70,10 +65,7 @@ namespace Beagle.Daemon {
 			if (reader == null)
 				return null;
 			
-			string snippet = SnippetFu.GetSnippet (query_terms, reader);
-			reader.Close ();
-			
-			return snippet;
+			return SnippetFu.GetSnippet (query_terms, reader, full_text);
 		}
 
 		override protected bool HitIsValid (Uri uri)
@@ -91,29 +83,6 @@ namespace Beagle.Daemon {
 				Logger.Log.Warn ("Exception executing HitIsValid on {0}", uri.LocalPath);
 				return false;
 			}
-		}
-
-		// Remap uri based on mount point for removable indexes
-		// FIXME: Return false for non-existent files if option set in Conf
-		override protected bool HitFilter (Hit hit)
-		{
-			if (removable_media_info == null)
-				return true;
-			else if (hit.Uri.Scheme != "removable")
-				return true;
-			//else if (hit ["Tag"] != removable_media_info.Name)
-			//	return false;
-
-			string path = hit.Uri.LocalPath;
-			path = path.Substring (1); // Remove initial '/'
-			path = Path.Combine (removable_media_info.MountPath, path);
-			Log.Debug ("Remapping {0} to {1}", hit.Uri.LocalPath, path);
-			hit.Uri = UriFu.PathToFileUri (path);
-
-			if (! File.Exists (path) && ! Directory.Exists (path))
-				hit.AddProperty (Beagle.Property.NewBool ("fixme:not_found", true));
-
-			return true;
 		}
 	}
 }

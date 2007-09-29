@@ -25,7 +25,7 @@ namespace Lucene.Net.Index
 	/// <summary>An IndexReader which reads multiple indexes, appending their content.
 	/// 
 	/// </summary>
-	/// <version>  $Id$
+	/// <version>  $Id: MultiReader.cs,v 1.4 2006/10/16 19:36:57 joeshaw Exp $
 	/// </version>
 	public class MultiReader : IndexReader
 	{

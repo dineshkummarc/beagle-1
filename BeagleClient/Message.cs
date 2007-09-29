@@ -25,9 +25,10 @@
 //
 
 using System;
-using System.Collections;
-using System.Reflection;
 using System.Text;
+using System.Reflection;
+using System.Collections;
+using System.Collections.Generic;
 using System.Xml.Serialization;
 
 using Beagle.Util;
@@ -35,18 +36,20 @@ using Beagle.Util;
 namespace Beagle {
 
 	public abstract class Message {
+
 		protected static Type[] GetTypes (Type parent_type, Type attr_type)
 		{
 			ArrayList types = new ArrayList ();
 
-			foreach (Assembly ass in AppDomain.CurrentDomain.GetAssemblies ())
-				types.AddRange (ReflectionFu.GetTypesFromAssemblyAttribute (ass, attr_type));
+			foreach (Assembly a in AppDomain.CurrentDomain.GetAssemblies ())
+				types.AddRange (ReflectionFu.GetTypesFromAssemblyAttribute (a, attr_type));
 
 			return (Type[]) types.ToArray (typeof (Type));
 		}
 	}
 
 	public class RequestWrapper {
+
 		public RequestMessage Message;
 
 		// Needed by the XmlSerializer for deserialization
@@ -59,53 +62,34 @@ namespace Beagle {
 	}
 	
 	public abstract class RequestMessage : Message {
+
 		private static Type[] request_types = null;
 		private static object type_lock = new object ();
 
+		private List<Transport> transports = new List<Transport> ();
 		private Hashtable handlers = new Hashtable ();
-
-		//A list of clients which will receive this message 
-		protected Hashtable clients = new Hashtable ();
-		//How many clients have completed all comms
-		protected int clients_finished;
-
-		[XmlIgnore]
-		public bool Keepalive;
+		private bool keepalive = false;
 
 		public delegate void AsyncResponseHandler (ResponseMessage response);
-
 		public delegate void Closed ();
+
 		public event Closed ClosedEvent;
 
-		// This is why names arguments (like in python) are a good idea.
-
-		public RequestMessage (bool keepalive, bool local, string client_name)
+		public RequestMessage (Transport transport)
 		{
-			this.Keepalive = keepalive;
-
-			if (local)
-				this.clients.Add ("local", new ClientContainer (true, typeof(UnixSocketClient), client_name));
+			this.RegisterTransport (transport);
 		}
 
-		public RequestMessage (bool keepalive, string client_name)
-			: this (keepalive, true, client_name)
+		public RequestMessage (bool keepalive)
 		{
+			this.keepalive = keepalive;
+
+			// Register the Unix socket transport by default
+			this.RegisterTransport (new UnixTransport ());
 		}
 
-		public RequestMessage (bool keepalive) : this (keepalive, true, null)
-		{
-		}
-
-		// Recommended: Use this only when local = false
-		public RequestMessage (bool keepalive, bool local) : this (keepalive, local, null)
-		{
-		}
-
-		public RequestMessage (string client_name) : this (false, true, client_name)
-		{
-		}
-
-		public RequestMessage () : this (false, null)
+		public RequestMessage ()
+			: this (false)
 		{
 		}
 		
@@ -127,12 +111,18 @@ namespace Beagle {
 
 		public void Close ()
 		{
-			lock (clients) {
-				foreach (ClientContainer c in this.clients.Values) {
-					if (c.client != null)
-						c.client.Close ();
-				}
-			}
+			foreach (Transport transport in transports)
+				transport.Close ();
+		}
+
+		public void RegisterTransport (Transport transport)
+		{
+			transports.Add (transport);
+		}
+
+		public void UnregisterTransport (Transport transport)
+		{
+			transports.Remove (transport);
 		}
 
 		public void RegisterAsyncResponseHandler (Type t, AsyncResponseHandler handler)
@@ -151,7 +141,7 @@ namespace Beagle {
 			this.handlers.Remove (t);
 		}
 
-		private void OnClosedEvent ()
+		private void OnClosed ()
 		{
 			if (this.ClosedEvent != null)
 				this.ClosedEvent ();
@@ -166,106 +156,68 @@ namespace Beagle {
 			}
 		}
 
-		// Again an irritating long list of overloaded methods instead of named parameters
-		public void SetLocal (bool local)
+		public void SendAsync ()
 		{
-			SetLocal (local, null);
-		}
-
-		public void SetLocal (string client_name)
-		{
-			SetLocal (true, client_name);
-		}
-
-		public void SetLocal (bool local, string client_name)
-		{
-			lock (this.clients) {
-				if (! local) {
-					if (this.clients.Contains ("local"))
-						this.clients.Remove ("local");
-				} else {
-					if (! this.clients.Contains ("local"))
-						this.clients.Add ("local", new ClientContainer (true, typeof(UnixSocketClient), client_name));
-				}
-			}
-		}
-
-		// url: host:port
-		public void SetRemote (string url)
-		{
-			// Hashtable will replace existing clientcontainer (if any), which will
-			// in turn close the clients when GC will collect them
-			lock (this.clients)
-				this.clients [url] = new ClientContainer (false, typeof (HttpClient), url);
-		}
-
-		virtual public void SendAsync ()
-		{
-			lock (clients) {
-				if (this.clients.Count == 0)
-					// FIXME: Throw a custom exception and catch it upwards, also better message
-					throw new Exception ("No where to send data, add local querydomain or add neighbourhood domain with some hosts");
-
-				foreach (ClientContainer c in this.clients.Values) {
-					if (c.client != null)
-						c.client.Close ();
-					
-					c.CreateClient ();
-					c.client.AsyncResponseEvent += OnAsyncResponse;
-					c.client.ClosedEvent += OnClosedEvent;
-					c.client.SendAsync (this);
-				}
+			foreach (Transport transport in transports) {
+				transport.AsyncResponse += OnAsyncResponse;
+				transport.Closed += OnClosed;
+				transport.SendAsync (this);
 			}
 		}
 
 		public void SendAsyncBlocking ()
 		{
-			lock (clients) {
-				if (this.clients.Count == 0)
-					// FIXME: Throw a custom exception and catch it upwards, also better message
-					throw new Exception ("No where to send data, add local querydomain or add neighbourhood domain with some hosts");
-
-				foreach (ClientContainer c in this.clients.Values) {
-					c.CreateClient ();
-					c.client.AsyncResponseEvent += OnAsyncResponse;
-					c.client.ClosedEvent += OnClosedEvent;
-					c.client.SendAsyncBlocking (this);
-				}
+			foreach (Transport transport in transports) {
+				transport.AsyncResponse += OnAsyncResponse;
+				transport.Closed += OnClosed;
+				transport.SendAsyncBlocking (this);
 			}
 		}
 
-		public ResponseMessage[] Send ()
+		public ResponseMessage Send ()
 		{
-			ArrayList responses = new ArrayList ();
-			
-			foreach (ClientContainer c in clients.Values)
-			{
-				c.CreateClient ();
-				//Logger.Log.Debug ("Sending message");
-				ResponseMessage resp = c.client.Send (this);
-				//Logger.Log.Debug ("Got reply");
-				c.client.Close ();
-				//Logger.Log.Debug ("Closed client");
-	
-				// Add some nice syntactic sugar by throwing an
-				// exception if the response is an error.
-				
-				//TODO: Maybe it's not right to throw an exception anymore (silently fail)? Or maybe throw
-				//exceptions only for local fails?
-				ErrorResponse err = resp as ErrorResponse;		
+			ResponseMessage resp = null;
 
-				if (err != null)	
-					throw new ResponseMessageException (err);
-
-				responses.Add (resp);
+			// FIXME: Wait for all transports to finish
+			// before returning
+			bool has_transport = false;
+			foreach (Transport transport in transports) {
+				resp = transport.Send (this);
+				transport.Close ();
+				has_transport = true;
 			}
+
+			if (! has_transport)
+				throw new ResponseMessageException (String.Format ("No transport registered to handle '{0}'", this.GetType()));
+	
+			// Add some nice syntactic sugar by throwing an
+			// exception if the response is an error.
+			ErrorResponse error = resp as ErrorResponse;		
+
+			if (error != null)
+				throw new ResponseMessageException (error);
 			
-			return (ResponseMessage []) responses.ToArray (typeof (ResponseMessage));
+			if (resp == null)
+				throw new ResponseMessageException ("Response is null");
+
+			return resp;
 		}
 
+		[XmlIgnore]
+		public bool Keepalive {
+			get { return keepalive; }
+			set { keepalive = value; }
+		}
+
+		[XmlIgnore]
+		public ICollection<Transport> Transports
+		{
+			get { return transports; }
+		}
 	}
 
 	public abstract class RequestMessageExecutor {
+		
 		public delegate void AsyncResponse (ResponseMessage response);
 		public event AsyncResponse AsyncResponseEvent;
 
@@ -283,6 +235,7 @@ namespace Beagle {
 
 	[AttributeUsage (AttributeTargets.Class)]
 	public class RequestMessageAttribute : Attribute {
+
 		private Type message_type;
 
 		public RequestMessageAttribute (Type message_type)
@@ -296,6 +249,7 @@ namespace Beagle {
 	}
 
 	public class ResponseWrapper {
+
 		public ResponseMessage Message;
 
 		// Needed by the XmlSerializer for deserialization
@@ -308,6 +262,7 @@ namespace Beagle {
 	}
 
 	public abstract class ResponseMessage : Message {
+
 		private static Type[] response_types = null;
 		private static object type_lock = new object ();
 
@@ -323,9 +278,11 @@ namespace Beagle {
 		}
 	}
 
-	public class EmptyResponse : ResponseMessage { }
+	public class EmptyResponse : ResponseMessage {
+	}
 
 	public class ErrorResponse : ResponseMessage {
+
 		public string ErrorMessage;
 		public string Details;
 
@@ -346,24 +303,35 @@ namespace Beagle {
 
 	public class ResponseMessageException : Exception {
 
-		private string details;
+		private string details = null;
 
-		internal ResponseMessageException (ErrorResponse response) : base (response.ErrorMessage)
+		public ResponseMessageException (ErrorResponse response)
+			: base (response.ErrorMessage)
 		{ 
 			Log.Debug ("Creating a ResponseMessageException from an ErrorResponse");
-			details = response.Details;
+			this.details = response.Details;
 		}
 
-		internal ResponseMessageException (Exception e) : base (e.Message, e) { }
+		public ResponseMessageException (Exception e)
+			: base (e.Message, e)
+		{
+		}
 
-		internal ResponseMessageException (Exception e, string message) : base (message, e) { }
+		public ResponseMessageException (Exception e, string message)
+			: base (message, e) 
+		{
+		}
 
-		internal ResponseMessageException (Exception e, string message, string details) : base (message, e)
+		public ResponseMessageException (Exception e, string message, string details)
+			: base (message, e)
 		{
 			this.details = details;
 		}
 
-		internal ResponseMessageException (string message) : base (message) { }
+		public ResponseMessageException (string message) 
+			: base (message)
+		{
+		}
 
 		public override string ToString ()
 		{
@@ -380,28 +348,6 @@ namespace Beagle {
 			}
 
 			return sb.ToString ();
-		}
-	}
-
-	internal class ClientContainer
-	{
-		public bool local;
-		private System.Type clienttype;
-		private string id;
-		
-		public Client client;
-	
-	
-		public ClientContainer (bool local, System.Type client_type, string id)
-		{
-			this.local = local;
-			this.clienttype = client_type;
-			this.id = id;
-		}
-		
-		public void CreateClient ()
-		{
-			client = (Client) System.Activator.CreateInstance (clienttype, new object[] { id });
 		}
 	}
 

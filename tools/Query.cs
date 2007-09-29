@@ -52,6 +52,7 @@ public class QueryTool {
 	private static DateTime lastQueryTime = DateTime.Now;
 
 	private static MainLoop main_loop = null;
+
 	// CLI args
 	private static bool keep_running = false;
 	private static bool verbose = false;
@@ -60,10 +61,6 @@ public class QueryTool {
 	private static bool listener = false;
 	private static DateTime start_date = DateTime.MinValue;
 	private static DateTime end_date = DateTime.MinValue;
-
-	private static bool query_local = true;
-	private static bool query_neighborhood = false;
-	private static bool query_global = false;
 
 	private static void OnHitsAdded (HitsAddedResponse response)
 	{
@@ -90,7 +87,7 @@ public class QueryTool {
 
 			if (verbose) {
 				SnippetRequest sreq = new SnippetRequest (query, hit);
-				SnippetResponse sresp = (SnippetResponse) ((ResponseMessage []) sreq.Send ()) [0];
+				SnippetResponse sresp = (SnippetResponse) sreq.Send ();
 				Console.WriteLine ("PaUri: {0}", hit.ParentUri != null ? hit.ParentUri.ToString () : "(null)");
 				Console.WriteLine (" Snip: {0}", sresp.Snippet != null ? sresp.Snippet : "(null)");
 				Console.WriteLine (" Type: {0}", hit.Type);
@@ -127,7 +124,7 @@ public class QueryTool {
 		}
 	}
 
-	private static void OnFinished ()
+	private static void OnFinished (FinishedResponse response)
 	{
 		if (verbose) {
 			Console.WriteLine ("Elapsed time: {0:0.000}s",
@@ -149,12 +146,6 @@ public class QueryTool {
 			"Usage: beagle-query [OPTIONS] <query string>\n\n" +
 			"Options:\n" +
 			"  --verbose\t\t\tPrint detailed information about each hit.\n" +
-			"  --mime <mime type>\t\t(DEPRECATED Use mimetype: property query.)\n" +
-			"  --type <hit type>\t\t(DEPRECATED Use hittype: property query.)\n" +
-			"  --source <source>\t\t(DEPRECATED Use source: property query.)\n" +
-			"                   \t\tSources list available from beagle-info --status.\n" +
-			"  --start <date>\t\t(DEPRECATED Use date range query syntax).\n" +
-			"  --end <date>\t\t\t(DEPRECATED Use date range query syntax).\n" +
 			"  --keywords\t\t\tLists the keywords allowed in 'query string'.\n" +
 			"            \t\t\tKeyword queries can be specified as keywordname:value e.g. ext:jpg\n" +
 			"  --live-query\t\t\tRun continuously, printing notifications if a\n" +
@@ -283,18 +274,6 @@ public class QueryTool {
 		while (i < args.Length) {
 			switch (args [i]) {
 
-			case "--mime":
-			        if (++i >= args.Length) PrintUsageAndExit ();
-				query.AddMimeType (args [i]);
-				break;
-			case "--type":
-			        if (++i >= args.Length) PrintUsageAndExit ();
-				query.AddHitType (args [i]);
-				break;
-			case "--source":
-			        if (++i >= args.Length) PrintUsageAndExit ();
-				query.AddSource (args [i]);
-				break;
 			case "--live-query":
 				keep_running = true;
 				break;
@@ -316,32 +295,6 @@ public class QueryTool {
 				listener = true;
 				keep_running = true;
 				break;
-			case "--start":
-				if (++i >= args.Length) PrintUsageAndExit ();
-				try {
-					start_date = DateTime.ParseExact (args[i], formats,
-									  CultureInfo.InvariantCulture,
-									  DateTimeStyles.None);
-				} catch (FormatException) {
-					Console.WriteLine ("Invalid start date");
-					System.Environment.Exit (-1);
-				}
-				start_date = start_date.ToUniversalTime ();
-				break;
-
-			case "--end":
-				if (++i >= args.Length) PrintUsageAndExit ();
-				try {
-					end_date = DateTime.ParseExact (args[i], formats,
-									CultureInfo.InvariantCulture,
-									DateTimeStyles.None);
-				} catch (FormatException) {
-					Console.WriteLine ("Invalid end date");
-					System.Environment.Exit (-1);
-				}
-				end_date = end_date.ToUniversalTime ();
-				break;
-
 			case "--keywords":
 				ReadBackendMappings ();
 				QueryDriver.ReadKeywordMappings ();
@@ -360,45 +313,27 @@ public class QueryTool {
 				System.Environment.Exit (0);
 				break;
 
-			case "--local":
-				if (++i >= args.Length) PrintUsageAndExit ();
-				if (args [i].ToLower () == "no")
-					query_local = false;
-				else
-					query_local = true;
-				break;
-
 			case "--network":
 				if (++i >= args.Length) PrintUsageAndExit ();
 				if (args [i].ToLower () == "yes")
-					query_neighborhood = true;
-				else
-					query_neighborhood = false;
+					query.AddDomain (QueryDomain.Neighborhood);
 				break;
 
 			default:
+				if (args [i].StartsWith ("--"))
+					PrintUsageAndExit ();
 				if (query_str.Length > 0)
 					query_str.Append (' ');
 				query_str.Append (args [i]);
 				
 				break;
-				
 			}
 
 			++i;
 		}
 
-		if (!query_local)
-			query.RemoveDomain (QueryDomain.Local);
-		if (query_neighborhood)
-			query.AddDomain (QueryDomain.Neighborhood);
-		if (query_global)
-			query.AddDomain (QueryDomain.Global);
-
 		if (listener) {
-
 			query.IsIndexListener = true;
-
 		} else {
 		
 			if (query_str.Length > 0)
@@ -419,7 +354,6 @@ public class QueryTool {
 
 		query.HitsAddedEvent += OnHitsAdded;
 		query.HitsSubtractedEvent += OnHitsSubtracted;
-
 
 		if (! keep_running)
 			query.FinishedEvent += OnFinished;

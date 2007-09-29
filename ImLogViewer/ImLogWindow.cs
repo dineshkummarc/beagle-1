@@ -1,7 +1,7 @@
 //
 // ImLogWindow.cs
 //
-// Lukas Lipka <lukas@pmad.net>
+// Lukas Lipka <lukaslipka@gmail.com>
 // Raphael  Slinckx <rslinckx@gmail.com>
 //
 // Copyright (C) 2005 Novell, Inc.
@@ -92,12 +92,15 @@ namespace ImLogViewer {
 
 			// Find the buddy
 			ImBuddy buddy = null;
+			ImBuddyListReader reader = null;
 
-			if (client == ImClient.Pidgin)
-				buddy = new GaimBuddyListReader ().Search (speaker);
-			else if (client == ImClient.Kopete)
-				buddy = new KopeteBuddyListReader ().Search (speaker);
-			else if (client == ImClient.Konversation) {
+			if (client == ImClient.Pidgin) {
+				reader = new PidginBuddyListReader ();
+				buddy = reader.Search (speaker);
+			} else if (client == ImClient.Kopete) {
+				reader = new KopeteBuddyListReader ();
+				buddy = reader.Search (speaker);
+			} else if (client == ImClient.Konversation) {
 				int pos = speaker.IndexOf ('_');
 
 				// speaker of the form irc.gimp.net_#mono-dev

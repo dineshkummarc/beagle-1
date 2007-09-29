@@ -35,7 +35,7 @@ namespace Beagle.Daemon {
 
 	public abstract class LuceneQueryable : IQueryable {
 		
-		static public bool Debug = true;
+		static public bool Debug = false;
 		static public bool OptimizeRightAway = false;
 
 		public delegate IIndexer IndexerCreator (string name, int minor_version);
@@ -118,11 +118,11 @@ namespace Beagle.Daemon {
 			Shutdown.ShutdownEvent += new Shutdown.ShutdownHandler (OnShutdownEvent);
 		}
 
-		protected string IndexName {
+		public string IndexName {
 			get { return index_name; }
 		}
 
-		protected string IndexDirectory {
+		public string IndexDirectory {
 			get { return driver.TopDirectory; }
 		}
 
@@ -349,7 +349,7 @@ namespace Beagle.Daemon {
 
 		/////////////////////////////////////////
 
-		protected string GetSnippetFromTextCache (string [] query_terms, Uri uri)
+		protected SnippetReader GetSnippetFromTextCache (string [] query_terms, Uri uri, bool full_text)
 		{
 			// Look up the hit in our text cache.  If it is there,
 			// use the cached version to generate a snippet.
@@ -359,17 +359,12 @@ namespace Beagle.Daemon {
 			if (reader == null)
 				return null;
 
-			string snippet = SnippetFu.GetSnippet (query_terms, reader);
-			reader.Close ();
-
-			return snippet;
+			return SnippetFu.GetSnippet (query_terms, reader, full_text);
 		}
 
-		// When remapping, override this with
-		// return GetSnippetFromTextCache (query_terms, remapping_fn (hit.Uri))
-		virtual public string GetSnippet (string [] query_terms, Hit hit)
+		virtual public ISnippetReader GetSnippet (string [] query_terms, Hit hit, bool full_text)
 		{
-			return GetSnippetFromTextCache (query_terms, hit.Uri);
+			return GetSnippetFromTextCache (query_terms, hit.Uri, full_text);
 		}
 
 		/////////////////////////////////////////
@@ -465,8 +460,8 @@ namespace Beagle.Daemon {
 
 		virtual protected bool PreAddIndexableHook (Indexable indexable)
 		{
-			// By default, we like everything.
-			return true;
+			// By default, we like everything if we are not read-only
+			return ! read_only_mode;
 		}
 
 		// If we are remapping Uris, indexables should be added to the
@@ -481,7 +476,7 @@ namespace Beagle.Daemon {
 			return indexable.Uri;
 		}
 
-		virtual protected Uri PostRemoveHook (Indexable indexable)
+		virtual protected Uri PostRemoveHook (Indexable indexable, int num_removed)
 		{
 			// By default, remapped uri is the indexable uri
 			return indexable.Uri;
@@ -790,7 +785,7 @@ namespace Beagle.Daemon {
 		// add the indexable
 		virtual protected bool PreFilterGeneratedAddHook (Indexable indexable)
 		{
-			return true;
+			return ! read_only_mode;
 		}
 
 		virtual protected void PreFlushHook (IndexerRequest flushed_request)
@@ -951,11 +946,15 @@ namespace Beagle.Daemon {
 					// Call the appropriate hook
 					Uri notification_uri = indexable.Uri;
 					try {
-						notification_uri = PostRemoveHook (indexable);
+						notification_uri = PostRemoveHook (indexable, r.NumRemoved);
 					} catch (Exception ex) {
 						Logger.Log.Warn (ex, "Caught exception in PostRemoveHook '{0}'",
 								 indexable.Uri);
 					}
+
+					// If nothing was removed, no need for change notification
+					if (r.NumRemoved <= 0)
+						continue;
 
 					// Add the removed Uri to the list for our
 					// change data.  This will be an external Uri

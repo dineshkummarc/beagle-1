@@ -257,6 +257,32 @@ LUCENE_CSFILES = $(LUCENE_1_9_CSFILES)
 
 ############################################################
 
+snowballdir = $(srcdir)/Snowball.Net
+
+SNOWBALL_CSFILES =							\
+	$(snowballdir)/Lucene.Net/Analysis/Snowball/SnowballAnalyzer.cs	\
+	$(snowballdir)/Lucene.Net/Analysis/Snowball/SnowballFilter.cs	\
+	$(snowballdir)/SF/Snowball/Ext/ItalianStemmer.cs		\
+	$(snowballdir)/SF/Snowball/Ext/RussianStemmer.cs		\
+	$(snowballdir)/SF/Snowball/Ext/NorwegianStemmer.cs		\
+	$(snowballdir)/SF/Snowball/Ext/EnglishStemmer.cs		\
+	$(snowballdir)/SF/Snowball/Ext/German2Stemmer.cs		\
+	$(snowballdir)/SF/Snowball/Ext/FinnishStemmer.cs		\
+	$(snowballdir)/SF/Snowball/Ext/PortugueseStemmer.cs		\
+	$(snowballdir)/SF/Snowball/Ext/SpanishStemmer.cs		\
+	$(snowballdir)/SF/Snowball/Ext/FrenchStemmer.cs			\
+	$(snowballdir)/SF/Snowball/Ext/DanishStemmer.cs			\
+	$(snowballdir)/SF/Snowball/Ext/SwedishStemmer.cs		\
+	$(snowballdir)/SF/Snowball/Ext/DutchStemmer.cs			\
+	$(snowballdir)/SF/Snowball/Ext/GermanStemmer.cs			\
+	$(snowballdir)/SF/Snowball/Ext/LovinsStemmer.cs			\
+	$(snowballdir)/SF/Snowball/Ext/KpStemmer.cs			\
+	$(snowballdir)/SF/Snowball/Ext/PorterStemmer.cs			\
+	$(snowballdir)/SF/Snowball/Among.cs				\
+	$(snowballdir)/SF/Snowball/SnowballProgram.cs
+
+############################################################
+
 sqlitedir = $(srcdir)/Mono.Data.SqliteClient
 
 SQLITE_CSFILES =					\
@@ -299,6 +325,7 @@ FILE_SYSTEM_QUERYABLE_CSFILES =					\
 
 pidginqueryable = $(srcdir)/PidginQueryable
 PIDGIN_QUERYABLE_CSFILES =					\
+	$(pidginqueryable)/PidginIndexableGenerator.cs		\
 	$(pidginqueryable)/PidginQueryable.cs
 
 tomboyqueryable = $(srcdir)/TomboyQueryable
@@ -370,8 +397,14 @@ nautilusqueryable = $(srcdir)/NautilusMetadataQueryable
 NAUTILUS_QUERYABLE_CSFILES =					\
 	$(nautilusqueryable)/NautilusMetadataQueryable.cs
 
+networkservicesqueryable = $(srcdir)/NetworkServicesQueryable
+NETWORK_SERVICES_QUERYABLE =					\
+	$(networkservicesqueryable)/NetworkServicesQueryable.cs	\
+	$(networkservicesqueryable)/HttpTransport.cs
+
 DAEMON_DLL_CSFILES = 						\
 	$(LUCENE_CSFILES)					\
+	$(SNOWBALL_CSFILES)					\
 	$(KMAIL_QUERYABLE_CSFILES)				\
 	$(FILE_SYSTEM_QUERYABLE_CSFILES)			\
 	$(PIDGIN_QUERYABLE_CSFILES)				\
@@ -390,6 +423,7 @@ DAEMON_DLL_CSFILES = 						\
 	$(KONVERSATION_QUERYABLE_CSFILES)			\
 	$(OPERA_QUERYABLE_CSFILES)				\
 	$(NAUTILUS_QUERYABLE_CSFILES)				\
+	$(NETWORK_SERVICES_QUERYABLE)				\
 	$(srcdir)/AssemblyInfo.cs				\
 	$(srcdir)/ExternalMetadataQueryable.cs			\
 	$(srcdir)/FileAttributes.cs				\
@@ -430,7 +464,8 @@ DAEMON_DLL_CSFILES = 						\
 	$(srcdir)/SnippetFu.cs					\
 	$(srcdir)/SqliteUtils.cs				\
 	$(srcdir)/StaticQueryable.cs				\
-	$(srcdir)/TextCache.cs
+	$(srcdir)/TextCache.cs					\
+	$(srcdir)/WebServer.cs
 
 DAEMON_DLL_LOCAL_ASSEMBLIES =					\
 	../Util/Util.dll					\
@@ -442,14 +477,20 @@ DAEMON_DLL_ASSEMBLIES = 					\
 	$(DAEMON_DLL_LOCAL_ASSEMBLIES:%=-r:%)			\
 	$(SHARPZIPLIB_LIBS)					\
 	-r:Mono.Data.SqliteClient				\
-	-r:Mono.Posix				\
-	-r:System.Web
+	-r:Mono.Posix
 
 if USE_LOCAL_SQLITE
 DAEMON_DLL_CSFILES += $(SQLITE_CSFILES)
 DAEMON_DLL_ASSEMBLIES += -r:System.Data
 else
 DAEMON_DLL_ASSEMBLIES += -r:Mono.Data.SqliteClient
+endif
+
+if ENABLE_AVAHI
+DAEMON_DLL_CSFLAGS += -define:ENABLE_AVAHI
+DAEMON_DLL_ASSEMBLIES += $(AVAHI_SHARP_LIBS)
+DAEMON_DLL_CSFILES +=						\
+	$(srcdir)/Zeroconf.cs
 endif
 
 $(DAEMON_DLL_TARGET): $(DAEMON_DLL_CSFILES) $(DAEMON_DLL_LOCAL_ASSEMBLIES)
@@ -509,21 +550,6 @@ $(EVO_DLL_TARGET): $(EVO_DLL_CSFILES) $(DAEMON_DLL_LOCAL_ASSEMBLIES) $(DAEMON_DL
 ############################################################
 
 ###
-### Zeroconf broadcast and discovery
-###
-
-ZEROCONF_TARGET = Beagle.Network.dll
-ZEROCONF_ASSEMBLIES = $(AVAHI_SHARP_LIBS) $(PLUGIN_ASSEMBLIES)
-ZEROCONF_CSFLAGS = $(PLUGIN_CSFLAGS)
-ZEROCONF_CSFILES = Zeroconf.cs
-
-$(ZEROCONF_TARGET): $(ZEROCONF_CSFILES)
-	$(CSC) -out:$@ $(ZEROCONF_CSFLAGS) $(ZEROCONF_CSFILES) \
-		$(ZEROCONF_ASSEMBLIES)
-
-############################################################
-
-###
 ### Thunderbird backend
 ###
 
@@ -534,16 +560,7 @@ THUNDERBIRD_TARGET = ThunderbirdBackends.dll
 THUNDERBIRD_CSFLAGS = $(BACKEND_CSFLAGS)
 
 THUNDERBIRD_CSFILES =						\
-	$(THUNDERBIRD_DIR)/LuceneAccess.cs			\
-	$(THUNDERBIRD_DIR)/ThunderbirdIndexer.cs   		\
-	$(THUNDERBIRD_DIR)/ThunderbirdIndexableGenerator.cs	\
-	$(THUNDERBIRD_DIR)/ThunderbirdQueryable.cs		\
-	$(THUNDERBIRD_DIR)/ThunderbirdInotify.cs		\
-	$(THUNDERBIRD_DIR)/Mail.cs				\
-	$(THUNDERBIRD_DIR)/Contact.cs				\
-	$(THUNDERBIRD_DIR)/Rss.cs				\
-	$(THUNDERBIRD_DIR)/Nntp.cs				\
-	$(THUNDERBIRD_DIR)/MoveMail.cs
+	$(THUNDERBIRD_DIR)/ThunderbirdQueryable.cs
 
 THUNDERBIRD_LOCAL_ASSEMBLIES =					\
 	../Util/Util.dll					\
@@ -584,17 +601,15 @@ DAEMON_LOCAL_ASSEMBLIES =			\
 	./$(PLUGIN_TARGET)			\
 	./$(DAEMON_DLL_TARGET)
 
-if ENABLE_AVAHI
-DAEMON_CSFLAGS += -define:ENABLE_AVAHI
-
-DAEMON_LOCAL_ASSEMBLIES += $(ZEROCONF_TARGET)
-endif
-
 DAEMON_ASSEMBLIES =				\
 	$(BEAGLED_LIBS)				\
 	$(SHARPZIPLIB_LIBS)			\
 	$(DAEMON_LOCAL_ASSEMBLIES:%=-r:%)	\
 	-r:Mono.Posix
+
+if ENABLE_AVAHI
+DAEMON_CSFLAGS += -define:ENABLE_AVAHI
+endif
 
 $(DAEMON_TARGET): $(DAEMON_CSFILES) $(DAEMON_LOCAL_ASSEMBLIES)
 	$(CSC) -out:$@ $(DAEMON_CSFLAGS) $(DAEMON_CSFILES) $(DAEMON_ASSEMBLIES)
@@ -702,34 +717,6 @@ $(DUMP_INDEX_TARGET): $(DUMP_INDEX_CSFILES) $(DUMP_INDEX_LOCAL_ASSEMBLIES)
 
 ############################################################
 
-INDEX_WEB_CONTENT_WRAPPER = beagle-index-url
-INDEX_WEB_CONTENT_TARGET = IndexWebContent.exe
-
-$(INDEX_WEB_CONTENT_WRAPPER): $(srcdir)/$(WRAPPER_IN)
-	$(WRAPPER_SED) -e "s|\@target\@|$(INDEX_WEB_CONTENT_TARGET)|g" < $(srcdir)/$(WRAPPER_IN) > $@
-	chmod +x $(INDEX_WEB_CONTENT_WRAPPER)
-
-
-INDEX_WEB_CONTENT_CSFLAGS = \
-	-target:exe
-
-INDEX_WEB_CONTENT_CSFILES = \
-	$(srcdir)/IndexWebContent.cs
-
-INDEX_WEB_CONTENT_LOCAL_ASSEMBLIES = \
-	../Util/Util.dll			\
-	../BeagleClient/Beagle.dll		\
-	./$(PLUGIN_TARGET)			\
-	./$(DAEMON_DLL_TARGET)
-
-INDEX_WEB_CONTENT_ASSEMBLIES =	\
-	$(INDEX_WEB_CONTENT_LOCAL_ASSEMBLIES:%=-r:%)
-
-$(INDEX_WEB_CONTENT_TARGET): $(INDEX_WEB_CONTENT_CSFILES) $(INDEX_WEB_CONTENT_LOCAL_ASSEMBLIES)
-	$(CSC) -out:$@ $(INDEX_WEB_CONTENT_CSFLAGS) $(INDEX_WEB_CONTENT_CSFILES) $(INDEX_WEB_CONTENT_ASSEMBLIES)
-
-############################################################
-
 MASTER_DELETE_WRAPPER = beagle-master-delete-button
 MASTER_DELETE_TARGET = MasterDelete.exe
 
@@ -799,8 +786,7 @@ $(BUILD_INDEX_WRAPPER): $(srcdir)/$(WRAPPER_IN)
 	chmod +x $(BUILD_INDEX_WRAPPER)
 
 BUILD_INDEX_CSFLAGS = \
-	-target:exe	\
-	-define:BUILD_INDEX_MAIN
+	-target:exe
 
 BUILD_INDEX_CSFILES = \
 	$(srcdir)/BuildIndex.cs
@@ -818,25 +804,6 @@ BUILD_INDEX_ASSEMBLIES = \
 
 $(BUILD_INDEX_TARGET): $(BUILD_INDEX_CSFILES) $(BUILD_INDEX_LOCAL_ASSEMBLIES)
 	$(CSC) -out:$@ $(BUILD_INDEX_CSFLAGS) $(BUILD_INDEX_CSFILES) $(BUILD_INDEX_ASSEMBLIES)
-
-############################################################
-
-REMOVABLE_INDEX_WRAPPER = beagle-removable-index
-REMOVABLE_INDEX_TARGET = BuildRemovableIndex.exe
-
-$(REMOVABLE_INDEX_WRAPPER): $(srcdir)/$(WRAPPER_IN)
-	$(WRAPPER_SED) -e "s|\@target\@|$(REMOVABLE_INDEX_TARGET)|g" < $(srcdir)/$(WRAPPER_IN) > $@
-	chmod +x $(REMOVABLE_INDEX_WRAPPER)
-
-REMOVABLE_INDEX_CSFLAGS = \
-	-target:exe
-
-REMOVABLE_INDEX_CSFILES = \
-	$(srcdir)/BuildRemovableIndex.cs	\
-	$(srcdir)/BuildIndex.cs
-
-$(REMOVABLE_INDEX_TARGET): $(REMOVABLE_INDEX_CSFILES) $(BUILD_INDEX_LOCAL_ASSEMBLIES)
-	$(CSC) -out:$@ $(REMOVABLE_INDEX_CSFLAGS) $(REMOVABLE_INDEX_CSFILES) $(BUILD_INDEX_ASSEMBLIES)
 
 ############################################################
 
@@ -892,8 +859,6 @@ ALL_TARGETS = 				\
 	$(INDEX_HELPER_WRAPPER)		\
 	$(BUILD_INDEX_TARGET)		\
 	$(BUILD_INDEX_WRAPPER)		\
-	$(INDEX_WEB_CONTENT_TARGET)	\
-	$(INDEX_WEB_CONTENT_WRAPPER)	\
 	$(EXTRACT_CONTENT_TARGET)	\
 	$(EXTRACT_CONTENT_WRAPPER)	\
 	$(DUMP_INDEX_TARGET)		\
@@ -902,10 +867,6 @@ ALL_TARGETS = 				\
 	$(SNIPPET_TEST_WRAPPET)		\
 	$(MANAGE_INDEX_TARGET)		\
 	$(MANAGE_INDEX_WRAPPER)		\
-	$(BUILD_INDEX_TARGET)		\
-	$(BUILD_INDEX_WRAPPER)		\
-	$(REMOVABLE_INDEX_TARGET)	\
-	$(REMOVABLE_INDEX_WRAPPER)	\
 	$(MASTER_DELETE_TARGET)		\
 	$(MASTER_DELETE_WRAPPER)
 
@@ -918,17 +879,12 @@ ALL_TARGETS +=				\
 	$(EVO_DLL_TARGET)
 endif
 
-if ENABLE_AVAHI
-ALL_TARGETS += $(ZEROCONF_TARGET)
-endif
-
 man_MANS = 				\
 	beagled.1			\
 	beagle-build-index.8		\
 	beagle-dump-index.1		\
 	beagle-extract-content.8	\
 	beagle-imlogviewer.8		\
-	beagle-index-url.8		\
 	beagle-manage-index.8
 
 all: $(ALL_TARGETS)
@@ -958,7 +914,9 @@ endif
 
 	@sed -e "s|\#installed=1|installed=1|" < $(INDEX_HELPER_WRAPPER) > $(INDEX_HELPER_WRAPPER).tmp
 	$(INSTALL_SCRIPT) $(INDEX_HELPER_WRAPPER).tmp $(DESTDIR)$(pkglibdir)/$(INDEX_HELPER_WRAPPER)
-	@rm -f $(INDEX_HELPER_WRAPPAVAHI$(INSTALL_DATA) $(PLUGIN_TARGET)                 $(DESTDIR)$(pkglibdir)
+	@rm -f $(INDEX_HELPER_WRAPPER).tmp
+
+	$(INSTALL_DATA) $(PLUGIN_TARGET)                 $(DESTDIR)$(pkglibdir)
 	$(INSTALL_DATA) $(PLUGIN_TARGET).mdb             $(DESTDIR)$(pkglibdir)
 	$(INSTALL_DATA) $(DAEMON_DLL_TARGET)             $(DESTDIR)$(pkglibdir)
 	$(INSTALL_DATA) $(DAEMON_DLL_TARGET).mdb         $(DESTDIR)$(pkglibdir)
@@ -966,8 +924,6 @@ endif
 	$(INSTALL_DATA) $(DAEMON_TARGET).mdb             $(DESTDIR)$(pkglibdir)
 	$(INSTALL_DATA) $(EXTRACT_CONTENT_TARGET)        $(DESTDIR)$(pkglibdir)
 	$(INSTALL_DATA) $(EXTRACT_CONTENT_TARGET).mdb    $(DESTDIR)$(pkglibdir)
-	$(INSTALL_DATA) $(INDEX_WEB_CONTENT_TARGET)      $(DESTDIR)$(pkglibdir)
-	$(INSTALL_DATA) $(INDEX_WEB_CONTENT_TARGET).mdb  $(DESTDIR)$(pkglibdir)
 	$(INSTALL_DATA) $(INDEX_HELPER_TARGET)           $(DESTDIR)$(pkglibdir)
 	$(INSTALL_DATA) $(INDEX_HELPER_TARGET).mdb       $(DESTDIR)$(pkglibdir)
 	$(INSTALL_DATA) $(BUILD_INDEX_TARGET)            $(DESTDIR)$(pkglibdir)
@@ -976,20 +932,12 @@ endif
 	$(INSTALL_DATA) $(DUMP_INDEX_TARGET).mdb         $(DESTDIR)$(pkglibdir)
 	$(INSTALL_DATA) $(MANAGE_INDEX_TARGET)           $(DESTDIR)$(pkglibdir)
 	$(INSTALL_DATA) $(MANAGE_INDEX_TARGET).mdb       $(DESTDIR)$(pkglibdir)
-	$(INSTALL_DATA) $(REMOVABLE_INDEX_TARGET)        $(DESTDIR)$(pkglibdir)
-	$(INSTALL_DATA) $(REMOVABLE_TARGET).mdb          $(DESTDIR)$(pkglibdir)
-if ENABLE_AVAHI
-	$(INSTALL_DATA) $(ZEROCONF_TARGET) 	 	 $(DESTDIR)$(pkglibdir)
-endif
 if ENABLE_THUNDERBIRD
 	$(INSTALL_DATA) $(THUNDERBIRD_TARGET)                 $(DESTDIR)$(BACKENDDIR)
 	$(INSTALL_DATA) $(THUNDERBIRD_TARGET).mdb             $(DESTDIR)$(BACKENDDIR)
 endif
 
 uninstall-local:
-if ENABLE_AVAHI
-	rm -rf $(DESTDIR)$(pkglibdir)/$(ZEROCONF_TARGET)
-endif
 if ENABLE_THUNDERBIRD
 	rm -f $(DESTDIR)$(BACKENDDIR)/$(THUNDERBIRD_TARGET)
 	rm -f $(DESTDIR)$(BACKENDDIR)/$(THUNDERBIRD_TARGET).mdb
@@ -1021,25 +969,19 @@ endif
 	rm -f $(DESTDIR)$(pkglibdir)/$(INDEX_HELPER_WRAPPER).mdb
 	rm -f $(DESTDIR)$(pkglibdir)/$(EXTRACT_CONTENT_TARGET)
 	rm -f $(DESTDIR)$(pkglibdir)/$(EXTRACT_CONTENT_TARGET).mdb
-	rm -f $(DESTDIR)$(pkglibdir)/$(INDEX_WEB_CONTENT_TARGET)
-	rm -f $(DESTDIR)$(pkglibdir)/$(INDEX_WEB_CONTENT_TARGET).mdb
 	rm -f $(DESTDIR)$(pkglibdir)/$(BUILD_INDEX_TARGET)
 	rm -f $(DESTDIR)$(pkglibdir)/$(BUILD_INDEX_TARGET).mdb
 	rm -f $(DESTDIR)$(pkglibdir)/$(DUMP_INDEX_TARGET)
 	rm -f $(DESTDIR)$(pkglibdir)/$(DUMP_INDEX_TARGET).mdb
 	rm -f $(DESTDIR)$(pkglibdir)/$(MANAGE_INDEX_TARGET)
 	rm -f $(DESTDIR)$(pkglibdir)/$(MANAGE_INDEX_TARGET).mdb
-	rm -f $(DESTDIR)$(pkglibdir)/$(REMOVABLE_INDEX_TARGET)
-	rm -f $(DESTDIR)$(pkglibdir)/$(REMOVABLE_INDEX_TARGET).mdb
 
 BIN_WRAPPERS = \
 	$(DAEMON_WRAPPER)		\
-	$(EXTRACT_CONTENT_WRAPPER)	\
-	$(INDEX_WEB_CONTENT_WRAPPER)
+	$(EXTRACT_CONTENT_WRAPPER)
 
 SBIN_WRAPPERS = \
 	$(BUILD_INDEX_WRAPPER)		\
-	$(REMOVABLE_INDEX_WRAPPER)	\
 	$(DUMP_INDEX_WRAPPER)		\
 	$(MANAGE_INDEX_WRAPPER)		\
 	$(MASTER_DELETE_WRAPPER)
@@ -1060,13 +1002,11 @@ EXTRA_DIST = \
 	$(THUNDERBIRD_CSFILES)			\
 	$(EXTRACT_CONTENT_CSFILES)		\
 	$(DUMP_INDEX_CSFILES)			\
-	$(INDEX_WEB_CONTENT_CSFILES)		\
 	$(SNIPPET_TEST_CSFILES)			\
 	$(INDEX_HELPER_CSFILES)			\
 	$(MASTER_DELETE_CSFILES)		\
 	$(MANAGE_INDEX_CSFILES)			\
-	$(BUILD_INDEX_CSFILES)			\
-	$(REMOVABLE_INDEX_CSFILES)
+	$(BUILD_INDEX_CSFILES)
 
 CLEANFILES = \
 	$(PLUGIN_TARGET)       			\
@@ -1087,9 +1027,6 @@ CLEANFILES = \
 	$(DUMP_INDEX_TARGET)			\
 	$(DUMP_INDEX_TARGET).mdb		\
 	$(DUMP_INDEX_WRAPPER)			\
-	$(INDEX_WEB_CONTENT_TARGET)		\
-	$(INDEX_WEB_CONTENT_TARGET).mdb		\
-	$(INDEX_WEB_CONTENT_WRAPPER)		\
 	$(MASTER_DELETE_TARGET)			\
 	$(MASTER_DELETE_TARGET).mdb		\
 	$(MASTER_DELETE_WRAPPER)		\
@@ -1102,10 +1039,5 @@ CLEANFILES = \
 	$(BUILD_INDEX_TARGET)			\
 	$(BUILD_INDEX_TARGET).mdb		\
 	$(BUILD_INDEX_WRAPPER)			\
-	$(ZEROCONF_TARGET)			\
-	$(ZEROCONF_TARGET).mdb			\
 	$(THUNDERBIRD_TARGET)			\
-	$(THUNDERBIRD_TARGET).mdb		\
-	$(REMOVABLE_INDEX_TARGET)		\
-	$(REMOVABLE_INDEX_TARGET).mdb		\
-	$(REMOVABLE_INDEX_WRAPPER)
+	$(THUNDERBIRD_TARGET).mdb

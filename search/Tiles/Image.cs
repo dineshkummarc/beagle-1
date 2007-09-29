@@ -27,7 +27,7 @@ namespace Search.Tiles {
 
 			Title = Hit ["beagle:ExactFilename"];
 
-			if (Hit ["beagle:FilenameExtension"].Length > 0)
+			if (Hit ["beagle:FilenameExtension"] != null && Hit ["beagle:FilenameExtension"].Length > 0)
 				Description = Hit ["beagle:FilenameExtension"].Substring (1).ToUpper ();
 			
 			if (Hit ["fixme:width"] != null && Hit ["fixme:width"] != "")

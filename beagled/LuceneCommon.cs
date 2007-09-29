@@ -35,6 +35,7 @@ using System.Xml;
 using System.Xml.Serialization;
 
 using Lucene.Net.Analysis;
+using Lucene.Net.Analysis.Snowball;
 using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
@@ -474,6 +475,7 @@ namespace Beagle.Daemon {
 			private char [] buffer = new char [2];
 			private bool strip_extra_property_info = false;
 			private bool tokenize_email_hostname = false;
+			const string DEFAULT_STEMMER = "English";
 
 			public BeagleAnalyzer (bool is_indexing_analyzer)
 			{
@@ -530,7 +532,7 @@ namespace Beagle.Daemon {
 				    || fieldName == "PropertyText"
 				    || is_text_prop) {
 					outstream = new NoiseEmailHostFilter (outstream, tokenize_email_hostname);
-					outstream = new PorterStemFilter (outstream);
+					outstream = new SnowballFilter (outstream, DEFAULT_STEMMER);
 				}
 
 				return outstream;
@@ -972,11 +974,6 @@ namespace Beagle.Daemon {
 
 			AddPropertiesToHit (hit, doc, true);
 
-			// Get the Type and MimeType from the properties.
-			hit.Type = hit.GetFirstProperty ("beagle:HitType");
-			hit.MimeType = hit.GetFirstProperty ("beagle:MimeType");
-			hit.Source = hit.GetFirstProperty ("beagle:Source");
-
 			return hit;
 		}
 
@@ -1035,11 +1032,16 @@ namespace Beagle.Daemon {
 		// Access to the stemmer and list of stop words
 		//
 
-		static PorterStemmer stemmer = new PorterStemmer ();
+		static SF.Snowball.Ext.EnglishStemmer stemmer = new SF.Snowball.Ext.EnglishStemmer ();
 
 		static public string Stem (string str)
 		{
-			return stemmer.Stem (str);
+			stemmer.SetCurrent (str);
+			stemmer.Stem ();
+			string stemmed_str = stemmer.GetCurrent ();
+			stemmer.SetCurrent (String.Empty);
+
+			return stemmed_str;
 		}
 
 		public static bool IsStopWord (string stemmed_word)
@@ -1924,7 +1926,7 @@ namespace Beagle.Daemon {
 		// For a large index, this will be very slow and will consume
 		// a lot of memory.  Don't call it without a good reason!
 		// We return a hashtable indexed by Uri.
-		public Hashtable GetAllHitsByUri (string[] fields)
+		public Hashtable GetAllHitsByUri ()
 		{
 			Hashtable all_hits;
 			all_hits = UriFu.NewHashtable ();
@@ -1943,19 +1945,10 @@ namespace Beagle.Daemon {
 					continue;
 
 				Document doc;
-				if (fields == null)
-					doc = primary_reader.Document (i);
-				else
-					doc = primary_reader.Document (i, fields);
+				doc = primary_reader.Document (i);
 
 				Hit hit;
-				if (fields == null) {
-					hit = new Hit ();
-					hit.Uri = GetUriFromDocument (doc);
-					AddPropertiesToHit (hit, doc, true);
-				} else
-					hit = DocumentToHit (doc);
-
+				hit = DocumentToHit (doc);
 				all_hits [hit.Uri] = hit;
 			}
 
@@ -1968,10 +1961,7 @@ namespace Beagle.Daemon {
 						continue;
 
 					Document doc;
-					if (fields == null)
-						doc = secondary_reader.Document (i);
-					else
-						doc = secondary_reader.Document (i, fields);
+					doc = secondary_reader.Document (i);
 					
 					Uri uri;
 					uri = GetUriFromDocument (doc);

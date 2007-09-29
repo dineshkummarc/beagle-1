@@ -26,7 +26,7 @@ using BitVector = Lucene.Net.Util.BitVector;
 namespace Lucene.Net.Index
 {
 	
-	/// <version>  $Id$
+	/// <version>  $Id: SegmentReader.cs,v 1.8 2006/11/29 19:25:43 joeshaw Exp $
 	/// </version>
 	public class SegmentReader : IndexReader
 	{

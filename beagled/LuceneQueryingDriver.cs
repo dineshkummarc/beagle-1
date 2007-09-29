@@ -49,7 +49,7 @@ namespace Beagle.Daemon {
 
 	public class LuceneQueryingDriver : LuceneCommon {
 
-		static public bool Debug = true;
+		static public bool Debug = false;
 
 		public delegate bool UriFilter (Uri uri);
 		public delegate double RelevancyMultiplier (Hit hit);
@@ -88,7 +88,7 @@ namespace Beagle.Daemon {
 			primary_reader = LuceneCommon.GetReader (PrimaryStore);
 
 			Term term;
-			term = new Term (PropertyToFieldName (prop.Type, prop.Key), prop.Value);
+			term = new Term (PropertyToFieldName (prop.Type, prop.Key), prop.Value.ToLower ());
 
 			TermDocs term_docs;
 			term_docs = primary_reader.TermDocs ();

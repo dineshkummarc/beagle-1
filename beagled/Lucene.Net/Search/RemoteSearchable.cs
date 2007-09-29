@@ -24,7 +24,7 @@ namespace Lucene.Net.Search
 	/// <summary> A remote searchable implementation.
 	/// 
 	/// </summary>
-	/// <version>  $Id$
+	/// <version>  $Id: RemoteSearchable.cs,v 1.4 2006/10/02 17:09:06 joeshaw Exp $
 	/// </version>
 	[Serializable]
 	public class RemoteSearchable : System.MarshalByRefObject, Lucene.Net.Search.Searchable
