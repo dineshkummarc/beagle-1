@@ -61,7 +61,7 @@ namespace Beagle.Util {
 
 			// Options for FilesQueryableConfig
 			// boolean
-			public const string IndexHomeDir = "IndexHomeDir";
+			public const string IndexHomeDir = "IndexHomeDir"; // default true
 			// list (1 param)
 			public const string Roots = "Roots";
 			public const string ExcludeSubdirectory = "ExcludeSubdirectory";
@@ -69,10 +69,11 @@ namespace Beagle.Util {
 
 			// Options for SearchingConfig
 			// boolean
-			public const string KeyBinding_Ctrl = "KeyBinding_Ctrl";
-			public const string KeyBinding_Alt = "KeyBinding_Alt";
-			public const string BeagleSearchAutoSearch = "BeagleSearchAutoSearch";
+			public const string KeyBinding_Ctrl = "KeyBinding_Ctrl"; // default false
+			public const string KeyBinding_Alt = "KeyBinding_Alt"; // default false
+			public const bool BeagleSearchAutoSearch = "BeagleSearchAutoSearch"; // default true
 			// string
+			public const string KeyBinding_Key = "KeyBinding_Key"; // default F12
 			public const string BeaglePosX = "BeaglePosX";
 			public const string BeaglePosY = "BeaglePosY";
 			public const string BeagleSearchWidth = "BeagleSearchWidth";
@@ -82,11 +83,11 @@ namespace Beagle.Util {
 
 			// Options for DaemonConfig
 			// bool
-			public const string AllowStaticBackend = "AllowStaticBackend";
-			public const string IndexSynchronization = "IndexSynchronization";
-			public const string AllowRoot = "AllowRoot";
-			public const string IndexOnBattery = "IndexOnBattery";
-			public const string IndexFasterOnScreensaver = "IndexFasterOnScreensaver";
+			public const string AllowStaticBackend = "AllowStaticBackend"; // default true
+			public const string IndexSynchronization = "IndexSynchronization"; // default true
+			public const string AllowRoot = "AllowRoot"; // default false
+			public const string IndexOnBattery = "IndexOnBattery"; // default false
+			public const string IndexFasterOnScreensaver = "IndexFasterOnScreensaver"; // default true
 			// list (1 param)
 			public const string StaticQueryables = "StaticQueryables";
 			public const string DeniedBackends = "DeniedBackends";

@@ -1414,8 +1414,9 @@ namespace Beagle.Daemon.FileSystemQueryable {
 				AddRoot (PathFinder.HomeDir);
 			
 			List<string[]> roots = ConfigManager.GetListOptionValues (config, ConfigManager.Names.Roots);
-			foreach (string[] root in roots)
-				AddRoot (root [0]);
+			if (roots != null)
+				foreach (string[] root in roots)
+					AddRoot (root [0]);
 			
 			ConfigManager.Subscribe (ConfigManager.Names.FilesQueryableConfig, OnConfigurationChanged);
 		}
