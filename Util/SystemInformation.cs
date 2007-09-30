@@ -138,8 +138,7 @@ namespace Beagle.Util {
 			if (! use_screensaver)
 				return;
 
-			Config config = ConfigManager.Get (ConfigManager.Names.DaemonConfig);
-			if (! ConfigManager.GetOption (config, ConfigManager.Names.IndexFasterOnScreensaver, true)) {
+			if (! Conf.Daemon.GetOption (Conf.Names.IndexFasterOnScreensaver, true)) {
 				cached_screensaver_running = false;
 				cached_screensaver_idle_time = 0;
 				return;

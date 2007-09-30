@@ -210,11 +210,11 @@ public class InfoTool {
 				Console.WriteLine ("[System index] " + index_dir.Name + " (" + index_dir.FullName + ")");
 		} catch (DirectoryNotFoundException) { }
 
-		Config config = ConfigManager.Load (ConfigManager.Names.DaemonConfig);
+		Config config = Conf.Load (Conf.Names.DaemonConfig);
 		if (config == null)
 			return;
 
-		List<string[]> values = ConfigManager.GetListOptionValues (config, ConfigManager.Names.StaticQueryables);
+		List<string[]> values = config.GetListOptionValues (Conf.Names.StaticQueryables);
 		if (values == null)
 			return;
 

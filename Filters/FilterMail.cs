@@ -80,9 +80,7 @@ namespace Beagle.Filters {
 			// This is useful if beagle (xdgmime) does not correctly detect the mimetypes
 			// of several maildir files as message/rfc822
 
-			Config config = ConfigManager.Get (ConfigManager.Names.DaemonConfig);
-
-			List<string[]> values = ConfigManager.GetListOptionValues (config, ConfigManager.Names.Maildirs);
+			List<string[]> values = Conf.Daemon.GetListOptionValues (Conf.Names.Maildirs);
 			if (values == null)
 				return;
 

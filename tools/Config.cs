@@ -112,12 +112,12 @@ public static class ConfigTool {
 
 		Console.WriteLine ("Allowed backends:");
 
-		Config config = ConfigManager.Load ("daemon");
+		Config config = Conf.Load ("daemon");
 		Option opt;
 		ArrayList denied_backends = new ArrayList ();
 
 		if (config != null && (opt = config ["DeniedBackends"]) != null) {
-			List<string[]> denied_backends_list = ConfigManager.GetListOptionValues (config, opt.Name);
+			List<string[]> denied_backends_list = config.GetListOptionValues (opt.Name);
 			if (denied_backends_list != null) {
 				foreach (string[] val in denied_backends_list)
 					denied_backends.Add (val [0]);
@@ -183,7 +183,7 @@ public static class ConfigTool {
 			}
 		}
 
-		Config config = ConfigManager.Load (args [0]);
+		Config config = Conf.Load (args [0]);
 
 		if (config == null) {
 			Console.WriteLine ("No section found: " + args [0]);
@@ -193,7 +193,7 @@ public static class ConfigTool {
 		if (args.Length >= 2) {
 			try {
 				if (HandleArgs (config, args))
-					ConfigManager.Save (config);
+					Conf.Save (config);
 			} catch (ArgumentException e) {
 				Console.WriteLine ("** Error: " + e.Message);
 			}
@@ -245,25 +245,25 @@ public static class ConfigTool {
 			Console.WriteLine ("  - {0}={2} ({1})",
 					    option.Name,
 					    option.Description,
-					    ConfigManager.GetOption (config, option.Name, true));
+					    config.GetOption (option.Name, true));
 
 		} else if (option.Type == OptionType.String) {
 			Console.WriteLine ("  - {0}={2} ({1})",
 					    option.Name,
 					    option.Description,
-					    ConfigManager.GetOption (config, option.Name, String.Empty));
+					    config.GetOption (option.Name, String.Empty));
 
 		} else if (option.Type == OptionType.List) {
 			Console.WriteLine ("  - {0} : ({1})", option.Name, option.Description);
 
 			Console.Write ("    Parameters:");
-			string[] param_names = ConfigManager.GetListOptionParams (config, option.Name);
+			string[] param_names = config.GetListOptionParams (option.Name);
 
 			for (int j = 0; j < param_names.Length; ++j)
 				Console.Write (" [{0}] ", param_names [j]);
 			Console.WriteLine ();
 
-			List<string[]> items = ConfigManager.GetListOptionValues (config, option.Name);
+			List<string[]> items = config.GetListOptionValues (option.Name);
 			if (items == null)
 				return;
 
@@ -292,7 +292,7 @@ public static class ConfigTool {
 
 			Console.WriteLine ("Changed:");
 			ShowOption (config, option);
-			ConfigManager.SetOption (config, option.Name, Convert.ToBoolean (args [2]));
+			config.SetOption (option.Name, Convert.ToBoolean (args [2]));
 			Console.WriteLine ("  to:");
 			ShowOption (config, option);
 
@@ -306,7 +306,7 @@ public static class ConfigTool {
 
 			Console.WriteLine ("Changed:");
 			ShowOption (config, option);
-			ConfigManager.SetOption (config, option.Name, args [2]);
+			config.SetOption (option.Name, args [2]);
 			Console.WriteLine ("  to:");
 			ShowOption (config, option);
 
@@ -327,7 +327,7 @@ public static class ConfigTool {
 		string[] new_args = new string[args.Length - 2];
 		Array.Copy (args, 2, new_args, 0, args.Length - 2);
 
-		return ConfigManager.AddListOptionValue (config, option.Name, new_args);
+		return config.AddListOptionValue (option.Name, new_args);
 	}
 
 	private static bool RemoveListOption (Config config, Option option, string[] args)
@@ -337,10 +337,10 @@ public static class ConfigTool {
 
 		bool to_save = false;
 
-		if (ConfigManager.RemoveListOptionValue (config, option.Name, new_args)) {
+		if (config.RemoveListOptionValue (option.Name, new_args)) {
 			Console.WriteLine ("Removing:");
 			to_save = true;
-			DisplayListItem (ConfigManager.GetListOptionParams (config, option.Name), new_args);
+			DisplayListItem (config.GetListOptionParams (option.Name), new_args);
 		} else {
 			Console.WriteLine ("No such option exists");
 		}

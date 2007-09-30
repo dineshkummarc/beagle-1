@@ -53,7 +53,7 @@ namespace Beagle.Daemon.Network {
 			Logger.Log.Debug ("Zeroconf: Service started...");
 
 			LoadConfiguration (null);
-                        ConfigManager.Subscribe (ConfigManager.Names.NetworkingConfig, new ConfigManager.ConfigUpdateHandler (OnConfigurationChanged));
+                        Conf.Subscribe (Conf.Names.NetworkingConfig, new Conf.ConfigUpdateHandler (OnConfigurationChanged));
 		}
                 
 
@@ -75,15 +75,15 @@ namespace Beagle.Daemon.Network {
 		private void LoadConfiguration (Config config)
 		{
 			if (config == null)
-				config = ConfigManager.Get (ConfigManager.Names.NetworkingConfig);
+				config = Conf.Get (Conf.Names.NetworkingConfig);
 
 			if (String.IsNullOrEmpty (name))
 				// Whats a good default value ?
-				name = ConfigManager.GetOption (config, ConfigManager.Names.ServiceName, String.Empty);
+				name = config.GetOption (Conf.Names.ServiceName, String.Empty);
 
 			// Check to see if our enabled status hasn't changed
-                        if (enabled != ConfigManager.GetOption (config, ConfigManager.Names.ServiceEnabled, enabled)) {
-                                enabled = ConfigManager.GetOption (config, ConfigManager.Names.ServiceEnabled, enabled);
+                        if (enabled != config.GetOption (Conf.Names.ServiceEnabled, enabled)) {
+                                enabled = config.GetOption (Conf.Names.ServiceEnabled, enabled);
                                 
                                 if (enabled) {
 					try {
@@ -99,13 +99,13 @@ namespace Beagle.Daemon.Network {
                         }
 
                         // Handle index name changes
-                        if (String.Compare (name, ConfigManager.GetOption (config, ConfigManager.Names.ServiceName, name)) != 0)
+                        if (String.Compare (name, config.GetOption (Conf.Names.ServiceName, name)) != 0)
 				Update ();
                 }
 
 		private void OnConfigurationChanged (Config config)
                 {
-			if (config == null || config.Name != ConfigManager.Names.NetworkingConfig)
+			if (config == null || config.Name != Conf.Names.NetworkingConfig)
 				return;
 
 			LoadConfiguration (config);
@@ -117,8 +117,7 @@ namespace Beagle.Daemon.Network {
                                 client = new Client ();
                         
                         try {
-				Config config = ConfigManager.Get (ConfigManager.Names.NetworkingConfig);
-				string [] args = new string [] { "Password=" + (ConfigManager.GetOption (config, ConfigManager.Names.PasswordRequired, true) ? "true" : "false") };
+				string [] args = new string [] { "Password=" + (Conf.Networking.GetOption (Conf.Names.PasswordRequired, true) ? "true" : "false") };
 					
 				if (collisions > 0)
 					name += String.Format (" ({0})", collisions);

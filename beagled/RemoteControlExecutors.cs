@@ -85,7 +85,7 @@ namespace Beagle.Daemon {
 		
 		public override ResponseMessage Execute (RequestMessage req)
 		{
-			ConfigManager.Reload ();
+			Conf.Reload ();
 			return new EmptyResponse ();
 		}
 	}

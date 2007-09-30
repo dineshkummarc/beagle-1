@@ -1,11 +1,40 @@
+//
+// Conf.cs
+//
+// Copyright (C) 2005 Novell, Inc.
+// Copyright (C) 2007 Debajyoti Bera <dbera.web@gmail.com>
+//
+
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
+using Mono.Unix;
 
 namespace Beagle.Util {
 
@@ -17,33 +46,33 @@ namespace Beagle.Util {
 	 *
 	 * Most of beagle components are supposed to read values from the files. The easiest way to do that
 	 * is:
-	 * Config config = ConfigManager.Get (<name of config>);
+	 * Config config = Conf.Get (<name of config>);
 	 * - To get a bool or a string option:
-	 * bool/string opt_val = ConfigManager.GetOption (config, <name of option>, default value);
+	 * bool/string opt_val = config.GetOption (<name of option>, default value);
 	 * - To get the parameters of a list option:
-	 * string[] params = ConfigManager.GetListOptionParams (config, <name of option>);
+	 * string[] params = config.GetListOptionParams (<name of option>);
 	 * - To get the list of values for a list option:
-	 * List<string[]> values = ConfigManager.GetListOptionValues (config, <name of option>);
+	 * List<string[]> values = config.GetListOptionValues (<name of option>);
 	 *
 	 * Both params and values can be null if the option is not found in the files.
-	 * Some standard config names and option names are listed in ConfigManager.Names to avoid ambiguity.
-	 * If ConfigManager.WatchForUpdates() is called, subsequent ConfigManager.Get returns the
+	 * Some standard config names and option names are listed in Conf.Names to avoid ambiguity.
+	 * If Conf.WatchForUpdates() is called, subsequent Conf.Get returns the
 	 * latest copy of the configuration and also caches the copy for future
 	 * use. It uses inotify to refresh the cached copy if the config file is modified.
 	 *
 	 * Classes can also listen to changes by saying,
-	 * ConfigManager.WatchForUpdates ();
+	 * Conf.WatchForUpdates ();
 	 * and then subscribing to a particular config for changes,
-	 * ConfigManager.Subscribe (<name of config>, ConfigUpdateHandler);
+	 * Conf.Subscribe (<name of config>, ConfigUpdateHandler);
 	 *
 	 * Of course, if classes do not need such sophisticated behaviour, it can just call
-	 * Config config = ConfigManager.Load (<name of config>);
+	 * Config config = Conf.Load (<name of config>);
 	 * This will return the respective config (can be null if not present) but will not monitor the
 	 * config file for changes.
 	 *
-	 * To save the config, call ConfigManager.Save (config);
+	 * To save the config, call Conf.Save (config);
 	 */
-	public static class ConfigManager {
+	public static class Conf {
 
 		// A list of names to eliminate typos
 		// Every name need not be here, this is just for convenience
@@ -71,7 +100,7 @@ namespace Beagle.Util {
 			// boolean
 			public const string KeyBinding_Ctrl = "KeyBinding_Ctrl"; // default false
 			public const string KeyBinding_Alt = "KeyBinding_Alt"; // default false
-			public const bool BeagleSearchAutoSearch = "BeagleSearchAutoSearch"; // default true
+			public const string BeagleSearchAutoSearch = "BeagleSearchAutoSearch"; // default true
 			// string
 			public const string KeyBinding_Key = "KeyBinding_Key"; // default F12
 			public const string BeaglePosX = "BeaglePosX";
@@ -96,8 +125,8 @@ namespace Beagle.Util {
 
 			// Options for NetworkingConfig
 			// bool
-			public const string ServiceEnabled = "ServiceEnabled";
-			public const string PasswordRequired = "PasswordRequired";
+			public const string ServiceEnabled = "ServiceEnabled"; // default false
+			public const string PasswordRequired = "PasswordRequired"; // default true
 			// string
 			public const string ServiceName = "ServiceName";
 			public const string ServicePassword = "ServicePassword";
@@ -115,7 +144,7 @@ namespace Beagle.Util {
 
 		public delegate void ConfigUpdateHandler (Config config);
 
-		static ConfigManager ()
+		static Conf ()
 		{
 			configs = new Hashtable (Names.NumConfig);
 			mtimes = new Hashtable (Names.NumConfig);
@@ -224,6 +253,23 @@ namespace Beagle.Util {
 			return Config.LoadNew (name);
 		}
 
+		// Shorthands for these 4 popular configs
+		public static Config FilesQueryable {
+			get { return Get (Conf.Names.FilesQueryableConfig); }
+		}
+
+		public static Config Daemon {
+			get { return Get (Conf.Names.DaemonConfig); }
+		}
+
+		public static Config BeagleSearch {
+			get { return Get (Conf.Names.BeagleSearchConfig); }
+		}
+
+		public static Config Networking {
+			get { return Get (Conf.Names.NetworkingConfig); }
+		}
+
 		private static string global_dir = Path.Combine (
 						Path.Combine (ExternalStringsHack.SysConfDir, "beagle"),
 						"config-files");
@@ -306,187 +352,6 @@ namespace Beagle.Util {
 
 			watching_for_updates = watching_for_updates_current;
 		}
-
-		///////////// Utility Methods : Use Them /////////////
-
-		// FIXME: Use generics to reduce the next 4 methods to 2
-
-		public static bool GetOption (Config config, string name, bool default_value)
-		{
-			if (config == null)
-				throw new ArgumentException ("Null config", "config");
-
-			BoolOption option = config [name] as BoolOption;
-			if (option == null)
-				return default_value;
-
-			return option.Value;
-		}
-
-		public static bool SetOption (Config config, string name, bool value)
-		{
-			if (config == null)
-				throw new ArgumentException ("Null config", "config");
-
-			BoolOption option = config [name] as BoolOption;
-			if (option == null)
-				return false;
-
-			option.Value = value;
-			return true;
-		}
-
-		public static string GetOption (Config config, string name, string default_value)
-		{
-			if (config == null)
-				throw new ArgumentException ("Null config", "config");
-
-			StringOption option = config [name] as StringOption;
-			if (option == null)
-				return default_value;
-
-			return option.Value;
-		}
-
-		public static bool SetOption (Config config, string name, string value)
-		{
-			if (config == null)
-				throw new ArgumentException ("Null config", "config");
-
-			StringOption option = config [name] as StringOption;
-			if (option == null)
-				return false;
-
-			option.Value = value;
-			return true;
-		}
-
-		public static string[] GetListOptionParams (Config config, string name)
-		{
-			if (config == null)
-				throw new ArgumentException ("Null config", "config");
-
-			ListOption option = config [name] as ListOption;
-			if (option == null)
-				return null;
-
-			return option.ParamNames;
-		}
-
-		/*
-		public static Option ListOptionCopy (Config config, Option opt)
-		{
-			return ListOptionCopy (config, opt.Name);
-		}
-
-		public static Option ListOptionCopy (Config config, string name)
-		{
-			ListOption option = config [name] as ListOption;
-			if (option == null)
-				return null;
-
-			ListOption new_option = new ListOption (option);
-			config.Options [name] = new_option;
-
-			return new_option;
-		}
-
-		public static Option ListOptionNew (Config config, string name, string description, char separator, params string[] param_names)
-		{
-			ListOption option = new ListOption ();
-			option.Name = name;
-			option.Description = description;
-			option.Separator = separator;
-			option.Parameter_String = String.Join (separator.ToString (), param_names);
-			option.Global = false;
-
-			config.Options [name] = option;
-
-			return option;
-		}
-		*/
-
-		public static List<string[]> GetListOptionValues (Config config, string name)
-		{
-			if (config == null)
-				throw new ArgumentException ("Null config", "config");
-
-			ListOption option = config [name] as ListOption;
-			if (option == null)
-				return null;
-
-			return option.Values;
-		}
-
-		public static bool SetListOptionValues (Config config, string name, List<string[]> values)
-		{
-			if (config == null)
-				throw new ArgumentException ("Null config", "config");
-
-			ListOption option = config [name] as ListOption;
-			if (option == null)
-				return false;
-
-			option.Values = values;
-			return true;
-		}
-
-		public static bool AddListOptionValue (Config config, string name, string[] values)
-		{
-			if (config == null)
-				throw new ArgumentException ("Null config", "config");
-
-			ListOption option = config [name] as ListOption;
-			if (option == null)
-				return false;
-
-			int num_params = option.NumParams;
-			// verify the number of values
-			if (values == null || values.Length != num_params)
-				throw new ArgumentException (String.Format ("Must be an array of {0} strings", num_params), "values");
-
-			Array.Resize (ref option.Values_String, option.Values_String.Length + 1);
-			option.Values_String [option.Values_String.Length - 1] = String.Join (option.Separator.ToString (), values);
-
-			option.Global = false;
-			return true;
-		}
-
-		public static bool RemoveListOptionValue (Config config, string name, string[] values)
-		{
-			if (config == null)
-				throw new ArgumentException ("Null config", "config");
-
-			ListOption option = config [name] as ListOption;
-			if (option == null)
-				return false;
-
-			int num_params = option.NumParams;
-			// verify the number of values
-			if (values == null || values.Length != num_params)
-				throw new ArgumentException (String.Format ("Must be an array of {0} strings", num_params), "values");
-
-			string value = String.Join (option.Separator.ToString (), values);
-
-			bool found = false;
-			for (int i = 0; i < option.Values_String.Length; ++i) {
-				if (found) {
-					// FIXME: Assuming no duplicates
-					option.Values_String [i-1] = option.Values_String [i];
-					continue;
-				}
-
-				if (option.Values_String [i] == value)
-					found = true;
-			}
-
-			if (found) {
-				Array.Resize (ref option.Values_String, option.Values_String.Length - 1);
-				option.Global = false;
-			}
-
-			return found;
-		}
 	}
 
 	[XmlRoot ("BeagleConf")]
@@ -548,6 +413,125 @@ namespace Beagle.Util {
 
 		public Option this [string option_name] {
 			get { return (Option) options [option_name]; }
+		}
+
+		///////////// Utility Methods : Use Them /////////////
+
+		public bool GetOption (string name, bool default_value)
+		{
+			BoolOption option = this [name] as BoolOption;
+			if (option == null)
+				return default_value;
+
+			return option.Value;
+		}
+
+		public bool SetOption (string name, bool value)
+		{
+			BoolOption option = this [name] as BoolOption;
+			if (option == null)
+				return false;
+
+			option.Value = value;
+			return true;
+		}
+
+		public string GetOption (string name, string default_value)
+		{
+			StringOption option = this [name] as StringOption;
+			if (option == null)
+				return default_value;
+
+			return option.Value;
+		}
+
+		public bool SetOption (string name, string value)
+		{
+			StringOption option = this [name] as StringOption;
+			if (option == null)
+				return false;
+
+			option.Value = value;
+			return true;
+		}
+
+		public string[] GetListOptionParams (string name)
+		{
+			ListOption option = this [name] as ListOption;
+			if (option == null)
+				return null;
+
+			return option.ParamNames;
+		}
+
+		public List<string[]> GetListOptionValues (string name)
+		{
+			ListOption option = this [name] as ListOption;
+			if (option == null)
+				return null;
+
+			return option.Values;
+		}
+
+		public bool SetListOptionValues (string name, List<string[]> values)
+		{
+			ListOption option = this [name] as ListOption;
+			if (option == null)
+				return false;
+
+			option.Values = values;
+			return true;
+		}
+
+		public bool AddListOptionValue (string name, string[] values)
+		{
+			ListOption option = this [name] as ListOption;
+			if (option == null)
+				return false;
+
+			int num_params = option.NumParams;
+			// verify the number of values
+			if (values == null || values.Length != num_params)
+				throw new ArgumentException (String.Format ("Must be an array of {0} strings", num_params), "values");
+
+			Array.Resize (ref option.Values_String, option.Values_String.Length + 1);
+			option.Values_String [option.Values_String.Length - 1] = String.Join (option.Separator.ToString (), values);
+
+			option.Global = false;
+			return true;
+		}
+
+		public bool RemoveListOptionValue (string name, string[] values)
+		{
+			ListOption option = this [name] as ListOption;
+			if (option == null)
+				return false;
+
+			int num_params = option.NumParams;
+			// verify the number of values
+			if (values == null || values.Length != num_params)
+				throw new ArgumentException (String.Format ("Must be an array of {0} strings", num_params), "values");
+
+			string value = String.Join (option.Separator.ToString (), values);
+
+			bool found = false;
+			for (int i = 0; i < option.Values_String.Length; ++i) {
+				if (found) {
+					// FIXME: Assuming no duplicates
+					option.Values_String [i-1] = option.Values_String [i];
+					continue;
+				}
+
+				if (option.Values_String [i] == value)
+					found = true;
+			}
+
+			if (found) {
+				Array.Resize (ref option.Values_String, option.Values_String.Length - 1);
+				option.Global = false;
+			}
+
+			return found;
 		}
 	}
 
@@ -703,6 +687,657 @@ namespace Beagle.Util {
 
 				Global = false;
 			}
+		}
+
+		[ConfigSection (Name="searching")]
+		public class SearchingConfig : Section {
+			
+			private KeyBinding show_search_window_binding = new KeyBinding ("F12");
+			public KeyBinding ShowSearchWindowBinding {
+				get { return show_search_window_binding; }
+				set { show_search_window_binding = value; }
+			}
+
+			// BeagleSearch window position and dimension
+			// stored as percentage of screen co-ordinates
+			// to deal with change of resolution problem - hints from tberman
+
+			private float beagle_search_pos_x = 0;
+			public float BeaglePosX {
+				get { return beagle_search_pos_x; }
+				set { beagle_search_pos_x = value; }
+			}
+			
+			private float beagle_search_pos_y = 0;
+			public float BeaglePosY {
+				get { return beagle_search_pos_y; }
+				set { beagle_search_pos_y = value; }
+			}
+			
+			private float beagle_search_width = 0; 
+			public float BeagleSearchWidth {
+				get { return beagle_search_width; }
+				set { beagle_search_width = value; }
+			}
+
+			private float beagle_search_height = 0;
+			public float BeagleSearchHeight {
+				get { return beagle_search_height; }
+				set { beagle_search_height = value; }
+			}
+
+			// ah!We want a Queue but Queue doesnt serialize *easily*
+			private ArrayList search_history = new ArrayList ();
+			public ArrayList SearchHistory {
+				get { return search_history; }
+				set { search_history = value; }
+			}
+
+			private bool beagle_search_auto_search = true;
+			public bool BeagleSearchAutoSearch {
+				get { return beagle_search_auto_search; }
+				set { beagle_search_auto_search = value; }
+			}
+
+		}
+
+		[ConfigSection (Name="daemon")]
+		public class DaemonConfig : Section {
+			private ArrayList static_queryables = new ArrayList ();
+			public ArrayList StaticQueryables {
+				get { return static_queryables; }
+				set { static_queryables = value; }
+			}
+
+			// By default, every backend is allowed.
+			// Only maintain a list of denied backends.
+			private ArrayList denied_backends = new ArrayList ();
+			public ArrayList DeniedBackends {
+				get { return denied_backends; }
+				set { denied_backends = value; }
+			}
+
+			private bool allow_static_backend = false; // by default, false
+			public bool AllowStaticBackend {
+				get { return allow_static_backend; }
+				// Don't really want to expose this, but serialization requires it
+				set { allow_static_backend = value; }
+			}
+
+			private bool index_synchronization = true;
+			public bool IndexSynchronization {
+				get { return index_synchronization; }
+				// Don't really want to expose this, but serialization requires it
+				set { index_synchronization = value; }
+			}
+
+			[ConfigOption (Description="Enable a backend", Params=1, ParamsDescription="Name of the backend to enable")]
+			internal bool AllowBackend (out string output, string [] args)
+			{
+				denied_backends.Remove (args [0]);
+				output = "Backend allowed (need to restart beagled for changes to take effect).";
+				return true;
+			}
+
+			[ConfigOption (Description="Disable a backend", Params=1, ParamsDescription="Name of the backend to disable")]
+			internal bool DenyBackend (out string output, string [] args)
+			{
+				denied_backends.Add (args [0]);
+				output = "Backend disabled (need to restart beagled for changes to take effect).";
+				return true;
+			}
+			
+			private bool allow_root = false;
+			public bool AllowRoot {
+				get { return allow_root; }
+				set { allow_root = value; }
+			}
+
+			[ConfigOption (Description="Add a static queryable", Params=1, ParamsDescription="Index path")]
+			internal bool AddStaticQueryable (out string output, string [] args)
+			{
+				static_queryables.Add (args [0]);
+				output = "Static queryable added.";
+				return true;
+			}
+
+			[ConfigOption (Description="Remove a static queryable", Params=1, ParamsDescription="Index path")]
+			internal bool DelStaticQueryable (out string output, string [] args)
+			{
+				static_queryables.Remove (args [0]);
+				output = "Static queryable removed.";
+				return true;
+			}
+			
+			[ConfigOption (Description="List user-specified static queryables", IsMutator=false)]
+			internal bool ListStaticQueryables (out string output, string [] args)
+			{
+				output = "User-specified static queryables:\n";
+				foreach (string index_path in static_queryables)
+					output += String.Format (" - {0}\n", index_path);
+				return true;
+			}
+
+			[ConfigOption (Description="Toggles whether static indexes will be enabled")]
+			internal bool ToggleAllowStaticBackend (out string output, string [] args)
+			{
+				allow_static_backend = !allow_static_backend;
+				output = "Static indexes are " + ((allow_static_backend) ? "enabled" : "disabled") + " (need to restart beagled for changes to take effect).";
+				return true;
+			}		
+
+			[ConfigOption (Description="Toggles whether your indexes will be synchronized locally if your home directory is on a network device (eg. NFS/Samba)")]
+			internal bool ToggleIndexSynchronization (out string output, string [] args)
+			{
+				index_synchronization = !index_synchronization;
+				output = "Index Synchronization is " + ((index_synchronization) ? "enabled" : "disabled") + ".";
+				return true;
+			}
+
+			[ConfigOption (Description="Toggles whether Beagle can be run as root")]
+			internal bool ToggleAllowRoot (out string output, string [] args)
+			{
+				allow_root = ! allow_root;
+				if (allow_root)
+					output = "Beagle is now permitted to run as root";
+				else
+					output = "Beagle is no longer permitted to run as root";
+				return true;
+			}
+		}
+
+		[ConfigSection (Name="indexing")]
+		public class IndexingConfig : Section 
+		{
+			private ArrayList roots = new ArrayList ();
+			[XmlArray]
+			[XmlArrayItem(ElementName="Root", Type=typeof(string))]
+			public ArrayList Roots {
+				get { return roots; }
+				set { roots = value; }
+			}
+
+			private bool index_home_dir = true;
+			public bool IndexHomeDir {
+				get { return index_home_dir; }
+				set { index_home_dir = value; }
+			}
+
+			private bool index_on_battery = false;
+			public bool IndexOnBattery {
+				get { return index_on_battery; }
+				set { index_on_battery = value; }
+			}
+
+			private bool index_faster_on_screensaver = true;
+			public bool IndexFasterOnScreensaver {
+				get { return index_faster_on_screensaver; }
+				set { index_faster_on_screensaver = value; }
+			}
+
+			private ArrayList excludes = new ArrayList ();
+			[XmlArray]
+			[XmlArrayItem (ElementName="ExcludeItem", Type=typeof(ExcludeItem))]
+			public ArrayList Excludes {
+				get { return excludes; }
+				set { excludes = value; }
+			}
+
+			public struct Maildir {
+				public string Directory;
+				public string Extension;
+			}
+
+			private ArrayList maildirs = new ArrayList ();
+			[XmlArray]
+			[XmlArrayItem (ElementName="Maildir", Type=typeof(Maildir))]
+			public ArrayList Maildirs {
+				get { return maildirs; }
+				set { maildirs = value; }
+			}
+
+			[ConfigOption (Description="List the indexing roots", IsMutator=false)]
+			internal bool ListRoots (out string output, string [] args)
+			{
+				output = "Current roots:\n";
+				if (this.index_home_dir == true)
+					output += " - Your home directory\n";
+				foreach (string root in roots)
+					output += " - " + root + "\n";
+
+				return true;
+			}
+
+			[ConfigOption (Description="Toggles whether your home directory is to be indexed as a root")]
+			internal bool IndexHome (out string output, string [] args)
+			{
+				if (index_home_dir)
+					output = "Your home directory will not be indexed.";
+				else
+					output = "Your home directory will be indexed.";
+				index_home_dir = !index_home_dir;
+				return true;
+			}
+
+			[ConfigOption (Description="Toggles whether any data should be indexed if the system is on battery")]
+			internal bool IndexWhileOnBattery (out string output, string [] args)
+			{
+				if (index_on_battery)
+					output = "Data will not be indexed while on battery.";
+				else
+					output = "Data will be indexed while on battery.";
+				index_on_battery = !index_on_battery;
+				return true;
+			}
+
+			[ConfigOption (Description="Toggles whether to index faster while the screensaver is on")]
+			internal bool FasterOnScreensaver (out string output, string [] args)
+			{
+				if (index_faster_on_screensaver)
+					output = "Data will be indexed normally while on screensaver.";
+				else
+					output = "Data will be indexed faster while on screensaver.";
+				index_faster_on_screensaver = !index_faster_on_screensaver;
+				return true;
+			}
+
+			[ConfigOption (Description="Add a root path to be indexed", Params=1, ParamsDescription="A path")]
+			internal bool AddRoot (out string output, string [] args)
+			{
+				roots.Add (args [0]);
+				output = "Root added.";
+				return true;
+			}
+
+			[ConfigOption (Description="Remove an indexing root", Params=1, ParamsDescription="A path")]
+			internal bool DelRoot (out string output, string [] args)
+			{
+				roots.Remove (args [0]);
+				output = "Root removed.";
+				return true;
+			}
+			
+			[ConfigOption (Description="List user-specified resources to be excluded from indexing", IsMutator=false)]
+			internal bool ListExcludes (out string output, string [] args)
+			{
+				output = "User-specified resources to be excluded from indexing:\n";
+				foreach (ExcludeItem exclude_item in excludes)
+					output += String.Format (" - [{0}] {1}\n", exclude_item.Type.ToString (), exclude_item.Value);
+				return true;
+			}
+
+			[ConfigOption (Description="Add a resource to exclude from indexing", Params=2, ParamsDescription="A type [path/pattern/mailfolder], a path/pattern/name")]
+			internal bool AddExclude (out string output, string [] args)
+			{
+				ExcludeType type;
+				try {
+					type = (ExcludeType) Enum.Parse (typeof (ExcludeType), args [0], true);
+				} catch {
+					output = String.Format("Invalid type '{0}'. Valid types: Path, Pattern, MailFolder", args [0]);
+					return false;
+				}
+
+				excludes.Add (new ExcludeItem (type, args [1]));
+				output = "Exclude added.";
+				return true;
+			}
+
+			[ConfigOption (Description="Remove an excluded resource", Params=2, ParamsDescription="A type [path/pattern/mailfolder], a path/pattern/name")]
+			internal bool DelExclude (out string output, string [] args)
+			{
+				ExcludeType type;
+				try {
+					type = (ExcludeType) Enum.Parse (typeof (ExcludeType), args [0], true);
+				} catch {
+					output = String.Format("Invalid type '{0}'. Valid types: Path, Pattern, MailFolder", args [0]);
+					return false;
+				}
+
+				foreach (ExcludeItem item in excludes) {
+					if (item.Type != type || item.Value != args [1])
+						continue;
+					excludes.Remove (item);
+					output = "Exclude removed.";
+					return true;
+				}
+
+				output = "Could not find requested exclude to remove.";
+				return false;
+			}
+
+			[ConfigOption (Description="Add a directory containing maildir emails. Use this when beagle is unable to determine the mimetype of files in this directory as message/rfc822",
+				       Params=2,
+				       ParamsDescription="path to the directory, extension (use * for any extension)")]
+			internal bool AddMaildir (out string output, string[] args)
+			{
+				Maildir maildir = new Maildir ();
+				maildir.Directory = args [0];
+				maildir.Extension = ((args [1] == null || args [1] == String.Empty) ? "*" : args [1]);
+				maildirs.Add (maildir);
+
+				output = String.Format ("Added maildir directory: {0} with extension '{1}'", maildir.Directory, maildir.Extension);
+				return true;
+			}
+
+			[ConfigOption (Description="Remove a directory from ListMaildirs",
+				       Params=2,
+				       ParamsDescription="path to the directory, extension")]
+			internal bool DelMaildir (out string output, string[] args)
+			{
+				args [1] = ((args [1] == null || args [1] == String.Empty) ? "*" : args [1]);
+
+				int count = -1;
+				foreach (Maildir maildir in maildirs) {
+					count ++;
+					if (maildir.Directory == args [0] && maildir.Extension == args [1])
+						break;
+				}
+
+				if (count != -1 && count != maildirs.Count) {
+					maildirs.RemoveAt (count);
+					output = "Maildir removed.";
+					return true;
+				}
+
+				output = "Could not find requested maildir to remove.";
+				return false;
+			}
+
+			[ConfigOption (Description="List user specified maildir directories", IsMutator=false)]
+			internal bool ListMaildirs (out string output, string [] args)
+			{
+				output = "User-specified maildir directories:\n";
+				foreach (Maildir maildir in maildirs)
+					output += String.Format (" - {0} with extension '{1}'\n", maildir.Directory, maildir.Extension);
+				return true;
+			}
+
+		}
+
+		[ConfigSection (Name="networking")]
+		public class NetworkingConfig : Section 
+		{
+			// Index sharing service is disabled by default
+			private bool service_enabled = false;
+
+			// Password protect our local indexes
+			private bool password_required = true;
+
+			// The name and password for the local network service
+			private string service_name = String.Format ("{0} ({1})", UnixEnvironment.UserName, UnixEnvironment.MachineName);
+			private string service_password = String.Empty;
+
+			// This is a list of registered and paired nodes which
+			// the local client can search
+			private ArrayList network_services = new ArrayList ();
+			
+			public bool ServiceEnabled {
+				get { return service_enabled; }
+				set { service_enabled = value; }
+			}
+
+			public bool PasswordRequired {
+				get { return password_required; }
+				set { password_required = value; }
+			}
+
+			public string ServiceName {
+				get { return service_name; }
+				set { service_name = value; }
+			}
+
+			public string ServicePassword {
+				get { return service_password; }
+				set { service_password = value; }
+			}
+
+			[ConfigOption (Description="Toggles whether searching over network will be enabled the next time the daemon starts.")]
+			internal bool NetworkSearch (out string output, string [] args)
+			{
+				if (service_enabled)
+					output = "Network search will be disabled.";
+				else
+					output = "Network search will be enabled.";
+				service_enabled = !service_enabled;
+				return true;
+			}
+
+			[XmlArray]
+			[XmlArrayItem (ElementName="NetworkService", Type=typeof (NetworkService))]
+			public ArrayList NetworkServices {
+				get { return network_services; }
+				set { network_services = value; }
+			}
+
+			[ConfigOption (Description="List available network services for querying", IsMutator=false)]
+			internal bool ListNetworkServices (out string output, string [] args)
+			{
+				output = "Currently registered network services:\n";
+
+				foreach (NetworkService service in network_services)
+					output += " - " + service.ToString () + "\n";
+
+#if ENABLE_AVAHI
+				output += "\n";
+				output += "Available network services:\n";
+				
+				try {
+				
+				AvahiBrowser browser = new AvahiBrowser ();
+				//browser.Start ();
+
+				foreach (NetworkService service in browser.GetServicesBlocking ())
+					output += " - " + service.ToString () + "\n";
+
+				browser.Dispose ();
+
+				} catch (Exception e) {
+					Console.WriteLine ("Cannot connect to avahi service: " + e.Message);
+				}
+#endif
+
+				return true;
+			}
+
+			[ConfigOption (Description="Add a network service for querying", Params=2, ParamsDescription="name, hostname:port")]
+			internal bool AddNetworkService (out string output, string [] args)
+			{
+				string name = args [0];
+				string uri = args [1];
+				
+				if (uri.Split (':').Length < 2)
+					uri = uri.Trim() + ":4000";
+				
+				NetworkService service = new NetworkService (name, new Uri (uri), false, null);
+				network_services.Add (service);
+				
+				output = "Network service '" + service + "' added";
+
+				return true;
+			}
+			
+			[ConfigOption (Description="Remove a network service from querying", Params=1, ParamsDescription="name")]
+			internal bool RemoveNetworkService (out string output, string [] args)
+			{
+				string name = args[0];
+
+				foreach (NetworkService service in network_services) {
+					if (service.Name != name)
+						continue;
+
+					network_services.Remove (service);
+					output = "Network service '" + service.Name + "' removed";
+					
+					return true;
+				}
+
+				output = "Network service '" + name + "' not found in registered services";
+
+				return false;
+			}
+		}
+
+		public class Section {
+			[XmlIgnore]
+			public bool SaveNeeded = false;
+		}
+
+		private class ConfigOption : Attribute {
+			public string Description;
+			public int Params;
+			public string ParamsDescription;
+			public bool IsMutator = true;
+		}
+
+		private class ConfigSection : Attribute {
+			public string Name;
+		}
+
+		public class ConfigException : Exception {
+			public ConfigException (string msg) : base (msg) { }
+		}
+
+	}
+
+	//////////////////////////////////////////////////////////////////////
+	
+	public enum ExcludeType {
+		Path,
+		Pattern,
+		MailFolder
+	}
+
+	public class ExcludeItem {
+
+		private ExcludeType type;
+		private string val;
+
+		[XmlAttribute]
+		public ExcludeType Type {
+			get { return type; }
+			set { type = value; }
+		}
+
+		private string exactMatch;
+		private string prefix;
+		private string suffix;
+		private Regex  regex;
+
+		[XmlAttribute]
+		public string Value {
+			get { return val; }
+			set {
+				switch (type) {
+				case ExcludeType.Path:
+				case ExcludeType.MailFolder:
+					prefix = value;
+					break;
+
+				case ExcludeType.Pattern:
+					if (value.StartsWith ("/") && value.EndsWith ("/")) {
+						regex = new Regex (value.Substring (1, value.Length - 2));
+						break;
+					}
+					
+					int i = value.IndexOf ('*');
+					if (i == -1) {
+						exactMatch = value;
+					} else {
+						if (i > 0)
+							prefix = value.Substring (0, i);
+						if (i < value.Length-1)
+							suffix = value.Substring (i+1);
+					}
+					break;
+				}
+
+				val = value;
+			}
+		}
+
+		public ExcludeItem () {}
+
+		public ExcludeItem (ExcludeType type, string value) {
+			this.Type = type;
+			this.Value = value;
+		}
+		
+		public bool IsMatch (string param) 
+		{
+			switch (Type) {
+			case ExcludeType.Path:
+			case ExcludeType.MailFolder:
+				if (prefix != null && ! param.StartsWith (prefix))
+					return false;
+
+				return true;
+
+			case ExcludeType.Pattern:
+				if (exactMatch != null)
+					return param == exactMatch;
+				if (prefix != null && ! param.StartsWith (prefix))
+					return false;
+				if (suffix != null && ! param.EndsWith (suffix))
+					return false;
+				if (regex != null && ! regex.IsMatch (param))
+					return false;
+
+				return true;
+			}
+
+			return false;
+		}
+
+		public override bool Equals (object obj) 
+		{
+			ExcludeItem exclude = obj as ExcludeItem;
+			return (exclude != null && exclude.Type == type && exclude.Value == val);
+		}
+
+		public override int GetHashCode ()
+		{
+			return (this.Value.GetHashCode () ^ (int) this.Type);
+		}
+
+	}
+
+	//////////////////////////////////////////////////////////////////////
+	
+	public class KeyBinding {
+		public string Key;
+		
+		[XmlAttribute]
+		public bool Ctrl = false;
+		[XmlAttribute]
+		public bool Alt = false;
+		
+		public KeyBinding () {}
+		public KeyBinding (string key) : this (key, false, false) {}
+		
+		public KeyBinding (string key, bool ctrl, bool alt) 
+		{
+			Key = key;
+			Ctrl = ctrl;
+			Alt = alt;
+		}
+		
+		public override string ToString ()
+		{
+			string result = "";
+			
+			if (Ctrl)
+				result += "<Ctrl>";
+			if (Alt)
+				result += "<Alt>";
+			
+			result += Key;
+			
+			return result;
+		}
+		
+		public string ToReadableString ()
+		{
+			return ToString ().Replace (">", "-").Replace ("<", "");
 		}
 	}
 }

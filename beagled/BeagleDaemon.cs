@@ -68,8 +68,7 @@ namespace Beagle.Daemon {
 			Logger.Log.Debug ("Starting messaging server");
 
 			try {
-				Config config = ConfigManager.Get (ConfigManager.Names.NetworkingConfig);
-				server = new Server ("socket", ConfigManager.GetOption (config, ConfigManager.Names.ServiceEnabled, false));
+				server = new Server ("socket", Conf.Networking.GetOption (Conf.Names.ServiceEnabled, false));
 				server.Start ();
 			} catch (InvalidOperationException) {
 				return false;
@@ -196,13 +195,13 @@ namespace Beagle.Daemon {
 			// Set up out-of-process indexing
 			LuceneQueryable.IndexerHook = new LuceneQueryable.IndexerCreator (RemoteIndexer.NewRemoteIndexer);
 
-			Config config = ConfigManager.Get (ConfigManager.Names.DaemonConfig);
+			Config config = Conf.Get (Conf.Names.DaemonConfig);
 
 			// Initialize synchronization to keep the indexes local if PathFinder.StorageDir
 			// is on a non-block device, or if BEAGLE_SYNCHRONIZE_LOCALLY is set
 
 			if ((! SystemInformation.IsPathOnBlockDevice (PathFinder.StorageDir) &&
-			     ConfigManager.GetOption (config, ConfigManager.Names.IndexSynchronization, true)) ||
+			     config.GetOption (Conf.Names.IndexSynchronization, true)) ||
 			    Environment.GetEnvironmentVariable ("BEAGLE_SYNCHRONIZE_LOCALLY") != null)
 				IndexSynchronization.Initialize ();
 
@@ -210,7 +209,7 @@ namespace Beagle.Daemon {
 			Logger.Log.Debug ("Starting QueryDriver");
 			QueryDriver.Start ();
 
-			bool initially_on_battery = SystemInformation.UsingBattery && ! ConfigManager.GetOption (config, ConfigManager.Names.IndexOnBattery, false);
+			bool initially_on_battery = SystemInformation.UsingBattery && ! config.GetOption (Conf.Names.IndexOnBattery, false);
 
 			// Start the Global Scheduler thread
 			if (! arg_disable_scheduler) {
@@ -240,7 +239,7 @@ namespace Beagle.Daemon {
                	        zeroconf = new Beagle.Daemon.Network.Zeroconf ();
 #endif
 
-			ConfigManager.WatchForUpdates ();
+			Conf.WatchForUpdates ();
 
 			stopwatch.Stop ();
 
@@ -441,8 +440,7 @@ namespace Beagle.Daemon {
 				Environment.Exit (-1);
 			}
 
-			Config config = ConfigManager.Get (ConfigManager.Names.DaemonConfig);
-			if (Environment.UserName == "root" && ! ConfigManager.GetOption (config, ConfigManager.Names.AllowRoot, false)) {
+			if (Environment.UserName == "root" && ! Conf.Daemon.GetOption (Conf.Names.AllowRoot, false)) {
 				Console.WriteLine ("You can not run beagle as root.  Beagle is designed to run from your own");
 				Console.WriteLine ("user account.  If you want to create multiuser or system-wide indexes, use");
 				Console.WriteLine ("the beagle-build-index tool.");
@@ -542,8 +540,7 @@ namespace Beagle.Daemon {
 
 		private static bool CheckBatteryStatus ()
 		{
-			Config config = ConfigManager.Get (ConfigManager.Names.DaemonConfig);
-			bool index_on_battery = ConfigManager.GetOption (config, ConfigManager.Names.IndexOnBattery, false);
+			bool index_on_battery = Conf.Daemon.GetOption (Conf.Names.IndexOnBattery, false);
 
 			if (prev_on_battery && (! SystemInformation.UsingBattery || index_on_battery)) {
 				if (! SystemInformation.UsingBattery)

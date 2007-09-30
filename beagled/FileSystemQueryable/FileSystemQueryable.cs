@@ -1408,25 +1408,25 @@ namespace Beagle.Daemon.FileSystemQueryable {
 		
 		private void LoadConfiguration () 
 		{
-			Config config = ConfigManager.Get (ConfigManager.Names.FilesQueryableConfig);
+			Config config = Conf.Get (Conf.Names.FilesQueryableConfig);
 
-			if (ConfigManager.GetOption (config, ConfigManager.Names.IndexHomeDir, true))
+			if (config.GetOption (Conf.Names.IndexHomeDir, true))
 				AddRoot (PathFinder.HomeDir);
 			
-			List<string[]> roots = ConfigManager.GetListOptionValues (config, ConfigManager.Names.Roots);
+			List<string[]> roots = config.GetListOptionValues (Conf.Names.Roots);
 			if (roots != null)
 				foreach (string[] root in roots)
 					AddRoot (root [0]);
 			
-			ConfigManager.Subscribe (ConfigManager.Names.FilesQueryableConfig, OnConfigurationChanged);
+			Conf.Subscribe (Conf.Names.FilesQueryableConfig, OnConfigurationChanged);
 		}
 		
 		private void OnConfigurationChanged (Config config)
 		{
-			if (config == null || config.Name != ConfigManager.Names.FilesQueryableConfig)
+			if (config == null || config.Name != Conf.Names.FilesQueryableConfig)
 				return;
 
-			List<string[]> values = ConfigManager.GetListOptionValues (config, ConfigManager.Names.Roots);
+			List<string[]> values = config.GetListOptionValues (Conf.Names.Roots);
 			if (values == null)
 				values = new List<string[]> (0);
 
@@ -1434,7 +1434,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			foreach (string[] root in values)
 				roots_wanted.Add (root [0]);
 			
-			if (ConfigManager.GetOption (config, ConfigManager.Names.IndexHomeDir, true))
+			if (config.GetOption (Conf.Names.IndexHomeDir, true))
 				roots_wanted.Add (PathFinder.HomeDir);
 
 			IList roots_to_add, roots_to_remove;

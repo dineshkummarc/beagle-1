@@ -155,28 +155,28 @@ namespace Beagle.Daemon.FileSystemQueryable {
 
 		private void LoadConfiguration () 
 		{
-			Config config = ConfigManager.Get (ConfigManager.Names.FilesQueryableConfig);
+			Config config = Conf.Get (Conf.Names.FilesQueryableConfig);
 
-			List<string[]> values = ConfigManager.GetListOptionValues (config, ConfigManager.Names.ExcludeSubdirectory);
+			List<string[]> values = config.GetListOptionValues (Conf.Names.ExcludeSubdirectory);
 			foreach (string[] exclude in values)
 				AddExclude (exclude [0], false);
 
-			values = ConfigManager.GetListOptionValues (config, ConfigManager.Names.ExcludePattern);
+			values = config.GetListOptionValues (Conf.Names.ExcludePattern);
 			foreach (string[] exclude in values)
 				AddExclude (exclude [0], true);
 
-			ConfigManager.Subscribe (ConfigManager.Names.FilesQueryableConfig, OnConfigurationChanged);
+			Conf.Subscribe (Conf.Names.FilesQueryableConfig, OnConfigurationChanged);
 		}
 
 		private void OnConfigurationChanged (Config config)
 		{
-			if (config == null || config.Name != ConfigManager.Names.FilesQueryableConfig)
+			if (config == null || config.Name != Conf.Names.FilesQueryableConfig)
 				return;
 
 			ArrayList exclude_paths_removed = new ArrayList ();
 			bool clear_fs_state = false;
 
-			List<string[]> values = ConfigManager.GetListOptionValues (config, ConfigManager.Names.ExcludeSubdirectory);
+			List<string[]> values = config.GetListOptionValues (Conf.Names.ExcludeSubdirectory);
 			if (values != null) {
 				ArrayList subdirs = new ArrayList (values.Count);
 				foreach (string[] value in subdirs)
@@ -201,7 +201,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 					AddExclude (path, true);
 			}
 
-			values = ConfigManager.GetListOptionValues (config, ConfigManager.Names.ExcludePattern);
+			values = config.GetListOptionValues (Conf.Names.ExcludePattern);
 			if (values != null) {
 				ArrayList patterns = new ArrayList (values.Count);
 				foreach (string[] value in patterns)
