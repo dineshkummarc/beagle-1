@@ -45,6 +45,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 		
 		// User defined exclude patterns
 		private ArrayList exclude_patterns = new ArrayList ();
+		private Dictionary<string, ExcludeItem> exclude_patterns_table = new Dictionary<string, ExcludeItem> ();
 
 		// Our default exclude patterns
 		private ArrayList exclude_patterns_default = new ArrayList ();
@@ -59,7 +60,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			// FIXME: Make this user-overridable
 			string tmp_dir = PathFinder.HomeDir;
 			tmp_dir = Path.Combine (tmp_dir, "tmp");
-			exclude_paths.Add (new ExcludeItem (ExcludeType.Path, tmp_dir));
+			exclude_paths.Add (tmp_dir);
 
 			// FIXME: This probably shouldn't be hard-wired.  Or should it?
 			AddDefaultPatternToIgnore (new string [] {
@@ -123,6 +124,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 				queryable.RemoveDirectory (value);
 			} else {
 				exclude_patterns.Add (value);
+				exclude_patterns_table.Add (value, new ExcludeItem (ExcludeType.Pattern, value));
 			}
 		}
 
@@ -135,6 +137,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 				exclude_paths.Remove (value);
 			} else {
 				exclude_patterns.Remove (value);
+				exclude_patterns_table.Remove (value);
 			}
 		}
 		
@@ -262,13 +265,13 @@ namespace Beagle.Daemon.FileSystemQueryable {
 				path = name;
 			
 			// Exclude paths
-			foreach (ExcludeItem exclude in exclude_paths)
-				if (exclude.IsMatch (path))
+			foreach (string exclude in exclude_paths)
+				if (path.StartsWith (exclude))
 					return true;
 			
 			// Exclude patterns
-			foreach (ExcludeItem exclude in exclude_patterns)
-				if (exclude.IsMatch (name))
+			foreach (string pattern in exclude_patterns_table.Keys)
+				if (exclude_patterns_table [pattern].IsMatch (name))
 					return true;
 			
 			// Default exclude patterns

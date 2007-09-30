@@ -207,7 +207,31 @@ public static class ConfigTool {
 
 	private static void ListSectionsAndExit ()
 	{
-		Console.WriteLine ("Listing sections ...");
+		string global_dir = Path.Combine (Path.Combine (ExternalStringsHack.SysConfDir, "beagle"), "config-files");
+		string local_dir = Path.Combine (PathFinder.StorageDir, "config");
+
+		string[] global_configs;
+		try {
+			global_configs = Directory.GetFiles (global_dir, "*.xml");
+		} catch (DirectoryNotFoundException) {
+			global_configs = new string[0];
+		}
+
+		string[] local_configs;
+		try {
+			local_configs = Directory.GetFiles (local_dir, "*.xml");
+		} catch (DirectoryNotFoundException) {
+			local_configs = new string [0];
+		}
+
+		Console.WriteLine ("Available sections:");
+		foreach (string file in global_configs)
+			Console.WriteLine (" - {0}", Path.GetFileNameWithoutExtension (file));
+
+		foreach (string file in local_configs)
+			if (Array.IndexOf (global_configs, file) == -1)
+				Console.WriteLine (" - {0}", Path.GetFileNameWithoutExtension (file));
+
 	}
 
 	private static void ReloadConfigAndExit ()
@@ -342,7 +366,7 @@ public static class ConfigTool {
 			to_save = true;
 			DisplayListItem (config.GetListOptionParams (option.Name), new_args);
 		} else {
-			Console.WriteLine ("No such option exists");
+			Console.WriteLine ("No such option exists: " + String.Join (" ", new_args));
 		}
 
 		return to_save;

@@ -151,6 +151,8 @@ namespace Beagle.Util {
 			subscriptions = new Hashtable (Names.NumConfig);
 
 			configs_dir = Path.Combine (PathFinder.StorageDir, "config");
+			if (!Directory.Exists (configs_dir))
+				Directory.CreateDirectory (configs_dir);
 		}
 
 		public static void WatchForUpdates ()
@@ -316,7 +318,7 @@ namespace Beagle.Util {
 
 			using (StreamReader reader = new StreamReader (path)) {
 				config = (Config) conf_ser.Deserialize (reader);
-				Console.WriteLine ("Done reading conf from " + path);
+				Log.Debug ("Done reading conf from " + path);
 			}
 
 			return config;
@@ -572,7 +574,11 @@ namespace Beagle.Util {
 				return Convert.ToBoolean (Value_String);
 			}
 			set {
-				Value_String = value.ToString ();
+				string new_val = value.ToString ();
+				if (new_val == Value_String)
+					return;
+
+				Value_String = new_val;
 				Global = false;
 			}
 		}
@@ -595,7 +601,11 @@ namespace Beagle.Util {
 				return Value_String;
 			}
 			set {
-				Value_String = value;
+				string new_val = value;
+				if (new_val == Value_String)
+					return;
+
+				Value_String = new_val;
 				Global = false;
 			}
 		}
@@ -624,15 +634,6 @@ namespace Beagle.Util {
 		public ListOption () : base ()
 		{
 			Type = OptionType.List;
-		}
-
-		public ListOption (ListOption old_option)
-		{
-			this.Name = old_option.Name;
-			this.Description = old_option.Description;
-			this.Values_String = old_option.Values_String;
-			this.Type = OptionType.List;
-			this.Global = false;
 		}
 
 		[XmlElement (ElementName = "Value", Type = typeof (string))]
@@ -683,8 +684,10 @@ namespace Beagle.Util {
 					values_string [i] = String.Join (Separator.ToString (), list_value);
 				}
 
-				Values_String = values_string;
+				if (ArrayFu.Equal (values_string, Values_String))
+					return;
 
+				Values_String = values_string;
 				Global = false;
 			}
 		}
