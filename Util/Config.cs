@@ -575,7 +575,7 @@ namespace Beagle.Util {
 			}
 			set {
 				string new_val = value.ToString ();
-				if (new_val == Value_String)
+				if (String.Compare (new_val, Value_String, true) == 0)
 					return;
 
 				Value_String = new_val;
