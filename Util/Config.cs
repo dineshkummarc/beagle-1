@@ -151,8 +151,13 @@ namespace Beagle.Util {
 			subscriptions = new Hashtable (Names.NumConfig);
 
 			configs_dir = Path.Combine (PathFinder.StorageDir, "config");
-			if (!Directory.Exists (configs_dir))
+			if (!Directory.Exists (configs_dir)) {
 				Directory.CreateDirectory (configs_dir);
+				return;
+			}
+
+			// Else check the directory for old config files
+			CheckOldConfig ();
 		}
 
 		public static void WatchForUpdates ()
@@ -353,6 +358,175 @@ namespace Beagle.Util {
 			}
 
 			watching_for_updates = watching_for_updates_current;
+		}
+
+		private static void CheckOldConfig ()
+		{
+			// Load the local config files
+			IndexingConfig indexing_config = (IndexingConfig) CreateOldConfig ("indexing.xml", typeof (IndexingConfig));
+			SearchingConfig searching_config = (SearchingConfig) CreateOldConfig ("searching.xml", typeof (SearchingConfig));
+			DaemonConfig daemon_config = (DaemonConfig) CreateOldConfig ("daemon.xml", typeof (DaemonConfig));
+			NetworkingConfig networking_config = (NetworkingConfig) CreateOldConfig ("networking.xml", typeof (NetworkingConfig));
+
+			if (indexing_config == null &&
+			    searching_config == null &&
+			    daemon_config == null &&
+			    networking_config == null)
+				return;
+
+			Log.Info ("Old config files found. Moving them to the new format...");
+
+			// Load the global config files
+			Config global_fsq_config = LoadFrom (Path.Combine (global_dir, Names.FilesQueryableConfig + ".xml"));
+			foreach (Option option in global_fsq_config.Options.Values)
+				option.Global = true;
+
+			Config global_networking_config = LoadFrom (Path.Combine (global_dir, Names.NetworkingConfig + ".xml"));
+			foreach (Option option in global_networking_config.Options.Values)
+				option.Global = true;
+
+			Config global_bs_config = LoadFrom (Path.Combine (global_dir, Names.BeagleSearchConfig + ".xml"));
+			foreach (Option option in global_bs_config.Options.Values)
+				option.Global = true;
+
+			Config global_daemon_config = LoadFrom (Path.Combine (global_dir, Names.DaemonConfig + ".xml"));
+			foreach (Option option in global_daemon_config.Options.Values)
+				option.Global = true;
+
+			// From indexing_config
+			if (indexing_config != null) {
+				List<string[]> roots = new List<string[]> (indexing_config.Roots.Count);
+				foreach (string root in indexing_config.Roots)
+					roots.Add (new string[1] {root});
+				global_fsq_config.SetListOptionValues (Conf.Names.Roots, roots);
+
+				global_fsq_config.SetOption (Conf.Names.IndexHomeDir, indexing_config.IndexHomeDir);
+				global_daemon_config.SetOption (Conf.Names.IndexOnBattery, indexing_config.IndexOnBattery);
+				global_daemon_config.SetOption (Conf.Names.IndexFasterOnScreensaver, indexing_config.IndexFasterOnScreensaver);
+
+				List<string[]> excludes_path = new List<string[]> ();
+				List<string[]> excludes_pattern = new List<string[]> ();
+				List<string[]> excludes_mailfolder = new List<string[]> ();
+
+				foreach (ExcludeItem exclude in indexing_config.Excludes) {
+					if (exclude.Type == ExcludeType.Path)
+						excludes_path.Add (new string[1] {exclude.Value});
+					else if (exclude.Type == ExcludeType.Pattern)
+						excludes_pattern.Add (new string[1] {exclude.Value});
+					else if (exclude.Type == ExcludeType.MailFolder)
+						excludes_mailfolder.Add (new string[1] {exclude.Value});
+				}
+
+				if (excludes_path.Count > 0)
+					global_fsq_config.SetListOptionValues (Conf.Names.ExcludeSubdirectory, excludes_path);
+
+				if (excludes_pattern.Count > 0)
+					global_fsq_config.SetListOptionValues (Conf.Names.ExcludePattern, excludes_pattern);
+
+				if (excludes_mailfolder.Count > 0)
+					global_daemon_config.SetListOptionValues (Conf.Names.ExcludeMailfolder, excludes_mailfolder);
+
+				List<string[]> maildirs = new List<string[]> (indexing_config.Maildirs.Count);
+				foreach (IndexingConfig.Maildir maildir in indexing_config.Maildirs)
+					maildirs.Add (new string[1] {maildir.Directory});
+				global_daemon_config.SetListOptionValues (Conf.Names.Maildirs, maildirs);
+
+				Log.Info ("Done reading old config: indexing");
+			}
+
+			// From networking_config
+			if (networking_config != null) {
+				global_networking_config.SetOption (Conf.Names.ServiceEnabled, networking_config.ServiceEnabled);
+				global_networking_config.SetOption (Conf.Names.PasswordRequired, networking_config.PasswordRequired);
+				global_networking_config.SetOption (Conf.Names.ServiceName, networking_config.ServiceName);
+				global_networking_config.SetOption (Conf.Names.ServicePassword, networking_config.ServicePassword);
+
+				List<string[]> svcs = new List<string[]> (networking_config.NetworkServices.Count);
+				foreach (NetworkService svc in networking_config.NetworkServices)
+					svcs.Add (new string[4] {svc.Name, svc.UriString, svc.IsProtected.ToString (), svc.Cookie});
+				global_networking_config.SetListOptionValues (Conf.Names.NetworkServices, svcs);
+
+				Log.Info ("Done reading old config: networking");
+			}
+
+			// From daemon_config
+			if (daemon_config != null) {
+				List<string[]> static_queryables = new List<string[]> (daemon_config.StaticQueryables.Count);
+				foreach (string name in daemon_config.StaticQueryables)
+					static_queryables.Add (new string[1] {name});
+				global_daemon_config.SetListOptionValues (Conf.Names.StaticQueryables, static_queryables);
+
+				List<string[]> denied_backends = new List<string[]> (daemon_config.DeniedBackends.Count);
+				foreach (string name in daemon_config.DeniedBackends)
+					denied_backends.Add (new string[1] {name});
+				global_daemon_config.SetListOptionValues (Conf.Names.DeniedBackends, denied_backends);
+
+				global_daemon_config.SetOption (Conf.Names.AllowStaticBackend, daemon_config.AllowStaticBackend);
+				global_daemon_config.SetOption (Conf.Names.IndexSynchronization, daemon_config.IndexSynchronization);
+				global_daemon_config.SetOption (Conf.Names.AllowRoot, daemon_config.AllowRoot);
+
+				Log.Info ("Done reading old config: daemon");
+			}
+
+			// From searching_config
+			if (searching_config != null) {
+				KeyBinding binding = searching_config.ShowSearchWindowBinding;
+
+				global_bs_config.SetOption (Conf.Names.KeyBinding_Key, binding.Key);
+				global_bs_config.SetOption (Conf.Names.KeyBinding_Ctrl, binding.Ctrl);
+				global_bs_config.SetOption (Conf.Names.KeyBinding_Alt, binding.Alt);
+
+				global_bs_config.SetOption (Conf.Names.BeaglePosX, searching_config.BeaglePosX.ToString ());
+				global_bs_config.SetOption (Conf.Names.BeaglePosY, searching_config.BeaglePosY.ToString ());
+				global_bs_config.SetOption (Conf.Names.BeagleSearchWidth, searching_config.BeagleSearchWidth.ToString ());
+				global_bs_config.SetOption (Conf.Names.BeagleSearchHeight, searching_config.BeagleSearchHeight.ToString ());
+				global_bs_config.SetOption (Conf.Names.BeagleSearchAutoSearch, searching_config.BeagleSearchAutoSearch);
+
+				List<string[]> history = new List<string[]> (searching_config.SearchHistory.Count);
+				foreach (string s in searching_config.SearchHistory)
+					history.Add (new string[1] {s});
+				global_bs_config.SetListOptionValues (Conf.Names.SearchHistory, history);
+
+				Log.Info ("Done reading old config: searching");
+			}
+
+			Conf.Save (global_daemon_config);
+			Conf.Save (global_fsq_config);
+			Conf.Save (global_networking_config);
+			Conf.Save (global_bs_config);
+		}
+
+		private static Section CreateOldConfig (string filename, Type type)
+		{
+			string filepath = Path.Combine (configs_dir, filename);
+			if (!File.Exists (filepath))
+				return null;
+
+			Log.Debug ("Loading old config {0} from {1}", type, filename);
+
+			Section section = null;
+
+			using (FileStream fs = File.Open (filepath, FileMode.Open, FileAccess.Read, FileShare.Read)) {
+				try {
+					XmlSerializer serializer = new XmlSerializer (type);
+					section = (Section) serializer.Deserialize (fs);
+				} catch (Exception e) {
+					Log.Error (e, "Could not load configuration from {0}:", filename);
+					return null;
+				}
+			}
+
+			try {
+				string backup_path = filepath + ".bak";
+				Log.Info ("Done loading. Backing up old config {0} file to {1}", filepath, backup_path);
+				Log.Info ("{0} is not needed anymore and can be deleted.", backup_path);
+				File.Move (filepath, backup_path);
+			} catch (Exception e) {
+				Log.Error ("Could not move old config file {0}: {1}", filepath, e.Message);
+				Log.Error ("Delete it manually.");
+			}
+
+			return section;
 		}
 	}
 
@@ -672,8 +846,10 @@ namespace Beagle.Util {
 				return list;
 			}
 			set {
-				int num_params = NumParams;
+				if (value == null || value.Count == 0)
+					return;
 
+				int num_params = NumParams;
 				string[] values_string = new string[value.Count];
 
 				// Verify that each string[] has num_params values
@@ -691,515 +867,514 @@ namespace Beagle.Util {
 				Global = false;
 			}
 		}
+	}
 
-		[ConfigSection (Name="searching")]
-		public class SearchingConfig : Section {
-			
-			private KeyBinding show_search_window_binding = new KeyBinding ("F12");
-			public KeyBinding ShowSearchWindowBinding {
-				get { return show_search_window_binding; }
-				set { show_search_window_binding = value; }
-			}
-
-			// BeagleSearch window position and dimension
-			// stored as percentage of screen co-ordinates
-			// to deal with change of resolution problem - hints from tberman
-
-			private float beagle_search_pos_x = 0;
-			public float BeaglePosX {
-				get { return beagle_search_pos_x; }
-				set { beagle_search_pos_x = value; }
-			}
-			
-			private float beagle_search_pos_y = 0;
-			public float BeaglePosY {
-				get { return beagle_search_pos_y; }
-				set { beagle_search_pos_y = value; }
-			}
-			
-			private float beagle_search_width = 0; 
-			public float BeagleSearchWidth {
-				get { return beagle_search_width; }
-				set { beagle_search_width = value; }
-			}
-
-			private float beagle_search_height = 0;
-			public float BeagleSearchHeight {
-				get { return beagle_search_height; }
-				set { beagle_search_height = value; }
-			}
-
-			// ah!We want a Queue but Queue doesnt serialize *easily*
-			private ArrayList search_history = new ArrayList ();
-			public ArrayList SearchHistory {
-				get { return search_history; }
-				set { search_history = value; }
-			}
-
-			private bool beagle_search_auto_search = true;
-			public bool BeagleSearchAutoSearch {
-				get { return beagle_search_auto_search; }
-				set { beagle_search_auto_search = value; }
-			}
-
+	[ConfigSection (Name="searching")]
+	public class SearchingConfig : Section {
+		
+		private KeyBinding show_search_window_binding = new KeyBinding ("F12");
+		public KeyBinding ShowSearchWindowBinding {
+			get { return show_search_window_binding; }
+			set { show_search_window_binding = value; }
 		}
 
-		[ConfigSection (Name="daemon")]
-		public class DaemonConfig : Section {
-			private ArrayList static_queryables = new ArrayList ();
-			public ArrayList StaticQueryables {
-				get { return static_queryables; }
-				set { static_queryables = value; }
-			}
+		// BeagleSearch window position and dimension
+		// stored as percentage of screen co-ordinates
+		// to deal with change of resolution problem - hints from tberman
 
-			// By default, every backend is allowed.
-			// Only maintain a list of denied backends.
-			private ArrayList denied_backends = new ArrayList ();
-			public ArrayList DeniedBackends {
-				get { return denied_backends; }
-				set { denied_backends = value; }
-			}
-
-			private bool allow_static_backend = false; // by default, false
-			public bool AllowStaticBackend {
-				get { return allow_static_backend; }
-				// Don't really want to expose this, but serialization requires it
-				set { allow_static_backend = value; }
-			}
-
-			private bool index_synchronization = true;
-			public bool IndexSynchronization {
-				get { return index_synchronization; }
-				// Don't really want to expose this, but serialization requires it
-				set { index_synchronization = value; }
-			}
-
-			[ConfigOption (Description="Enable a backend", Params=1, ParamsDescription="Name of the backend to enable")]
-			internal bool AllowBackend (out string output, string [] args)
-			{
-				denied_backends.Remove (args [0]);
-				output = "Backend allowed (need to restart beagled for changes to take effect).";
-				return true;
-			}
-
-			[ConfigOption (Description="Disable a backend", Params=1, ParamsDescription="Name of the backend to disable")]
-			internal bool DenyBackend (out string output, string [] args)
-			{
-				denied_backends.Add (args [0]);
-				output = "Backend disabled (need to restart beagled for changes to take effect).";
-				return true;
-			}
-			
-			private bool allow_root = false;
-			public bool AllowRoot {
-				get { return allow_root; }
-				set { allow_root = value; }
-			}
-
-			[ConfigOption (Description="Add a static queryable", Params=1, ParamsDescription="Index path")]
-			internal bool AddStaticQueryable (out string output, string [] args)
-			{
-				static_queryables.Add (args [0]);
-				output = "Static queryable added.";
-				return true;
-			}
-
-			[ConfigOption (Description="Remove a static queryable", Params=1, ParamsDescription="Index path")]
-			internal bool DelStaticQueryable (out string output, string [] args)
-			{
-				static_queryables.Remove (args [0]);
-				output = "Static queryable removed.";
-				return true;
-			}
-			
-			[ConfigOption (Description="List user-specified static queryables", IsMutator=false)]
-			internal bool ListStaticQueryables (out string output, string [] args)
-			{
-				output = "User-specified static queryables:\n";
-				foreach (string index_path in static_queryables)
-					output += String.Format (" - {0}\n", index_path);
-				return true;
-			}
-
-			[ConfigOption (Description="Toggles whether static indexes will be enabled")]
-			internal bool ToggleAllowStaticBackend (out string output, string [] args)
-			{
-				allow_static_backend = !allow_static_backend;
-				output = "Static indexes are " + ((allow_static_backend) ? "enabled" : "disabled") + " (need to restart beagled for changes to take effect).";
-				return true;
-			}		
-
-			[ConfigOption (Description="Toggles whether your indexes will be synchronized locally if your home directory is on a network device (eg. NFS/Samba)")]
-			internal bool ToggleIndexSynchronization (out string output, string [] args)
-			{
-				index_synchronization = !index_synchronization;
-				output = "Index Synchronization is " + ((index_synchronization) ? "enabled" : "disabled") + ".";
-				return true;
-			}
-
-			[ConfigOption (Description="Toggles whether Beagle can be run as root")]
-			internal bool ToggleAllowRoot (out string output, string [] args)
-			{
-				allow_root = ! allow_root;
-				if (allow_root)
-					output = "Beagle is now permitted to run as root";
-				else
-					output = "Beagle is no longer permitted to run as root";
-				return true;
-			}
+		private float beagle_search_pos_x = 0;
+		public float BeaglePosX {
+			get { return beagle_search_pos_x; }
+			set { beagle_search_pos_x = value; }
+		}
+		
+		private float beagle_search_pos_y = 0;
+		public float BeaglePosY {
+			get { return beagle_search_pos_y; }
+			set { beagle_search_pos_y = value; }
+		}
+		
+		private float beagle_search_width = 0; 
+		public float BeagleSearchWidth {
+			get { return beagle_search_width; }
+			set { beagle_search_width = value; }
 		}
 
-		[ConfigSection (Name="indexing")]
-		public class IndexingConfig : Section 
+		private float beagle_search_height = 0;
+		public float BeagleSearchHeight {
+			get { return beagle_search_height; }
+			set { beagle_search_height = value; }
+		}
+
+		// ah!We want a Queue but Queue doesnt serialize *easily*
+		private ArrayList search_history = new ArrayList ();
+		public ArrayList SearchHistory {
+			get { return search_history; }
+			set { search_history = value; }
+		}
+
+		private bool beagle_search_auto_search = true;
+		public bool BeagleSearchAutoSearch {
+			get { return beagle_search_auto_search; }
+			set { beagle_search_auto_search = value; }
+		}
+
+	}
+
+	[ConfigSection (Name="daemon")]
+	public class DaemonConfig : Section {
+		private ArrayList static_queryables = new ArrayList ();
+		public ArrayList StaticQueryables {
+			get { return static_queryables; }
+			set { static_queryables = value; }
+		}
+
+		// By default, every backend is allowed.
+		// Only maintain a list of denied backends.
+		private ArrayList denied_backends = new ArrayList ();
+		public ArrayList DeniedBackends {
+			get { return denied_backends; }
+			set { denied_backends = value; }
+		}
+
+		private bool allow_static_backend = false; // by default, false
+		public bool AllowStaticBackend {
+			get { return allow_static_backend; }
+			// Don't really want to expose this, but serialization requires it
+			set { allow_static_backend = value; }
+		}
+
+		private bool index_synchronization = true;
+		public bool IndexSynchronization {
+			get { return index_synchronization; }
+			// Don't really want to expose this, but serialization requires it
+			set { index_synchronization = value; }
+		}
+
+		[ConfigOption (Description="Enable a backend", Params=1, ParamsDescription="Name of the backend to enable")]
+		internal bool AllowBackend (out string output, string [] args)
 		{
-			private ArrayList roots = new ArrayList ();
-			[XmlArray]
-			[XmlArrayItem(ElementName="Root", Type=typeof(string))]
-			public ArrayList Roots {
-				get { return roots; }
-				set { roots = value; }
-			}
+			denied_backends.Remove (args [0]);
+			output = "Backend allowed (need to restart beagled for changes to take effect).";
+			return true;
+		}
 
-			private bool index_home_dir = true;
-			public bool IndexHomeDir {
-				get { return index_home_dir; }
-				set { index_home_dir = value; }
-			}
+		[ConfigOption (Description="Disable a backend", Params=1, ParamsDescription="Name of the backend to disable")]
+		internal bool DenyBackend (out string output, string [] args)
+		{
+			denied_backends.Add (args [0]);
+			output = "Backend disabled (need to restart beagled for changes to take effect).";
+			return true;
+		}
+		
+		private bool allow_root = false;
+		public bool AllowRoot {
+			get { return allow_root; }
+			set { allow_root = value; }
+		}
 
-			private bool index_on_battery = false;
-			public bool IndexOnBattery {
-				get { return index_on_battery; }
-				set { index_on_battery = value; }
-			}
+		[ConfigOption (Description="Add a static queryable", Params=1, ParamsDescription="Index path")]
+		internal bool AddStaticQueryable (out string output, string [] args)
+		{
+			static_queryables.Add (args [0]);
+			output = "Static queryable added.";
+			return true;
+		}
 
-			private bool index_faster_on_screensaver = true;
-			public bool IndexFasterOnScreensaver {
-				get { return index_faster_on_screensaver; }
-				set { index_faster_on_screensaver = value; }
-			}
+		[ConfigOption (Description="Remove a static queryable", Params=1, ParamsDescription="Index path")]
+		internal bool DelStaticQueryable (out string output, string [] args)
+		{
+			static_queryables.Remove (args [0]);
+			output = "Static queryable removed.";
+			return true;
+		}
+		
+		[ConfigOption (Description="List user-specified static queryables", IsMutator=false)]
+		internal bool ListStaticQueryables (out string output, string [] args)
+		{
+			output = "User-specified static queryables:\n";
+			foreach (string index_path in static_queryables)
+				output += String.Format (" - {0}\n", index_path);
+			return true;
+		}
 
-			private ArrayList excludes = new ArrayList ();
-			[XmlArray]
-			[XmlArrayItem (ElementName="ExcludeItem", Type=typeof(ExcludeItem))]
-			public ArrayList Excludes {
-				get { return excludes; }
-				set { excludes = value; }
-			}
+		[ConfigOption (Description="Toggles whether static indexes will be enabled")]
+		internal bool ToggleAllowStaticBackend (out string output, string [] args)
+		{
+			allow_static_backend = !allow_static_backend;
+			output = "Static indexes are " + ((allow_static_backend) ? "enabled" : "disabled") + " (need to restart beagled for changes to take effect).";
+			return true;
+		}		
 
-			public struct Maildir {
-				public string Directory;
-				public string Extension;
-			}
+		[ConfigOption (Description="Toggles whether your indexes will be synchronized locally if your home directory is on a network device (eg. NFS/Samba)")]
+		internal bool ToggleIndexSynchronization (out string output, string [] args)
+		{
+			index_synchronization = !index_synchronization;
+			output = "Index Synchronization is " + ((index_synchronization) ? "enabled" : "disabled") + ".";
+			return true;
+		}
 
-			private ArrayList maildirs = new ArrayList ();
-			[XmlArray]
-			[XmlArrayItem (ElementName="Maildir", Type=typeof(Maildir))]
-			public ArrayList Maildirs {
-				get { return maildirs; }
-				set { maildirs = value; }
-			}
+		[ConfigOption (Description="Toggles whether Beagle can be run as root")]
+		internal bool ToggleAllowRoot (out string output, string [] args)
+		{
+			allow_root = ! allow_root;
+			if (allow_root)
+				output = "Beagle is now permitted to run as root";
+			else
+				output = "Beagle is no longer permitted to run as root";
+			return true;
+		}
+	}
 
-			[ConfigOption (Description="List the indexing roots", IsMutator=false)]
-			internal bool ListRoots (out string output, string [] args)
-			{
-				output = "Current roots:\n";
-				if (this.index_home_dir == true)
-					output += " - Your home directory\n";
-				foreach (string root in roots)
-					output += " - " + root + "\n";
+	[ConfigSection (Name="indexing")]
+	public class IndexingConfig : Section 
+	{
+		private ArrayList roots = new ArrayList ();
+		[XmlArray]
+		[XmlArrayItem(ElementName="Root", Type=typeof(string))]
+		public ArrayList Roots {
+			get { return roots; }
+			set { roots = value; }
+		}
 
-				return true;
-			}
+		private bool index_home_dir = true;
+		public bool IndexHomeDir {
+			get { return index_home_dir; }
+			set { index_home_dir = value; }
+		}
 
-			[ConfigOption (Description="Toggles whether your home directory is to be indexed as a root")]
-			internal bool IndexHome (out string output, string [] args)
-			{
-				if (index_home_dir)
-					output = "Your home directory will not be indexed.";
-				else
-					output = "Your home directory will be indexed.";
-				index_home_dir = !index_home_dir;
-				return true;
-			}
+		private bool index_on_battery = false;
+		public bool IndexOnBattery {
+			get { return index_on_battery; }
+			set { index_on_battery = value; }
+		}
 
-			[ConfigOption (Description="Toggles whether any data should be indexed if the system is on battery")]
-			internal bool IndexWhileOnBattery (out string output, string [] args)
-			{
-				if (index_on_battery)
-					output = "Data will not be indexed while on battery.";
-				else
-					output = "Data will be indexed while on battery.";
-				index_on_battery = !index_on_battery;
-				return true;
-			}
+		private bool index_faster_on_screensaver = true;
+		public bool IndexFasterOnScreensaver {
+			get { return index_faster_on_screensaver; }
+			set { index_faster_on_screensaver = value; }
+		}
 
-			[ConfigOption (Description="Toggles whether to index faster while the screensaver is on")]
-			internal bool FasterOnScreensaver (out string output, string [] args)
-			{
-				if (index_faster_on_screensaver)
-					output = "Data will be indexed normally while on screensaver.";
-				else
-					output = "Data will be indexed faster while on screensaver.";
-				index_faster_on_screensaver = !index_faster_on_screensaver;
-				return true;
-			}
+		private ArrayList excludes = new ArrayList ();
+		[XmlArray]
+		[XmlArrayItem (ElementName="ExcludeItem", Type=typeof(ExcludeItem))]
+		public ArrayList Excludes {
+			get { return excludes; }
+			set { excludes = value; }
+		}
 
-			[ConfigOption (Description="Add a root path to be indexed", Params=1, ParamsDescription="A path")]
-			internal bool AddRoot (out string output, string [] args)
-			{
-				roots.Add (args [0]);
-				output = "Root added.";
-				return true;
-			}
+		public struct Maildir {
+			public string Directory;
+			public string Extension;
+		}
 
-			[ConfigOption (Description="Remove an indexing root", Params=1, ParamsDescription="A path")]
-			internal bool DelRoot (out string output, string [] args)
-			{
-				roots.Remove (args [0]);
-				output = "Root removed.";
-				return true;
-			}
-			
-			[ConfigOption (Description="List user-specified resources to be excluded from indexing", IsMutator=false)]
-			internal bool ListExcludes (out string output, string [] args)
-			{
-				output = "User-specified resources to be excluded from indexing:\n";
-				foreach (ExcludeItem exclude_item in excludes)
-					output += String.Format (" - [{0}] {1}\n", exclude_item.Type.ToString (), exclude_item.Value);
-				return true;
-			}
+		private ArrayList maildirs = new ArrayList ();
+		[XmlArray]
+		[XmlArrayItem (ElementName="Maildir", Type=typeof(Maildir))]
+		public ArrayList Maildirs {
+			get { return maildirs; }
+			set { maildirs = value; }
+		}
 
-			[ConfigOption (Description="Add a resource to exclude from indexing", Params=2, ParamsDescription="A type [path/pattern/mailfolder], a path/pattern/name")]
-			internal bool AddExclude (out string output, string [] args)
-			{
-				ExcludeType type;
-				try {
-					type = (ExcludeType) Enum.Parse (typeof (ExcludeType), args [0], true);
-				} catch {
-					output = String.Format("Invalid type '{0}'. Valid types: Path, Pattern, MailFolder", args [0]);
-					return false;
-				}
+		[ConfigOption (Description="List the indexing roots", IsMutator=false)]
+		internal bool ListRoots (out string output, string [] args)
+		{
+			output = "Current roots:\n";
+			if (this.index_home_dir == true)
+				output += " - Your home directory\n";
+			foreach (string root in roots)
+				output += " - " + root + "\n";
 
-				excludes.Add (new ExcludeItem (type, args [1]));
-				output = "Exclude added.";
-				return true;
-			}
+			return true;
+		}
 
-			[ConfigOption (Description="Remove an excluded resource", Params=2, ParamsDescription="A type [path/pattern/mailfolder], a path/pattern/name")]
-			internal bool DelExclude (out string output, string [] args)
-			{
-				ExcludeType type;
-				try {
-					type = (ExcludeType) Enum.Parse (typeof (ExcludeType), args [0], true);
-				} catch {
-					output = String.Format("Invalid type '{0}'. Valid types: Path, Pattern, MailFolder", args [0]);
-					return false;
-				}
+		[ConfigOption (Description="Toggles whether your home directory is to be indexed as a root")]
+		internal bool IndexHome (out string output, string [] args)
+		{
+			if (index_home_dir)
+				output = "Your home directory will not be indexed.";
+			else
+				output = "Your home directory will be indexed.";
+			index_home_dir = !index_home_dir;
+			return true;
+		}
 
-				foreach (ExcludeItem item in excludes) {
-					if (item.Type != type || item.Value != args [1])
-						continue;
-					excludes.Remove (item);
-					output = "Exclude removed.";
-					return true;
-				}
+		[ConfigOption (Description="Toggles whether any data should be indexed if the system is on battery")]
+		internal bool IndexWhileOnBattery (out string output, string [] args)
+		{
+			if (index_on_battery)
+				output = "Data will not be indexed while on battery.";
+			else
+				output = "Data will be indexed while on battery.";
+			index_on_battery = !index_on_battery;
+			return true;
+		}
 
-				output = "Could not find requested exclude to remove.";
+		[ConfigOption (Description="Toggles whether to index faster while the screensaver is on")]
+		internal bool FasterOnScreensaver (out string output, string [] args)
+		{
+			if (index_faster_on_screensaver)
+				output = "Data will be indexed normally while on screensaver.";
+			else
+				output = "Data will be indexed faster while on screensaver.";
+			index_faster_on_screensaver = !index_faster_on_screensaver;
+			return true;
+		}
+
+		[ConfigOption (Description="Add a root path to be indexed", Params=1, ParamsDescription="A path")]
+		internal bool AddRoot (out string output, string [] args)
+		{
+			roots.Add (args [0]);
+			output = "Root added.";
+			return true;
+		}
+
+		[ConfigOption (Description="Remove an indexing root", Params=1, ParamsDescription="A path")]
+		internal bool DelRoot (out string output, string [] args)
+		{
+			roots.Remove (args [0]);
+			output = "Root removed.";
+			return true;
+		}
+		
+		[ConfigOption (Description="List user-specified resources to be excluded from indexing", IsMutator=false)]
+		internal bool ListExcludes (out string output, string [] args)
+		{
+			output = "User-specified resources to be excluded from indexing:\n";
+			foreach (ExcludeItem exclude_item in excludes)
+				output += String.Format (" - [{0}] {1}\n", exclude_item.Type.ToString (), exclude_item.Value);
+			return true;
+		}
+
+		[ConfigOption (Description="Add a resource to exclude from indexing", Params=2, ParamsDescription="A type [path/pattern/mailfolder], a path/pattern/name")]
+		internal bool AddExclude (out string output, string [] args)
+		{
+			ExcludeType type;
+			try {
+				type = (ExcludeType) Enum.Parse (typeof (ExcludeType), args [0], true);
+			} catch {
+				output = String.Format("Invalid type '{0}'. Valid types: Path, Pattern, MailFolder", args [0]);
 				return false;
 			}
 
-			[ConfigOption (Description="Add a directory containing maildir emails. Use this when beagle is unable to determine the mimetype of files in this directory as message/rfc822",
-				       Params=2,
-				       ParamsDescription="path to the directory, extension (use * for any extension)")]
-			internal bool AddMaildir (out string output, string[] args)
-			{
-				Maildir maildir = new Maildir ();
-				maildir.Directory = args [0];
-				maildir.Extension = ((args [1] == null || args [1] == String.Empty) ? "*" : args [1]);
-				maildirs.Add (maildir);
+			excludes.Add (new ExcludeItem (type, args [1]));
+			output = "Exclude added.";
+			return true;
+		}
 
-				output = String.Format ("Added maildir directory: {0} with extension '{1}'", maildir.Directory, maildir.Extension);
-				return true;
-			}
-
-			[ConfigOption (Description="Remove a directory from ListMaildirs",
-				       Params=2,
-				       ParamsDescription="path to the directory, extension")]
-			internal bool DelMaildir (out string output, string[] args)
-			{
-				args [1] = ((args [1] == null || args [1] == String.Empty) ? "*" : args [1]);
-
-				int count = -1;
-				foreach (Maildir maildir in maildirs) {
-					count ++;
-					if (maildir.Directory == args [0] && maildir.Extension == args [1])
-						break;
-				}
-
-				if (count != -1 && count != maildirs.Count) {
-					maildirs.RemoveAt (count);
-					output = "Maildir removed.";
-					return true;
-				}
-
-				output = "Could not find requested maildir to remove.";
+		[ConfigOption (Description="Remove an excluded resource", Params=2, ParamsDescription="A type [path/pattern/mailfolder], a path/pattern/name")]
+		internal bool DelExclude (out string output, string [] args)
+		{
+			ExcludeType type;
+			try {
+				type = (ExcludeType) Enum.Parse (typeof (ExcludeType), args [0], true);
+			} catch {
+				output = String.Format("Invalid type '{0}'. Valid types: Path, Pattern, MailFolder", args [0]);
 				return false;
 			}
 
-			[ConfigOption (Description="List user specified maildir directories", IsMutator=false)]
-			internal bool ListMaildirs (out string output, string [] args)
-			{
-				output = "User-specified maildir directories:\n";
-				foreach (Maildir maildir in maildirs)
-					output += String.Format (" - {0} with extension '{1}'\n", maildir.Directory, maildir.Extension);
+			foreach (ExcludeItem item in excludes) {
+				if (item.Type != type || item.Value != args [1])
+					continue;
+				excludes.Remove (item);
+				output = "Exclude removed.";
 				return true;
 			}
 
+			output = "Could not find requested exclude to remove.";
+			return false;
 		}
 
-		[ConfigSection (Name="networking")]
-		public class NetworkingConfig : Section 
+		[ConfigOption (Description="Add a directory containing maildir emails. Use this when beagle is unable to determine the mimetype of files in this directory as message/rfc822",
+			       Params=2,
+			       ParamsDescription="path to the directory, extension (use * for any extension)")]
+		internal bool AddMaildir (out string output, string[] args)
 		{
-			// Index sharing service is disabled by default
-			private bool service_enabled = false;
+			Maildir maildir = new Maildir ();
+			maildir.Directory = args [0];
+			maildir.Extension = ((args [1] == null || args [1] == String.Empty) ? "*" : args [1]);
+			maildirs.Add (maildir);
 
-			// Password protect our local indexes
-			private bool password_required = true;
+			output = String.Format ("Added maildir directory: {0} with extension '{1}'", maildir.Directory, maildir.Extension);
+			return true;
+		}
 
-			// The name and password for the local network service
-			private string service_name = String.Format ("{0} ({1})", UnixEnvironment.UserName, UnixEnvironment.MachineName);
-			private string service_password = String.Empty;
+		[ConfigOption (Description="Remove a directory from ListMaildirs",
+			       Params=2,
+			       ParamsDescription="path to the directory, extension")]
+		internal bool DelMaildir (out string output, string[] args)
+		{
+			args [1] = ((args [1] == null || args [1] == String.Empty) ? "*" : args [1]);
 
-			// This is a list of registered and paired nodes which
-			// the local client can search
-			private ArrayList network_services = new ArrayList ();
-			
-			public bool ServiceEnabled {
-				get { return service_enabled; }
-				set { service_enabled = value; }
+			int count = -1;
+			foreach (Maildir maildir in maildirs) {
+				count ++;
+				if (maildir.Directory == args [0] && maildir.Extension == args [1])
+					break;
 			}
 
-			public bool PasswordRequired {
-				get { return password_required; }
-				set { password_required = value; }
-			}
-
-			public string ServiceName {
-				get { return service_name; }
-				set { service_name = value; }
-			}
-
-			public string ServicePassword {
-				get { return service_password; }
-				set { service_password = value; }
-			}
-
-			[ConfigOption (Description="Toggles whether searching over network will be enabled the next time the daemon starts.")]
-			internal bool NetworkSearch (out string output, string [] args)
-			{
-				if (service_enabled)
-					output = "Network search will be disabled.";
-				else
-					output = "Network search will be enabled.";
-				service_enabled = !service_enabled;
+			if (count != -1 && count != maildirs.Count) {
+				maildirs.RemoveAt (count);
+				output = "Maildir removed.";
 				return true;
 			}
 
-			[XmlArray]
-			[XmlArrayItem (ElementName="NetworkService", Type=typeof (NetworkService))]
-			public ArrayList NetworkServices {
-				get { return network_services; }
-				set { network_services = value; }
+			output = "Could not find requested maildir to remove.";
+			return false;
+		}
+
+		[ConfigOption (Description="List user specified maildir directories", IsMutator=false)]
+		internal bool ListMaildirs (out string output, string [] args)
+		{
+			output = "User-specified maildir directories:\n";
+			foreach (Maildir maildir in maildirs)
+				output += String.Format (" - {0} with extension '{1}'\n", maildir.Directory, maildir.Extension);
+			return true;
+		}
+
+	}
+
+	[ConfigSection (Name="networking")]
+	public class NetworkingConfig : Section 
+	{
+		// Index sharing service is disabled by default
+		private bool service_enabled = false;
+
+		// Password protect our local indexes
+		private bool password_required = true;
+
+		// The name and password for the local network service
+		private string service_name = String.Format ("{0} ({1})", UnixEnvironment.UserName, UnixEnvironment.MachineName);
+		private string service_password = String.Empty;
+
+		// This is a list of registered and paired nodes which
+		// the local client can search
+		private ArrayList network_services = new ArrayList ();
+		
+		public bool ServiceEnabled {
+			get { return service_enabled; }
+			set { service_enabled = value; }
+		}
+
+		public bool PasswordRequired {
+			get { return password_required; }
+			set { password_required = value; }
+		}
+
+		public string ServiceName {
+			get { return service_name; }
+			set { service_name = value; }
+		}
+
+		public string ServicePassword {
+			get { return service_password; }
+			set { service_password = value; }
+		}
+
+		[ConfigOption (Description="Toggles whether searching over network will be enabled the next time the daemon starts.")]
+		internal bool NetworkSearch (out string output, string [] args)
+		{
+			if (service_enabled)
+				output = "Network search will be disabled.";
+			else
+				output = "Network search will be enabled.";
+			service_enabled = !service_enabled;
+			return true;
+		}
+
+		[XmlArray]
+		[XmlArrayItem (ElementName="NetworkService", Type=typeof (NetworkService))]
+		public ArrayList NetworkServices {
+			get { return network_services; }
+			set { network_services = value; }
+		}
+
+		[ConfigOption (Description="List available network services for querying", IsMutator=false)]
+		internal bool ListNetworkServices (out string output, string [] args)
+		{
+			output = "Currently registered network services:\n";
+
+			foreach (NetworkService service in network_services)
+				output += " - " + service.ToString () + "\n";
+
+#if ENAB
+			output += "\n";
+			output += "Available network services:\n";
+			
+			try {
+			
+			AvahiBrowser browser = new AvahiBrowser ();
+			//browser.Start ();
+
+			foreach (NetworkService service in browser.GetServicesBlocking ())
+				output += " - " + service.ToString () + "\n";
+
+			browser.Dispose ();
+
+			} catch (Exception e) {
+				Console.WriteLine ("Cannot connect to avahi service: " + e.Message);
 			}
-
-			[ConfigOption (Description="List available network services for querying", IsMutator=false)]
-			internal bool ListNetworkServices (out string output, string [] args)
-			{
-				output = "Currently registered network services:\n";
-
-				foreach (NetworkService service in network_services)
-					output += " - " + service.ToString () + "\n";
-
-#if ENABLE_AVAHI
-				output += "\n";
-				output += "Available network services:\n";
-				
-				try {
-				
-				AvahiBrowser browser = new AvahiBrowser ();
-				//browser.Start ();
-
-				foreach (NetworkService service in browser.GetServicesBlocking ())
-					output += " - " + service.ToString () + "\n";
-
-				browser.Dispose ();
-
-				} catch (Exception e) {
-					Console.WriteLine ("Cannot connect to avahi service: " + e.Message);
-				}
 #endif
 
-				return true;
-			}
+			return true;
+		}
 
-			[ConfigOption (Description="Add a network service for querying", Params=2, ParamsDescription="name, hostname:port")]
-			internal bool AddNetworkService (out string output, string [] args)
-			{
-				string name = args [0];
-				string uri = args [1];
-				
-				if (uri.Split (':').Length < 2)
-					uri = uri.Trim() + ":4000";
-				
-				NetworkService service = new NetworkService (name, new Uri (uri), false, null);
-				network_services.Add (service);
-				
-				output = "Network service '" + service + "' added";
-
-				return true;
-			}
+		[ConfigOption (Description="Add a network service for querying", Params=2, ParamsDescription="name, hostname:port")]
+		internal bool AddNetworkService (out string output, string [] args)
+		{
+			string name = args [0];
+			string uri = args [1];
 			
-			[ConfigOption (Description="Remove a network service from querying", Params=1, ParamsDescription="name")]
-			internal bool RemoveNetworkService (out string output, string [] args)
-			{
-				string name = args[0];
+			if (uri.Split (':').Length < 2)
+				uri = uri.Trim() + ":4000";
+			
+			NetworkService service = new NetworkService (name, new Uri (uri), false, null);
+			network_services.Add (service);
+			
+			output = "Network service '" + service + "' added";
 
-				foreach (NetworkService service in network_services) {
-					if (service.Name != name)
-						continue;
+			return true;
+		}
+		
+		[ConfigOption (Description="Remove a network service from querying", Params=1, ParamsDescription="name")]
+		internal bool RemoveNetworkService (out string output, string [] args)
+		{
+			string name = args[0];
 
-					network_services.Remove (service);
-					output = "Network service '" + service.Name + "' removed";
-					
-					return true;
-				}
+			foreach (NetworkService service in network_services) {
+				if (service.Name != name)
+					continue;
 
-				output = "Network service '" + name + "' not found in registered services";
-
-				return false;
+				network_services.Remove (service);
+				output = "Network service '" + service.Name + "' removed";
+				
+				return true;
 			}
-		}
 
-		public class Section {
-			[XmlIgnore]
-			public bool SaveNeeded = false;
-		}
+			output = "Network service '" + name + "' not found in registered services";
 
-		private class ConfigOption : Attribute {
-			public string Description;
-			public int Params;
-			public string ParamsDescription;
-			public bool IsMutator = true;
+			return false;
 		}
+	}
 
-		private class ConfigSection : Attribute {
-			public string Name;
-		}
+	public class Section {
+		[XmlIgnore]
+		public bool SaveNeeded = false;
+	}
 
-		public class ConfigException : Exception {
-			public ConfigException (string msg) : base (msg) { }
-		}
+	internal class ConfigOption : Attribute {
+		public string Description;
+		public int Params;
+		public string ParamsDescription;
+		public bool IsMutator = true;
+	}
 
+	internal class ConfigSection : Attribute {
+		public string Name;
+	}
+
+	internal class ConfigException : Exception {
+		public ConfigException (string msg) : base (msg) { }
 	}
 
 	//////////////////////////////////////////////////////////////////////
