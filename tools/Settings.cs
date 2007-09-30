@@ -138,11 +138,11 @@ public class SettingsDialog
 
 		LoadConfiguration ();
 
-		ConfigManager.Subscribe (ConfigManager.Names.FilesQueryableConfig, new ConfigManager.ConfigUpdateHandler (OnConfigurationChanged));
-		ConfigManager.Subscribe (ConfigManager.Names.BeagleSearchConfig, new ConfigManager.ConfigUpdateHandler (OnConfigurationChanged));
-		ConfigManager.Subscribe (ConfigManager.Names.DaemonConfig, new ConfigManager.ConfigUpdateHandler (OnConfigurationChanged));
+		Conf.Subscribe (Conf.Names.FilesQueryableConfig, new Conf.ConfigUpdateHandler (OnConfigurationChanged));
+		Conf.Subscribe (Conf.Names.BeagleSearchConfig, new Conf.ConfigUpdateHandler (OnConfigurationChanged));
+		Conf.Subscribe (Conf.Names.DaemonConfig, new Conf.ConfigUpdateHandler (OnConfigurationChanged));
 #if ENABLE_AVAHI
-		ConfigManager.Subscribe (ConfigManager.Names.NetworkingConfig, new ConfigManager.ConfigUpdateHandler (OnConfigurationChanged));
+		Conf.Subscribe (Conf.Names.NetworkingConfig, new Conf.ConfigUpdateHandler (OnConfigurationChanged));
 #endif
 
 		ParseArgs (args);
@@ -180,35 +180,29 @@ public class SettingsDialog
 
 	private void LoadConfiguration ()
 	{
-		Config fsq_config = ConfigManager.Get (ConfigManager.Names.FilesQueryableConfig);
-		Config daemon_config = ConfigManager.Get (ConfigManager.Names.DaemonConfig);
-		Config bs_config = ConfigManager.Get (ConfigManager.Names.BeagleSearchConfig);
+		Config fsq_config = Conf.Get (Conf.Names.FilesQueryableConfig);
+		Config daemon_config = Conf.Get (Conf.Names.DaemonConfig);
+		Config bs_config = Conf.Get (Conf.Names.BeagleSearchConfig);
 
-		allow_root_toggle.Active = ConfigManager.GetOption (daemon_config, ConfigManager.Names.AllowRoot, false);
-		auto_search_toggle.Active = ConfigManager.GetOption (bs_config, ConfigManager.Names.BeagleSearchAutoSearch, true);
-		battery_toggle.Active = ConfigManage.GetOption (daemon_config, ConfigManager.Names.IndexOnBattery, false);
-		screensaver_toggle.Active = ConfigManager.GetOption (daemon_config, ConfigManager.Names.IndexFasterOnScreensaver, true);
+		allow_root_toggle.Active = daemon_config.GetOption (Conf.Names.AllowRoot, false);
+		auto_search_toggle.Active = bs_config.GetOption (Conf.Names.BeagleSearchAutoSearch, true);
+		battery_toggle.Active = daemon_config.GetOption (Conf.Names.IndexOnBattery, false);
+		screensaver_toggle.Active = daemon_config.GetOption (Conf.Names.IndexFasterOnScreensaver, true);
 
 		autostart_toggle.Active = IsAutostartEnabled ();
 
-		bool binding_ctrl = ConfigManager.GetOption (bs_config,
-							     ConfigManager.Names.KeyBinding_Ctrl,
-							     false);
-		bool binding_alt = ConfigManager.GetOption (bs_config,
-							    ConfigManager.Names.KeyBinding_Alt,
-							    false);
-		string binding_key = ConfigManager.GetOption (bs_config,
-							     ConfigManager.Names.KeyBinding_Key,
-							     "F12");
+		bool binding_ctrl = bs_config.GetOption (Conf.Names.KeyBinding_Ctrl, false);
+		bool binding_alt = bs_config.GetOption (Conf.Names.KeyBinding_Alt, false);
+		string binding_key = bs_config.GetOption (Conf.Names.KeyBinding_Key, "F12");
 		KeyBinding show_binding = new KeyBinding (binding_key, binding_ctrl, binding_alt);
 		press_ctrl_toggle.Active = show_binding.Ctrl;
 		press_alt_toggle.Active = show_binding.Alt;
 		show_search_window_entry.Text = show_binding.Key;
 
-		if (ConfigManager.GetOption (fsq_config, ConfigManager.Names.IndexHomeDir, true))
+		if (fsq_config.GetOption (Conf.Names.IndexHomeDir, true))
 			index_home_toggle.Active = true;
 
-		List<string[]> roots = ConfigManager.GetListOptionValues (fsq_config, ConfigManager.Names.Roots);
+		List<string[]> roots = fsq_config.GetListOptionValues (Conf.Names.Roots);
 		if (roots != null)
 			foreach (string[] root in roots)
 				include_view.AddPath (include);
@@ -217,9 +211,9 @@ public class SettingsDialog
 			exclude_view.AddItem (exclude_item);
 
 #if ENABLE_AVAHI
-		Config networking_config = ConfigManager.Get (ConfigManager.Names.FilesQueryableConfig);
+		Config networking_config = Conf.Get (Conf.Names.FilesQueryableConfig);
 
-		List<string[]> services = ConfigManager.GetListOptionValues (networking_config, ConfigManager.Names.NetworkServices);
+		List<string[]> services = networking_config.GetListOptionValues (Conf.Names.NetworkServices);
 		if (services != null) {
 			foreach (string[] svc in services) {
 				NetworkService s = new NetworkService ();
@@ -231,10 +225,10 @@ public class SettingsDialog
 			}
 		}
 
-                allow_global_access_toggle.Active = ConfigManager.GetOption (networking_config, ConfigManager.Names.ServiceEnabled, false);
-                require_password_toggle.Active = ConfigManager.GetOption (networking_config, ConfigManager.Names.PasswordRequired, true);
-                index_name_entry.Text = ConfigManager.GetOption (networking_config, ConfigManager.Names.ServiceName, String.Empty);
-                string password = ConfigManager.GetOption (networking_config, ConfigManager.Names.ServicePassword, String.Empty);
+                allow_global_access_toggle.Active = networking_config.GetOption (Conf.Names.ServiceEnabled, false);
+                require_password_toggle.Active = networking_config.GetOption (Conf.Names.PasswordRequired, true);
+                index_name_entry.Text = networking_config.GetOption (Conf.Names.ServiceName, String.Empty);
+                string password = networking_config.GetOption (Conf.Names.ServicePassword, String.Empty);
 		password = password.PadRight (12);
                 password_entry.Text = password.Substring (0, 12);
 #endif
@@ -242,48 +236,48 @@ public class SettingsDialog
 
 	private void SaveConfiguration ()
 	{
-		Config fsq_config = ConfigManager.Get (ConfigManager.Names.FilesQueryableConfig);
-		Config daemon_config = ConfigManager.Get (ConfigManager.Names.DaemonConfig);
-		Config bs_config = ConfigManager.Get (ConfigManager.Names.BeagleSearchConfig);
+		Config fsq_config = Conf.Get (Conf.Names.FilesQueryableConfig);
+		Config daemon_config = Conf.Get (Conf.Names.DaemonConfig);
+		Config bs_config = Conf.Get (Conf.Names.BeagleSearchConfig);
 
-		ConfigManager.SetOption (daemon_config, ConfigManager.Names.AllowRoot, allow_root_toggle.Active);
-		ConfigManager.SetOption (bs_config, ConfigManager.Names.BeagleSearchAutoSearch,auto_search_toggle.Active);
-		ConfigManager.SetOption (daemon_config, ConfigManager.Names.IndexOnBattery,battery_toggle.Active);
-		ConfigManager.SetOption (daemon_config, ConfigManager.Names.IndexFasterOnScreensaver, screensaver_toggle.Active);
+		daemon_config.SetOption (Conf.Names.AllowRoot, allow_root_toggle.Active);
+		bs_config.SetOption (Conf.Names.BeagleSearchAutoSearch,auto_search_toggle.Active);
+		daemon_config.SetOption (Conf.Names.IndexOnBattery,battery_toggle.Active);
+		daemon_config.SetOption (Conf.Names.IndexFasterOnScreensaver, screensaver_toggle.Active);
 		
-		ConfigManager.SetOption (bs_config, ConfigManager.Names.KeyBinding_Key, show_search_window_entry.Text);
-		ConfigManager.SetOption (bs_config, ConfigManager.Names.KeyBinding_Ctrl, press_ctrl_toggle.Active);
-		ConfigManager.SetOption (bs_config, ConfigManager.Names.KeyBinding_Alt, press_alt_toggle.Active);
+		bs_config.SetOption (Conf.Names.KeyBinding_Key, show_search_window_entry.Text);
+		bs_config.SetOption (Conf.Names.KeyBinding_Ctrl, press_ctrl_toggle.Active);
+		bs_config.SetOption (Conf.Names.KeyBinding_Alt, press_alt_toggle.Active);
 
-		ConfigManager.SetOption (fsq_config, ConfigManager.Names.IndexHomeDir, index_home_toggle.Active);
+		fsq_config.SetOption (Conf.Names.IndexHomeDir, index_home_toggle.Active);
 
 		List<string[]> roots = new List<string[]> (include_view.Includes.Length);
 		foreach (string root in include_view.Includes) {
 			roots.Add (new string[1] {root});
 		}
-		ConfigManager.SetListOptionValues (fsq_config, ConfigManager.Names.Roots, roots);
+		fsq.SetListOptionValues (Conf.Names.Roots, roots);
 
 		Conf.Indexing.Excludes = exclude_view.Excludes;
 
 #if ENABLE_AVAHI
-		Config networking_config = ConfigManager.Get (ConfigManager.Names.FilesQueryableConfig);
+		Config networking_config = Conf.Get (Conf.Names.FilesQueryableConfig);
 
-		ConfigManager.SetOption (networking_config, ConfigManager.Names.ServiceEnabled, allow_global_access_toggle.Active);
-		ConfigManager.SetOption (bs_config, ConfigManager.Names.ServiceName, index_name_entry.Text);
-		ConfigManager.SetOption (bs_config, ConfigManager.Names.PasswordRequired, require_password_toggle.Active);
-		ConfigManager.SetOption (bs_config, ConfigManager.Names.ServicePassword, Password.Encode (password_entry.Text));
+		networking_config.SetOption (Conf.Names.ServiceEnabled, allow_global_access_toggle.Active);
+		bs_config.SetOption (Conf.Names.ServiceName, index_name_entry.Text);
+		bs_config.SetOption (Conf.Names.PasswordRequired, require_password_toggle.Active);
+		bs_config.SetOption (Conf.Names.ServicePassword, Password.Encode (password_entry.Text));
 
 		List<string[]> svcs = new List<string[]> (networking_view.Nodes.Length);
 		foreach (NetworkService svc in networking_view.Nodes) {
 			svcs.Add (new string [4] {svc.Name, svc.Uri, svc.Password, svc.Cookie});
 		}
-		ConfigManager.SetListOptionValues (networking_config, ConfigManager.Names.NetworkServices, svcs);
-		ConfigManager.Save (networking_config);
+		networking_config.SetListOptionValues (Conf.Names.NetworkServices, svcs);
+		Conf.Save (networking_config);
 #endif
 
-		ConfigManager.Save (fsq_config);
-		ConfigManager.Save (bs_config);
-		ConfigManager.Save (daemon_config);
+		Conf.Save (fsq_config);
+		Conf.Save (bs_config);
+		Conf.Save (daemon_config);
 	}
 
 	private void OnConfigurationChanged (Config config)

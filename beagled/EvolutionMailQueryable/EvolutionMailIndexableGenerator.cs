@@ -49,8 +49,7 @@ namespace Beagle.Daemon.EvolutionMailQueryable {
 		private static ArrayList excludes = new ArrayList ();
 
 		static EvolutionMailIndexableGenerator () {
-			Config config = ConfigManager.Get (ConfigManager.Names.DaemonConfig);
-			List<string[]> values = ConfigManager.GetListOptionValues (config, ConfigManager.Names.ExcludeMailfolder);
+			List<string[]> values = Conf.Daemon.GetListOptionValues (Conf.Names.ExcludeMailfolder);
 			if (values == null)
 				return;
 
