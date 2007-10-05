@@ -643,6 +643,25 @@ namespace Beagle.Daemon {
 			QueryEachQueryable (query, result);
 		}
 
+		static public ArrayList DoRDFQuery (RDFQuery query)
+		{
+			DehumanizeQuery (query);
+
+			ArrayList all_results = new ArrayList ();
+
+			foreach (Queryable q in queryables) {
+				if (! q.AcceptQuery (query))
+					continue;
+
+				ICollection results = q.DoRDFQuery (query);
+				if (results == null || results.Count == 0)
+					continue;
+				all_results.AddRange (results);
+			}
+
+			return all_results;
+		}
+
 		////////////////////////////////////////////////////////
 
 		static public IEnumerable GetIndexInformation ()

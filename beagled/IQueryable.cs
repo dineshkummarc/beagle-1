@@ -41,6 +41,8 @@ namespace Beagle.Daemon {
 			      IQueryResult result,
 			      IQueryableChangeData data);
 
+		ICollection DoRDFQuery (Query query);
+
 		ISnippetReader GetSnippet (string[] query_terms, Hit hit, bool full_text);
 
 		QueryableStatus GetQueryableStatus ();

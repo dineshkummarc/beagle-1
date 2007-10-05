@@ -244,4 +244,30 @@ namespace Beagle {
 			return sb.ToString ();
 		}
 	}
+
+	public class RDFQuery : Query {
+
+		public RDFQuery ()
+		{
+			// RDFQuery is a sync message
+			this.UnregisterAsyncResponseHandler (typeof (HitsAddedResponse));
+			this.UnregisterAsyncResponseHandler (typeof (HitsSubtractedResponse));
+			this.UnregisterAsyncResponseHandler (typeof (FinishedResponse));
+			this.UnregisterAsyncResponseHandler (typeof (ErrorResponse));
+			this.UnregisterAsyncResponseHandler (typeof (SearchTermResponse));
+
+			Keepalive = false;
+		}
+
+		public RDFQuery (string str) : this ()
+		{
+			AddText (str);
+		}
+	}
+
+	public class RDFQueryResult : ResponseMessage {
+		[XmlArray (ElementName="Matches")]
+		[XmlArrayItem (ElementName="Uri", Type=typeof (string))]
+		public ArrayList Matches = new ArrayList ();
+	}
 }

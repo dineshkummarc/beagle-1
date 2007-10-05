@@ -64,6 +64,11 @@ namespace Beagle.Daemon {
 		{
 		}
 
+		public ICollection DoRDFQuery (Query query)
+		{
+			return null;
+		}
+
 		public ISnippetReader GetSnippet (string[] query_terms, Hit hit, bool full_text)
 		{
 			return null;

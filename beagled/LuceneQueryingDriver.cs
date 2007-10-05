@@ -133,6 +133,263 @@ namespace Beagle.Daemon {
 
 		////////////////////////////////////////////////////////////////
 
+		///////// RDF fu ///////////////////////////////////////////////
+
+		// Returns a collection of Uris
+		// HitFilter and UriFilter are ignored for now
+		// They will come into play in the final FetchDocument part
+		public ICollection DoRDFQuery (Query query)
+		{
+			if (Debug)
+				Logger.Log.Debug ("###### {0}: Starting low-level queries", IndexName);
+
+			Stopwatch total, a, b, c, d, e, f;
+
+			total = new Stopwatch ();
+			a = new Stopwatch ();
+			b = new Stopwatch ();
+			c = new Stopwatch ();
+			d = new Stopwatch ();
+			e = new Stopwatch ();
+			f = new Stopwatch ();
+
+			total.Start ();
+			a.Start ();
+
+			// Assemble all of the parts into a bunch of Lucene queries
+
+			ArrayList primary_required_part_queries = null;
+			ArrayList secondary_required_part_queries = null;
+
+			LNS.BooleanQuery primary_prohibited_part_query = null;
+			LNS.BooleanQuery secondary_prohibited_part_query = null;
+
+			ArrayList term_list = new ArrayList ();
+
+			foreach (QueryPart part in query.Parts) {
+				LNS.Query primary_part_query;
+				LNS.Query secondary_part_query;
+				HitFilter part_hit_filter;
+				QueryPartToQuery (part,
+						  false, // we want both primary and secondary queries
+						  part.Logic == QueryPartLogic.Required ? term_list : null,
+						  out primary_part_query,
+						  out secondary_part_query,
+						  out part_hit_filter);
+
+				if (primary_part_query == null)
+					continue;
+
+				switch (part.Logic) {
+					
+				case QueryPartLogic.Required:
+					if (primary_required_part_queries == null) {
+						primary_required_part_queries = new ArrayList ();
+						secondary_required_part_queries = new ArrayList ();
+					}
+					primary_required_part_queries.Add (primary_part_query);
+					secondary_required_part_queries.Add (secondary_part_query);
+					
+					break;
+
+				case QueryPartLogic.Prohibited:
+					if (primary_prohibited_part_query == null)
+						primary_prohibited_part_query = new LNS.BooleanQuery ();
+					primary_prohibited_part_query.Add (primary_part_query, false, false);
+
+					if (secondary_part_query != null) {
+						if (secondary_prohibited_part_query == null)
+							secondary_prohibited_part_query = new LNS.BooleanQuery ();
+						secondary_prohibited_part_query.Add (secondary_part_query, false, false);
+					}
+
+					break;
+				}
+			}
+
+			a.Stop ();
+			if (Debug)
+				Log.Debug ("###### {0}: Building queries took {1}", IndexName, a);
+
+			// If we have no required parts, give up.
+			if (primary_required_part_queries == null)
+				return null;
+
+			b.Start ();
+			
+			//
+			// Now that we have all of these nice queries, let's execute them!
+			//
+
+			// Create the searchers that we will need.
+
+			IndexReader primary_reader;
+			LNS.IndexSearcher primary_searcher;
+			IndexReader secondary_reader = null;
+			LNS.IndexSearcher secondary_searcher = null;
+
+			primary_reader = LuceneCommon.GetReader (PrimaryStore);
+			primary_searcher = new LNS.IndexSearcher (primary_reader);
+
+			if (SecondaryStore != null) {
+				secondary_reader = LuceneCommon.GetReader (SecondaryStore);
+				if (secondary_reader.NumDocs () == 0) {
+					ReleaseReader (secondary_reader);
+					secondary_reader = null;
+				}
+			}
+
+			if (secondary_reader != null)
+				secondary_searcher = new LNS.IndexSearcher (secondary_reader);
+
+			b.Stop ();
+			if (Debug)
+				Log.Debug ("###### {0}: Readers/searchers built in {1}", IndexName, b);
+
+			// Build whitelists and blacklists for search subsets.
+			c.Start ();
+			
+			// Possibly create our whitelists from the search subset.
+
+			LuceneBitArray primary_whitelist = null;
+			LuceneBitArray secondary_whitelist = null;
+			
+			// Build blacklists from our prohibited parts.
+			
+			LuceneBitArray primary_blacklist = null;
+			LuceneBitArray secondary_blacklist = null;
+
+			if (primary_prohibited_part_query != null) {
+				primary_blacklist = new LuceneBitArray (primary_searcher,
+									primary_prohibited_part_query);
+				
+				if (secondary_searcher != null) {
+					secondary_blacklist = new LuceneBitArray (secondary_searcher);
+					if (secondary_prohibited_part_query != null)
+						secondary_blacklist.Or (secondary_prohibited_part_query);
+					primary_blacklist.Join (secondary_blacklist);
+				}
+			}
+
+			
+			// Combine our whitelist and blacklist into just a whitelist.
+			
+			if (primary_blacklist != null) {
+				if (primary_whitelist == null) {
+					primary_blacklist.Not ();
+					primary_whitelist = primary_blacklist;
+				} else {
+					primary_whitelist.AndNot (primary_blacklist);
+				}
+			}
+
+			if (secondary_blacklist != null) {
+				if (secondary_whitelist == null) {
+					secondary_blacklist.Not ();
+					secondary_whitelist = secondary_blacklist;
+				} else {
+					secondary_whitelist.AndNot (secondary_blacklist);
+				}
+			}
+
+			c.Stop ();
+			if (Debug)
+				Log.Debug ("###### {0}: Whitelists and blacklists built in {1}", IndexName, c);
+
+			// Now run the low level queries against our indexes.
+			d.Start ();
+
+			BetterBitArray primary_matches = null;
+
+			if (primary_required_part_queries != null) {
+
+				if (secondary_searcher != null)
+					primary_matches = DoRequiredQueries_TwoIndex (primary_searcher,
+										      secondary_searcher,
+										      primary_required_part_queries,
+										      secondary_required_part_queries,
+										      primary_whitelist,
+										      secondary_whitelist);
+				else
+					primary_matches = DoRequiredQueries (primary_searcher,
+									     primary_required_part_queries,
+									     primary_whitelist);
+
+			} 
+
+			d.Stop ();
+			if (Debug)
+				Logger.Log.Debug ("###### {0}: Low-level queries finished in {1}", IndexName, d);
+
+			e.Start ();
+
+			int count = 0;
+			Document doc;
+			ArrayList matched_uris = new ArrayList (primary_matches.TrueCount);
+
+			for (int match_index = primary_matches.GetNextTrueIndex (0);
+			     match_index < primary_matches.Count; 
+			     match_index = primary_matches.GetNextTrueIndex (++ match_index)) {
+
+				count++;
+
+				doc = primary_searcher.Doc (match_index, fields_uri);
+
+				// If we have a UriFilter, apply it.
+				// RDF FIXME: Ignore Uri Filter for now
+				//if (uri_filter != null) {
+				//	Uri uri;
+				//	uri = GetUriFromDocument (doc);
+				//	if (! uri_filter (uri))
+				//		continue;
+				//}
+
+				// Get only the uri
+				//Uri uri = UriFu.EscapedStringToUri (doc.Get ("Uri"));
+				string uri = doc.Get ("Uri");
+				matched_uris.Add (uri);
+			}
+
+			e.Stop ();
+
+			if (Debug)
+				Log.Debug ("###### {0}: Query results generated in {1}", IndexName, e);
+
+			//
+			// Finally, we clean up after ourselves.
+			//
+
+			f.Start ();
+			
+			primary_searcher.Close ();
+			if (secondary_searcher != null)
+				secondary_searcher.Close ();
+			ReleaseReader (primary_reader);
+			if (secondary_reader != null)
+				ReleaseReader (secondary_reader);
+
+			f.Stop ();
+			
+			if (Debug)
+				Log.Debug ("###### {0}: Readers/searchers released in {1}", IndexName, f);
+
+			total.Stop ();
+			if (Debug) {
+				Log.Debug ("###### {0}: Query time breakdown:", IndexName);
+				Log.Debug ("###### {0}:    Build queries {1,6} ({2:0.0}%)", IndexName, a, 100 * a.ElapsedTime / total.ElapsedTime);
+				Log.Debug ("###### {0}:      Got readers {1,6} ({2:0.0}%)", IndexName, b, 100 * b.ElapsedTime / total.ElapsedTime);
+				Log.Debug ("###### {0}:       Whitelists {1,6} ({2:0.0}%)", IndexName, c, 100 * c.ElapsedTime / total.ElapsedTime);
+				Log.Debug ("###### {0}:          Queries {1,6} ({2:0.0}%)", IndexName, d, 100 * d.ElapsedTime / total.ElapsedTime);
+				Log.Debug ("###### {0}:    Gen'd Results {1,6} ({2:0.0}%)", IndexName, e, 100 * e.ElapsedTime / total.ElapsedTime);
+				Log.Debug ("###### {0}:   Reader cleanup {1,6} ({2:0.0}%)", IndexName, f, 100 * f.ElapsedTime / total.ElapsedTime);
+				Log.Debug ("###### {0}:            TOTAL {1,6}", IndexName, total);
+
+				Logger.Log.Debug ("###### {0}: Total query run in {1}", IndexName, total);
+			}
+
+			return matched_uris;
+		}
+
 		// Returns the lowest matching score before the results are
 		// truncated.
 		public void DoQuery (Query               query,

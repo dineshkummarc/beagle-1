@@ -273,6 +273,11 @@ namespace Beagle.Daemon {
 			public ICollection RemovedUris;
 		}
 
+		public ICollection DoRDFQuery (Query query)
+		{
+			return Driver.DoRDFQuery (query);
+		}
+
 		public void DoQuery (Query                query,
 				     IQueryResult         query_result,
 				     IQueryableChangeData i_change_data)

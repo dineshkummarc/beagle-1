@@ -109,4 +109,17 @@ namespace Beagle.Daemon {
 			this.query = null;
 		}
 	}
+
+	[RequestMessage (typeof (RDFQuery))]
+	public class RDFQueryExecutor : RequestMessageExecutor {
+
+		public override ResponseMessage Execute (RequestMessage request)
+		{
+			RDFQueryResult result = new RDFQueryResult ();
+			RDFQuery query = (RDFQuery) request;
+
+			result.Matches = QueryDriver.DoRDFQuery (query);
+			return result;
+		}
+	}
 }
