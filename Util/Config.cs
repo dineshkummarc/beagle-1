@@ -345,16 +345,11 @@ namespace Beagle.Util {
 			bool watching_for_updates_current = watching_for_updates;
 			watching_for_updates = false;
 
-			string filename = (config.Name + ".xml");
-			string configs_dir = Path.Combine (PathFinder.StorageDir, "config");
-			if (!Directory.Exists (configs_dir))
-				Directory.CreateDirectory (configs_dir);
+			string filename = Path.Combine (configs_dir, (config.Name + ".xml"));
 
-			string local_file = Path.Combine (configs_dir, filename);
-
-			using (StreamWriter writer = new StreamWriter (local_file)) {
+			using (StreamWriter writer = new StreamWriter (filename)) {
 				conf_ser.Serialize (writer, config);
-				Console.WriteLine ("Done writing to " + local_file);
+				Console.WriteLine ("Done writing to " + filename);
 			}
 
 			watching_for_updates = watching_for_updates_current;

@@ -270,8 +270,7 @@ namespace Search {
 					tip_text += String.Format (" ({0})", binding);
 
 					// Attach the hide/show keybinding
-					// FIXME: dBera - how to change this one ?
-					keybinder.Bind (Conf.Searching.ShowSearchWindowBinding.ToString (), OnTrayActivated);
+					keybinder.Bind (binding, OnTrayActivated);
 				}
 
 				tray.TooltipText = tip_text;

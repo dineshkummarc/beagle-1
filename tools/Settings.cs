@@ -213,15 +213,25 @@ public class SettingsDialog
 		if (fsq_config.GetOption (Conf.Names.IndexHomeDir, true))
 			index_home_toggle.Active = true;
 
-		List<string[]> roots = fsq_config.GetListOptionValues (Conf.Names.Roots);
-		if (roots != null)
-			foreach (string[] root in roots)
-				include_view.AddPath (include);
+		List<string[]> values = fsq_config.GetListOptionValues (Conf.Names.Roots);
+		if (values != null)
+			foreach (string[] root in values)
+				include_view.AddPath (root [0]);
 
-		foreach (ExcludeItem exclude_item in Conf.Indexing.Excludes)
-			exclude_view.AddItem (exclude_item);
+		values = fsq_config.GetListOptionValues (Conf.Names.ExcludeSubdirectory);
+		if (values != null)
+			foreach (string[] subdir in values)
+				exclude_view.AddItem (new ExcludeItem (ExcludeType.Path, subdir [0]));
 
-		//
+		values = fsq_config.GetListOptionValues (Conf.Names.ExcludePattern);
+		if (values != null)
+			foreach (string[] pattern in values)
+				exclude_view.AddItem (new ExcludeItem (ExcludeType.Pattern, pattern [0]));
+
+		values = daemon_config.GetListOptionValues (Conf.Names.ExcludeMailfolder);
+		if (values != null)
+			foreach (string[] mailfolder in values)
+				exclude_view.AddItem (new ExcludeItem (ExcludeType.MailFolder, mailfolder [0]));
 
 #if ENABLE_AVAHI
 		Config networking_config = Conf.Get (Conf.Names.FilesQueryableConfig);
@@ -231,9 +241,9 @@ public class SettingsDialog
 			foreach (string[] svc in services) {
 				NetworkService s = new NetworkService ();
 				s.Name = svc [0];
-				s.Uri = svc [1];
-				s.Password = svc [2];
-				s.Cookie = svc [3];
+				s.UriString = svc [1];
+				s.IsProtected = false;
+				s.Cookie = null;
 				networking_view.AddNode (s);
 			}
 		}
@@ -264,13 +274,34 @@ public class SettingsDialog
 
 		fsq_config.SetOption (Conf.Names.IndexHomeDir, index_home_toggle.Active);
 
-		List<string[]> roots = new List<string[]> (include_view.Includes.Length);
+		List<string[]> roots = new List<string[]> (include_view.Includes.Count);
 		foreach (string root in include_view.Includes) {
 			roots.Add (new string[1] {root});
 		}
-		fsq.SetListOptionValues (Conf.Names.Roots, roots);
+		fsq_config.SetListOptionValues (Conf.Names.Roots, roots);
 
-		Conf.Indexing.Excludes = exclude_view.Excludes;
+		List<string[]> excludes_path = new List<string[]> ();
+		List<string[]> excludes_pattern = new List<string[]> ();
+		List<string[]> excludes_mailfolder = new List<string[]> ();
+
+		foreach (ExcludeItem exclude in exclude_view.Excludes) {
+			if (exclude.Type == ExcludeType.Path)
+				excludes_path.Add (new string[1] {exclude.Value});
+			else if (exclude.Type == ExcludeType.Pattern)
+				excludes_pattern.Add (new string[1] {exclude.Value});
+			else if (exclude.Type == ExcludeType.MailFolder)
+				excludes_mailfolder.Add (new string[1] {exclude.Value});
+		}
+
+		if (excludes_path.Count > 0)
+			fsq_config.SetListOptionValues (Conf.Names.ExcludeSubdirectory, excludes_path);
+
+		if (excludes_pattern.Count > 0)
+			fsq_config.SetListOptionValues (Conf.Names.ExcludePattern, excludes_pattern);
+
+		if (excludes_mailfolder.Count > 0)
+			daemon_config.SetListOptionValues (Conf.Names.ExcludeMailfolder, excludes_mailfolder);
+
 
 #if ENABLE_AVAHI
 		Config networking_config = Conf.Get (Conf.Names.FilesQueryableConfig);
@@ -280,9 +311,9 @@ public class SettingsDialog
 		bs_config.SetOption (Conf.Names.PasswordRequired, require_password_toggle.Active);
 		bs_config.SetOption (Conf.Names.ServicePassword, Password.Encode (password_entry.Text));
 
-		List<string[]> svcs = new List<string[]> (networking_view.Nodes.Length);
+		List<string[]> svcs = new List<string[]> (networking_view.Nodes.Count);
 		foreach (NetworkService svc in networking_view.Nodes) {
-			svcs.Add (new string [4] {svc.Name, svc.Uri, svc.Password, svc.Cookie});
+			svcs.Add (new string [4] {svc.Name, svc.UriString, Convert.ToString (svc.IsProtected), svc.Cookie});
 		}
 		networking_config.SetListOptionValues (Conf.Names.NetworkServices, svcs);
 		Conf.Save (networking_config);
