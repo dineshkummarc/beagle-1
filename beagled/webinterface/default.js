@@ -59,7 +59,14 @@ function search ()
 	//xmlhttp.overrideMimeType('text/txt; charset=x-user-defined');
 	xmlhttp.send (req_string);
 
+	// https://bugzilla.mozilla.org/show_bug.cgi?id=167801
+	// The focus would have moved to some hidden element and would be
+	// lost foreveh! Instead ... we cheat and set the focus explicitly
+	// to a harmless element.
+	document.queryform.querysubmit.focus ();
+
 	document.queryform.querytext.disabled = true;
+	document.queryform.querysubmit.disabled = true;
 	document.getElementById ('status').style.display = 'block';
 	return false;
 }
@@ -78,6 +85,7 @@ function get_information ()
 	xmlhttp.send (req_string);
 
 	document.queryform.querytext.disabled = true;
+	document.queryform.querysubmit.disabled = true;
 	document.getElementById ('status').style.display = 'block';
 	return false;
 }
@@ -98,6 +106,7 @@ function shutdown_beagle ()
 				document.getElementById ('results').innerHTML = '<i>Shutdown request sent to beagle</i>';
 				document.getElementById ('status').style.display = 'none';
 				document.queryform.querytext.disabled = false;
+				document.queryform.querysubmit.disabled = false;
 			}
 		}
 
@@ -108,6 +117,7 @@ function shutdown_beagle ()
 	xmlhttp.send (req_string);
 
 	document.queryform.querytext.disabled = true;
+	document.queryform.querysubmit.disabled = true;
 	document.getElementById ('status').style.display = 'block';
 	return false;
 }
@@ -177,6 +187,8 @@ function state_change_search (begin_date)
 	}
 
 	document.queryform.querytext.disabled = false;
+	document.queryform.querytext.focus ();
+	document.queryform.querysubmit.disabled = false;
 }
 
 function state_change_info ()
@@ -215,16 +227,17 @@ function state_change_info ()
 	}
 
 	document.queryform.querytext.disabled = false;
+	document.queryform.querysubmit.disabled = false;
 }
 
 function classify_hit (hit)
 {
-	var categories = mapping.getElementsByTagName ('Category');
+	var categories = mappings.getElementsByTagName ('Category');
 	var properties = hit.getElementsByTagName ('Property');
 	var matchers, matchers_value, matchers_key, matcher;
-	// Iterate over all the categories in mapping.xml
+	// Iterate over all the categories in mappings.xml
 categs:	for (var i = 0; i < categories.length; ++i) {
-		matchers = mapping.evaluate ('NotType|Type', categories [i], null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+		matchers = mappings.evaluate ('NotType|Type', categories [i], null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
 		// Iterate over all the <NotType> and <Type>s
 		while (matcher = matchers.iterateNext ()) {
 			matchers_key = matcher.getAttribute ('Key');
@@ -325,7 +338,7 @@ function reset_document_style ()
 function set_results_style ()
 {
 	// XXX Gotcha: this code assumes the arrays below match w.r.t. their indexes
-	// This will always be satisfied however, see mapping.xml: Note 2
+	// This will always be satisfied however, see mappings.xml: Note 2
 	var category_checkboxes = document.getElementById ('topbar-left').getElementsByTagName ('input');
 	var results_categories = document.getElementById ('results').childNodes;
 	if (category_was_being_shown ()) {
@@ -407,10 +420,10 @@ var xmlhttp = new XMLHttpRequest ();
 var query_processor = new XSLTProcessor ();
 var hit_processor = new XSLTProcessor ();
 var parser = new DOMParser ();
-var mapping;
+var mappings;
 
-// Load queryresult.xsl using synchronous (third param is set to false) XMLHttpRequest
-xmlhttp.open ("GET", "/queryresult.xsl", false);
+// Load statusresult.xsl using synchronous (third param is set to false) XMLHttpRequest
+xmlhttp.open ("GET", "/statusresult.xsl", false);
 xmlhttp.send (null);
 
 // Process it and store it for later reuse
@@ -421,7 +434,7 @@ xmlhttp.open ("GET", "/hitresult.xsl", false);
 xmlhttp.send (null);
 hit_processor.importStylesheet (xmlhttp.responseXML);
 
-// Get the mapping xml
-xmlhttp.open ("GET", "/mapping.xml", false);
+// Get the mappings.xml
+xmlhttp.open ("GET", "/mappings.xml", false);
 xmlhttp.send (null);
-mapping = xmlhttp.responseXML;
+mappings = xmlhttp.responseXML;

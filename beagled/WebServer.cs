@@ -58,9 +58,9 @@ namespace Beagle.Daemon {
 			mappings = new Dictionary<string, PageMapping> ();
 
 			mappings.Add ("/", new PageMapping ("index.xml", "text/xml; charset=utf-8"));
-			mappings.Add ("/mapping.xml", new PageMapping ("mapping.xml", "text/xml; charset=utf-8"));
+			mappings.Add ("/mappings.xml", new PageMapping ("mappings.xml", "text/xml; charset=utf-8"));
 			mappings.Add ("/index.xsl", new PageMapping ("index.xsl", "text/xml; charset=utf-8"));
-			mappings.Add ("/queryresult.xsl", new PageMapping ("queryresult.xsl", "text/xml; charset=utf-8"));
+			mappings.Add ("/statusresult.xsl", new PageMapping ("statusresult.xsl", "text/xml; charset=utf-8"));
 			mappings.Add ("/hitresult.xsl", new PageMapping ("hitresult.xsl", "text/xml; charset=utf-8"));
 			mappings.Add ("/default.css", new PageMapping ("default.css", "text/css"));
 			// If E4X is needed, change the content-type here

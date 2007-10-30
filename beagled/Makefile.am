@@ -5,10 +5,10 @@ webinterfacedir = $(datadir)/beagle/webinterface
 webinterface_DATA =				\
 	$(srcdir)/webinterface/default.js	\
 	$(srcdir)/webinterface/index.xml	\
-	$(srcdir)/webinterface/mapping.xml	\
+	$(srcdir)/webinterface/mappings.xml	\
 	$(srcdir)/webinterface/index.xsl	\
 	$(srcdir)/webinterface/hitresult.xsl	\
-	$(srcdir)/webinterface/queryresult.xsl	\
+	$(srcdir)/webinterface/statusresult.xsl	\
 	$(srcdir)/webinterface/default.css
 
 webinterfaceimagesdir = $(webinterfacedir)/images
