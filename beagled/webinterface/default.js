@@ -71,6 +71,27 @@ function search ()
 	return false;
 }
 
+function get_snippet (div_link)
+{
+	var snippet_div = div_link.parentNode;
+	var hit_xml = snippet_div.parentNode.nextSibling.innerHTML;
+	var query_str_stemmed = document.getElementById ('query_str').getAttribute ('stemmed');
+	var req_string = '<?xml version="1.0" encoding="utf-8"?> <RequestWrapper xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"> <Message xsi:type="SnippetRequest">' + hit_xml + '<QueryTerms> <string>' + query_str_stemmed + '</string> </QueryTerms> <FullText>false</FullText> </Message> </RequestWrapper>';
+
+	xmlhttp.onreadystatechange = function () {
+		state_change_snippet (snippet_div);
+	};
+	
+	xmlhttp.open ("POST", "/", true);
+	// XHR binary charset opt by mgran 2006 [http://mgran.blogspot.com]
+	xmlhttp.overrideMimeType ('text/txt; charset=utf-8'); // if charset is changed, need to handle bom
+	//xmlhttp.overrideMimeType('text/txt; charset=x-user-defined');
+	xmlhttp.send (req_string);
+
+	// do fancy js dom stuff
+	return false;
+}
+
 function get_information ()
 {
 	var req_string = '<?xml version="1.0" encoding="utf-8"?><RequestWrapper xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"><Message xsi:type="DaemonInformationRequest"> <GetVersion>true</GetVersion><GetSchedInfo>true</GetSchedInfo><GetIndexStatus>true</GetIndexStatus> <GetIsIndexing>true</GetIsIndexing></Message></RequestWrapper>';
@@ -79,7 +100,7 @@ function get_information ()
 		state_change_info ();
 	};
 	xmlhttp.open ("POST", "/", true);
-	//XHR binary charset opt by mgran 2006 [http://mgran.blogspot.com]
+	// XHR binary charset opt by mgran 2006 [http://mgran.blogspot.com]
 	xmlhttp.overrideMimeType ('text/txt; charset=utf-8'); // if charset is changed, need to handle bom
 	//xmlhttp.overrideMimeType('text/txt; charset=x-user-defined');
 	xmlhttp.send (req_string);
@@ -102,16 +123,18 @@ function shutdown_beagle ()
 	var req_string = '<?xml version="1.0" encoding="utf-8"?><RequestWrapper xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"><Message xsi:type="ShutdownRequest"/></RequestWrapper>';
 
 	xmlhttp.onreadystatechange = function () {
-			if (xmlhttp.readyState == 4) {
-				document.getElementById ('results').innerHTML = '<i>Shutdown request sent to beagle</i>';
-				document.getElementById ('status').style.display = 'none';
-				document.queryform.querytext.disabled = false;
-				document.queryform.querysubmit.disabled = false;
-			}
+		var results = document.getElementById ('results');
+		if (xmlhttp.readyState == 4) {
+			results.createElement ('i');
+			results.createTextNode ('Shutdown request sent to beagle');
+			document.getElementById ('status').style.display = 'none';
+			document.queryform.querytext.disabled = false;
+			document.queryform.querysubmit.disabled = false;
 		}
+	};
 
 	xmlhttp.open ("POST", "/", true);
-	//XHR binary charset opt by mgran 2006 [http://mgran.blogspot.com]
+	// XHR binary charset opt by mgran 2006 [http://mgran.blogspot.com]
 	xmlhttp.overrideMimeType ('text/txt; charset=utf-8'); // if charset is changed, need to handle bom
 	//xmlhttp.overrideMimeType('text/txt; charset=x-user-defined');
 	xmlhttp.send (req_string);
@@ -130,9 +153,9 @@ function state_change_search (begin_date)
 		var end_date = Date.now ();
 		var elapsed = (end_date - begin_date)/1000;
 
-		dump("Response:\n");
-		dump(xmlhttp.responseText);
-		dump("\n");
+		//dump("Response:\n");
+		//dump(xmlhttp.responseText);
+		//dump("\n");
 		res = xmlhttp.responseText;
 
 		// if charset is x-user-defined split by \uF7FF
@@ -142,17 +165,20 @@ function state_change_search (begin_date)
 
 		// Appending without clearing is bad... mmkay?
 		reset_document_content ();
-		document.getElementById ('timetaken').textContent = (elapsed + ' seconds');
+		document.getElementById ('query_str').textContent = query_str;
+		var query_str_stemmed = responses [0].getElementsByTagName ('Stemmed') [0].childNode.textContent;
+		document.getElementById ('query_str').setAttribute ('stemmed', query_str_stemmed);
+		document.getElementById ('timetaken').textContent = elapsed + ' secs';
 		var num_matches = 0;
 
 		// Process hit xml nodes with xsl and append with javascript
-		for (var i = 0; i < responses.length; ++i) {
+		for (var i = 1; i < responses.length; ++i) {
 			if (responses [i].length <= 0)  {
 				continue;
 			}
 			var response_dom = parser.parseFromString (responses [i], "text/xml");
 			// FIXME: ignoring all other messages
-			hits = response_dom.getElementsByTagName ('Hit');
+			var hits = response_dom.getElementsByTagName ('Hit');
 			for (var j = 0; j < hits.length; ++j) {
 				// Copy the hit for modification(s)
 				var div_id = classify_hit (hits [j]);
@@ -191,6 +217,21 @@ function state_change_search (begin_date)
 	document.queryform.querysubmit.disabled = false;
 }
 
+function state_change_snippet (snippet_div)
+{
+	if (xmlhttp.readyState == 4) {
+		// FIXME: Should also check for status 200
+
+		//dump("Response:\n");
+		//dump(xmlhttp.responseText);
+		//dump("\n");
+
+		var snippet = xmlhttp.responseText; // Will probably want responseXML here
+		snippet_div.textContent = snippet;
+	}
+
+}
+
 function state_change_info ()
 {
 	if (xmlhttp.readyState == 4) {
@@ -200,7 +241,7 @@ function state_change_info ()
 		//dump(xmlhttp.responseText);
 		//dump("\n");
 
-		res = xmlhttp.responseText;
+		var res = xmlhttp.responseText;
 
 		// if charset is x-user-defined split by \uF7FF
 		// if charset is utf-8, split by FFFD
