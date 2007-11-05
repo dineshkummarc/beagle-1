@@ -25,7 +25,7 @@
 -->
 
 <!DOCTYPE xsl:stylesheet [<!ENTITY nbsp "&#160;">]>
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" >
 <xsl:output method="html"/>
 
 <!-- 
@@ -78,8 +78,8 @@
 		<input name="querysubmit" type="submit" value="Search"/>
 	</form>
 	<span id="headerlinks">
-		<a href="" onclick='get_status_information (); return false;'>Current Status</a>&nbsp;|&nbsp;
-<!--		<a href="" onclick='get_process_information (); return false;'>Process Information</a>&nbsp;|&nbsp; -->
+		<a href="" onclick='get_information (); return false;'>Current Status</a>&nbsp;|&nbsp;
+		<a href="" onclick='get_process_information (); return false;'>Process Information</a>&nbsp;|&nbsp;
 		<a href="" onclick='alert ("Not implemented"); return false;'>Beagle settings</a>
 	</span>
 </xsl:template>
@@ -105,22 +105,6 @@
 	</xsl:for-each>
 	<div class="Hits" id="NoResults" style="display: none;">
 		No Results
-	</div>
-	<div class="Info" id="BeagleInfo" style="display: none;">
-		<div id="Process">
-			<div class="Title">
-				<a href="#" onclick="get_process_info (); return false;">Get Process Information</a>
-			</div>
-			<div class="Data" id="ProcessData">
-			</div>
-		</div>
-		<div id="Daemon">
-			<div class="Title">
-				<a href="#" onclick="get_daemon_info (); return false;">Get Daemon Information</a>
-			</div>
-			<div class="Data" id="DaemonData">
-			</div>
-		</div>
 	</div>
 </xsl:template>
 
