@@ -34,7 +34,13 @@
 </xsl:template>
 
 <xsl:template match="ResponseWrapper">
-	<xsl:apply-templates select="Message[@xsi:type = 'DaemonInformationResponse']"/>
+	<div class="Title">
+		<a href="#" onclick="toggle_info (this); return false;">[-]</a>&nbsp;
+		<a href="#" onclick="get_daemon_info (); return false;">Refresh Daemon Information</a>
+	</div>
+	<div class="Data" id="DaemonData">
+		<xsl:apply-templates select="Message[@xsi:type = 'DaemonInformationResponse']"/>
+	</div>
 </xsl:template>
 
 <xsl:template match="Message[@xsi:type = 'DaemonInformationResponse']">
@@ -78,8 +84,14 @@
 </xsl:template>
 
 <xsl:template match="Process">
-	<div id="process_info">Beagle process with pid <i><xsl:value-of select="Id"/></i> running since <i><xsl:value-of select="StartTime"/></i><br/></div>
-	<div id="shutdown_beagle"><a href="" onclick="shutdown_beagle(); return false;">Shutdown beagle</a><br/></div>
+	<div class="Title">
+		<a href="#" onclick="toggle_info (this); return false;">[-]</a>&nbsp;
+		<a href="#" onclick="get_process_info (); return false;">Refresh Process Information</a>
+	</div>
+	<div class="Data" id="ProcessData">
+		<div id="process_info">Beagle process with pid <i><xsl:value-of select="Id"/></i> running since <i><xsl:value-of select="StartTime"/></i><br/></div>
+		<div id="shutdown_beagle"><a href="" onclick="shutdown_beagle(); return false;">Shutdown beagle</a><br/></div>
+	</div>
 </xsl:template>
 
 </xsl:stylesheet>

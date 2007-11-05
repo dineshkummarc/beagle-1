@@ -92,12 +92,21 @@ function get_snippet (div_link)
 	return false;
 }
 
-function get_information ()
+function get_status_information ()
+{
+	// Appending without clearing is bad... mmkay?
+	//reset_document_style ();
+	//reset_document_content ();
+
+	document.getElementById ('BeagleInfo').style.display = 'block';
+}
+
+function get_daemon_info ()
 {
 	var req_string = '<?xml version="1.0" encoding="utf-8"?><RequestWrapper xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"><Message xsi:type="DaemonInformationRequest"> <GetVersion>true</GetVersion><GetSchedInfo>true</GetSchedInfo><GetIndexStatus>true</GetIndexStatus> <GetIsIndexing>true</GetIsIndexing></Message></RequestWrapper>';
 
 	xmlhttp.onreadystatechange = function () {
-		state_change_info ();
+		state_change_info ('Daemon');
 	};
 	xmlhttp.open ("POST", "/", true);
 	// XHR binary charset opt by mgran 2006 [http://mgran.blogspot.com]
@@ -108,12 +117,13 @@ function get_information ()
 	document.queryform.querytext.disabled = true;
 	document.queryform.querysubmit.disabled = true;
 	document.getElementById ('status').style.display = 'block';
-	return false;
 }
 
-function get_process_information ()
+function get_process_info ()
 {
-	xmlhttp.onreadystatechange = state_change_info;
+	xmlhttp.onreadystatechange = function () {
+		state_change_info ('Process');
+	};
 	xmlhttp.open ("GET", "/processinfo", true);
 	xmlhttp.send (null);
 }
@@ -239,7 +249,8 @@ function state_change_snippet (snippet_div)
 
 }
 
-function state_change_info ()
+// div id where to append data
+function state_change_info (div_id)
 {
 	if (xmlhttp.readyState == 4) {
 		// FIXME: Should also check for status 200
@@ -254,10 +265,9 @@ function state_change_info ()
 		// if charset is utf-8, split by FFFD
 		// And dont ask me why!
 		var responses = res.split ('\uFFFD'); 
-
-		// Appending without clearing is bad... mmkay?
-		reset_document_style ();
-		reset_document_content ();
+		var old_div = document.getElementById (div_id);
+		var new_div = document.createElement ('div');
+		new_div.setAttribute ('id', div_id);
 
 		// There should be only one response in responses
 		for (var i = 0; i < responses.length; ++i) {
@@ -268,9 +278,10 @@ function state_change_info ()
 
 			var response_dom = parser.parseFromString (responses [i], "text/xml");
 			var fragment = query_processor.transformToFragment (response_dom, document);
-			document.getElementById ('results').appendChild (fragment);
+			new_div.appendChild (fragment);
 		}
 
+		old_div.parentNode.replaceChild (new_div, old_div);
 		document.getElementById ('status').style.display = 'none';
 	}
 
@@ -409,10 +420,21 @@ function toggle_hit (hit_toggle)
 		hit_toggle.textContent = '[+]';
 		//this.<span class="Uri">.<div class="Title">.<br/>.<div class="Data">
 		hit_toggle.parentNode.parentNode.nextSibling.nextSibling.style.display = 'none';
-
 	} else {
 		hit_toggle.textContent = '[-]';
 		hit_toggle.parentNode.parentNode.nextSibling.nextSibling.style.display = 'block';
+	}
+}
+
+function toggle_info (info_toggle)
+{
+	if (info_toggle.textContent == '[-]') {
+		info_toggle.textContent = '[+]';
+		//this.<div class="Title">.<div class="Data">
+		info_toggle.parentNode.nextSibling.style.display = 'none';
+	} else {
+		info_toggle.textContent = '[-]';
+		info_toggle.parentNode.nextSibling.style.display = 'block';
 	}
 }
 
@@ -424,7 +446,7 @@ function show_all_categories ()
 	var results_categories = document.getElementById ('results').childNodes;
 	// Show all results
 	for (var i = 0; i < results_categories.length; ++i) {
-		if (results_categories [i].id == "NoResults")
+		if (results_categories [i].id == "NoResults" || results_categories [i].id == "BeagleInfo")
 			continue;
 		results_categories [i].style.display = 'block';
 	}
