@@ -48,7 +48,7 @@
 		<NotType Key="beagle:HitType" Value="WebHistory"/>
 	</Category>
 	<Category Name="Images">
-		<Type Key="beagle:FileType" Value="images"/>
+		<Type Key="beagle:FileType" Value="image"/>
 	</Category>
 	<Category Name="Media">
 		<Type Key="beagle:FileType" Value="audio"/>
