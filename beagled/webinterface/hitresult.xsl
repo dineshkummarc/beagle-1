@@ -40,7 +40,7 @@
 	 <div class="Hit" id="{@Uri}" name="Hit">
 		<div class="Title" name="Title">
 			<span class="Uri" name="Uri">
-				<a href="#" class="Toggle" onclick='toggle_hit(this); return false;'>[-]</a>
+				<a href="#" class="Toggle" onclick='toggle_hit (this); return false;'>[-]</a>
 				<a href="{@Uri}">
 					<xsl:call-template name="Uri"/>
 				</a>
@@ -51,10 +51,10 @@
 		</div><br/>
 		<div class="Data" name="Data">
 			<xsl:apply-templates select="Properties"/>
-			<xsl:apply-templates select="Snippet"/>
+			<xsl:call-template name="Snippet"/>
 		</div>
 		<div class="XML" name="XML">
-			<xsl:copy-of select="."/> 
+			<xsl:copy-of select="."/>
 		</div>
 	</div>
 </xsl:template>
@@ -100,9 +100,9 @@
 	</table>
 </xsl:template>
 
-<xsl:template match="Snippet">
+<xsl:template name="Snippet">
 	<div class="Snippet">
-		<a href="get_snippet (this); return false;">Show Snippet</a>
+		<a href="#" onclick="get_snippet (this); return false;">Show Snippet</a>
 	</div>
 </xsl:template>
 

@@ -37,6 +37,8 @@
 		 * Though if it doesn't, the code(javascript/xsl) *should* put it into "Others"
 -->
 
+<Mappings>
+
 <Categories>
 	<Category Name="Documents">
 		<Type Key="beagle:FileType" Value="document"/>
@@ -73,3 +75,5 @@
 		<Property From="beagle:ExactFilename" To=""/>
 	</Category>
 </PropertyMapping>
+
+</Mappings>

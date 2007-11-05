@@ -51,7 +51,7 @@ function search ()
 	var begin_date = Date.now ();
 
 	xmlhttp.onreadystatechange = function () {
-		state_change_search (begin_date);
+		state_change_search (query_str, begin_date);
 	};
 	xmlhttp.open ("POST", "/", true);
 	//XHR binary charset opt by mgran 2006 [http://mgran.blogspot.com]
@@ -145,7 +145,7 @@ function shutdown_beagle ()
 	return false;
 }
 
-function state_change_search (begin_date)
+function state_change_search (query_str, begin_date)
 {
 	if (xmlhttp.readyState == 4) {
 		// FIXME: Should also check for status 200
@@ -165,13 +165,17 @@ function state_change_search (begin_date)
 
 		// Appending without clearing is bad... mmkay?
 		reset_document_content ();
+
+		// Get the Query String and its Stemmed counterpart
 		document.getElementById ('query_str').textContent = query_str;
-		var query_str_stemmed = responses [0].getElementsByTagName ('Stemmed') [0].childNode.textContent;
+		var first_reply = parser.parseFromString (responses [0], "text/xml");
+		var query_str_stemmed = first_reply.getElementsByTagName ('Text') [1].textContent;
 		document.getElementById ('query_str').setAttribute ('stemmed', query_str_stemmed);
 		document.getElementById ('timetaken').textContent = elapsed + ' secs';
 		var num_matches = 0;
 
 		// Process hit xml nodes with xsl and append with javascript
+		// The first one has the Query string in it, the rest have the Hits
 		for (var i = 1; i < responses.length; ++i) {
 			if (responses [i].length <= 0)  {
 				continue;
@@ -273,7 +277,7 @@ function state_change_info ()
 
 function classify_hit (hit)
 {
-	var categories = mappings.getElementsByTagName ('Category');
+	var categories = mappings.getElementsByTagName ('Categories') [0].getElementsByTagName ('Category');
 	var properties = hit.getElementsByTagName ('Property');
 	var matchers, matchers_value, matchers_key, matcher;
 	// Iterate over all the categories in mappings.xml
