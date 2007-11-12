@@ -40,21 +40,20 @@
 	 <div class="Hit" id="{@Uri}" name="Hit">
 		<div class="Title" name="Title">
 			<span class="Uri" name="Uri">
-				<a href="#" class="Toggle" onclick='toggle_hit (this); return false;'>[-]</a>
-				<a href="{@Uri}">
+				<a href="#" class="Toggle" onclick='toggle_hit(this); return false;'>[-]</a>&nbsp;
+				<a target="_blank" href="{@Uri}">
 					<xsl:call-template name="Uri"/>
 				</a>
 			</span>
 			<span class="Timestamp" name="Timestamp">
 				<xsl:value-of select="@Timestamp"/>
 			</span>
-		</div><br/>
+		</div>
 		<div class="Data" name="Data">
 			<xsl:apply-templates select="Properties"/>
-			<xsl:call-template name="Snippet"/>
 		</div>
 		<div class="XML" name="XML">
-			<xsl:copy-of select="."/>
+			<!-- <xsl:copy-of select="."/> --> 
 		</div>
 	</div>
 </xsl:template>
@@ -88,7 +87,7 @@
 	</xsl:choose>
 </xsl:template>
 
-<!-- FIXME: This (currently non-exitant) mapping should go into mappings.xml and then be referenced from there. -->
+<!-- FIXME: This (currently non-existant) mapping should go into mappings.xml and then be referenced from there. -->
 <xsl:template match="Properties">
 	<table class="Properties">
 		<xsl:for-each select="Property">
@@ -98,12 +97,6 @@
 			</tr>
 		</xsl:for-each>
 	</table>
-</xsl:template>
-
-<xsl:template name="Snippet">
-	<div class="Snippet">
-		<a href="#" onclick="get_snippet (this); return false;">Show Snippet</a>
-	</div>
 </xsl:template>
 
 </xsl:stylesheet>

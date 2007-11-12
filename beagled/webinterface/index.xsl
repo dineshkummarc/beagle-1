@@ -25,7 +25,7 @@
 -->
 
 <!DOCTYPE xsl:stylesheet [<!ENTITY nbsp "&#160;">]>
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" >
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 <xsl:output method="html"/>
 
 <!-- 
@@ -43,8 +43,8 @@
 	<head>
 		<title><xsl:value-of select="/document/title"/></title>
 		<link rel="stylesheet" href="default.css" type="text/css"/>
-		<link rel="icon" href="images/favicon.png" type="image/png"/>
 		<script src="default.js" type="text/javascript"></script>
+		<link rel="icon" href="images/favicon.png" type="image/png"/>
 	</head>
 </xsl:template>
 
@@ -65,6 +65,18 @@
 		<div id="results">
 			<xsl:call-template name="results"/>
 		</div>
+		<div id="info">
+		</div>
+		<div id="help">
+			<h3>Quick Tips</h3>
+			<ul>
+				<li>Help on <a target="_blank" href="/help.html#Open_Result_Links">opening the search results</a>.</li>
+				<li>You can use upper and lower case; search is case-insensitive.</li>
+				<li>To search for optional terms, use OR.  ex: <b>George OR Ringo</b></li>
+				<li>To exclude search terms, use the minus symbol in front, such as <b>-cats</b></li>
+				<li>When searching for a phrase, add quotes. ex: <b>"There be dragons"</b></li>
+			</ul>
+		</div>
 		<div id="footer">
 			<xsl:call-template name="footer"/>
 		</div>
@@ -78,9 +90,9 @@
 		<input name="querysubmit" type="submit" value="Search"/>
 	</form>
 	<span id="headerlinks">
-		<a href="" onclick='get_information (); return false;'>Current Status</a>&nbsp;|&nbsp;
-		<a href="" onclick='get_process_information (); return false;'>Process Information</a>&nbsp;|&nbsp;
-		<a href="" onclick='alert ("Not implemented"); return false;'>Beagle settings</a>
+		<a href="#" onclick='get_information (); return false;'>Current Status</a>&nbsp;|&nbsp;
+		<a href="#" onclick='alert ("Not implemented"); return false;'>Beagle settings</a>&nbsp;|&nbsp;
+		<a href="help.html" target="_blank" >Help</a>
 	</span>
 </xsl:template>
 
@@ -94,13 +106,16 @@
 		</form>
 	</span>
 	<span id="topbar-right">
-		<span id="numhits">0</span> results for "<span id="query_str" stemmed=""></span>" in <span id="timetaken">0 secs</span>
+		<span id="numhits">0</span> results in <span id="timetaken">0 secs</span>
 	</span>
 </xsl:template>
 
 <xsl:template name="results">
 	<xsl:for-each select="document ('mappings.xml')/Mappings/Categories/Category/@Name">
 		<div class="Hits" id='{.}'>
+			<div> <!-- Not making it class="Hit" because it results in too much padding -->
+				<h3><xsl:value-of select="."/></h3>
+			</div>
 		</div>
 	</xsl:for-each>
 	<div class="Hits" id="NoResults" style="display: none;">
@@ -109,8 +124,9 @@
 </xsl:template>
 
 <xsl:template name="footer">
-	<a href="http://beagle-project.org/Beagle_Webinterface">Web interface</a> for <a href="http://beagle-project.org">Beagle</a> desktop search service<br/>
-	<p class='license'>Copyright &#xA9; 2007 Debajyoti Bera, Nirbheek Chauhan, Licensed under <a href="http://www.opensource.org/licenses/mit-license.php">MIT license</a></p>	
+	<a target="_blank" href="http://beagle-project.org/Beagle_Webinterface">Web interface</a> for <a target="_blank" href="http://beagle-project.org">Beagle</a> desktop search service<br/>
+	<p class="license">Copyright &#xA9; 2007 Debajyoti Bera, Nirbheek Chauhan &nbsp;|&nbsp; <a target="_blank" href="http://svn.gnome.org/viewvc/beagle/trunk/beagle/COPYING?view=markup">Copying restrictions</a></p>
+	<p class="version-info">Version: <xsl:value-of select="/document/version"/> last updated on <xsl:value-of select="/document/last_time"/></p>
 </xsl:template>
 
 <!-- 

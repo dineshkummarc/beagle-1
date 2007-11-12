@@ -25,12 +25,11 @@
 -->
 
 <!DOCTYPE xsl:stylesheet [<!ENTITY nbsp "&#160;">]>
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" >
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 <xsl:output method="html"/>
 
 <xsl:template match="/">
 	<xsl:apply-templates select="ResponseWrapper"/>
-	<xsl:apply-templates select="Process"/>
 </xsl:template>
 
 <xsl:template match="ResponseWrapper">
@@ -38,8 +37,15 @@
 </xsl:template>
 
 <xsl:template match="Message[@xsi:type = 'DaemonInformationResponse']">
-	<div id="version"><b>Version</b>: <i><xsl:value-of select="Version"/></i></div>
-	<div id="is_indexing"><b>Indexing in progress</b>: <i><xsl:value-of select="IsIndexing"/></i></div>
+	<div id="version">
+		<b>Version</b>: <i><xsl:value-of select="Version"/></i>
+	</div>
+	<div id="is_indexing">
+		<b>Indexing in progress</b>: <i><xsl:value-of select="IsIndexing"/></i>
+	</div>
+	<div id="shutdown_beagle">
+		<a href="#" onclick="shutdown_beagle (); return false;" title="Shutdown Beagle">Shutdown Beagle</a><br/>
+	</div><br/>
 	<xsl:apply-templates select="SchedulerInformation"/>
 	<xsl:apply-templates select="IndexStatus"/>
 </xsl:template>
@@ -75,11 +81,6 @@
 			</div></li>
 		</xsl:for-each>
 	</ul>
-</xsl:template>
-
-<xsl:template match="Process">
-	<div id="process_info">Beagle process with pid <i><xsl:value-of select="Id"/></i> running since <i><xsl:value-of select="StartTime"/></i><br/></div>
-	<div id="shutdown_beagle"><a href="" onclick="shutdown_beagle(); return false;">Shutdown beagle</a><br/></div>
 </xsl:template>
 
 </xsl:stylesheet>

@@ -54,7 +54,7 @@ body {
 }
 
 #headerlinks {
-	float: center;
+	float: both;
 	margin-right: 1.2em;
 }
 
@@ -113,11 +113,30 @@ body {
 	text-align: left;
 }
 
+#info {
+	clear: left;
+	margin: 0.5em;
+	text-align: left;
+}
+
+#help {
+	clear: left;
+	margin: 0.5em;
+	margin-left: 25%;
+	text-align: left;
+}
+
+#help-topics {
+	clear: left;
+	margin: 0.5em;
+	text-align: left;
+}
+
 .Hit {
 	margin: 0.5em;
 	float: left;
 	overflow: hidden;
-	width: 48%;
+	width: 96%;
 }
 
 .Hits {
@@ -179,5 +198,9 @@ body {
 }
 
 .license {
+	font-size: 75%;
+}
+
+.version-info {
 	font-size: 75%;
 }

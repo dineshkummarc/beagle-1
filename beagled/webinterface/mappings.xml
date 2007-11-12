@@ -71,10 +71,4 @@
 	</Category>
 </Categories>
 
-<PropertyMapping>
-	<Category Name="Documents">
-		<Property From="beagle:ExactFilename" To=""/>
-	</Category>
-</PropertyMapping>
-
 </Mappings>

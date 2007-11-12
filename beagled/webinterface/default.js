@@ -27,7 +27,7 @@
  * - set_results_style: instead of showing/hiding results, only search for those that the user has checked
  *   query and append results as he checks the categories
  * - Ev!L stuff like `element.innerHTML` needs to be replaced by nice clean DOM stuff; except where good for performance
- * - Code needs to be made cleaner... (category_is_being_shown/categories_being_shown comes to mind as an example)
+ * - Code needs to be made cleaner...
  */
 
 function search ()
@@ -51,7 +51,7 @@ function search ()
 	var begin_date = Date.now ();
 
 	xmlhttp.onreadystatechange = function () {
-		state_change_search (query_str, begin_date);
+		state_change_search (begin_date);
 	};
 	xmlhttp.open ("POST", "/", true);
 	//XHR binary charset opt by mgran 2006 [http://mgran.blogspot.com]
@@ -68,27 +68,6 @@ function search ()
 	document.queryform.querytext.disabled = true;
 	document.queryform.querysubmit.disabled = true;
 	document.getElementById ('status').style.display = 'block';
-	return false;
-}
-
-function get_snippet (div_link)
-{
-	var snippet_div = div_link.parentNode;
-	var hit_xml = snippet_div.parentNode.nextSibling.innerHTML;
-	var query_str_stemmed = document.getElementById ('query_str').getAttribute ('stemmed');
-	var req_string = '<?xml version="1.0" encoding="utf-8"?> <RequestWrapper xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"> <Message xsi:type="SnippetRequest">' + hit_xml + '<QueryTerms> <string>' + query_str_stemmed + '</string> </QueryTerms> <FullText>false</FullText> </Message> </RequestWrapper>';
-
-	xmlhttp.onreadystatechange = function () {
-		state_change_snippet (snippet_div);
-	};
-	
-	xmlhttp.open ("POST", "/", true);
-	// XHR binary charset opt by mgran 2006 [http://mgran.blogspot.com]
-	xmlhttp.overrideMimeType ('text/txt; charset=utf-8'); // if charset is changed, need to handle bom
-	//xmlhttp.overrideMimeType('text/txt; charset=x-user-defined');
-	xmlhttp.send (req_string);
-
-	// do fancy js dom stuff
 	return false;
 }
 
@@ -111,25 +90,20 @@ function get_information ()
 	return false;
 }
 
-function get_process_information ()
-{
-	xmlhttp.onreadystatechange = state_change_info;
-	xmlhttp.open ("GET", "/processinfo", true);
-	xmlhttp.send (null);
-}
-
 function shutdown_beagle ()
 {
+	if ( ! window.confirm ("Are you sure you want to Shutdown Beagle?")) {
+		return;
+	}
 	var req_string = '<?xml version="1.0" encoding="utf-8"?><RequestWrapper xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"><Message xsi:type="ShutdownRequest"/></RequestWrapper>';
 
 	xmlhttp.onreadystatechange = function () {
-		var results = document.getElementById ('results');
-		reset_document_content ();
+		var message_div = document.getElementById ('shutdown_beagle');
 		if (xmlhttp.readyState == 4) {
 			var message = document.createElement ('i');
 			var text = document.createTextNode ('Shutdown request sent to beagle');
 			message.appendChild (text);
-			results.appendChild (message);
+			message_div.replaceChild (message, message_div.firstChild);
 			document.getElementById ('status').style.display = 'none';
 			document.queryform.querytext.disabled = false;
 			document.queryform.querysubmit.disabled = false;
@@ -148,7 +122,7 @@ function shutdown_beagle ()
 	return false;
 }
 
-function state_change_search (query_str, begin_date)
+function state_change_search (begin_date)
 {
 	if (xmlhttp.readyState == 4) {
 		// FIXME: Should also check for status 200
@@ -167,18 +141,12 @@ function state_change_search (query_str, begin_date)
 		var responses = res.split ('\uFFFD'); 
 
 		// Appending without clearing is bad... mmkay?
+		reset_document_style ();
 		reset_document_content ();
-
-		// Get the Query String and its Stemmed counterpart
-		document.getElementById ('query_str').textContent = query_str;
-		var first_reply = parser.parseFromString (responses [0], "text/xml");
-		var query_str_stemmed = first_reply.getElementsByTagName ('Text') [1].textContent;
-		document.getElementById ('query_str').setAttribute ('stemmed', query_str_stemmed);
 		document.getElementById ('timetaken').textContent = elapsed + ' secs';
 		var num_matches = 0;
 
 		// Process hit xml nodes with xsl and append with javascript
-		// The first one has the Query string in it, the rest have the Hits
 		for (var i = 1; i < responses.length; ++i) {
 			if (responses [i].length <= 0)  {
 				continue;
@@ -194,7 +162,7 @@ function state_change_search (query_str, begin_date)
 				var hit = hit_processor.transformToFragment (hits [j], document);
 				// Get timestamp and process it
 				var timestamp = hit.firstChild.firstChild.lastChild;
-				timestamp.innerHTML = '<b>Last Edited:</b>&nbsp;'+humanise_timestamp (timestamp.textContent);
+				timestamp.innerHTML = humanise_timestamp (timestamp.textContent);
 				// Process Hit using hitresult.xsl and append to `div`
 				div.appendChild (hit);
 			}
@@ -217,26 +185,11 @@ function state_change_search (query_str, begin_date)
 		}
 		document.getElementById ('topbar').style.display = 'block';
 		document.getElementById ('status').style.display = 'none';
+
+		document.queryform.querytext.disabled = false;
+		document.queryform.querytext.focus ();
+		document.queryform.querysubmit.disabled = false;
 	}
-
-	document.queryform.querytext.disabled = false;
-	document.queryform.querytext.focus ();
-	document.queryform.querysubmit.disabled = false;
-}
-
-function state_change_snippet (snippet_div)
-{
-	if (xmlhttp.readyState == 4) {
-		// FIXME: Should also check for status 200
-
-		//dump("Response:\n");
-		//dump(xmlhttp.responseText);
-		//dump("\n");
-
-		var snippet = xmlhttp.responseText; // Will probably want responseXML here
-		snippet_div.textContent = snippet;
-	}
-
 }
 
 function state_change_info ()
@@ -268,14 +221,14 @@ function state_change_info ()
 
 			var response_dom = parser.parseFromString (responses [i], "text/xml");
 			var fragment = query_processor.transformToFragment (response_dom, document);
-			document.getElementById ('results').appendChild (fragment);
+			document.getElementById ('info').appendChild (fragment);
 		}
 
 		document.getElementById ('status').style.display = 'none';
-	}
 
-	document.queryform.querytext.disabled = false;
-	document.queryform.querysubmit.disabled = false;
+		document.queryform.querytext.disabled = false;
+		document.queryform.querysubmit.disabled = false;
+	}
 }
 
 function classify_hit (hit)
@@ -356,13 +309,19 @@ function reset_document_content ()
 {
 	var results = document.getElementById ('results');
 	var categories = document.getElementById ('topbar-left').getElementsByTagName ('input');
-	var div;
-	// Reset the hit results
+	var div, div_category_name;
+	// Reset the divs
+	document.getElementById ('info').innerHTML = '';
+	document.getElementById ('help').innerHTML = '';
 	results.innerHTML = '';
 	for (var i = 0; i < categories.length; ++i) {
 		div = document.createElement ('div');
 		div.setAttribute ('class', 'Hits');
 		div.setAttribute ('id', categories [i].name);
+		div_category_name = document.createElement ('div');
+		// Not making it class="Hit" because it results in too much padding
+		div_category_name.innerHTML = '<h3>'+categories [i].name+'</h3>';
+		div.appendChild (div_category_name);
 		results.appendChild (div);
 	}
 	div = document.createElement ('div');
@@ -398,7 +357,8 @@ function set_results_style ()
 		}
 	} else {
 		for (var i = 0; i < results_categories.length; ++i) {
-			results_categories [i].style.display = 'block';
+			if (results_categories [i].childNodes.length > 1)
+				results_categories [i].style.display = 'block';
 		}
 	}
 }
@@ -407,12 +367,12 @@ function toggle_hit (hit_toggle)
 {
 	if (hit_toggle.textContent == '[-]') {
 		hit_toggle.textContent = '[+]';
-		//this.<span class="Uri">.<div class="Title">.<br/>.<div class="Data">
-		hit_toggle.parentNode.parentNode.nextSibling.nextSibling.style.display = 'none';
+		//this.<span class="Uri">.<div class="Title">.<div class="Data">
+		hit_toggle.parentNode.parentNode.nextSibling.style.display = 'none';
 
 	} else {
 		hit_toggle.textContent = '[-]';
-		hit_toggle.parentNode.parentNode.nextSibling.nextSibling.style.display = 'block';
+		hit_toggle.parentNode.parentNode.nextSibling.style.display = 'block';
 	}
 }
 
@@ -422,16 +382,13 @@ function show_all_categories ()
 	var category_checkboxes = document.getElementById ('topbar-left').getElementsByTagName ('input');
 	// Get all the result categories
 	var results_categories = document.getElementById ('results').childNodes;
-	// Show all results
-	for (var i = 0; i < results_categories.length; ++i) {
-		if (results_categories [i].id == "NoResults")
-			continue;
-		results_categories [i].style.display = 'block';
-	}
 	// Uncheck all the categories
 	for (var i = 0; i < category_checkboxes.length; ++i) {
 		category_checkboxes [i].checked = false;
 	}
+	// Show results
+	// This should've been used here instead of that loop from the start..
+	set_results_style ();
 }
 
 function toggle_category (category)
