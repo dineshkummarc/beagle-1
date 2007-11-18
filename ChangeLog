@@ -1,0 +1,4185 @@
+2007-11-16  Kevin Kubasik <kevin@kubasik.net> 
+
+	
+
+2007-11-05  Kevin Kubasik <kevin@kubasik.net> 
+
+	* search/Tiles/MailMessage.cs: Make snippets visible in beagle-search for
+	  Evolution Mail, this may not be a go for release, but we should test it
+	  to help stress test the new textcache. 
+	* search/Tiles/Tile.cs: If snippet is empty after our HTML parsing fun, then
+	  don't EmitGotSnippet.
+
+2007-11-05  Kevin Kubasik <kevin@kubasik.net> 
+
+	* Util/OperaHistory.cs: Added a lastRead time to track the current in-memory
+	  index.
+	* beagled/OperaQueryable/OperaIndexer.cs: We don't care if a cache file was
+	  deleted, we don't delete the index entry, we just want to know when
+	  Opera has finished writing one.
+	* beagled/OperaQueryable/OperaIndexableGenerator.cs: Some small
+	  cleanups/changes to the Opera backend. Namely, Opera stores the content
+	  of webpages that are served gzipped in its cache gzipped. Also add logic
+	  to not re-read from disk if in-memory history index is up to date. 
+
+2007-10-14  Yannig Marchegay  <yannig@marchegay.org>
+
+	* configure.in: Added 'oc' to ALL_LINGUAS.
+	* po/oc.po
+
+------------------------------------------------------------------------
+r3697 | joeshaw | 2007-05-08 15:09:07 -0400 (Tue, 08 May 2007) | 1 line
+Changed paths:
+   M /branches/beagle-0.2.16/configure.in
+
+Bump version number to 0.2.17
+------------------------------------------------------------------------
+r3696 | joeshaw | 2007-05-08 14:51:19 -0400 (Tue, 08 May 2007) | 2 lines
+Changed paths:
+   M /branches/beagle-0.2.16/po/ar.po
+   M /branches/beagle-0.2.16/po/ca.po
+   M /branches/beagle-0.2.16/po/cs.po
+   M /branches/beagle-0.2.16/po/de.po
+   M /branches/beagle-0.2.16/po/dz.po
+   M /branches/beagle-0.2.16/po/en_GB.po
+   M /branches/beagle-0.2.16/po/es.po
+   M /branches/beagle-0.2.16/po/fi.po
+   M /branches/beagle-0.2.16/po/fr.po
+   M /branches/beagle-0.2.16/po/gl.po
+   M /branches/beagle-0.2.16/po/hu.po
+   M /branches/beagle-0.2.16/po/it.po
+   M /branches/beagle-0.2.16/po/ja.po
+   M /branches/beagle-0.2.16/po/mk.po
+   M /branches/beagle-0.2.16/po/nb.po
+   M /branches/beagle-0.2.16/po/pa.po
+   M /branches/beagle-0.2.16/po/pl.po
+   M /branches/beagle-0.2.16/po/pt_BR.po
+   M /branches/beagle-0.2.16/po/ru.po
+   M /branches/beagle-0.2.16/po/sv.po
+   M /branches/beagle-0.2.16/po/zh_CN.po
+   M /branches/beagle-0.2.16/po/zh_TW.po
+
+Move the upstream po files back onto the branch, and update
+them from the trunk
+------------------------------------------------------------------------
+r3695 | dbera | 2007-05-08 13:27:36 -0400 (Tue, 08 May 2007) | 2 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/LuceneIndexingDriver.cs
+
+Merge from trunk: r3694: Set IndexReader to null to ensure faster collection.
+
+------------------------------------------------------------------------
+r3693 | dbera | 2007-05-08 12:58:18 -0400 (Tue, 08 May 2007) | 24 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/BeagleDaemon.cs
+   M /branches/beagle-0.2.16/beagled/BuildIndex.cs
+   M /branches/beagle-0.2.16/beagled/EvolutionMailQueryable/EvolutionSummaryTracker.cs
+   M /branches/beagle-0.2.16/beagled/KMailQueryable/KMailIndexableGenerator.cs
+   M /branches/beagle-0.2.16/beagled/KMailQueryable/KMailIndexer.cs
+   M /branches/beagle-0.2.16/beagled/Lucene.Net/Store/FSDirectory.cs
+   A /branches/beagle-0.2.16/beagled/Lucene.Net/upstream-changes/27_lockfile_delete_use_syscall.patch (from /trunk/beagle/beagled/Lucene.Net/upstream-changes/27_lockfile_delete_use_syscall.patch:3685)
+   M /branches/beagle-0.2.16/beagled/LuceneCommon.cs
+   M /branches/beagle-0.2.16/beagled/LuceneQueryable.cs
+   M /branches/beagle-0.2.16/beagled/QueryResult.cs
+   M /branches/beagle-0.2.16/beagled/wrapper.in
+
+Merge from trunk:beagled/
+(Leaving out the major ones)
+
+r3531: Call SetProcessName() in beagle-extract-content
+r3560: Always use the LuceneQueryingDriver's item count in
+LuceneQueryable.GetQueryableStatus().  It refreshes its IndexReader if
+it's out of date, so it always has a fresh view of the index, and
+doesn't start an index helper process.
+r3561: Always use the LuceneQueryingDriver's item count in
+LuceneQueryable.GetQueryableStatus().  It refreshes its IndexReader if
+it's out of date, so it always has a fresh view of the index, and
+doesn't start an index helper process.
+r3599: Remove Mono's --debug from the default wrapper in the beagled directory, so that things like beagle-build-index use less memory.  It can still be passed in through the MONO_EXTRA_ARGS environment variable.
+r3644: Lower the CPU priority for the main daemon process a little, for cases where it gets a little CPU-hungry
+r3638, r3645: Verify the index before purging.
+r3648: Print some info out during a beagle-build-index run
+r3660: Handle invalid content in the index version file.
+r3667: Fix an exception that could occur when trying to index mails from an
+Evolution IMAP folder with a comma.  bgo #432417, lp #108957
+r3670: Set Indexable.Crawled to false for new messages to reduce thrasing.
+r3672: Remove the separate crawler thread from BuildIndex. Do the crawling and indexing in the same thread, indexing files as and when they are found during crawling.
+r3685: Use Mono.Posix native file delete method instead of System.IO.File.Delete.
+
+
+------------------------------------------------------------------------
+r3692 | dbera | 2007-05-08 12:31:11 -0400 (Tue, 08 May 2007) | 11 lines
+Changed paths:
+   M /branches/beagle-0.2.16/Util/FileSystem.cs
+   M /branches/beagle-0.2.16/Util/StringFu.cs
+   M /branches/beagle-0.2.16/Util/XmlFu.cs
+
+Merge from trunk:Util/
+
+r3519: When serializing, wrap the buffer first in an UnclosableStream and then in a BufferedStream with an 8k buffer.  This gives us around a 10% speed up when serializing responses.
+
+r3566: Have Beagle.Util.FileSystem.GetLastWriteTimeUtc() use the same rules as the File and Directory variants.  That is, return 1 Jan 1601 at midnight
+UTC if the file doesn't exist rather than throwing an exception.  This
+fixes bgo 417601.
+
+r3671: Better GlobMatch routine.
+
+
+------------------------------------------------------------------------
+r3691 | dbera | 2007-05-08 12:23:51 -0400 (Tue, 08 May 2007) | 19 lines
+Changed paths:
+   M /branches/beagle-0.2.16/search/Search.cs
+   M /branches/beagle-0.2.16/search/Tiles/File.cs
+   M /branches/beagle-0.2.16/search/Tiles/IMLog.cs
+   M /branches/beagle-0.2.16/search/Tiles/Image.cs
+   M /branches/beagle-0.2.16/search/Tiles/MailAttachment.cs
+   M /branches/beagle-0.2.16/search/Tiles/RSSFeed.cs
+   M /branches/beagle-0.2.16/search/beagle-search.in
+
+Merge from trunk:search/
+
+r3537:
+* search/Tiles/File.cs: Display the first emblem in the file tile; add a FIXME to display multiple emblems.  
+* search/Tiles/Image.cs: Fix an uncommon memory leak.
+
+r3600: Booting the --debug from our beagle-search script as well, saves us about 2 megs resident mem, and it seems to statup faster
+
+r3617: Not all mail attachments have a filename associated with them.  Instead of dropping them on the floor, display them with a fairly generic name.
+
+r3626: Only add the number of matches to the total if it's not -1.
+
+r3659: fixes launchpad Bug #93064, a crash in beagle-search from empty buddy icons
+
+r3661: Handle invalid pixbufs, sometimes caused by Liferea leaving behind
+zero-byte image files.  bgo #428736.
+
+
+
+------------------------------------------------------------------------
+r3690 | dbera | 2007-05-08 12:07:23 -0400 (Tue, 08 May 2007) | 5 lines
+Changed paths:
+   M /branches/beagle-0.2.16/glue/xdgmime/README
+   M /branches/beagle-0.2.16/glue/xdgmime/xdgmimeglob.c
+   M /branches/beagle-0.2.16/tools/beagle-crawl-system.in
+   M /branches/beagle-0.2.16/tools/wrapper.in
+
+r3680: (Sync with gtk+ svn trunk): Duplicate the mime_type when storing it in a hash node, to avoid leaks. Update all callers.
+3554: Redirect wrapper.in echo output to stderr, so that it doesn't affect script processing of stdout.
+3619: Exit out of the cronjob if beagle-build-index doesn't exist.  bgo #370943.
+
+
+------------------------------------------------------------------------
+r3689 | dbera | 2007-05-08 12:00:33 -0400 (Tue, 08 May 2007) | 9 lines
+Changed paths:
+   M /branches/beagle-0.2.16/Filters/FilterHtml.cs
+   M /branches/beagle-0.2.16/Filters/FilterKonqHistory.cs
+   M /branches/beagle-0.2.16/Filters/FilterOle.cs
+   M /branches/beagle-0.2.16/Filters/FilterPdf.cs
+   M /branches/beagle-0.2.16/Filters/HtmlAgilityPack/HtmlDocument.cs
+   M /branches/beagle-0.2.16/glue/spawn-glue.c
+
+r3565: Fix Console.WriteLine()s in filters.  Fixes those damn "No OLE2
+signature" messages in the IndexHelperConsole log files.
+r3602: Incorrectly placed void functions can still add up to the total runtime. Give a speedup to the html filter by using preprocessor directive instead of a variable.
+r3603: Typo in the last commit of HtmlDocument.cs
+r3621: glue/spawn-glue.c: If RedirectStandardError is false, then SafeProcess is not interested in the standard error, send the stderr to /dev/null in that case.
+r3621: Filters/FilterPdf.cs: Fix #425150. Handle pdf files which can cause huge errors with pdfinfo. pdfinfo does not have any '-q' option, so send its stderr to /dev/null.
+r3639: Add xhtml mimetype to html filter.
+  
+
+------------------------------------------------------------------------
+r3612 | joeshaw | 2007-03-29 15:51:48 -0400 (Thu, 29 Mar 2007) | 4 lines
+Changed paths:
+   M /branches/beagle-0.2.16/Filters/FilterOpenOffice.cs
+
+Merge in r3611 to the branch: don't go into an infinite loop if the OOo
+file doesn't have a depth greater than 2.
+
+
+------------------------------------------------------------------------
+r3593 | joeshaw | 2007-03-21 14:46:54 -0400 (Wed, 21 Mar 2007) | 3 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/BeagleDaemon.cs
+
+Fix a typo ("shapshot") and add --no-snapshot as a valid alternative
+
+
+------------------------------------------------------------------------
+r3583 | joeshaw | 2007-03-19 17:49:01 -0400 (Mon, 19 Mar 2007) | 5 lines
+Changed paths:
+   M /branches/beagle-0.2.16/Util/Log.cs
+
+Redirect the actual stdout/stderr (rather than Console.Out and
+Console.Error) to the main log file, so that we can catch the output
+from a crashing Mono and save it somewhere useful.
+
+
+------------------------------------------------------------------------
+r3576 | joeshaw | 2007-03-15 16:16:58 -0400 (Thu, 15 Mar 2007) | 8 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/beagled-autostart.desktop
+
+Merging:
+
+r3575 | joeshaw | 2007-03-15 16:16:26 -0400 (Thu, 15 Mar 2007) | 3 lines
+
+Start beagled with the --replace option, to replace any previously
+running daemon if there is one.
+
+
+------------------------------------------------------------------------
+r3574 | joeshaw | 2007-03-15 16:14:33 -0400 (Thu, 15 Mar 2007) | 11 lines
+Changed paths:
+   M /branches/beagle-0.2.16/glue/screensaver-glue.c
+
+Merge r3573 onto the branch:
+
+r3573 | joeshaw | 2007-03-15 16:13:43 -0400 (Thu, 15 Mar 2007) | 7 lines
+
+Watch the X connection's file descriptor and g_io_add_watch() on it for
+the connection being closed.  When it is, synthesize an X event so that
+our X connection immediately dies, and the daemon can shut down cleanly.
+Fixes an issue where an idle daemon wasn't getting shut down at logout
+time.
+
+
+------------------------------------------------------------------------
+r3572 | joeshaw | 2007-03-15 16:11:30 -0400 (Thu, 15 Mar 2007) | 1 line
+Changed paths:
+   M /branches/beagle-0.2.16/configure.in
+
+Bump version to 0.2.16.3 for another bug fix tarball
+------------------------------------------------------------------------
+r3571 | joeshaw | 2007-03-15 16:09:50 -0400 (Thu, 15 Mar 2007) | 8 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/FileSystemQueryable/InotifyBackend.cs
+
+Merge r3542:
+
+r3542 | joeshaw | 2007-03-09 16:27:50 -0500 (Fri, 09 Mar 2007) | 5 lines
+Create a single inotify callback and reuse it, rather than the implicit
+recreation each time.  Saves a bunch of unnecessary allocations (which
+are never cleaned up) when watching directories.
+
+
+------------------------------------------------------------------------
+r3570 | joeshaw | 2007-03-15 16:09:05 -0400 (Thu, 15 Mar 2007) | 6 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/ExtractContent.cs
+
+Merge in r3531
+
+r3531 | joeshaw | 2007-03-05 15:04:24 -0500 (Mon, 05 Mar 2007) | 1 line
+Call SetProcessName() in beagle-extract-content
+
+
+------------------------------------------------------------------------
+r3569 | joeshaw | 2007-03-15 16:08:03 -0400 (Thu, 15 Mar 2007) | 44 lines
+Changed paths:
+   M /branches/beagle-0.2.16/Filters/FilterArchive.cs
+   M /branches/beagle-0.2.16/Util/FileSystem.cs
+
+Merge in a lot of archive filter fixes.
+
+r3496 | joeshaw | 2007-02-23 13:43:41 -0500 (Fri, 23 Feb 2007) | 6 lines
+Uri.ToString() doesn't print out escaped versions of the URI, so don't
+pass in the "escaped" flag to the Uri constructor in the archive filter.
+This fixes serialization exceptions for non-ASCII files in archives.
+
+r3498 | joeshaw | 2007-02-23 16:11:40 -0500 (Fri, 23 Feb 2007) | 5 lines
+Cut-and-paste Path.GetTempFileName() from System.IO but have it take an
+extension argument so that we can do extension-based MIME sniffing on
+our temporary files correctly.  (Mainly needed for things like Word
+documents inside archives.)
+
+r3502 | dbera | 2007-02-24 15:31:21 -0500 (Sat, 24 Feb 2007) | 3 lines
+FilterArchive.cs: Add a comment explaining a potential problem in
+constructing correct Uri for embedded files.
+
+r3529 | dbera | 2007-03-04 13:11:48 -0500 (Sun, 04 Mar 2007) | 2 lines
+Fix a crash when a bz2 or gzip archive contains a large file.
+
+r3539 | dbera | 2007-03-07 10:29:02 -0500 (Wed, 07 Mar 2007) | 3 lines
+* FilterArchive.cs: Check if the included file was actually extracted
+before determining its mimetype.
+
+r3540 | dbera | 2007-03-07 10:36:01 -0500 (Wed, 07 Mar 2007) | 2 lines
+Addendum to r3539.
+
+r3543 | dbera | 2007-03-09 21:31:06 -0500 (Fri, 09 Mar 2007) | 2 lines
+* FilterArchive.cs: Catch GetNextEntry*() exceptions. Fixes #415056.
+Most SharpZLib methods are broken and can throw exceptions even for
+valid files. Anyone listening ???
+
+r3555 | joeshaw | 2007-03-12 16:29:59 -0400 (Mon, 12 Mar 2007) | 6 lines
+When writing out temp files with an extension, add special cases for
+.tar.gz and .tar.bz2 so that we don't add an extra layer of processing
+(first the compression, then the tar file) and instead handle both at
+the same time.
+
+r3557 | joeshaw | 2007-03-12 16:52:28 -0400 (Mon, 12 Mar 2007) | 4 lines
+Remove anonymous delegates and move exception handling into a single
+method; log errors we hit when trying to extract files.
+
+
+
+------------------------------------------------------------------------
+r3568 | joeshaw | 2007-03-15 15:50:12 -0400 (Thu, 15 Mar 2007) | 8 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/LuceneCommon.cs
+
+Merge r3535:
+r3535 | joeshaw | 2007-03-05 18:49:41 -0500 (Mon, 05 Mar 2007) | 4 lines
+
+Prohibited date queries weren't working at all.  Fix them in most cases,
+and add a FIXME about the case in which they don't work: with sub-date
+accuracy.
+
+
+------------------------------------------------------------------------
+r3567 | joeshaw | 2007-03-15 15:47:24 -0400 (Thu, 15 Mar 2007) | 6 lines
+Changed paths:
+   M /branches/beagle-0.2.16/Filters/FilterArchive.cs
+
+Merge r3529 from the trunk:
+r3529 | dbera | 2007-03-04 13:11:48 -0500 (Sun, 04 Mar 2007) | 2 lines
+
+Fix a crash when a bz2 or gzip archive contains a large file.
+
+
+------------------------------------------------------------------------
+r3532 | joeshaw | 2007-03-05 16:01:37 -0500 (Mon, 05 Mar 2007) | 3 lines
+Changed paths:
+   M /branches/beagle-0.2.16/Filters/FilterArchive.cs
+
+Wrap reading from the archive streams in a try-catch, so that
+we can move past files that cause SharpZipLib to throw an
+exception
+------------------------------------------------------------------------
+r3523 | joeshaw | 2007-03-01 15:41:44 -0500 (Thu, 01 Mar 2007) | 15 lines
+Changed paths:
+   M /branches/beagle-0.2.16/Util/ImLog.cs
+   M /branches/beagle-0.2.16/beagled/KonversationQueryable/KonversationQueryable.cs
+   M /branches/beagle-0.2.16/search/Tiles/IMLog.cs
+
+Merge r3504, 3511, and 3517 onto the trunk.
+
+r3504:
+Use parent-uri in IMLog tiles for konversation hits. ParentUri contains
+the proper path of the file. Fixes #408101
+
+r3511:
+Konversation log files are in CurrentCulture. Do not use
+InvariantCulture.
+
+r3517:
+Use system encoding and system culture when dealing with konversation
+log files.  Some things I missed before.
+
+
+------------------------------------------------------------------------
+r3514 | joeshaw | 2007-02-27 12:56:02 -0500 (Tue, 27 Feb 2007) | 1 line
+Changed paths:
+   M /branches/beagle-0.2.16/po/ca.po
+
+Updated Catalan translation from the Novell l10n team
+------------------------------------------------------------------------
+r3494 | joeshaw | 2007-02-23 11:06:39 -0500 (Fri, 23 Feb 2007) | 2 lines
+Changed paths:
+   M /branches/beagle-0.2.16/po/de.po
+   M /branches/beagle-0.2.16/po/es.po
+   M /branches/beagle-0.2.16/po/fr.po
+   M /branches/beagle-0.2.16/po/it.po
+   M /branches/beagle-0.2.16/po/ja.po
+   M /branches/beagle-0.2.16/po/pt_BR.po
+   M /branches/beagle-0.2.16/po/ru.po
+   M /branches/beagle-0.2.16/po/sv.po
+   M /branches/beagle-0.2.16/po/zh_TW.po
+
+Check in updated translations from the Novell language team
+
+------------------------------------------------------------------------
+r3492 | joeshaw | 2007-02-22 13:04:54 -0500 (Thu, 22 Feb 2007) | 1 line
+Changed paths:
+   M /branches/beagle-0.2.16/configure.in
+
+Commit 0.2.16.2 for another bug fix release
+------------------------------------------------------------------------
+r3491 | joeshaw | 2007-02-22 12:53:17 -0500 (Thu, 22 Feb 2007) | 8 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/BuildIndex.cs
+   M /branches/beagle-0.2.16/tools/beagle-crawl-system.in
+   M /branches/beagle-0.2.16/tools/crawl-rules/crawl-documentation
+
+Merge r3455 onto the branch:
+
+Add a --disable-on-battery option to beagle-build-index, add support for
+it to beagle-crawl-system (through a CRAWL_DISABLE_ON_BATTERY var), and
+turn it on by default in the documentation crawler, since it can be
+pretty slow.  Fixes bgo #383789.
+
+
+------------------------------------------------------------------------
+r3490 | joeshaw | 2007-02-22 12:52:11 -0500 (Thu, 22 Feb 2007) | 5 lines
+Changed paths:
+   M /branches/beagle-0.2.16/Filters/FilterPdf.cs
+
+Merge r3454 onto the branch:
+
+Limit PDF tools to 100 megs memory.  Fixes bgo #335461
+
+
+------------------------------------------------------------------------
+r3489 | joeshaw | 2007-02-22 12:47:38 -0500 (Thu, 22 Feb 2007) | 5 lines
+Changed paths:
+   M /branches/beagle-0.2.16/Filters/FilterChm.cs
+
+Merge r3467 onto branch:
+
+Adapt Chm filter to the changed html filter. Fixes #408047.
+
+
+------------------------------------------------------------------------
+r3461 | joeshaw | 2007-02-15 16:24:40 -0500 (Thu, 15 Feb 2007) | 1 line
+Changed paths:
+   M /branches/beagle-0.2.16/configure.in
+
+Oops, forgot to commit version number bump on the branch
+------------------------------------------------------------------------
+r3460 | joeshaw | 2007-02-15 16:23:45 -0500 (Thu, 15 Feb 2007) | 4 lines
+Changed paths:
+   M /branches/beagle-0.2.16/Filters/FilterArchive.cs
+
+Put some limits on the sizes of files extracted from archives, to
+prevent /tmp from filling up.  Fixes bnc #244490 and brc #228718.
+
+
+------------------------------------------------------------------------
+r3450 | joeshaw | 2007-02-13 15:54:55 -0500 (Tue, 13 Feb 2007) | 4 lines
+Changed paths:
+   M /branches/beagle-0.2.16/Filters/FilterDocbook.cs
+
+Add more well-known locations for docbook files, since
+xdgmime/shared-mime-info can't figure out what they are beyond
+application/xml.
+
+------------------------------------------------------------------------
+r3448 | joeshaw | 2007-02-13 15:39:08 -0500 (Tue, 13 Feb 2007) | 12 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/LuceneCommon.cs
+
+Handle the situation where you do a search for something like "no dice"
+(no quotes) and you don't get any results back.  Because "no" is a stop
+word, we were expanding queries to this:
+
+(Text:dice OR PropertyText:dice OR PropertyKeyword:dice) AND
+(PropertyKeyword:no)
+
+Since stop words get filtered out, and the user may be expecting to
+match "no" from the Text and "dice" from a keyword, we can drop the
+second clause from the query entirely.
+
+
+------------------------------------------------------------------------
+r3446 | joeshaw | 2007-02-13 14:27:51 -0500 (Tue, 13 Feb 2007) | 33 lines
+Changed paths:
+   M /branches/beagle-0.2.16/BeagleClient/QueryPart.cs
+   M /branches/beagle-0.2.16/BeagleClient/Versioned.cs
+   M /branches/beagle-0.2.16/Util/DateTimeUtil.cs
+   M /branches/beagle-0.2.16/Util/StringFu.cs
+   M /branches/beagle-0.2.16/libbeagle/beagle/beagle-timestamp.c
+   M /branches/beagle-0.2.16/search/Tiles/IMLog.cs
+   M /branches/beagle-0.2.16/search/Tiles/MailMessage.cs
+   M /branches/beagle-0.2.16/search/Tiles/Utils.cs
+
+Merge r3417, r3418, r3424 and r3429 onto the branch.
+
+r3417:
+Directly parse BeagleTimeStamp instead of calling DateTime.ParseExact.
+Remove some duplicate code from beagle-search.
+
+r3418:
+FAQ 1. My application uses datetimes from different sources. I also have
+to store it on disk.
+*      Always convert any datetime to UTC and use it in that form for
+*      internal usage. UTC is a good general framework.
+FAQ 2. My application is a client server app that needs to send and
+receive datetimes.
+*      XmlSerializer assumes localtime by default when deserialing.
+*      Hence, either change time to localtime before serializing or send
+*      a string representation of the UTC time and re-construct the
+*      correct time at the other end. The timezone part of the
+*      serialized timestamp does not mean anything useful and should be
+*      ignored completely.
+
+Beagle does 1. Beagle should have done 2 but everytime the datetime
+serialization problems were avoided using other fixes. This patch sends
+the datetime in its string representation. Also instead of printing the
+timezone in the output of beagle-query, print the datetime kind. As I
+said, the timezone does not say anything useful.
+
+r3424:
+Remove a debugging line I accidentally committed.
+
+r3429:
+Fixing a buildbreaker
+
+
+------------------------------------------------------------------------
+r3445 | joeshaw | 2007-02-13 14:18:12 -0500 (Tue, 13 Feb 2007) | 6 lines
+Changed paths:
+   M /branches/beagle-0.2.16/Filters/FilterSvg.cs
+
+Merge r3432 onto the branch.
+
+Remove the non-fatal block in the SVG filter; we fixed the main symptom
+of SVG files that have an undeclared xlink namespace, and the check doesn't
+seem to work for certain files.  Fixes #407564
+
+------------------------------------------------------------------------
+r3444 | joeshaw | 2007-02-13 14:16:48 -0500 (Tue, 13 Feb 2007) | 13 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/BuildIndex.cs
+   M /branches/beagle-0.2.16/beagled/FileAttributesStore.cs
+
+Merge r3428 onto the branch.
+
+Revert r3354. r3354 checked if an attr had valid filter info when
+checking if it is uptodate. This would fail a lot of backends, mostly
+LuceneFileQueryable ones. LuceneFileQueryable does not write filter
+information if mulitple indexables were created from a single file. So
+for all those backends, restarting beagled would re-index all the files
+(KMail backend, due to a side effect, only re-indexes the mails with
+attachments). The changes in r3354 were really necessary for file system
+indexing (files backend and BuildIndex); files backend does its own
+check and doesnt use IsUpToDate(), so revert the change and create
+another function IsUpToDateAndFiltered() for BuildIndex to use.
+
+------------------------------------------------------------------------
+r3443 | joeshaw | 2007-02-13 14:15:28 -0500 (Tue, 13 Feb 2007) | 4 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/TomboyQueryable/TomboyQueryable.cs
+
+Merge r3425 onto the branch.
+
+Use TOMBOY_PATH if available. Fixes #332102.
+
+------------------------------------------------------------------------
+r3442 | joeshaw | 2007-02-13 14:14:26 -0500 (Tue, 13 Feb 2007) | 7 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/IndexHelper/RemoteIndexerExecutor.cs
+   M /branches/beagle-0.2.16/beagled/LuceneIndexingDriver.cs
+
+Merge r3421 onto the branch.
+
+While processing large flush requests, check regularly if shutdown has
+been requested and stop processing further in that case. This will allow
+faster shutdown when beagle is in the middle of large indexing,
+especially when it involves archives.
+
+------------------------------------------------------------------------
+r3441 | joeshaw | 2007-02-13 14:12:22 -0500 (Tue, 13 Feb 2007) | 4 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/LuceneQueryingDriver.cs
+
+Merge r3415 onto the branch.
+
+Fixes #405317. Adjust the count if HitFilter rejects any hit.
+
+------------------------------------------------------------------------
+r3440 | joeshaw | 2007-02-13 14:11:33 -0500 (Tue, 13 Feb 2007) | 4 lines
+Changed paths:
+   M /branches/beagle-0.2.16/Util/F-Spot/Exif.cs
+   A /branches/beagle-0.2.16/Util/F-Spot/beagle-changes/08-exif-timestamp-local.diff (from /trunk/beagle/Util/F-Spot/beagle-changes/08-exif-timestamp-local.diff:3414)
+
+merge 3414 onto the branch.
+
+Assume local time for exif timestamps.
+
+------------------------------------------------------------------------
+r3439 | joeshaw | 2007-02-13 14:10:49 -0500 (Tue, 13 Feb 2007) | 11 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/BeagleDaemon.cs
+   M /branches/beagle-0.2.16/beagled/IndexHelper/IndexHelper.cs
+   M /branches/beagle-0.2.16/beagled/IndexHelper/RemoteIndexerExecutor.cs
+   M /branches/beagle-0.2.16/beagled/LuceneIndexingDriver.cs
+   M /branches/beagle-0.2.16/beagled/RemoteIndexer.cs
+   M /branches/beagle-0.2.16/beagled/SnippetFu.cs
+
+Merge r3413 and 3433-3434 onto the branch.
+
+Add option --disable-textcache to beagled. This disallows caching data
+for snippet purposes during this run. To prevent inconsistency, this
+also deletes existing textcache for any document indexed in this
+session. Usage of this option is highly discouraged and should be only
+used on space-strapped machines.
+
+Change --disable-textcache to --disable-text-cache to maintain
+consistency with beagle-build-index's --enable-text-cache
+
+------------------------------------------------------------------------
+r3438 | joeshaw | 2007-02-13 14:08:33 -0500 (Tue, 13 Feb 2007) | 6 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/FileSystemQueryable/FileSystemQueryable.cs
+   M /branches/beagle-0.2.16/beagled/TextCache.cs
+
+Merge r3412 onto the branch.
+
+* TextCache.cs: Deleting items from textcache was broken; files were
+deleted but the entries remained in the database. Fix that. Update FSQ
+code accordingly.
+
+------------------------------------------------------------------------
+r3437 | joeshaw | 2007-02-13 14:07:49 -0500 (Tue, 13 Feb 2007) | 11 lines
+Changed paths:
+   M /branches/beagle-0.2.16/beagled/KMailQueryable/KMailQueryable.cs
+
+Merge r3410:3411 onto the branch.
+
+r3410:
+I still do not understand how to best decide if a directory is a valid
+kmail directory. If the directory is listed in config, then do not
+check. Also, give ~/.kde/... location higher preference over the other
+locations.
+
+r3411:
+3410 was incorrect, this one is the correct patch.
+
+------------------------------------------------------------------------
+r3436 | joeshaw | 2007-02-13 14:05:55 -0500 (Tue, 13 Feb 2007) | 8 lines
+Changed paths:
+   M /branches/beagle-0.2.16/Util/PullingReader.cs
+   M /branches/beagle-0.2.16/beagled/Filter.cs
+   M /branches/beagle-0.2.16/beagled/LuceneCommon.cs
+   M /branches/beagle-0.2.16/beagled/TextCache.cs
+
+Merge r3409 onto 0.2.16 branch.
+
+Fix a fd leak for large files when lucene would stop asking for more
+data. Now Filter.Pull() does not call Close(), but instead Close() is
+called by lucene. This also fixes some invalid textcache.gz files.
+Buffer the reader and writer streams to and from textcache to reduce the
+time spent in inflating/deflating.
+
+------------------------------------------------------------------------
+r3435 | joeshaw | 2007-02-13 14:04:51 -0500 (Tue, 13 Feb 2007) | 1 line
+Changed paths:
+   M /branches/beagle-0.2.16/Util/F-Spot/JpegHeader.cs
+
+Merge r3408 into 0.2.16 branch: Avoid infinite loop on some truncated jpeg files.  bgo #405372
+------------------------------------------------------------------------
+r3401 | joeshaw | 2007-02-07 14:04:00 -0500 (Wed, 07 Feb 2007) | 1 line
+Changed paths:
+   M /branches/beagle-0.2.16/Filters/FilterOpenOffice.cs
+
+Merge in OOo syntax error fix (r3399) from the trunk
+------------------------------------------------------------------------
+r3398 | joeshaw | 2007-02-07 11:36:30 -0500 (Wed, 07 Feb 2007) | 3 lines
+Changed paths:
+   A /branches/beagle-0.2.16 (from /tags/BEAGLE_0_2_16:3397)
+
+Create a maintenance bug fix branch for 0.2.16, which is what will be in
+SLED 10 SP1 and Ubuntu Feisty.
+
+------------------------------------------------------------------------
+r3396 | joeshaw | 2007-02-07 11:35:00 -0500 (Wed, 07 Feb 2007) | 2 lines
+Changed paths:
+   A /tags/BEAGLE_0_2_16 (from /trunk/beagle:3395)
+
+Tag 0.2.16 release
+
+------------------------------------------------------------------------
+r3395 | joeshaw | 2007-02-07 11:30:31 -0500 (Wed, 07 Feb 2007) | 1 line
+Changed paths:
+   M /trunk/beagle/ChangeLog
+
+Update changelog for 0.2.16
+------------------------------------------------------------------------
+r3394 | joeshaw | 2007-02-07 11:28:58 -0500 (Wed, 07 Feb 2007) | 1 line
+Changed paths:
+   M /trunk/beagle/NEWS
+   M /trunk/beagle/configure.in
+
+Update for 0.2.16 release
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+r3394 | joeshaw | 2007-02-07 11:28:58 -0500 (Wed, 07 Feb 2007) | 1 line
+
+Update for 0.2.16 release
+------------------------------------------------------------------------
+r3393 | joeshaw | 2007-02-07 11:24:36 -0500 (Wed, 07 Feb 2007) | 1 line
+
+Temporarily back out the opera backend for the 0.2.16 release
+------------------------------------------------------------------------
+r3392 | joeshaw | 2007-02-07 11:16:43 -0500 (Wed, 07 Feb 2007) | 1 line
+
+Bump version number on SVG filter
+------------------------------------------------------------------------
+r3391 | kkubasik | 2007-02-06 23:23:46 -0500 (Tue, 06 Feb 2007) | 3 lines
+
+ r195@kjk38-laptop:  kjk38 | 2007-02-06 23:24:16 -0500
+ Initial import of the opera history backend
+
+------------------------------------------------------------------------
+r3390 | leonardof | 2007-02-06 21:38:58 -0500 (Tue, 06 Feb 2007) | 6 lines
+
+2007-02-07  Leonardo Ferreira Fontenelle  <leonardof@svn.gnome.org>
+
+	* pt_BR.po: Updated Brazilian Portuguese translation by Igor Pires
+	Soares <igor@projetofedora.org>.
+
+
+------------------------------------------------------------------------
+r3389 | dbera | 2007-02-06 19:27:30 -0500 (Tue, 06 Feb 2007) | 2 lines
+
+Batik svg files do not declare xlink namespace. Handle that explicitly.
+
+------------------------------------------------------------------------
+r3388 | joeshaw | 2007-02-06 18:19:13 -0500 (Tue, 06 Feb 2007) | 1 line
+
+Updated SVG filter, from Alex Macdonald
+------------------------------------------------------------------------
+r3387 | joeshaw | 2007-02-06 18:17:52 -0500 (Tue, 06 Feb 2007) | 2 lines
+
+Use indexable.MimeType rather than filter.MimeType, which isn't canonical and
+shouldn't really be used outside of the filter itself
+------------------------------------------------------------------------
+r3386 | joeshaw | 2007-02-06 15:31:43 -0500 (Tue, 06 Feb 2007) | 1 line
+
+Roll back our mono requirement to 1.1.13.5
+------------------------------------------------------------------------
+r3385 | joeshaw | 2007-02-06 11:38:13 -0500 (Tue, 06 Feb 2007) | 5 lines
+
+Only set the mime type in the indexable.ContentUri.IsFile block if it
+hasn't already been set by a backend.  Fixes the problem where
+Thunderbird mails were being stored as text/plain.
+
+
+------------------------------------------------------------------------
+r3384 | dbera | 2007-02-06 11:24:12 -0500 (Tue, 06 Feb 2007) | 2 lines
+
+beagle-hit.c: "(null)" does not deserialize to null Uri. Watch for null ParentUri when serializing.
+
+------------------------------------------------------------------------
+r3383 | pgeyleg | 2007-02-06 00:26:45 -0500 (Tue, 06 Feb 2007) | 1 line
+
+dzongkha translation added
+------------------------------------------------------------------------
+r3382 | dbera | 2007-02-05 17:10:20 -0500 (Mon, 05 Feb 2007) | 2 lines
+
+Remove debug messages from Semweb.
+
+------------------------------------------------------------------------
+r3381 | jmas | 2007-02-05 16:55:18 -0500 (Mon, 05 Feb 2007) | 5 lines
+
+2007-02-05  Jordi Mas <jmas@softcatala.org>
+
+	* ca.po: Updated Catalan translation.
+
+
+------------------------------------------------------------------------
+r3380 | dbera | 2007-02-05 16:06:43 -0500 (Mon, 05 Feb 2007) | 2 lines
+
+Remove some debug messages while parsing image files.
+
+------------------------------------------------------------------------
+r3379 | joeshaw | 2007-02-05 15:57:03 -0500 (Mon, 05 Feb 2007) | 1 line
+
+Don't set IsIndexing if a folder is being recrawled due to an inotify event
+------------------------------------------------------------------------
+r3378 | joeshaw | 2007-02-05 15:36:43 -0500 (Mon, 05 Feb 2007) | 1 line
+
+Remove some unused code I accidentally committed
+------------------------------------------------------------------------
+r3377 | joeshaw | 2007-02-05 14:58:03 -0500 (Mon, 05 Feb 2007) | 21 lines
+
+Rework the way we do reporting of whether or not we're indexing to make
+it a more active task for backends, rather than passive.  This fixes
+problems trying to deal with this sanely in the file system backend.
+
+* Remove some dead code from QueryDriver.cs.
+
+* No longer declare IsIndexing_get as virtual, and replace it with a
+private instance variable.  It's now the backends' responsibility to
+set IsIndexing as the status changes, rather than waiting for the
+getter to be called and reporting the current state of things.
+
+* Update the file system backend to the new scheme.  Should fix problems
+where the "currently indexing" info box stays on in beagle-search even
+after the initial crawl has finished.
+
+* Also update Evolution mail, EDS, Gaim, and Konversation backends to
+the new scheme.
+
+* Improve the status message when indexing files inside a directory.
+
+
+------------------------------------------------------------------------
+r3376 | dbera | 2007-02-05 13:12:15 -0500 (Mon, 05 Feb 2007) | 2 lines
+
+* libbeagle/beagle/beagle-hit.c: Add ParentUri to snippet_request->hit. This is needed by some backends that check for parent uri while generating snippets.
+
+------------------------------------------------------------------------
+r3375 | dbera | 2007-02-05 12:11:20 -0500 (Mon, 05 Feb 2007) | 4 lines
+
+* Konversation backend: Add server and channel name as properties. Somehow missed this before.
+* LuceneIndexingDriver: Back out a change from yesterday. Its incorrect.
+
+
+------------------------------------------------------------------------
+r3374 | aihana | 2007-02-05 07:30:59 -0500 (Mon, 05 Feb 2007) | 4 lines
+
+2007-02-05  Takeshi AIHANA <takeshi.aihana@gmail.com>
+
+        * ja.po: Updated Japanese translation.
+
+------------------------------------------------------------------------
+r3373 | dbera | 2007-02-04 17:23:12 -0500 (Sun, 04 Feb 2007) | 4 lines
+
+Correctly handle filter versions while indexing.
+* FileSystemQueryable.cs, FileAttributesStore.cs: If filter information is not present for a file, resubmit it for indexing. Ideally, we would like to resubmit whenever a new filter version is present, but that is becoming too costly.
+* FileAttributes.cs: Valid filter can have version 0+. Fix the version checking.
+
+------------------------------------------------------------------------
+r3372 | dbera | 2007-02-04 12:21:51 -0500 (Sun, 04 Feb 2007) | 2 lines
+
+Konversation backend: Better protection against old log files. Also, fix a bug where one log file would be indexed twice.
+
+------------------------------------------------------------------------
+r3369 | dbera | 2007-02-03 18:20:51 -0500 (Sat, 03 Feb 2007) | 2 lines
+
+Filter.cs: Explicitly warn Filters if they try to register a type in constructor.
+
+------------------------------------------------------------------------
+r3368 | dnylande | 2007-02-02 18:45:45 -0500 (Fri, 02 Feb 2007) | 1 line
+
+sv.po: Swedish translation updated
+------------------------------------------------------------------------
+r3367 | dbera | 2007-02-02 18:06:38 -0500 (Fri, 02 Feb 2007) | 2 lines
+
+KMailQueryable.cs: Fix checking whether a directory is a valid kmail directory. Fixes #401767 and #391647.
+
+------------------------------------------------------------------------
+r3366 | dbera | 2007-02-02 16:10:32 -0500 (Fri, 02 Feb 2007) | 2 lines
+
+Konversation backend: return true for IsIndexing when performing initial indexing.
+
+------------------------------------------------------------------------
+r3365 | dbera | 2007-02-02 15:13:17 -0500 (Fri, 02 Feb 2007) | 2 lines
+
+Really old konversation logfiles have bad timestamp strings. Ignore those lines completely, preventing crash if you have these old files.
+
+------------------------------------------------------------------------
+r3364 | joeshaw | 2007-02-02 13:54:11 -0500 (Fri, 02 Feb 2007) | 6 lines
+
+Mono doesn't handle JITted code running in a child process after a
+fork() very well, and can often hang.  Change our process limiting code
+to execute in C after the fork, rather than in C# in the runtime.  It's
+a little less flexible in theory, but has higher reliability.
+
+
+------------------------------------------------------------------------
+r3363 | icq | 2007-02-02 09:12:23 -0500 (Fri, 02 Feb 2007) | 2 lines
+
+Updated Galician Translation
+
+------------------------------------------------------------------------
+r3362 | joeshaw | 2007-02-01 16:07:35 -0500 (Thu, 01 Feb 2007) | 1 line
+
+Also run pdftotext -q (for quiet) again
+------------------------------------------------------------------------
+r3361 | joeshaw | 2007-02-01 16:05:29 -0500 (Thu, 01 Feb 2007) | 2 lines
+
+Bleh, r3360 didn't work and just inverted the deadlock.  Just ignore and
+don't redirect stderr for now
+------------------------------------------------------------------------
+r3360 | joeshaw | 2007-02-01 15:50:24 -0500 (Thu, 01 Feb 2007) | 7 lines
+
+pdftotext completely spams stderr on some documents, which causes a
+deadlock between beagled-helper and pdftotext: pdftotext is blocking on
+additional buffer space to write out more warnings while beagled-helper
+is blocking on data from stdout.  Fix this by processing data from
+stderr before processing stdout in DoPull(), rather than deferring it
+all until DoClose().  Fixes Jan's part of bnc #402065
+
+------------------------------------------------------------------------
+r3357 | joeshaw | 2007-01-31 18:44:13 -0500 (Wed, 31 Jan 2007) | 2 lines
+
+Don't include a pre-configured beagle-crawl-system in the tarball.  Fixes
+bgo #401504
+------------------------------------------------------------------------
+r3356 | joeshaw | 2007-01-31 16:07:31 -0500 (Wed, 31 Jan 2007) | 1 line
+
+Change a couple of chatty Warns to Debugs in the KMail backend
+------------------------------------------------------------------------
+r3355 | joeshaw | 2007-01-31 15:08:29 -0500 (Wed, 31 Jan 2007) | 4 lines
+
+Add --no-snapshot to beagled to keep it from automatically snapshotting
+when --heap-shot is provided.
+
+
+------------------------------------------------------------------------
+r3354 | joeshaw | 2007-01-31 14:56:27 -0500 (Wed, 31 Jan 2007) | 17 lines
+
+Put the looping bug out to pasture once and for all.
+
+In FSQ.DoneCrawlingOneDirectory(), in the event that we get a null file
+attribute back -- which should no longer happen -- complain loudly but 
+still mark the directory as clean.  This will prevent the daemon from
+looping on that one directory.
+
+Fix our sqlite schema for our fallback FileAttributesStore.  We were
+declaring our columns as STRING -- which isn't valid -- instead of TEXT.
+This meant that fields were defaulting to being integer-like.  Filenames
+like "0009" became "9" in the database.  Bump up the schema version and
+fix that.  Also make our file_path index unique, so we don't have to
+deal with potential multiple entries in the database.
+
+Add debugging output to the FileAttributesStore.
+
+
+------------------------------------------------------------------------
+r3353 | joeshaw | 2007-01-30 17:32:00 -0500 (Tue, 30 Jan 2007) | 2 lines
+
+Use a better GenericName in the beagle-settings .desktop file, lose the
+redundant comment
+------------------------------------------------------------------------
+r3352 | joeshaw | 2007-01-30 16:34:22 -0500 (Tue, 30 Jan 2007) | 10 lines
+
+Only do the position check hack in the archive filter for gzip archives;
+looks like the position is pretty much worthless for bzip2 archives and
+it triggers this code path.
+
+Fix a bug where we were leaking a tempfile when decompressing archives
+of more than 30 files.
+
+Improve debug output when storing streams in Indexable.cs.
+
+
+------------------------------------------------------------------------
+r3351 | joeshaw | 2007-01-30 16:07:16 -0500 (Tue, 30 Jan 2007) | 6 lines
+
+Workaround archive files that cause infinite loops.  When reading from
+an archive stream, if we are extracting the maximum amount of data and
+our position in the stream isn't moving, break out of the loop and flag
+the file as bad.  Don't create child indexables for such entries.
+
+
+------------------------------------------------------------------------
+r3350 | joeshaw | 2007-01-30 15:37:11 -0500 (Tue, 30 Jan 2007) | 1 line
+
+Add more info to the ExceptionHandlingThread name
+------------------------------------------------------------------------
+r3349 | joeshaw | 2007-01-30 15:11:13 -0500 (Tue, 30 Jan 2007) | 4 lines
+
+Always dispose of the SqliteCommand, even if we get an exception.  Log
+the SQL that caused an exception inside of DoNonQuery()
+
+
+------------------------------------------------------------------------
+r3348 | joeshaw | 2007-01-30 15:01:05 -0500 (Tue, 30 Jan 2007) | 20 lines
+
+GetLastWriteTimeUtc() no longer throws an IOException if the file isn't
+there in 2.0.  It returns a silly date from 1601.  Fix various places
+(mostly in the file system backend) where we were depending on that
+behavior.
+
+Slightly reorder the flow in FilterFactory.FilterIndexable so that we
+avoid unnecessary work, and also check in here if the file has
+disappeared out from underneath us.
+
+Fix a DateTime UTC conversion problem that was still hanging around in
+FileAttributesStore.
+
+Fix our ParseExact() in StringFu.  We want to AssumeUniversal AND
+AdjustToUniversal so that dates we get back are right.  Mono is broken
+with these options right now -- see
+http://bugzilla.ximian.com/show_bug.cgi?id=80677 -- but things work well
+enough now with the broken behavior, and the AdjustToUniversal is
+necessary for when it's fixed.
+
+
+------------------------------------------------------------------------
+r3347 | dbera | 2007-01-30 12:14:11 -0500 (Tue, 30 Jan 2007) | 3 lines
+
+* F-Spot code: More protection against bad jpegs.
+* XdgMime.cs: Catch other valid exceptions when detecting mimetype.
+
+------------------------------------------------------------------------
+r3346 | joeshaw | 2007-01-29 15:52:35 -0500 (Mon, 29 Jan 2007) | 3 lines
+
+Always return false instead of true from KonversationQueryable.IsIndexing,
+because otherwise the 'your data is being indexed' info box is always
+present.
+------------------------------------------------------------------------
+r3345 | joeshaw | 2007-01-29 14:17:01 -0500 (Mon, 29 Jan 2007) | 1 line
+
+Workaround a mono bug (bxc #80320) when dealing with dates around MinValue
+------------------------------------------------------------------------
+r3344 | dbera | 2007-01-28 22:14:18 -0500 (Sun, 28 Jan 2007) | 2 lines
+
+Fix crash when parsing extremely small files with no head or body.
+
+------------------------------------------------------------------------
+r3343 | dbera | 2007-01-28 11:30:59 -0500 (Sun, 28 Jan 2007) | 2 lines
+
+Ignore Bim entries with marker PHUT. F-Spot Bim parser does not recognise them.
+
+------------------------------------------------------------------------
+r3342 | dbera | 2007-01-28 11:13:07 -0500 (Sun, 28 Jan 2007) | 2 lines
+
+Handle javascript comments properly, namely the comments can contain quote characters which should be ignored and not assumed part of a quote. Error in original HtmlAgilityPack. There is still scope of error in script and style elements. They will be reported as "System.Exception: Load() was not paused previously" and need to be fixed on demand.
+
+------------------------------------------------------------------------
+r3341 | dbera | 2007-01-27 13:39:27 -0500 (Sat, 27 Jan 2007) | 2 lines
+
+Add the changes.
+
+------------------------------------------------------------------------
+r3340 | dbera | 2007-01-27 13:35:34 -0500 (Sat, 27 Jan 2007) | 2 lines
+
+Check iptc entry for null before trying to parse it. Close memorystream after use.
+
+------------------------------------------------------------------------
+r3339 | dbera | 2007-01-26 19:57:06 -0500 (Fri, 26 Jan 2007) | 2 lines
+
+Fix a bug in extraction of JFIF comments from Jpeg files.
+
+------------------------------------------------------------------------
+r3338 | joeshaw | 2007-01-26 16:16:26 -0500 (Fri, 26 Jan 2007) | 4 lines
+
+Update some assembly requirements in configure.in, and remove some
+unnecessary ones from beagled/Makefile.am
+
+
+------------------------------------------------------------------------
+r3336 | joeshaw | 2007-01-25 18:40:53 -0500 (Thu, 25 Jan 2007) | 1 line
+
+0.2.15.1, brown paper bag release
+------------------------------------------------------------------------
+r3335 | joeshaw | 2007-01-25 18:35:51 -0500 (Thu, 25 Jan 2007) | 2 lines
+
+We need to bundle the thunderbird files in any case, regardless of whether or
+not it's enabled.
+------------------------------------------------------------------------
+r3332 | joeshaw | 2007-01-25 17:36:12 -0500 (Thu, 25 Jan 2007) | 1 line
+
+Update changelog for 0.2.15
+------------------------------------------------------------------------
+r3331 | joeshaw | 2007-01-25 17:35:40 -0500 (Thu, 25 Jan 2007) | 1 line
+Changed paths:
+   M /trunk/beagle/NEWS
+   M /trunk/beagle/configure.in
+
+Update for 0.2.15 release
+------------------------------------------------------------------------
+r3330 | joeshaw | 2007-01-25 17:32:33 -0500 (Thu, 25 Jan 2007) | 1 line
+Changed paths:
+   M /trunk/beagle/gnome-autogen.sh
+
+Support automake 1.10 in our included gnome-autogen.sh
+------------------------------------------------------------------------
+r3329 | dbera | 2007-01-24 18:07:50 -0500 (Wed, 24 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/glue/xdgmime/README
+   M /trunk/beagle/glue/xdgmime/xdgmimecache.c
+
+Update xdgmime with patches from fd.o bugzilla fixing fd.o #9560, #9544.
+
+------------------------------------------------------------------------
+r3328 | dbera | 2007-01-24 15:15:44 -0500 (Wed, 24 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/beagled/Filter.cs
+
+Actually, no need to check for word limit in DoPull() because lucene would never ask for data via DoPull() if word limit has been reached. AllowMoreWords() is only useful for Filters which extract all data in one shot of DoPull() and thus need check if word limit has been reached.
+
+------------------------------------------------------------------------
+r3327 | dbera | 2007-01-24 13:02:18 -0500 (Wed, 24 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Filters/HtmlAgilityPack/AssemblyInfo.cs
+   M /trunk/beagle/Filters/HtmlAgilityPack/Header.cs
+   M /trunk/beagle/Filters/HtmlAgilityPack/HtmlAttribute.cs
+   M /trunk/beagle/Filters/HtmlAgilityPack/HtmlEntity.cs
+   M /trunk/beagle/Filters/HtmlAgilityPack/HtmlNode.cs
+   M /trunk/beagle/Filters/HtmlAgilityPack/HtmlNodeNavigator.cs
+   M /trunk/beagle/Filters/HtmlAgilityPack/HtmlWeb.cs
+   M /trunk/beagle/Filters/HtmlAgilityPack/MixedCodeDocument.cs
+   M /trunk/beagle/Filters/HtmlAgilityPack/tools.cs
+
+Change line endings of some more files.
+
+------------------------------------------------------------------------
+r3326 | dbera | 2007-01-24 12:57:22 -0500 (Wed, 24 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Filters/HtmlAgilityPack/crc32.cs
+
+Change line endings.
+
+------------------------------------------------------------------------
+r3325 | dbera | 2007-01-24 12:04:14 -0500 (Wed, 24 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Filters/FilterDOC.cs
+   M /trunk/beagle/Filters/FilterHtml.cs
+   M /trunk/beagle/Filters/FilterPdf.cs
+   M /trunk/beagle/Filters/FilterText.cs
+   M /trunk/beagle/beagled/Filter.cs
+
+Check if more words are allowed before calling DoPull(), removing AllowMoreWords() calls from text, pdf, doc and one place in html filter. This will also benefit other filters who repeatedly send extracted text in DoPull().
+
+------------------------------------------------------------------------
+r3324 | dbera | 2007-01-24 11:51:46 -0500 (Wed, 24 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Filters/FilterRTF.cs
+
+* FilterRTF.cs: Keep a single copy of textmap table. Its expensive to create.
+
+------------------------------------------------------------------------
+r3323 | dbera | 2007-01-24 11:43:17 -0500 (Wed, 24 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Filters/FilterHtml.cs
+   M /trunk/beagle/Filters/FilterPdf.cs
+   M /trunk/beagle/Filters/FilterText.cs
+
+Read multiple lines in each call of DoPull() in FilterPdf. Remove warnings from HtmlFilter. Stop if we reach lucene word limit in text and pdf filter.
+
+------------------------------------------------------------------------
+r3322 | kmaraas | 2007-01-24 09:29:31 -0500 (Wed, 24 Jan 2007) | 3 lines
+Changed paths:
+   M /trunk/beagle/po/ChangeLog
+   M /trunk/beagle/po/nb.po
+
+2007-01-24  Kjartan Maraas  <kmaraas@gnome.org>
+
+	* nb.po: Updated Norwegian bokmål translation.
+------------------------------------------------------------------------
+r3321 | maticz | 2007-01-23 19:21:47 -0500 (Tue, 23 Jan 2007) | 5 lines
+Changed paths:
+   M /trunk/beagle/configure.in
+   M /trunk/beagle/po/ChangeLog
+   A /trunk/beagle/po/sl.po
+
+2007-01-24  Matic Zgur <mr.zgur@gmail.com>
+
+        * configure.in: Added 'sl' to ALL_LINGUAS
+        * po/sl.po: Added Slovenian translation.
+
+------------------------------------------------------------------------
+r3320 | joeshaw | 2007-01-23 16:34:47 -0500 (Tue, 23 Jan 2007) | 4 lines
+Changed paths:
+   M /trunk/beagle/Util/Scheduler.cs
+
+Util/Scheduler.cs: When "Waiting for next task", display the time it 
+will be executed.
+
+
+------------------------------------------------------------------------
+r3319 | dlodge | 2007-01-23 16:33:42 -0500 (Tue, 23 Jan 2007) | 1 line
+Changed paths:
+   M /trunk/beagle/po/ChangeLog
+   M /trunk/beagle/po/en_GB.po
+
+Updated (British) English translation
+------------------------------------------------------------------------
+r3318 | joeshaw | 2007-01-23 16:22:40 -0500 (Tue, 23 Jan 2007) | 37 lines
+Changed paths:
+   M /trunk/beagle/beagled/FileAttributesStore_Mixed.cs
+   M /trunk/beagle/beagled/FileSystemQueryable/DirectoryModel.cs
+   M /trunk/beagle/beagled/FileSystemQueryable/FileCrawlTask.cs
+   M /trunk/beagle/beagled/FileSystemQueryable/FileSystemQueryable.cs
+   M /trunk/beagle/beagled/FileSystemQueryable/TreeCrawlTask.cs
+   M /trunk/beagle/beagled/IndexHelper/IndexHelper.cs
+   M /trunk/beagle/beagled/LuceneQueryable.cs
+
+Fix some bugs that will hopefully kill off the dreaded looping problem.
+And if it doesn't, provide more information to make it easier to debug.
+
+* LuceneQueryable.cs: Always flush the pending request queue when we
+break out of the loop inside an IIndexableGenerator Add task.  Before
+things would be held up until the queue was full, meaning documents
+could be delayed from being indexing for quite some time.
+
+* FileAttributesStore_Mixed.cs: If we successfully save file attributes
+to xattr, drop any matching attributes from the sqlite DB.  (Found by
+Brian J. Murrell)
+
+* FileSystemQueryable/FileSystemQueryable.cs: Set the FSQ's "Debug"
+attribute if the BEAGLE_DEBUG_FSQ environment variable is set.
+
+* FileSystemQueryable/FileCrawlTask.cs: Log if it appears that we're
+recrawling a directory we've seen before.  (Which should only happen if
+setting up an inotify watch fails.)
+
+* FileSystemQueryable/TreeCrawlTask.cs: Dial down the verbose logging
+unless FSQ.Debug is set.
+
+* FileSystemQueryable/DirectoryModel.cs: If FSQ.Debug is set, print out
+the state that we set the directory to, implement ToString (), and fix a
+bug in the DirectoryModel.CompareTo() function, which was
+unconditionally preferring depth over last crawl time.  This would cause
+a certain directory that was at a higher depth than other directories to
+continously loop.  Change the method to only do that if the directory
+state is not clean (ie, Unknown or Dirty).  Also, consider all
+directories with a depth greater than 3 to be the same, since generally
+the order of indexing those doesn't matter as much as higher-level
+directories.
+
+* IndexHelper/IndexHelper.cs: Print out version/runtime info like we do
+for the daemon.
+
+
+------------------------------------------------------------------------
+r3317 | dbera | 2007-01-23 12:21:15 -0500 (Tue, 23 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/beagled/beagled.in
+
+Typo in beagled.in
+
+------------------------------------------------------------------------
+r3316 | joeshaw | 2007-01-22 17:30:16 -0500 (Mon, 22 Jan 2007) | 1 line
+Changed paths:
+   M /trunk/beagle/search/Search.cs
+
+Pluralize another string.  bgo #356243 again
+------------------------------------------------------------------------
+r3314 | joeshaw | 2007-01-22 15:02:03 -0500 (Mon, 22 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/beagled/SnippetExecutor.cs
+
+Clean up invalid XML characters in the snippet before send it back over the
+wire.  bgo #371091
+------------------------------------------------------------------------
+r3313 | joeshaw | 2007-01-22 14:55:39 -0500 (Mon, 22 Jan 2007) | 1 line
+Changed paths:
+   M /trunk/beagle/Filters/FilterMPlayerVideo.cs
+
+sigh, compile before I commit
+------------------------------------------------------------------------
+r3312 | joeshaw | 2007-01-22 14:22:30 -0500 (Mon, 22 Jan 2007) | 1 line
+Changed paths:
+   M /trunk/beagle/Filters/FilterDOC.cs
+   M /trunk/beagle/Filters/FilterMPlayerVideo.cs
+
+Limit mplayer's address space size to 100 megs.  Should fix bgo #357754
+------------------------------------------------------------------------
+r3311 | joeshaw | 2007-01-22 14:02:59 -0500 (Mon, 22 Jan 2007) | 4 lines
+Changed paths:
+   M /trunk/beagle/Util/StringFu.cs
+   M /trunk/beagle/search/Search.cs
+
+Fix a few problems where Catalog.GetPluralString() should have been used
+instead of Catalog.GetString().  bgo #356243.
+
+
+------------------------------------------------------------------------
+r3310 | dbera | 2007-01-22 13:53:43 -0500 (Mon, 22 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Filters/HACKING
+
+Add another tip to HACKING. Actually test the new cia rule to display svn link.
+
+------------------------------------------------------------------------
+r3309 | joeshaw | 2007-01-22 13:53:31 -0500 (Mon, 22 Jan 2007) | 7 lines
+Changed paths:
+   M /trunk/beagle/beagled/EvolutionMailQueryable/EvolutionMailQueryable.cs
+
+Set the "don't escape" flag on the Uri constructor when building email
+URIs for the Evo mail backend.  This fixes a problem where hostnames
+were being lowercased internally by the class libs, but evolution
+depended on exact string matching to properly open the messages.
+bgo #372914
+
+
+------------------------------------------------------------------------
+r3308 | joeshaw | 2007-01-22 13:46:47 -0500 (Mon, 22 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Filters/FilterMail.cs
+
+Bump up the filter version of mail to 3, because we index standard file
+properties of attachments now
+------------------------------------------------------------------------
+r3307 | joeshaw | 2007-01-22 13:40:44 -0500 (Mon, 22 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Filters/FilterMail.cs
+
+Add the standard file properties to email attachments.  Based on a patch from
+Kevin Kubasik.  bgo #383730
+------------------------------------------------------------------------
+r3306 | joeshaw | 2007-01-22 13:20:31 -0500 (Mon, 22 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/search/Search.cs
+   M /trunk/beagle/search/Tray/TrayIcon.cs
+
+Add a tooltip to the notification icon.  Based on a patch from Ed Catmur.
+bgo #389427
+------------------------------------------------------------------------
+r3305 | dbera | 2007-01-22 12:19:03 -0500 (Mon, 22 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/configure.in
+
+Thunderbird backend: disable by default. Too many issues and bugs.
+
+------------------------------------------------------------------------
+r3304 | dbera | 2007-01-22 11:47:16 -0500 (Mon, 22 Jan 2007) | 5 lines
+Changed paths:
+   M /trunk/beagle/Filters/FilterHtml.cs
+   M /trunk/beagle/Filters/HtmlAgilityPack/HtmlDocument.cs
+   M /trunk/beagle/beagled/ExtractContent.cs
+   M /trunk/beagle/beagled/Filter.cs
+
+* ExtractContent.cs: Handle --tokenize properly for DisplayContent since now it takes a block of characters instead of a line.
+* Filter.cs: Add whitespace after a word in hotpool.
+* HtmlDocument.cs: Enable pausing and resuming of html parsing. A long way from DOM style parser to event-driven parser to now effectively stream parsing.
+* FilterHtml.cs: Instead of extracting all the text in DoOpen(), extract all information in <head> in DoPullProperties() and then extract all text in DoPull(). Use the pause and resume features of HtmlDocument to send only some text in each call of DoPull(). Remove the stack based hotness and ignore-state detection - use just a counter now. Use AppendWord instead of AppendText wherever for appending href-s and img alt-s since they won't contain newlines.
+
+------------------------------------------------------------------------
+r3303 | dbera | 2007-01-22 11:36:45 -0500 (Mon, 22 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Filters/HtmlAgilityPack/HtmlDocument.cs
+
+Change line endings of HtmlDocument.cs and also set svn:eol-style property
+
+------------------------------------------------------------------------
+r3302 | dnylande | 2007-01-21 16:13:10 -0500 (Sun, 21 Jan 2007) | 4 lines
+Changed paths:
+   M /trunk/beagle/po/ChangeLog
+   M /trunk/beagle/po/POTFILES.in
+   M /trunk/beagle/po/sv.po
+
+	* sv.po: Updated Swedish translation.
+	* POTFILES.in: Added missing files.
+
+
+------------------------------------------------------------------------
+r3297 | dbera | 2007-01-20 19:24:51 -0500 (Sat, 20 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Util/LineReader.cs
+   M /trunk/beagle/beagled/KonversationQueryable/KonversationQueryable.cs
+
+* KonversationQueryable.cs: Add Snippet support for konversation backend. Change the initial indexing to nested indexable generators to reduce system load; instead of creating one indexable generator for one log file create only one generator which goes through the files and for each file, returns a session.
+
+------------------------------------------------------------------------
+r3296 | dbera | 2007-01-20 15:30:15 -0500 (Sat, 20 Jan 2007) | 5 lines
+Changed paths:
+   M /trunk/beagle/Filters/FilterAbiword.cs
+   M /trunk/beagle/Filters/FilterArchive.cs
+   M /trunk/beagle/Filters/FilterBmp.cs
+   M /trunk/beagle/Filters/FilterBoo.cs
+   M /trunk/beagle/Filters/FilterC.cs
+   M /trunk/beagle/Filters/FilterCSharp.cs
+   M /trunk/beagle/Filters/FilterChm.cs
+   M /trunk/beagle/Filters/FilterCpp.cs
+   M /trunk/beagle/Filters/FilterDOC.cs
+   M /trunk/beagle/Filters/FilterDeb.cs
+   M /trunk/beagle/Filters/FilterDesktop.cs
+   M /trunk/beagle/Filters/FilterDirectory.cs
+   M /trunk/beagle/Filters/FilterDocbook.cs
+   M /trunk/beagle/Filters/FilterEbuild.cs
+   M /trunk/beagle/Filters/FilterExternal.cs
+   M /trunk/beagle/Filters/FilterFortran.cs
+   M /trunk/beagle/Filters/FilterGif.cs
+   M /trunk/beagle/Filters/FilterHtml.cs
+   M /trunk/beagle/Filters/FilterImLog.cs
+   M /trunk/beagle/Filters/FilterImage.cs
+   M /trunk/beagle/Filters/FilterJava.cs
+   M /trunk/beagle/Filters/FilterJpeg.cs
+   M /trunk/beagle/Filters/FilterJs.cs
+   M /trunk/beagle/Filters/FilterKAddressBook.cs
+   M /trunk/beagle/Filters/FilterKNotes.cs
+   M /trunk/beagle/Filters/FilterKOrganizer.cs
+   M /trunk/beagle/Filters/FilterKonqHistory.cs
+   M /trunk/beagle/Filters/FilterLabyrinth.cs
+   M /trunk/beagle/Filters/FilterLisp.cs
+   M /trunk/beagle/Filters/FilterMPlayerVideo.cs
+   M /trunk/beagle/Filters/FilterMail.cs
+   M /trunk/beagle/Filters/FilterMan.cs
+   M /trunk/beagle/Filters/FilterMatlab.cs
+   M /trunk/beagle/Filters/FilterMonodoc.cs
+   M /trunk/beagle/Filters/FilterMusic.cs
+   M /trunk/beagle/Filters/FilterOpenOffice.cs
+   M /trunk/beagle/Filters/FilterPPT.cs
+   M /trunk/beagle/Filters/FilterPascal.cs
+   M /trunk/beagle/Filters/FilterPdf.cs
+   M /trunk/beagle/Filters/FilterPerl.cs
+   M /trunk/beagle/Filters/FilterPhp.cs
+   M /trunk/beagle/Filters/FilterPng.cs
+   M /trunk/beagle/Filters/FilterPython.cs
+   M /trunk/beagle/Filters/FilterRPM.cs
+   M /trunk/beagle/Filters/FilterRTF.cs
+   M /trunk/beagle/Filters/FilterRuby.cs
+   M /trunk/beagle/Filters/FilterScilab.cs
+   M /trunk/beagle/Filters/FilterScribus.cs
+   M /trunk/beagle/Filters/FilterShellscript.cs
+   M /trunk/beagle/Filters/FilterSpreadsheet.cs
+   M /trunk/beagle/Filters/FilterSvg.cs
+   M /trunk/beagle/Filters/FilterTexi.cs
+   M /trunk/beagle/Filters/FilterText.cs
+   M /trunk/beagle/Filters/FilterTiff.cs
+   M /trunk/beagle/Filters/FilterTotem.cs
+   M /trunk/beagle/Filters/FilterXslt.cs
+   M /trunk/beagle/beagled/Filter.cs
+   M /trunk/beagle/beagled/FilterFactory.cs
+   M /trunk/beagle/beagled/Flavor.cs
+
+Do not create a new FilterFlavor whenever a new Filter is created. Filters now have to override RegisterSupportedTypes to register the flavors they handle.
+Move some tables from FilterFactory to FilterFlavor to reduce redundant storage.
+KCal filters: Create mapping only if used.
+Kill some warnings and a minor change in Texi filter.
+
+------------------------------------------------------------------------
+r3295 | joeshaw | 2007-01-20 13:05:12 -0500 (Sat, 20 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/glue/tomboykeybinder.c
+
+Fix copyright/license info for the tomboykeybinder.c file, which was copied
+and modified from Tomboy
+------------------------------------------------------------------------
+r3294 | dbera | 2007-01-20 12:44:45 -0500 (Sat, 20 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Util/Makefile.am
+
+No more google, no more webservices.
+
+------------------------------------------------------------------------
+r3293 | dbera | 2007-01-20 12:34:31 -0500 (Sat, 20 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Util/ImBuddy.cs
+   M /trunk/beagle/Util/ImLog.cs
+
+Ignore zero size kopete files. Reduces some unnecessary exceptions.
+
+------------------------------------------------------------------------
+r3292 | dbera | 2007-01-20 12:28:12 -0500 (Sat, 20 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/beagled/LabyrinthQueryable/LabyrinthQueryable.cs
+   M /trunk/beagle/glue/beagled-utils.c
+   M /trunk/beagle/glue/ioprio-glue.c
+   M /trunk/beagle/glue/mono-glue.c
+   M /trunk/beagle/glue/rlimit-glue.c
+   M /trunk/beagle/glue/scheduler-glue.c
+   M /trunk/beagle/glue/screensaver-glue.c
+   M /trunk/beagle/glue/search-entry.c
+   M /trunk/beagle/glue/thread-glue.c
+   M /trunk/beagle/glue/tomboykeybinder.c
+   M /trunk/beagle/glue/ui-glue.c
+
+Add copying information to some source files.
+
+------------------------------------------------------------------------
+r3291 | dbera | 2007-01-20 12:05:13 -0500 (Sat, 20 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/COPYING
+   M /trunk/beagle/Filters/FilterDOC.cs
+   M /trunk/beagle/Filters/FilterText.cs
+
+Typo, license informatiom and comments.
+
+------------------------------------------------------------------------
+r3290 | joeshaw | 2007-01-19 19:18:26 -0500 (Fri, 19 Jan 2007) | 29 lines
+Changed paths:
+   M /trunk/beagle/Filters/FilterDOC.cs
+   M /trunk/beagle/Filters/FilterExternal.cs
+   M /trunk/beagle/Filters/FilterMPlayerVideo.cs
+   M /trunk/beagle/Filters/FilterPdf.cs
+   M /trunk/beagle/Filters/FilterRPM.cs
+   M /trunk/beagle/Filters/FilterSpreadsheet.cs
+   M /trunk/beagle/Filters/FilterTotem.cs
+   M /trunk/beagle/Util/SafeProcess.cs
+   M /trunk/beagle/Util/SystemPriorities.cs
+   M /trunk/beagle/beagled/beagled-index-helper.in
+   M /trunk/beagle/beagled/beagled.in
+   M /trunk/beagle/beagled/wrapper.in
+   M /trunk/beagle/glue/Makefile.am
+   A /trunk/beagle/glue/rlimit-glue.c
+   M /trunk/beagle/tools
+   A /trunk/beagle/tools/DocExtractor.cs
+   M /trunk/beagle/tools/Makefile.am
+   M /trunk/beagle/tools/wrapper.in
+
+Move MS Word text extraction out-of-process.  libwv1 is far too
+unreliable to have it even inside our index helper process.  Crashes can
+corrupt the index and some documents cause it to explode with memory.
+
+* Add a new beagle-doc-extractor tool, which extracts the text from
+a Word document and prints it out to stdout.  Ported FilterDOC to
+use it.
+
+* Added the ability to run child setup functions with SafeProcess, since
+this is a nice feature with g_spawn().  These functions run in the child
+process following the fork() but before the exec().  This allows us to
+do things like setrlimit(2) on child processes.
+
+* Added glue around setrlimit(2) so we can keep out of process helpers
+under a certain amount of CPU and addressable space, killing them if
+they exceed it.
+
+* Added CPU time limits to all the filters which call out of process
+helpers.  The numbers are best guesses from various files I have on
+my system, but will inevitably need some tweaking.
+
+* Added a memory limit to the Word extractor, since I have a file
+which causes libwv1 to eat over a gig of memory in about 3 seconds.
+
+* Various tweaks to scripts so that beagle-doc-extractor works without
+running "make install"
+
+
+
+------------------------------------------------------------------------
+r3289 | dbera | 2007-01-19 18:16:00 -0500 (Fri, 19 Jan 2007) | 5 lines
+Changed paths:
+   M /trunk/beagle/Filters/FilterBmp.cs
+   M /trunk/beagle/Filters/FilterGif.cs
+   M /trunk/beagle/Filters/FilterImage.cs
+   M /trunk/beagle/Filters/FilterJpeg.cs
+   M /trunk/beagle/Filters/FilterPng.cs
+   M /trunk/beagle/Filters/FilterTiff.cs
+
+* Update image filters from b-c-e branch to work with the new F-Spot code.
+* (#379976) dc:title could be also be a BNode.
+* (#347518) store the major iptc properties like location, caption (yet another fixme:comment) and keyword
+
+
+------------------------------------------------------------------------
+r3288 | dbera | 2007-01-19 18:03:33 -0500 (Fri, 19 Jan 2007) | 2 lines
+Changed paths:
+   A /trunk/beagle/Util/F-Spot (from /trunk/beagle/Util/FSpot:3287)
+   D /trunk/beagle/Util/FSpot
+   M /trunk/beagle/Util/Makefile.am
+
+Rename FSpot to F-Spot. Joe's to blame.
+
+------------------------------------------------------------------------
+r3287 | dbera | 2007-01-19 17:53:42 -0500 (Fri, 19 Jan 2007) | 2 lines
+Changed paths:
+   A /trunk/beagle/Util/FSpot/Bim.cs
+   A /trunk/beagle/Util/FSpot/BitConverter.cs
+   D /trunk/beagle/Util/FSpot/EndianConverter.cs
+   M /trunk/beagle/Util/FSpot/Exif.cs
+   A /trunk/beagle/Util/FSpot/IptcFile.cs
+   M /trunk/beagle/Util/FSpot/JpegHeader.cs
+   M /trunk/beagle/Util/FSpot/MetadataStore.cs
+   A /trunk/beagle/Util/FSpot/PixbufUtils.cs
+   M /trunk/beagle/Util/FSpot/PngFile.cs
+   M /trunk/beagle/Util/FSpot/Tiff.cs
+   M /trunk/beagle/Util/FSpot/XmpFile.cs
+   A /trunk/beagle/Util/FSpot/beagle-changes
+   A /trunk/beagle/Util/FSpot/beagle-changes/01-fspot-0.3.0.diff
+   A /trunk/beagle/Util/FSpot/beagle-changes/02-iptc.diff
+   M /trunk/beagle/Util/Makefile.am
+   A /trunk/beagle/Util/SemWeb/Algos.cs
+   A /trunk/beagle/Util/SemWeb/AssemblyInfo.cs
+   D /trunk/beagle/Util/SemWeb/ForwardLogic.cs
+   A /trunk/beagle/Util/SemWeb/Inference.cs
+   D /trunk/beagle/Util/SemWeb/KnowledgeModel.cs
+   A /trunk/beagle/Util/SemWeb/LiteralFilters.cs
+   M /trunk/beagle/Util/SemWeb/MemoryStore.cs
+   D /trunk/beagle/Util/SemWeb/N3Parser.cs
+   A /trunk/beagle/Util/SemWeb/N3Reader.cs
+   M /trunk/beagle/Util/SemWeb/N3Writer.cs
+   M /trunk/beagle/Util/SemWeb/Query.cs
+   A /trunk/beagle/Util/SemWeb/RDFS.cs
+   M /trunk/beagle/Util/SemWeb/RSquary.cs
+   D /trunk/beagle/Util/SemWeb/RSquaryFilters.cs
+   D /trunk/beagle/Util/SemWeb/RdfParser.cs
+   A /trunk/beagle/Util/SemWeb/RdfReader.cs
+   M /trunk/beagle/Util/SemWeb/RdfWriter.cs
+   A /trunk/beagle/Util/SemWeb/RdfXmlReader.cs
+   A /trunk/beagle/Util/SemWeb/RdfXmlWriter.cs
+   D /trunk/beagle/Util/SemWeb/Reasoning.cs
+   A /trunk/beagle/Util/SemWeb/Remote.cs
+   M /trunk/beagle/Util/SemWeb/Resource.cs
+   M /trunk/beagle/Util/SemWeb/SQLStore.cs
+   D /trunk/beagle/Util/SemWeb/Sparql.cs
+   M /trunk/beagle/Util/SemWeb/Statement.cs
+   M /trunk/beagle/Util/SemWeb/Store.cs
+   M /trunk/beagle/Util/SemWeb/Util.cs
+   M /trunk/beagle/Util/SemWeb/XPathSemWebNavigator.cs
+   D /trunk/beagle/Util/SemWeb/XmlParser.cs
+   D /trunk/beagle/Util/SemWeb/XmlWriter.cs
+
+Update F-Spot code from b-c-e branch. Give enough time to users to try it before releasing.
+
+------------------------------------------------------------------------
+r3286 | dbera | 2007-01-19 17:30:19 -0500 (Fri, 19 Jan 2007) | 2 lines
+Changed paths:
+   D /trunk/beagle/Util/EndianConverter.cs
+   D /trunk/beagle/Util/ExifData.cs
+   A /trunk/beagle/Util/FSpot
+   A /trunk/beagle/Util/FSpot/EndianConverter.cs (from /trunk/beagle/Util/EndianConverter.cs:3280)
+   A /trunk/beagle/Util/FSpot/Exif.cs (from /trunk/beagle/Util/ExifData.cs:3280)
+   A /trunk/beagle/Util/FSpot/JpegHeader.cs (from /trunk/beagle/Util/JpegHeader.cs:3280)
+   A /trunk/beagle/Util/FSpot/MetadataStore.cs (from /trunk/beagle/Util/MetadataStore.cs:3280)
+   A /trunk/beagle/Util/FSpot/PngFile.cs (from /trunk/beagle/Util/PngHeader.cs:3280)
+   A /trunk/beagle/Util/FSpot/Tiff.cs (from /trunk/beagle/Util/Tiff.cs:3280)
+   A /trunk/beagle/Util/FSpot/XmpFile.cs (from /trunk/beagle/Util/XmpFile.cs:3280)
+   D /trunk/beagle/Util/JpegHeader.cs
+   M /trunk/beagle/Util/Makefile.am
+   D /trunk/beagle/Util/MetadataStore.cs
+   D /trunk/beagle/Util/PngHeader.cs
+   D /trunk/beagle/Util/Tiff.cs
+   D /trunk/beagle/Util/XmpFile.cs
+
+Organize files from FSpot into its separate directory. Get ready for merging from branch.
+
+------------------------------------------------------------------------
+r3284 | dbera | 2007-01-19 11:45:52 -0500 (Fri, 19 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Filters/HtmlAgilityPack/HtmlDocument.cs
+
+Fix a potential error (uncatched by mcs 1.2.2 but should be caught).
+
+------------------------------------------------------------------------
+r3281 | joeshaw | 2007-01-18 16:55:09 -0500 (Thu, 18 Jan 2007) | 7 lines
+Changed paths:
+   M /trunk/beagle/Util/SystemPriorities.cs
+   M /trunk/beagle/beagled/BuildIndex.cs
+   M /trunk/beagle/beagled/IndexHelper/IndexHelper.cs
+   M /trunk/beagle/tools/beagle-crawl-system.in
+
+Move the renice code out of IndexHelper.cs and into SystemPriorities.cs.
+
+Nice +19 ourselves inside BuildIndex.cs instead of doing it from the
+beagle-crawl-system cron script, since we still want things like the
+mono GC thread to run at normal priority.
+
+
+------------------------------------------------------------------------
+r3280 | joeshaw | 2007-01-18 16:44:51 -0500 (Thu, 18 Jan 2007) | 12 lines
+Changed paths:
+   D /trunk/beagle/Util/IoPriority.cs
+   M /trunk/beagle/Util/Makefile.am
+   A /trunk/beagle/Util/SystemPriorities.cs (from /trunk/beagle/Util/IoPriority.cs:3268)
+   M /trunk/beagle/beagled/BuildIndex.cs
+   M /trunk/beagle/beagled/IndexHelper/IndexHelper.cs
+   M /trunk/beagle/beagled/ManageIndex.cs
+   M /trunk/beagle/glue/Makefile.am
+   A /trunk/beagle/glue/scheduler-glue.c
+
+Add support for Linux's relatively new SCHED_BATCH scheduler policy.
+
+Add glue to set SCHED_BATCH or the default SCHED_OTHER, and hook it
+into SystemPriorities.cs (which was renamed from IoPriority.cs).
+
+In the index helper, set our nice level before we start the server,
+since we want the server thread to inherit our lower priority.  In
+there, try to set the scheduler policy to SCHED_BATCH.  If that
+succeeds, set our nice to +12, otherwise to +17.  (The reason
+for the difference is because SCHED_BATCH + 12 will equal +17.)
+
+
+------------------------------------------------------------------------
+r3275 | mwiehle | 2007-01-18 08:02:18 -0500 (Thu, 18 Jan 2007) | 4 lines
+Changed paths:
+   M /trunk/beagle/beagled/Makefile.am
+
+Adding $(DUMP_INDEX_WRAPPER) to ALL_TARGETS. It was missing and caused make install to fail on a fresh svn build.
+This should solve bgo #394481.
+The other solution would be to remove D_I_W from SBIN_W. But we want to install it (see comment on r3212)
+
+------------------------------------------------------------------------
+r3274 | dbera | 2007-01-17 20:28:18 -0500 (Wed, 17 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Filters/FilterText.cs
+
+Instead of getting one line each time, get as much as possible without overflowing PullingReader buffer. This makes the text filter faster - about 20% faster on a 6345 line, 245 KB file.
+
+------------------------------------------------------------------------
+r3273 | dbera | 2007-01-17 20:15:27 -0500 (Wed, 17 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/beagled/ExtractContent.cs
+
+Change ExtractContent to work more like lucene would work: calling Read(char[]) repeatedly. Filters generally do not add newlines to the extracted text, so calling ReadLine() is really bad. Furthermore, now heap-buddy string allocations will be more meaningful.
+
+------------------------------------------------------------------------
+r3272 | dbera | 2007-01-17 19:31:22 -0500 (Wed, 17 Jan 2007) | 5 lines
+Changed paths:
+   M /trunk/beagle/ImLogViewer/ImLogWindow.cs
+   M /trunk/beagle/Util/ImLog.cs
+   M /trunk/beagle/beagled/KonversationQueryable/KonversationQueryable.cs
+
+Fixes bgo 331609.
+* Konversation backend: Create a new session if day changes.
+* ImLog.cs: Move the line parsing code here.
+* ImLogWindow.cs: Add Konversation support to ImLogViewer.
+
+------------------------------------------------------------------------
+r3268 | joeshaw | 2007-01-16 12:17:47 -0500 (Tue, 16 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/configure.in
+
+Allow the user to disable gsf-sharp at configure time, rather than only
+autodetecting it.  Patch from 'ph'
+------------------------------------------------------------------------
+r3266 | dbera | 2007-01-15 19:33:20 -0500 (Mon, 15 Jan 2007) | 2 lines
+Changed paths:
+   A /trunk/beagle/beagled/KonversationQueryable
+   A /trunk/beagle/beagled/KonversationQueryable/KonversationQueryable.cs
+
+Konv backend files.
+
+------------------------------------------------------------------------
+r3265 | dbera | 2007-01-15 19:03:23 -0500 (Mon, 15 Jan 2007) | 2 lines
+Changed paths:
+   A /trunk/beagle/Util/LineReader.cs
+
+Add LineReader.cs.
+
+------------------------------------------------------------------------
+r3264 | dbera | 2007-01-15 18:06:51 -0500 (Mon, 15 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Util/Makefile.am
+   M /trunk/beagle/beagled/AssemblyInfo.cs
+   M /trunk/beagle/beagled/Makefile.am
+
+Add konversation backend. Also add LineReader from b-c-e branch.
+
+------------------------------------------------------------------------
+r3263 | dbera | 2007-01-15 18:03:04 -0500 (Mon, 15 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/AUTHORS
+
+Add Stephan's name in AUTHORS and remove Google from "thanks" :(
+
+------------------------------------------------------------------------
+r3260 | dbera | 2007-01-15 11:14:20 -0500 (Mon, 15 Jan 2007) | 3 lines
+Changed paths:
+   M /trunk/beagle/beagled/KOrganizerQueryable/KOrganizerQueryable.cs
+
+Change the PRODID check to accomodate SLED10 (KDE 3.5.1).
+Patch from Stephan Binner.
+
+------------------------------------------------------------------------
+r3259 | dbera | 2007-01-14 19:06:04 -0500 (Sun, 14 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Filters/AssemblyInfo.cs
+   M /trunk/beagle/Filters/FilterKCal.cs
+   A /trunk/beagle/Filters/FilterKOrganizer.cs
+   M /trunk/beagle/Filters/Makefile.am
+   M /trunk/beagle/beagled/AssemblyInfo.cs
+   A /trunk/beagle/beagled/KOrganizerQueryable
+   A /trunk/beagle/beagled/KOrganizerQueryable/KOrganizerQueryable.cs
+   M /trunk/beagle/beagled/Makefile.am
+
+KOrganizer (events and TODOs) backend from Stephan Binner <binner@kde.org>.
+
+------------------------------------------------------------------------
+r3258 | dbera | 2007-01-14 18:58:59 -0500 (Sun, 14 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Util/ICalParser.cs
+
+Change eol-style and add korganizer mimetypes.
+
+------------------------------------------------------------------------
+r3256 | dbera | 2007-01-13 16:00:39 -0500 (Sat, 13 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/beagled/Mono.Data.SqliteClient/SqliteCommand.cs
+
+* MDS/SqliteCommand.cs: Be a little verbose what kind of applicationexception was throwed.
+
+------------------------------------------------------------------------
+r3255 | dbera | 2007-01-13 14:56:45 -0500 (Sat, 13 Jan 2007) | 4 lines
+Changed paths:
+   M /trunk/beagle/beagled/FileAttributesStore.cs
+
+Do not actually write an attribute when asked to ReadOrCreate. To me its against the semantics of the method, I would expect to give me the attr if present or return me a default attr that I can do some modification and write back. Moreover, ReadOrCreate was writing attributes with default values for mtime and attr_time. There is a possibility that the attr returned by ReadOrCreate will not written back (in FSQ), in which case an attribute will be present in the system which it should not be.
+
+This should not break anything; I left the line commented to remind myself to evaluate the situation.
+
+------------------------------------------------------------------------
+r3254 | aihana | 2007-01-13 05:26:27 -0500 (Sat, 13 Jan 2007) | 4 lines
+Changed paths:
+   M /trunk/beagle/po/ChangeLog
+   M /trunk/beagle/po/ja.po
+
+2007-01-13  Takeshi AIHANA <takeshi.aihana@gmail.com>
+
+	* ja.po: Updated Japanese translation.
+
+------------------------------------------------------------------------
+r3253 | dbera | 2007-01-12 23:28:32 -0500 (Fri, 12 Jan 2007) | 5 lines
+Changed paths:
+   M /trunk/beagle/Filters/FilterBoo.cs
+   M /trunk/beagle/Filters/FilterC.cs
+   M /trunk/beagle/Filters/FilterCSharp.cs
+   M /trunk/beagle/Filters/FilterCpp.cs
+   M /trunk/beagle/Filters/FilterFortran.cs
+   M /trunk/beagle/Filters/FilterJava.cs
+   M /trunk/beagle/Filters/FilterJs.cs
+   M /trunk/beagle/Filters/FilterLisp.cs
+   M /trunk/beagle/Filters/FilterMatlab.cs
+   M /trunk/beagle/Filters/FilterPascal.cs
+   M /trunk/beagle/Filters/FilterPerl.cs
+   M /trunk/beagle/Filters/FilterPhp.cs
+   M /trunk/beagle/Filters/FilterPython.cs
+   M /trunk/beagle/Filters/FilterRuby.cs
+   M /trunk/beagle/Filters/FilterScilab.cs
+   M /trunk/beagle/Filters/FilterShellscript.cs
+   M /trunk/beagle/Filters/FilterSource.cs
+
+FilterSource and related filter optimizations:
+* Replace hashtable by Dictionary<string, bool>
+* Instead of storing a static array, store a static Dictionary instead.
+Tested with heap-buddy that this saves quite some allocations.
+
+------------------------------------------------------------------------
+r3252 | dbera | 2007-01-12 20:05:03 -0500 (Fri, 12 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Filters/FilterRTF.cs
+
+Increase version due to the recent changes that extract an awful lot more text.
+
+------------------------------------------------------------------------
+r3251 | joeshaw | 2007-01-12 12:03:03 -0500 (Fri, 12 Jan 2007) | 4 lines
+Changed paths:
+   M /trunk/beagle/configure.in
+
+Some distros ship gmcs separately from mono, so make the AC_PATH_PROG()
+checks for mono and gmcs more strict.
+
+
+------------------------------------------------------------------------
+r3250 | joeshaw | 2007-01-12 11:27:59 -0500 (Fri, 12 Jan 2007) | 4 lines
+Changed paths:
+   M /trunk/beagle/tools/beagle-settings.desktop.in.in
+
+Set the icon in the beagle-settings.desktop file to the same one we're
+using for beagle-search.
+
+
+------------------------------------------------------------------------
+r3249 | dbera | 2007-01-11 20:02:47 -0500 (Thu, 11 Jan 2007) | 4 lines
+Changed paths:
+   M /trunk/beagle/Filters/FilterPdf.cs
+   M /trunk/beagle/beagled/Filter.cs
+
+* Filter.cs: In our filter model, first data is extracted by repeated calls to PullText() (which in turn calls Pull() that calls DoPull() ending with DoClose()). Then hotdata is extracted by repeated calls to PullHotText() - which should only return data from the hotPool; since DoClose() has already been called on the filter, DoPull() should not be called again. Maybe its time to think of killing HotText altogether - its a burden that is not being used.
+
+* FilterPdf.cs: AppendText() stores the data in a buffer. Returning the whole data in a single call of DoPull() will cause allocation of a huge buffer. Append only small data per call of DoPull().
+
+------------------------------------------------------------------------
+r3248 | dbera | 2007-01-11 18:09:59 -0500 (Thu, 11 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/beagled/Filter.cs
+
+* Filter.cs: Add methods AppendWord() and AppendLine() for filters to directly use them when adding a word or a line, respectively. Do some cleanup of the Filter.cs code in general.
+
+------------------------------------------------------------------------
+r3247 | dbera | 2007-01-11 15:54:11 -0500 (Thu, 11 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Filters/Makefile.am
+   D /trunk/beagle/Filters/external-filters.xml
+   A /trunk/beagle/Filters/external-filters.xml.sample (from /trunk/beagle/Filters/external-filters.xml:3228)
+
+Install the sample external-filters.xml file as external-filters.xml.sample; this will not overwrite any existing external-filters.xml that the user might have created. Fixes one part of #393262.
+
+------------------------------------------------------------------------
+r3244 | dbera | 2007-01-09 20:27:10 -0500 (Tue, 09 Jan 2007) | 5 lines
+Changed paths:
+   A /trunk/beagle/Filters/HACKING
+   M /trunk/beagle/HACKING
+   M /trunk/beagle/Util/PullingReader.cs
+   M /trunk/beagle/beagled/Filter.cs
+
+* PullingReader.cs,Filter.cs: Remove unused code.
+* Filter.cs: Do not reset Stream after call DoPullProperties. Filters will do them it on their own if they need it. Some filters would like to continue where it left off when DoPull is called.
+* HACKING: Add notes about handling looooooong lines.
+* Filters/HACKING: Some useful tips for filter authors. Anyone writing a new filter will obviously look here and find it. The tutorial is available on the wiki.
+
+------------------------------------------------------------------------
+r3243 | dbera | 2007-01-09 20:26:03 -0500 (Tue, 09 Jan 2007) | 5 lines
+Changed paths:
+   M /trunk/beagle/Filters/FilterRTF.cs
+   M /trunk/beagle/Filters/Makefile.am
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF (from /branches/beagle-cutting-edge-branch/Filters/System.Windows.Forms.RTF:3242)
+
+Add modified RTF filter from branch. This one is based on Mono's System.Windows.Forms.RTF class.
+Keep a local copy since SWF.RTF isnt exposed to the public. SWF.RTF is based on the legendary RTF parser of Paul DuBois. This filter is significantly better than the previous one - in terms of speed, memory and working.
+
+(svn merge does not merge commit messages - any clue how to achieve that ?)
+
+------------------------------------------------------------------------
+r3239 | joeshaw | 2007-01-09 17:16:31 -0500 (Tue, 09 Jan 2007) | 13 lines
+Changed paths:
+   M /trunk/beagle/Util/ExceptionHandlingThread.cs
+   M /trunk/beagle/beagled/QueryExecutor.cs
+   M /trunk/beagle/beagled/Server.cs
+
+Reset some variables back to null to make the GC's job easier and
+profiling more straightforward.
+
+In Util/ExceptionHandlingThread.cs, reset the method and thread
+variables.
+
+In beagled/Server.cs, reset the thread variable.  This may fix a leak,
+since thread is the thread-static CurrentThread value.
+
+In beagled/QueryExecutor.cs, reset the QueryResult (result) and Query
+(query) variables.
+
+
+------------------------------------------------------------------------
+r3238 | joeshaw | 2007-01-09 17:14:20 -0500 (Tue, 09 Jan 2007) | 5 lines
+Changed paths:
+   M /trunk/beagle/beagled/LuceneIndexingDriver.cs
+
+Fix a bug in the LuceneIndexingDriver constructors in which would pass 0
+as the minor version number when it should be -1.  This would cause
+index purges for minor versions != 0.
+
+
+------------------------------------------------------------------------
+r3237 | kkubasik | 2007-01-08 23:44:38 -0500 (Mon, 08 Jan 2007) | 3 lines
+Changed paths:
+   M /trunk
+   M /trunk/beagle/Makefile.am
+
+ r66@kjk38-laptop:  kjk38 | 2007-01-08 23:45:18 -0500
+ completely reverting rev 3236
+
+------------------------------------------------------------------------
+r3236 | kkubasik | 2007-01-08 23:28:54 -0500 (Mon, 08 Jan 2007) | 3 lines
+Changed paths:
+   M /trunk
+   M /trunk/beagle/beagled/Makefile.am
+
+ r64@kjk38-laptop:  kjk38 | 2007-01-08 23:29:28 -0500
+ revert some makefile changes
+
+------------------------------------------------------------------------
+r3234 | kkubasik | 2007-01-08 20:37:32 -0500 (Mon, 08 Jan 2007) | 3 lines
+Changed paths:
+   M /trunk
+   M /trunk/beagle/Makefile.am
+   M /trunk/beagle/beagled/Makefile.am
+
+ r62@kjk38-laptop:  kjk38 | 2007-01-08 20:35:08 -0500
+ Fix bug# 394481, 2 errors in our Makefiles which were causing fresh SVN checkouts to not build (at least for me). If this breaks anyones build, please revert and comment on bug.
+
+------------------------------------------------------------------------
+r3233 | joeshaw | 2007-01-08 14:25:25 -0500 (Mon, 08 Jan 2007) | 1 line
+Changed paths:
+   M /trunk/beagle/Util/Scheduler.cs
+
+Make a few more messages logged as Always
+------------------------------------------------------------------------
+r3232 | joeshaw | 2007-01-08 14:25:04 -0500 (Mon, 08 Jan 2007) | 1 line
+Changed paths:
+   M /trunk/beagle/beagled/BeagleDaemon.cs
+   M /trunk/beagle/beagled/IndexHelper/IndexHelper.cs
+
+Make a few more messages logged as Always
+------------------------------------------------------------------------
+r3231 | joeshaw | 2007-01-08 13:56:29 -0500 (Mon, 08 Jan 2007) | 4 lines
+Changed paths:
+   M /trunk/beagle/Util/Log.cs
+   M /trunk/beagle/beagled/BeagleDaemon.cs
+   M /trunk/beagle/beagled/Shutdown.cs
+
+Add a new debugging level: Always, and have certain startup/shutdown
+informational messages use it.
+
+
+------------------------------------------------------------------------
+r3230 | joeshaw | 2007-01-08 13:19:38 -0500 (Mon, 08 Jan 2007) | 1 line
+Changed paths:
+   M /trunk/beagle/search/TileCategory.cs
+
+Remove an errant comment from the old TileCategory layout code
+------------------------------------------------------------------------
+r3229 | joeshaw | 2007-01-08 13:18:27 -0500 (Mon, 08 Jan 2007) | 15 lines
+Changed paths:
+   M /trunk/beagle/search/ConversationCategory.cs
+   M /trunk/beagle/search/TileCategory.cs
+   M /trunk/beagle/search/Tiles/DetailsPane.cs
+   M /trunk/beagle/search/Tiles/Image.cs
+
+Some rendering fixes for beagle-search.
+
+- Tiles/Image: Display the tags and comments on the image, if any, in
+  the details pane.
+
+- Right-align the left column of labels, and top-align all the labels
+  and the icon.  This looks a lot better for most documents, but
+  especially ones that have smaller images.  Separate the snippet a
+  little better, and get rid of the odd indentation.
+
+- Don't indent the categories in the content view anymore.  This just
+  seems like a waste of space.  Make the layout code in both the
+  categories more clear with some comments.
+
+
+------------------------------------------------------------------------
+r3228 | joeshaw | 2007-01-08 11:06:45 -0500 (Mon, 08 Jan 2007) | 4 lines
+Changed paths:
+   M /trunk/beagle/beagled/BeagleDaemon.cs
+
+* beagled/BeagleDaemon.cs: Print out the sqlite major version we're
+using at startup.
+
+
+------------------------------------------------------------------------
+r3227 | dbera | 2007-01-06 21:03:43 -0500 (Sat, 06 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Filters/FilterRTF.cs
+   M /trunk/beagle/Filters/Makefile.am
+   D /trunk/beagle/Filters/System.Windows.Forms.RTF
+
+Oho. Committed the rtf filter stuff in wrong branch. Move it away from trunk.
+
+------------------------------------------------------------------------
+r3225 | joeshaw | 2007-01-05 18:56:44 -0500 (Fri, 05 Jan 2007) | 1 line
+Changed paths:
+   M /trunk/beagle/search/Tiles/Contact.cs
+
+grr, another build breaker in Tiles/Contact.  Not my day
+------------------------------------------------------------------------
+r3224 | dbera | 2007-01-05 16:21:33 -0500 (Fri, 05 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/beagled/KMailQueryable/KMailQueryable.cs
+
+KMailQueryable: Do not check if .index files exist for 0-size mbox files. Fixes #391647.
+
+------------------------------------------------------------------------
+r3223 | joeshaw | 2007-01-05 16:04:20 -0500 (Fri, 05 Jan 2007) | 1 line
+Changed paths:
+   M /trunk/beagle/beagled/EvolutionDataServerQueryable/BookContainer.cs
+
+Fix a typo which broke the build in EvolutionDataServerQueryable/BookContainer.cs
+------------------------------------------------------------------------
+r3222 | dbera | 2007-01-05 00:38:52 -0500 (Fri, 05 Jan 2007) | 3 lines
+Changed paths:
+   M /trunk/beagle/Filters/FilterRTF.cs
+   M /trunk/beagle/Filters/Makefile.am
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/Charcode.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/Charset.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/CharsetFlags.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/CharsetType.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/ClassDelegate.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/Color.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/DestinationDelegate.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/Font.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/KeyStruct.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/KeysInit.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/Major.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/Minor.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/README
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/RTF.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/RTFException.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/StandardCharCode.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/StandardCharName.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/Style.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/StyleElement.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/StyleType.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/TextMap.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/TokenClass.cs
+   A /trunk/beagle/Filters/System.Windows.Forms.RTF/test.cs
+
+Import RTF Parser from System.Windows.Forms.RTF. Use a local copy (*sigh*) since SWF.RTF is not exposed as a public API.
+The modified RTF Filter will follow next. And trust me, it is far less buggy and 4 times faster even on a 10 line rtf file.
+
+------------------------------------------------------------------------
+r3221 | dbera | 2007-01-04 23:38:49 -0500 (Thu, 04 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Filters/FilterRTF.cs
+
+Fix a file descriptor leak in RTF filter. BTW, the RTF filter needs a major overhaul.
+
+------------------------------------------------------------------------
+r3220 | dbera | 2007-01-04 23:29:34 -0500 (Thu, 04 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/beagled/KAddressBookQueryable/KabcQueryable.cs
+
+Add fixme:client property to KAddressBook indexables.
+
+------------------------------------------------------------------------
+r3219 | joeshaw | 2007-01-04 18:24:15 -0500 (Thu, 04 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/beagled/ExtractContent.cs
+
+Print how long it takes to get a filter and extract the text in
+beagle-extract-content
+------------------------------------------------------------------------
+r3218 | joeshaw | 2007-01-04 14:46:19 -0500 (Thu, 04 Jan 2007) | 3 lines
+Changed paths:
+   M /trunk/beagle/search/Tiles/Contact.cs
+
+KAddressbook doesn't set fixme:client for contacts either, so don't
+unconditionally try to open null clients in evolution.  Check the URI
+scheme first, and if nothing is supported, print an error about it.
+------------------------------------------------------------------------
+r3217 | joeshaw | 2007-01-04 14:28:42 -0500 (Thu, 04 Jan 2007) | 3 lines
+Changed paths:
+   M /trunk/beagle/beagled/EvolutionDataServerQueryable/BookContainer.cs
+   M /trunk/beagle/search/Tiles/Contact.cs
+
+Back out kkubasik's last commit, and interpret fixme:client being null as
+an evolution contact.  Add fixme:client in the EDS addressbook backend.
+Fixes bgo #392718
+------------------------------------------------------------------------
+r3216 | kkubasik | 2007-01-04 10:34:55 -0500 (Thu, 04 Jan 2007) | 1 line
+Changed paths:
+   M /trunk/beagle/search/Tiles/Contact.cs
+
+Fix a small and odd crasher in the contacts tile, however its odd nature should probably be looked into
+------------------------------------------------------------------------
+r3215 | lkanter | 2007-01-04 07:39:44 -0500 (Thu, 04 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/po/ChangeLog
+   M /trunk/beagle/po/ru.po
+
+Updated Russian translation
+
+------------------------------------------------------------------------
+r3214 | dbera | 2007-01-03 22:31:00 -0500 (Wed, 03 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Util/SystemInformation.cs
+   M /trunk/beagle/beagled/BeagleDaemon.cs
+   M /trunk/beagle/beagled/IndexHelper/IndexHelper.cs
+
+Cleanup the last commit. Initialize xss only from BeagleDaemon.
+
+------------------------------------------------------------------------
+r3213 | dbera | 2007-01-03 22:14:08 -0500 (Wed, 03 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/Util/SystemInformation.cs
+   M /trunk/beagle/beagled/BeagleDaemon.cs
+
+BeagleDaemon monitors screensaver but IndexHelper does not. Missed this in rev 2720.
+
+------------------------------------------------------------------------
+r3212 | joeshaw | 2007-01-03 18:24:42 -0500 (Wed, 03 Jan 2007) | 7 lines
+Changed paths:
+   M /trunk/beagle/beagled/DumpIndex.cs
+   M /trunk/beagle/beagled/LuceneCommon.cs
+   M /trunk/beagle/beagled/Makefile.am
+
+Make IndexName a public property in LuceneCommon; add a new
+GetHitsForUris() method to LuceneCommon.
+
+Do a bunch of big changes to beagle-dump-index, and now install it by
+default.  We'll use it as a diagnostic tool in future releases.  It
+makes use of the new GetHitsForUris() method.
+
+------------------------------------------------------------------------
+r3209 | kkubasik | 2007-01-03 13:13:08 -0500 (Wed, 03 Jan 2007) | 3 lines
+Changed paths:
+   M /trunk/beagle
+   M /trunk/beagle/Filters/FilterMan.cs
+
+ r86@kjk38-laptop:  kjk38 | 2007-01-03 13:07:28 -0500
+ Strip out some specific and more common troff macros in the troff filter
+
+------------------------------------------------------------------------
+r3208 | kkubasik | 2007-01-03 09:30:30 -0500 (Wed, 03 Jan 2007) | 3 lines
+Changed paths:
+   M /trunk/beagle
+   M /trunk/beagle/Filters/external-filters.xml
+
+ r31@kjk38-laptop:  kjk38 | 2007-01-03 09:30:21 -0500
+ Added more sample filters from the wiki. Should make it easier to reference the file as a resource.
+
+------------------------------------------------------------------------
+r3207 | jfriedl | 2007-01-03 05:33:21 -0500 (Wed, 03 Jan 2007) | 5 lines
+Changed paths:
+   M /trunk/beagle/po/ChangeLog
+   M /trunk/beagle/po/cs.po
+
+2006-01-03  Jakub Friedl  <jfriedl@suse.cz>
+
+  * cs.po: Updated Czech Translation.
+
+
+------------------------------------------------------------------------
+r3206 | dbera | 2007-01-02 21:03:40 -0500 (Tue, 02 Jan 2007) | 2 lines
+Changed paths:
+   A /trunk/beagle/screenshots/2007-01-02-beagle-web-page-evolves.png
+
+Update with the latest screenshot :-). Good nite.
+
+------------------------------------------------------------------------
+r3205 | dbera | 2007-01-02 20:51:07 -0500 (Tue, 02 Jan 2007) | 4 lines
+Changed paths:
+   D /trunk/attic/GoogleBackend
+   A /trunk/attic/beagled
+   A /trunk/attic/beagled/GoogleBackend (from /trunk/attic/GoogleBackend:3204)
+   A /trunk/attic/beagled/LauncherQueryable (from /trunk/beagle/beagled/LauncherQueryable:3204)
+   A /trunk/attic/beagled/MonodocQueryable (from /trunk/beagle/beagled/MonodocQueryable:3204)
+   A /trunk/attic/beagled/MozillaQueryable (from /trunk/beagle/beagled/MozillaQueryable:3204)
+   A /trunk/attic/beagled/MozillaQueryable/Mozilla.cs (from /trunk/beagle/Util/Mozilla.cs:3204)
+   M /trunk/beagle/Util/Makefile.am
+   D /trunk/beagle/Util/Mozilla.cs
+   D /trunk/beagle/beagled/LauncherQueryable
+   D /trunk/beagle/beagled/MonodocQueryable
+   D /trunk/beagle/beagled/MozillaQueryable
+
+Move some unused backend files to attic:
+* MozillaQueryable - unfinished implementation, ThunderbirdQueryable to be used now
+* MonodocQueryable, LauncherQueryable - unused, deprecated in favour of system wide indexes
+
+------------------------------------------------------------------------
+r3202 | dbera | 2007-01-02 18:44:34 -0500 (Tue, 02 Jan 2007) | 2 lines
+Changed paths:
+   M /trunk/beagle/AUTHORS
+   M /trunk/beagle/beagled/Filter.cs
+
+SVN seems to be stable now. Let me begin by adding Pierre's name to the author list and some obligatory .net-2.0 improvements.
+
+------------------------------------------------------------------------
+r3201 | joeshaw | 2007-01-02 18:06:38 -0500 (Tue, 02 Jan 2007) | 4 lines
+Changed paths:
+   M /trunk/beagle/po/ChangeLog
+   M /trunk/beagle/po/POTFILES.in
+   M /trunk/beagle/po/POTFILES.skip
+
+2007-01-02  Joe Shaw  <joeshaw@novell.com>
+
+	* POTFILES.in, POTFILES.skip: Remove files that are no longer
+	a part of the tree.
+------------------------------------------------------------------------
+r3195 | joeshaw | 2007-01-02 15:08:54 -0500 (Tue, 02 Jan 2007) | 7 lines
+Changed paths:
+   M /trunk/beagle/Util/Inotify.cs
+   M /trunk/beagle/glue/inotify-glue.c
+
+Rework both sides of the inotify glue a little bit.  No longer print
+anything out from the C side, since those messages don't make it into
+the Beagle logs, and that's incredibly useful information.  Instead
+return the negative errno.  On the managed side, handle the errno and
+display useful messages.
+
+
+------------------------------------------------------------------------
+r3194 | joeshaw | 2007-01-02 14:24:19 -0500 (Tue, 02 Jan 2007) | 1 line
+Changed paths:
+   M /trunk/beagle/Util/SystemInformation.cs
+
+I will compile before I commit
+------------------------------------------------------------------------
+r3192 | joeshaw | 2007-01-02 11:52:41 -0500 (Tue, 02 Jan 2007) | 3 lines
+Changed paths:
+   M /trunk/beagle/Util/SystemInformation.cs
+
+Add /proc/acpi/ac_adapter/ACAD/state to the list of checked AC state
+filenames in SystemInformation.cs.  bgo #391218
+
+------------------------------------------------------------------------
+r3190 | joeshaw | 2006-12-31 14:24:06 -0500 (Sun, 31 Dec 2006) | 1 line
+Changed paths:
+   M /trunk/attic/WebServices/ExternalAccessFilter.cs
+   M /trunk/attic/WebServices/NetBeagleQueryable.cs
+   M /trunk/attic/WebServices/WebServer/InitialWorkerRequest.cs
+   M /trunk/attic/WebServices/search.asmx
+   M /trunk/attic/WebServices/search.aspx
+   M /trunk/beagle/Filters/FilterScilab.cs
+   M /trunk/beagle/Util/ICalParser.cs
+   M /trunk/beagle/images/emblem-blog.png
+   M /trunk/beagle/images/icon-blog.png
+   M /trunk/beagle/mozilla-extension/content/jslib/debug/debug.js
+   M /trunk/beagle/mozilla-extension/content/jslib/install/uninstall.css
+   M /trunk/beagle/mozilla-extension/content/jslib/install/uninstall.js
+   M /trunk/beagle/mozilla-extension/content/jslib/install/uninstall.xul
+   M /trunk/beagle/mozilla-extension/content/jslib/io/dir.js
+   M /trunk/beagle/mozilla-extension/content/jslib/io/dirUtils.js
+   M /trunk/beagle/mozilla-extension/content/jslib/io/file.js
+   M /trunk/beagle/mozilla-extension/content/jslib/io/fileUtils.js
+   M /trunk/beagle/mozilla-extension/content/jslib/io/filesystem.js
+   M /trunk/beagle/mozilla-extension/content/jslib/jslib.js
+   M /trunk/beagle/mozilla-extension/content/jslib/modules.js
+   M /trunk/beagle/mozilla-extension/content/jslib/xul/commonWindow.js
+   M /trunk/beagle/search/beagle-search.in
+
+Remove executable bit from non-executable files
+------------------------------------------------------------------------
+r3189 | joeshaw | 2006-12-30 16:10:24 -0500 (Sat, 30 Dec 2006) | 7 lines
+Changed paths:
+   A /trunk/attic/GoogleBackend
+   A /trunk/attic/GoogleBackend/GoogleDriver.cs (from /trunk/beagle/beagled/GoogleDriver.cs:3188)
+   A /trunk/attic/GoogleBackend/GoogleSearch.wsdl (from /trunk/beagle/Util/GoogleSearch.wsdl:3188)
+   D /trunk/beagle/Util/GoogleSearch.wsdl
+   M /trunk/beagle/Util/Makefile.am
+   D /trunk/beagle/beagled/GoogleDriver.cs
+   M /trunk/beagle/beagled/Makefile.am
+   M /trunk/beagle/configure.in
+
+Move the Google backend into the attic, since Google has deprecated the
+API and is no longer handing out keys.
+
+Make the requisite changes to the build system (configure.in,
+Util/Makefile.am, beagled/Makefile.am) to remove support for it.
+
+
+------------------------------------------------------------------------
+r3188 | joeshaw | 2006-12-30 13:24:13 -0500 (Sat, 30 Dec 2006) | 1 line
+Changed paths:
+   R /trunk/beagle/ChangeLog
+   A /trunk/beagle/ChangeLog.cvs (from /trunk/beagle/ChangeLog:3185)
+   M /trunk/beagle/HACKING
+
+Move the old ChangeLog out of the way, generate the new one from svn log
+------------------------------------------------------------------------
+r3187 | joeshaw | 2006-12-30 12:53:54 -0500 (Sat, 30 Dec 2006) | 1 line
+Changed paths:
+   M /trunk/beagle/beagled/EvolutionBackendsAssemblyInfo.cs
+   D /trunk/beagle/beagled/EvolutionMailQueryable/EvolutionMailDriver.cs
+   M /trunk/beagle/beagled/EvolutionMailQueryable/EvolutionMailIndexableGenerator.cs
+   A /trunk/beagle/beagled/EvolutionMailQueryable/EvolutionMailQueryable.cs (from /trunk/beagle/beagled/EvolutionMailQueryable/EvolutionMailDriver.cs:3186)
+   M /trunk/beagle/beagled/EvolutionMailQueryable/EvolutionSummaryTracker.cs
+   M /trunk/beagle/beagled/EvolutionMailQueryable/GConfThreadHelper.cs
+   M /trunk/beagle/beagled/EvolutionMailQueryable/MailCrawler.cs
+   M /trunk/beagle/beagled/Makefile.am
+
+Rename EvolutionMailDriver to EvolutionMailQueryable in the Makefiles and code
+------------------------------------------------------------------------
+r3186 | joeshaw | 2006-12-30 12:49:14 -0500 (Sat, 30 Dec 2006) | 1 line
+Changed paths:
+   D /trunk/beagle/beagled/EvolutionMailDriver
+   A /trunk/beagle/beagled/EvolutionMailQueryable (from /trunk/beagle/beagled/EvolutionMailDriver:3185)
+
+Rename EvolutionMailDriver to EvolutionMailQueryable, a badly needed change
+------------------------------------------------------------------------
+r3184 | joeshaw | 2006-12-30 12:44:34 -0500 (Sat, 30 Dec 2006) | 1 line
+Changed paths:
+   M /trunk/beagle/README
+
+Update README
+------------------------------------------------------------------------
+r3183 | zygis | 2006-12-30 12:24:15 -0500 (Sat, 30 Dec 2006) | 4 lines
+Changed paths:
+   M /trunk/beagle/po/ChangeLog
+   M /trunk/beagle/po/lt.po
+
+2006-12-30  Žygimantas Beručka  <zygis@gnome.org>
+
+        * lt.po: Updated Lithuanian translation.
+
+------------------------------------------------------------------------
+r3182 | joeshaw | 2006-12-30 11:49:35 -0500 (Sat, 30 Dec 2006) | 1 line
+Changed paths:
+   A /trunk/attic/WebServices/NetworkHit.cs (from /trunk/beagle/BeagleClient/NetworkHit.cs:3181)
+   D /trunk/beagle/BeagleClient/NetworkHit.cs
+
+Move more webservices code into the attic
+------------------------------------------------------------------------
+r3181 | joeshaw | 2006-12-30 11:48:31 -0500 (Sat, 30 Dec 2006) | 1 line
+Changed paths:
+   A /trunk/attic/WebServices (from /trunk/beagle/beagled/WebServices:3180)
+   D /trunk/beagle/beagled/WebServices
+
+Move unused WebServices directory into the attic
+------------------------------------------------------------------------
+r3180 | joeshaw | 2006-12-30 11:40:38 -0500 (Sat, 30 Dec 2006) | 1 line
+Changed paths:
+   M /trunk/beagle/ContactViewer
+   M /trunk/beagle/beagled
+   M /trunk/beagle/po
+   M /trunk/beagle/search
+   M /trunk/beagle/tools
+   M /trunk/beagle/wrappers/python
+
+stfu svn
+------------------------------------------------------------------------
+r3179 | joeshaw | 2006-12-30 11:22:45 -0500 (Sat, 30 Dec 2006) | 1 line
+Changed paths:
+   D /trunk/beagle/indexer
+
+Remove empty indexer directory
+------------------------------------------------------------------------
+r3178 | joeshaw | 2006-12-30 11:18:49 -0500 (Sat, 30 Dec 2006) | 1 line
+Changed paths:
+   A /trunk/attic/templates (from /trunk/beagle/templates:3177)
+   D /trunk/beagle/templates
+
+Move unused templates directory into the attic
+------------------------------------------------------------------------
+r3177 | joeshaw | 2006-12-30 11:18:02 -0500 (Sat, 30 Dec 2006) | 1 line
+Changed paths:
+   A /trunk/attic/searchomatic (from /trunk/beagle/searchomatic:3176)
+   D /trunk/beagle/searchomatic
+
+Move unused searchomatic directory into the attic
+------------------------------------------------------------------------
+r3176 | joeshaw | 2006-12-30 11:15:52 -0500 (Sat, 30 Dec 2006) | 1 line
+Changed paths:
+   A /trunk/attic/chooser-fu (from /trunk/beagle/chooser-fu:3175)
+   D /trunk/beagle/chooser-fu
+
+Move unused chooser-fu directory into the attic
+------------------------------------------------------------------------
+r3175 | joeshaw | 2006-12-30 11:15:09 -0500 (Sat, 30 Dec 2006) | 1 line
+Changed paths:
+   A /trunk/attic/Tiles (from /trunk/beagle/Tiles:3174)
+   D /trunk/beagle/Tiles
+
+Move unused Tiles directory into the attic
+------------------------------------------------------------------------
+r3174 | joeshaw | 2006-12-30 11:14:15 -0500 (Sat, 30 Dec 2006) | 1 line
+Changed paths:
+   A /trunk/attic/Renderers (from /trunk/beagle/Renderers:3173)
+   D /trunk/beagle/Renderers
+
+Move unused Renderers directory into the attic (boy, i wish i could do all of these in one shot...
+------------------------------------------------------------------------
+r3173 | joeshaw | 2006-12-30 11:11:25 -0500 (Sat, 30 Dec 2006) | 3 lines
+Changed paths:
+   A /trunk/attic/Best (from /trunk/beagle/Best:3172)
+   D /trunk/beagle/Best
+
+Move the unused Best directory into the attic
+
+
+------------------------------------------------------------------------
+r3172 | joeshaw | 2006-12-30 11:08:20 -0500 (Sat, 30 Dec 2006) | 1 line
+Changed paths:
+   D /trunk/beagle/.cvsignore
+   D /trunk/beagle/BeagleClient/.cvsignore
+   D /trunk/beagle/Best/.cvsignore
+   D /trunk/beagle/Best/TrayIcon/.cvsignore
+   D /trunk/beagle/Best/TrayIcon/libtrayicon/.cvsignore
+   D /trunk/beagle/ContactViewer/.cvsignore
+   D /trunk/beagle/Filters/.cvsignore
+   D /trunk/beagle/ImLogViewer/.cvsignore
+   D /trunk/beagle/Renderers/.cvsignore
+   D /trunk/beagle/Tiles/.cvsignore
+   D /trunk/beagle/Util/.cvsignore
+   D /trunk/beagle/beagled/.cvsignore
+   D /trunk/beagle/beagled/Lucene.Net/.cvsignore
+   D /trunk/beagle/beagled/ThunderbirdQueryable/.cvsignore
+   D /trunk/beagle/beagled/WebServices/.cvsignore
+   D /trunk/beagle/beagled/WebServices/WebServer/.cvsignore
+   D /trunk/beagle/bludgeon/.cvsignore
+   D /trunk/beagle/chooser-fu/.cvsignore
+   D /trunk/beagle/epiphany-extension/.cvsignore
+   D /trunk/beagle/glue/.cvsignore
+   D /trunk/beagle/images/.cvsignore
+   D /trunk/beagle/indexer/.cvsignore
+   D /trunk/beagle/libbeagle/.cvsignore
+   D /trunk/beagle/libbeagle/beagle/.cvsignore
+   D /trunk/beagle/libbeagle/docs/.cvsignore
+   D /trunk/beagle/libbeagle/docs/reference/.cvsignore
+   D /trunk/beagle/libbeagle/examples/.cvsignore
+   D /trunk/beagle/mozilla-extension/.cvsignore
+   D /trunk/beagle/po/.cvsignore
+   D /trunk/beagle/search/.cvsignore
+   D /trunk/beagle/searchomatic/.cvsignore
+   D /trunk/beagle/templates/.cvsignore
+   D /trunk/beagle/tools/.cvsignore
+   D /trunk/beagle/wrappers/.cvsignore
+   D /trunk/beagle/wrappers/python/.cvsignore
+
+Remove .cvsignore files
+------------------------------------------------------------------------
+r3170 | joeshaw | 2006-12-30 11:03:51 -0500 (Sat, 30 Dec 2006) | 4 lines
+Changed paths:
+   D /temp
+   A /trunk/beagle (from /temp:3169)
+
+Move the code back in as trunk/beagle, since we'll be moving dead code
+into trunk/attic
+
+
+------------------------------------------------------------------------
+r3168 | joeshaw | 2006-12-30 11:02:09 -0500 (Sat, 30 Dec 2006) | 2 lines
+Changed paths:
+   A /temp (from /trunk:3167)
+   D /trunk
+
+Temporarily move the trunk
+
+------------------------------------------------------------------------
+r3167 | dnylande | 2006-12-28 01:51:25 -0500 (Thu, 28 Dec 2006) | 4 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/sv.po
+
+2006-12-28  Daniel Nylander <po@danielnylander.se>
+
+	* sv.po: Updated Swedish translation.
+
+------------------------------------------------------------------------
+r3166 | adamw | 2006-12-27 15:10:58 -0500 (Wed, 27 Dec 2006) | 5 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/en_CA.po
+
+
+2006-12-27  Adam Weinberger  <adamw@gnome.org>
+
+	* en_CA.po: Updated Canadian English translation.
+
+------------------------------------------------------------------------
+r3165 | kmaraas | 2006-12-27 07:54:24 -0500 (Wed, 27 Dec 2006) | 5 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/POTFILES.in
+   M /trunk/po/nb.po
+
+2006-12-27  Kjartan Maraas  <kmaraas@gnome.org>
+
+	* POTFILES.in: Add missing files.
+	* nb.po: Updated Norwegian bokmÃ¥l translation.
+
+------------------------------------------------------------------------
+r3164 | danilo | 2006-12-26 11:02:35 -0500 (Tue, 26 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/sr.po
+   M /trunk/po/sr@Latn.po
+
+Updated Serbian translation.
+
+------------------------------------------------------------------------
+r3162 | jmas | 2006-12-21 18:04:14 -0500 (Thu, 21 Dec 2006) | 4 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/ca.po
+
+2006-12-21  Jordi Mas <jmas@softcatala.org>
+
+	* ca.po: Updated Catalan translation.
+
+------------------------------------------------------------------------
+r3157 | joeshaw | 2006-12-20 14:48:31 -0500 (Wed, 20 Dec 2006) | 5 lines
+Changed paths:
+   M /trunk/beagled/EvolutionDataServerQueryable/EvolutionDataServerQueryable.cs
+   M /trunk/beagled/EvolutionMailDriver/EvolutionSummaryTracker.cs
+
+Fix a problem of incompatible evolution-sharp libraries at runtime, by calling
+into the glue library and checking for DllNotFoundExceptions.  Also remove
+some dead, warning-generating code in other parts of the evo backends.
+Mostly a fix for bgo #386746
+
+------------------------------------------------------------------------
+r3156 | joeshaw | 2006-12-20 11:19:31 -0500 (Wed, 20 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/HACKING
+
+Add a best practice about String.IsNullOrEmpty(), since we're on .NET 2.0 now
+
+------------------------------------------------------------------------
+r3155 | joeshaw | 2006-12-19 18:20:30 -0500 (Tue, 19 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/configure.in
+
+Bump required mono version to 1.1.18
+
+------------------------------------------------------------------------
+r3154 | joeshaw | 2006-12-19 18:18:56 -0500 (Tue, 19 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/beagled/LuceneCommon.cs
+
+Remove some debug logging
+
+------------------------------------------------------------------------
+r3153 | joeshaw | 2006-12-19 18:15:43 -0500 (Tue, 19 Dec 2006) | 7 lines
+Changed paths:
+   M /trunk/BeagleClient/Versioned.cs
+   M /trunk/Util/DateTimeUtil.cs
+   M /trunk/Util/Makefile.am
+   M /trunk/Util/StringFu.cs
+   M /trunk/beagled/BeagleDaemon.cs
+   M /trunk/beagled/BuildIndex.cs
+   M /trunk/beagled/LuceneCommon.cs
+   M /trunk/beagled/LuceneIndexingDriver.cs
+   M /trunk/beagled/LuceneQueryingDriver.cs
+   M /trunk/beagled/Makefile.am
+   M /trunk/beagled/RemoteIndexer.cs
+   M /trunk/bludgeon/Daemon.cs
+   M /trunk/configure.in
+
+Beagle now depends on gmcs and uses the .NET 2.0 profile, hooray!
+
+Fix up the DateTime code so that we can avoid the nasty hacks Bera had to
+deal with.  Make explicit the reference to Beagle.Util.Stopwatch to avoid
+ambiguity with the .NET 2.0 class of same name.  Remove a little unused
+code.
+
+------------------------------------------------------------------------
+r3152 | joeshaw | 2006-12-19 16:48:17 -0500 (Tue, 19 Dec 2006) | 3 lines
+Changed paths:
+   M /trunk/Util/camel.cs
+
+Oops, fix DateTime issue in camel.cs that I temporarily changed and
+accidentally committed
+
+------------------------------------------------------------------------
+r3151 | joeshaw | 2006-12-19 16:09:33 -0500 (Tue, 19 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/Util/ImBuddy.cs
+
+A little cleanup of the IM buddy code
+
+------------------------------------------------------------------------
+r3150 | kelemeng | 2006-12-16 13:02:54 -0500 (Sat, 16 Dec 2006) | 4 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/hu.po
+
+2006-12-16  Gabor Kelemen  <kelemeng@gnome.hu>
+
+	* hu.po: Translation updated.
+
+------------------------------------------------------------------------
+r3144 | dbera | 2006-12-15 23:04:39 -0500 (Fri, 15 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/Filters/entagged-sharp/Tag.cs
+
+Do not add duplicate tags. At least makes sense in beagle.
+
+------------------------------------------------------------------------
+r3143 | dbera | 2006-12-15 20:56:41 -0500 (Fri, 15 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/Filters/FilterHtml.cs
+
+Catch exception while detecting encoding.
+
+------------------------------------------------------------------------
+r3142 | dbera | 2006-12-15 20:24:05 -0500 (Fri, 15 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/beagled/Filter.cs
+
+Cleanup.
+
+------------------------------------------------------------------------
+r3141 | dbera | 2006-12-15 20:07:53 -0500 (Fri, 15 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/Filters/FilterMusic.cs
+   M /trunk/Filters/entagged-sharp/AudioFile.cs
+   M /trunk/Filters/entagged-sharp/Flac/Util/FlacTagWriter.cs
+   M /trunk/Filters/entagged-sharp/Mp3/Util/Id3v24TagReader.cs
+   M /trunk/Filters/entagged-sharp/Ogg/Util/VorbisTagWriter.cs
+   M /trunk/Filters/entagged-sharp/Tracker/TrackerFileReader.cs
+   M /trunk/Filters/entagged-sharp/Util/AudioFileReader.cs
+   M /trunk/Filters/entagged-sharp/Util/Utils.cs
+
+Catch exception at source in entagged#. Its not maintained so patch it directly.
+
+------------------------------------------------------------------------
+r3140 | dbera | 2006-12-15 19:44:07 -0500 (Fri, 15 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/Filters/FilterArchive.cs
+   M /trunk/Filters/FilterChm.cs
+   M /trunk/Filters/FilterDesktop.cs
+   M /trunk/Filters/FilterDocbook.cs
+   M /trunk/Filters/FilterHtml.cs
+   M /trunk/Filters/FilterImLog.cs
+   M /trunk/Filters/FilterImage.cs
+   M /trunk/Filters/FilterJpeg.cs
+   M /trunk/Filters/FilterKAddressBook.cs
+   M /trunk/Filters/FilterKCal.cs
+   M /trunk/Filters/FilterMPlayerVideo.cs
+   M /trunk/Filters/FilterOle.cs
+   M /trunk/Filters/FilterOpenOffice.cs
+   M /trunk/Filters/FilterRPM.cs
+   M /trunk/Filters/FilterRTF.cs
+   M /trunk/Filters/FilterScribus.cs
+   M /trunk/Filters/FilterSource.cs
+   M /trunk/Filters/FilterSvg.cs
+   M /trunk/Filters/FilterTexi.cs
+
+Code cleanup. Use more string.empty and remove unnecessary checks.
+
+------------------------------------------------------------------------
+r3139 | joeshaw | 2006-12-15 17:38:00 -0500 (Fri, 15 Dec 2006) | 10 lines
+Changed paths:
+   M /trunk/beagled/EvolutionMailDriver/EvolutionMailIndexableGenerator.cs
+   A /trunk/beagled/EvolutionMailDriver/EvolutionSummaryTracker.cs
+   M /trunk/beagled/LuceneQueryable.cs
+   M /trunk/beagled/Makefile.am
+   M /trunk/beagled/Mono.Data.SqliteClient/SqliteCommand.cs
+
+Rather than serializing a Hashtable to disk to track changes in Evolution
+mail summaries, which is incredibly memory inefficient for large numbers
+of folders or messages, use a simple sqlite database instead.  This fixes
+one of the biggest and longest standing memory hotspots in beagle.
+
+Also add some code to our SqliteClient fork to rethrow exceptions from
+sqlite_step() with the error message from sqlite_finalize().  This helped
+me track down a problem in which I wasn't releasing a client and was
+getting "database locked" errors.
+
+------------------------------------------------------------------------
+r3138 | joeshaw | 2006-12-15 13:15:43 -0500 (Fri, 15 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/search/Search.cs
+
+Remove the number of subtracted hits from the total number of hits
+
+------------------------------------------------------------------------
+r3137 | joeshaw | 2006-12-15 12:46:25 -0500 (Fri, 15 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/Filters/FilterMusic.cs
+
+Catch FormatException for the year property and ignore it.  bgo #386070
+
+------------------------------------------------------------------------
+r3129 | joeshaw | 2006-12-14 18:39:26 -0500 (Thu, 14 Dec 2006) | 4 lines
+Changed paths:
+   M /trunk/Util/camel.cs
+
+If we get an EOF trying to read a uint or a time value, throw an exception.
+Also fix a warning while we're in here, and print out additional info when
+we build standalone
+
+------------------------------------------------------------------------
+r3128 | jovanna | 2006-12-14 17:54:02 -0500 (Thu, 14 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/mk.po
+
+2006-12-14 Jovan Naumovski <jovanna@cvs.gnome.org> *mk.po: Updated Macedonian translation
+
+------------------------------------------------------------------------
+r3127 | joeshaw | 2006-12-14 17:17:30 -0500 (Thu, 14 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/search/Tiles/WidgetFu.cs
+
+Make labels in the details pane selectable
+
+------------------------------------------------------------------------
+r3126 | joeshaw | 2006-12-14 16:58:23 -0500 (Thu, 14 Dec 2006) | 3 lines
+Changed paths:
+   M /trunk/search/Tiles/Application.cs
+
+If the command-line lockdown key is set, don't display applications in the
+TerminalEmulator group
+
+------------------------------------------------------------------------
+r3125 | joeshaw | 2006-12-14 16:02:40 -0500 (Thu, 14 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/configure.in
+
+Don't call GTK_DOC_CHECK conditionally, it breaks the --disable-libbeagle case
+
+------------------------------------------------------------------------
+r3123 | joeshaw | 2006-12-14 13:36:19 -0500 (Thu, 14 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/NEWS
+   M /trunk/configure.in
+
+Update for 0.2.14 release
+
+------------------------------------------------------------------------
+r3122 | joeshaw | 2006-12-14 13:30:41 -0500 (Thu, 14 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/libbeagle/beagle/beagle-indexing-status-response.h
+   M /trunk/wrappers/python/beagle.defs
+
+Fix a typo in libbeagle that was causing the python bindings to break
+
+------------------------------------------------------------------------
+r3121 | joeshaw | 2006-12-14 11:36:26 -0500 (Thu, 14 Dec 2006) | 3 lines
+Changed paths:
+   M /trunk/configure.in
+
+Only run GTK_DOC_CHECK() if libbeagle is enabled.  Print whether they're built
+in the configure spew
+
+------------------------------------------------------------------------
+r3120 | kkubasik | 2006-12-14 09:34:20 -0500 (Thu, 14 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/search/Tiles/WebHistory.cs
+
+Use an escaped Uri for Gnome.Url.Show()
+
+------------------------------------------------------------------------
+r3119 | kkubasik | 2006-12-14 03:32:44 -0500 (Thu, 14 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/search/Tiles/WebHistory.cs
+
+Simple fix to bgo 383787 , WebHistory tiles were calling OpenFromMime as opposed to the more sensable OpenFromUri, which they now do.
+
+------------------------------------------------------------------------
+r3118 | joeshaw | 2006-12-13 16:51:53 -0500 (Wed, 13 Dec 2006) | 3 lines
+Changed paths:
+   M /trunk/tools/Settings.cs
+
+Don't set Hidden=true when disabling autostart, because gnome-session skips
+over the file entirely.  This is a gnome-session bug
+
+------------------------------------------------------------------------
+r3117 | joeshaw | 2006-12-13 16:17:22 -0500 (Wed, 13 Dec 2006) | 6 lines
+Changed paths:
+   M /trunk/Util/StringFu.cs
+   M /trunk/beagled/BeagleDaemon.cs
+   M /trunk/beagled/IndexHelper/IndexHelper.cs
+   M /trunk/beagled/IndexHelper/RemoteIndexerExecutor.cs
+   M /trunk/beagled/LuceneIndexingDriver.cs
+   M /trunk/beagled/Makefile.am
+   M /trunk/beagled/RemoteIndexer.cs
+
+One problem we have with runaway helper processes is that we can't
+identify what file has caused the problem and how long it's been going.
+This checkin fixes that, by tracking what file is being filtered, by
+which filter, and for how long.  That way, users can send SIGUSR2 to
+the daemon or helper process and see which file is causing the problem.
+
+------------------------------------------------------------------------
+r3116 | kkubasik | 2006-12-13 10:56:19 -0500 (Wed, 13 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/search/Tiles/Image.cs
+
+Backing out some unneeded GetFirstProperties
+
+------------------------------------------------------------------------
+r3115 | kkubasik | 2006-12-13 10:14:12 -0500 (Wed, 13 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/search/Tiles/Image.cs
+
+Fix a couple of crashers in our Image tile.
+
+------------------------------------------------------------------------
+r3114 | joeshaw | 2006-12-12 17:29:14 -0500 (Tue, 12 Dec 2006) | 3 lines
+Changed paths:
+   M /trunk/Makefile.am
+   M /trunk/autogen.sh
+
+Require automake 1.8, since automake 1.7 seems to get SUBDIRS order wrong.
+Thanks Max for helping track this down
+
+------------------------------------------------------------------------
+r3113 | joeshaw | 2006-12-12 17:09:31 -0500 (Tue, 12 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/beagled/FileSystemQueryable/FileSystemQueryable.cs
+
+Set DisplayUris for file moves and removals
+
+------------------------------------------------------------------------
+r3112 | joeshaw | 2006-12-12 16:55:16 -0500 (Tue, 12 Dec 2006) | 5 lines
+Changed paths:
+   M /trunk/beagled/BuildIndex.cs
+   M /trunk/beagled/FileAttributesStore.cs
+
+Back out changes to BuildIndex.cs; they were just treating a symptom rather
+than the real problem.  Fix the IsUpToDate() check in FileAttributesStore to
+do the DateTime to-UTC conversion.  Fixes the reindexing issue on just
+about every LuceneFileQueryable
+
+------------------------------------------------------------------------
+r3111 | joeshaw | 2006-12-12 15:13:47 -0500 (Tue, 12 Dec 2006) | 3 lines
+Changed paths:
+   M /trunk/Util/Log.cs
+
+Change the log date format slightly; I've always found it really difficult to
+parse visually
+
+------------------------------------------------------------------------
+r3110 | hebra | 2006-12-12 10:16:54 -0500 (Tue, 12 Dec 2006) | 5 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/de.po
+
+
+2006-12-11  Hendrik Brandt  <heb@gnome-de.org>
+
+        * de.po: Updated German translation.
+
+------------------------------------------------------------------------
+r3105 | dbera | 2006-12-12 08:45:20 -0500 (Tue, 12 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/beagled/FileAttributesStore_Sqlite.cs
+   M /trunk/beagled/SqliteUtils.cs
+
+Use the return value to figure out if fileattr.db operations succeeded.
+
+------------------------------------------------------------------------
+r3102 | dbera | 2006-12-11 19:04:53 -0500 (Mon, 11 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/beagled/BuildIndex.cs
+
+Dont reindex already indexed files. Yet another bug uncovered by the DateTime fixes.
+
+------------------------------------------------------------------------
+r3101 | joeshaw | 2006-12-11 16:57:27 -0500 (Mon, 11 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/Makefile.am
+   M /trunk/autogen.sh
+
+Require automake 1.7, not 1.6
+
+------------------------------------------------------------------------
+r3100 | joeshaw | 2006-12-11 16:07:28 -0500 (Mon, 11 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/tools/Makefile.am
+
+Fix an issue with the cron scripts not being included in the tarball
+
+------------------------------------------------------------------------
+r3099 | joeshaw | 2006-12-11 13:48:33 -0500 (Mon, 11 Dec 2006) | 7 lines
+Changed paths:
+   M /trunk/Makefile.am
+   M /trunk/autogen.sh
+   M /trunk/bludgeon/TarFileObject.cs
+   M /trunk/configure.in
+   A /trunk/gnome-autogen.sh
+
+Update the build system a little bit, since it was causing some users
+trouble.  Use the system's gnome-autogen.sh if it's there, otherwise use
+our own included one.  This way we'll get the right automake requirements,
+which was causing problems for people who had only automake 1.4.  Update
+to using SharpZipLib 0.84, which has been included in Mono for some time
+rather than the older one.  This required some fixups to bludgeon.
+
+------------------------------------------------------------------------
+r3098 | joeshaw | 2006-12-11 12:18:42 -0500 (Mon, 11 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/Makefile.am
+
+only build the po directory if ENABLE_GUI is set.
+
+------------------------------------------------------------------------
+r3097 | joeshaw | 2006-12-11 12:16:19 -0500 (Mon, 11 Dec 2006) | 3 lines
+Changed paths:
+   M /trunk/tools/beagle-crawl-system.in
+
+Fix a problem where OPTIONS was overridden if --disable-directories was set.
+Found by Pat Double
+
+------------------------------------------------------------------------
+r3096 | serrador | 2006-12-11 11:50:13 -0500 (Mon, 11 Dec 2006) | 4 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/es.po
+
+2006-12-11  Francisco Javier F. Serrador  <serrador@openshine.com>
+
+	* es.po: Updated Spanish translation.
+
+------------------------------------------------------------------------
+r3095 | jfriedl | 2006-12-11 11:04:42 -0500 (Mon, 11 Dec 2006) | 4 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/cs.po
+
+2006-12-11  Jakub Friedl  <jfriedl@suse.cz>
+
+  * cs.po: Updated Czech Translation.
+
+------------------------------------------------------------------------
+r3094 | icq | 2006-12-10 14:06:54 -0500 (Sun, 10 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/gl.po
+
+*** empty log message ***
+
+------------------------------------------------------------------------
+r3093 | dnylande | 2006-12-10 13:19:13 -0500 (Sun, 10 Dec 2006) | 4 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/sv.po
+
+2006-12-10  Daniel Nylander <po@danielnylander.se>
+
+	* sv.po: Updated Swedish translation.
+
+------------------------------------------------------------------------
+r3092 | joeshaw | 2006-12-09 23:16:29 -0500 (Sat, 09 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/po/POTFILES.in
+
+Add the archived file tile to POTFILES.in
+
+------------------------------------------------------------------------
+r3091 | serrador | 2006-12-09 15:27:54 -0500 (Sat, 09 Dec 2006) | 4 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/es.po
+
+2006-12-09  Francisco Javier F. Serrador  <serrador@openshine.com>
+
+	* es.po: Updated Spanish translation.
+
+------------------------------------------------------------------------
+r3090 | dbera | 2006-12-09 10:32:45 -0500 (Sat, 09 Dec 2006) | 3 lines
+Changed paths:
+   M /trunk/beagled/LuceneQueryable.cs
+
+What isnt surprising is the fact the URI comparison sucks; but that the effect was only visible while indexing without extended attributes, seemed like info was vanishing from the sqlite db and had all the flavours of a timing bug.
+Now correctly (!) compare URIs to figure out parents for child indexables, fixing an occassional looping problem.
+
+------------------------------------------------------------------------
+r3089 | joeshaw | 2006-12-08 18:22:35 -0500 (Fri, 08 Dec 2006) | 16 lines
+Changed paths:
+   M /trunk/beagled/EvolutionMailDriver/EvolutionMailIndexableGenerator.cs
+   M /trunk/beagled/ExtractContent.cs
+   M /trunk/beagled/IndexerRequest.cs
+   M /trunk/beagled/LuceneFileQueryable.cs
+   M /trunk/beagled/LuceneIndexingDriver.cs
+
+Add a count to the number of child indexables found with
+beagle-extract-content.
+
+Update the code in IndexerRequest a little; it was wrong in places, and
+make it a little more judicious in its memory usage.
+
+Fix a mem leak of URIs in LuceneFileQueryable.
+
+Make LuceneIndexingDriver be a little smarter about getting indexables
+from the IndexerRequest because of my changes to that class.
+
+Don't store the list of accounts in the Evo mail's IMAP indexable
+generator, because it's never used outside of one block of code.  Just
+make it local to that function, saving a good bit of memory for every
+IMAP folder.
+
+------------------------------------------------------------------------
+r3088 | serrador | 2006-12-08 14:35:09 -0500 (Fri, 08 Dec 2006) | 4 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/es.po
+
+2006-12-08  Francisco Javier F. Serrador  <serrador@openshine.com>
+
+	* es.po: Updated Spanish translation.
+
+------------------------------------------------------------------------
+r3087 | jmas | 2006-12-07 07:25:50 -0500 (Thu, 07 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/po/ca.po
+
+Small fixes to Catalan translation
+
+------------------------------------------------------------------------
+r3086 | dbera | 2006-12-06 19:15:00 -0500 (Wed, 06 Dec 2006) | 5 lines
+Changed paths:
+   M /trunk/BeagleClient/Hit.cs
+   M /trunk/Util/DateTimeUtil.cs
+   M /trunk/beagled/FileSystemQueryable/FileSystemQueryable.cs
+   M /trunk/tools/Query.cs
+
+Pretty print date in query output.
+Honour DISABLE_XATTR by an entirely faulty method (should we revert this since DISABLE_XATTR is only for debugging ?)
+DateTime saga continues: datetime -> toutc -> add-seconds != datetime ->add-seconds->toutc. Why ? Because of daylight savings time. Correctly generate DateTime from unix time for DST and non-DST. The movie will return after a break.
+Fix a potential crash while retrieving properties.
+
+------------------------------------------------------------------------
+r3085 | joeshaw | 2006-12-06 17:46:23 -0500 (Wed, 06 Dec 2006) | 9 lines
+Changed paths:
+   M /trunk/search/GroupView.cs
+   M /trunk/search/Search.cs
+   M /trunk/search/Tiles/Calendar.cs
+   M /trunk/search/Tiles/Contact.cs
+   M /trunk/search/Tiles/DetailsPane.cs
+   M /trunk/search/Tiles/MailMessage.cs
+
+Add a status bar to beagle-search, and display in it the total number of
+matching documents and the number that are currently displayed.
+
+Fix some rendering issues in the details pane, especially when you resize
+the pane.  Things were pretty ugly before.
+
+Turn off snippet requests for mail messages, as they're never snippeted
+now.
+
+------------------------------------------------------------------------
+r3084 | joeshaw | 2006-12-06 15:33:46 -0500 (Wed, 06 Dec 2006) | 3 lines
+Changed paths:
+   M /trunk/Filters/FilterMan.cs
+
+Add text/troff to the list of mime types supported by the man page filter, and
+turn on snippet mode
+
+------------------------------------------------------------------------
+r3083 | joeshaw | 2006-12-06 15:32:48 -0500 (Wed, 06 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/Filters/AssemblyInfo.cs
+   A /trunk/Filters/FilterScribus.cs
+   M /trunk/Filters/Makefile.am
+
+Added Scribus filter from Alexander Macdonald
+
+------------------------------------------------------------------------
+r3082 | joeshaw | 2006-12-06 15:22:42 -0500 (Wed, 06 Dec 2006) | 3 lines
+Changed paths:
+   M /trunk/beagled/LuceneIndexingDriver.cs
+
+Change the format of the child indexable message in the logs to make it eaiser
+to read inside of logs
+
+------------------------------------------------------------------------
+r3081 | joeshaw | 2006-12-06 14:53:35 -0500 (Wed, 06 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/search/Tiles/RSSFeed.cs
+
+Don't scale up RSS feed icons.  Liferea stores icons mostly as 16x16 or 32x32
+
+------------------------------------------------------------------------
+r3080 | joeshaw | 2006-12-06 13:50:24 -0500 (Wed, 06 Dec 2006) | 3 lines
+Changed paths:
+   M /trunk/tools/Settings.cs
+
+Fix the GNOME autostart key.  Key names are case sensitive and
+http://www.gnome.org/start/2.14/notes/en/rndevelopers.html is a damned liar.
+
+------------------------------------------------------------------------
+r3079 | joeshaw | 2006-12-06 13:35:53 -0500 (Wed, 06 Dec 2006) | 3 lines
+Changed paths:
+   M /trunk/beagled/EvolutionMailDriver/EvolutionMailDriver.cs
+
+If we aren't indexing any folders in the evo mail backend, return -1 for the
+progress percentage
+
+------------------------------------------------------------------------
+r3078 | joeshaw | 2006-12-06 00:23:45 -0500 (Wed, 06 Dec 2006) | 14 lines
+Changed paths:
+   M /trunk/beagled/LuceneCommon.cs
+   M /trunk/beagled/QueryResult.cs
+
+Fix a couple of leaks that heap-shot helped find:
+
+* We were leaking IndexReader instances from our refcounted GetReader()
+and ReleaseReader() pairs.  This was causing us pain, particularly with
+live queries.
+
+* We leaked QueryWorker instances from the QueryResult by never removing
+them from our per_worker_started_time hash table.
+
+* Not really a leak, but change the QueryWorker's uri_hash to store the
+URI as the value of the hash rather than the Hit, and remove Hit-resolving
+methods.  These were causing us to keep around references on Hit objects
+that were never used.
+
+------------------------------------------------------------------------
+r3077 | dbera | 2006-12-05 15:32:50 -0500 (Tue, 05 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/beagled/DumpIndex.cs
+
+Pretty-print.
+
+------------------------------------------------------------------------
+r3076 | jmas | 2006-12-05 13:04:29 -0500 (Tue, 05 Dec 2006) | 4 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/ca.po
+
+2006-12-05  Jordi Mas <jmas@softcatala.org>
+
+	* ca.po: Updated Catalan translation.
+
+------------------------------------------------------------------------
+r3075 | dbera | 2006-12-05 11:46:04 -0500 (Tue, 05 Dec 2006) | 3 lines
+Changed paths:
+   M /trunk/BeagleClient/Property.cs
+   M /trunk/Filters/FilterArchive.cs
+
+Mutable properties should always be stored.
+Store names of archive entries as text-content.
+
+------------------------------------------------------------------------
+r3074 | dbera | 2006-12-05 10:26:53 -0500 (Tue, 05 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/Util/StringFu.cs
+
+Back out hacks. They broke many other things. Will wait till .Net-2.0 to fix all of these at once instead of adding incremental hacks.
+
+------------------------------------------------------------------------
+r3073 | joeshaw | 2006-12-04 18:26:16 -0500 (Mon, 04 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/configure.in
+   M /trunk/search/Makefile.am
+   M /trunk/search/Tiles/File.cs
+   M /trunk/search/Tiles/Tile.cs
+
+Add support for xdg-open to beagle-search
+
+------------------------------------------------------------------------
+r3072 | joeshaw | 2006-12-04 17:40:52 -0500 (Mon, 04 Dec 2006) | 4 lines
+Changed paths:
+   M /trunk/beagled/LuceneCommon.cs
+
+Stop using deprecated calls to create new Field instances, and for most of
+our non-text fields set that we don't want norms for those fields.  This
+should reduce the index size a little and use a little less memory.
+
+------------------------------------------------------------------------
+r3071 | joeshaw | 2006-12-04 14:59:52 -0500 (Mon, 04 Dec 2006) | 12 lines
+Changed paths:
+   M /trunk/Filters/FilterArchive.cs
+   M /trunk/Util/XdgMime.cs
+   M /trunk/search/Tiles/ArchivedFile.cs
+   M /trunk/search/Tiles/Image.cs
+
+Cache content inside archives, so we can get snippets.
+
+Composite the MIME icon for an archive on top of the thumbnail in the
+archived file tile.  Thanks Federico for pointing out to me what was
+causing a crash.
+
+Fix similar code in the image tile which could also crash, but it's very
+unlikely to do so.
+
+Change the details pane of the archive tile to be a little bit more
+relevant for archives.
+
+------------------------------------------------------------------------
+r3070 | joeshaw | 2006-12-04 14:41:17 -0500 (Mon, 04 Dec 2006) | 15 lines
+Changed paths:
+   M /trunk/Util/Conf.cs
+   M /trunk/beagled/BeagleDaemon.cs
+   M /trunk/beagled/Makefile.am
+   A /trunk/beagled/beagled-autostart.desktop
+   M /trunk/search/Makefile.am
+   M /trunk/search/Search.cs
+   A /trunk/search/beagle-search-autostart.desktop
+   M /trunk/tools/Makefile.am
+   M /trunk/tools/Settings.cs
+   M /trunk/tools/settings.glade
+   M /trunk/tools/wrapper.in
+
+Deprecate the old --autostarted flag to beagled and beagle-search.
+
+Now that the autostart mechanism is fairly widely deployed, ship
+autostart .desktop files for beagled and beagle-search in the tarball,
+and hook up the checkbox in beagle-settings to write out the autostart
+files in ~/.config/autostart.
+
+Remove old webservices code and widgets from beagle-settings, and fix
+up a few accelerators.  Fix a problem in which beagle-settings wouldn't
+run out of the source tree because of a missing reference to the images
+assembly.
+
+Fix the text in beagle-search's notification dialog to not mention
+"Beagle", since it isn't mentioned anywhere else in the search app.
+
+------------------------------------------------------------------------
+r3069 | serrador | 2006-12-04 12:02:59 -0500 (Mon, 04 Dec 2006) | 4 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/es.po
+
+2006-12-04  Francisco Javier F. Serrador  <serrador@openshine.com>
+
+	* es.po: Updated Spanish translation.
+
+------------------------------------------------------------------------
+r3068 | joeshaw | 2006-12-04 11:30:37 -0500 (Mon, 04 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/tools/Query.cs
+
+Only show the number of hits if we're in verbose mode
+
+------------------------------------------------------------------------
+r3067 | jfriedl | 2006-12-04 10:31:15 -0500 (Mon, 04 Dec 2006) | 4 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/cs.po
+
+2006-12-04  Jakub Friedl <jfriedl@suse.cz>
+
+  * cs.po: Updated Czech translation.
+
+------------------------------------------------------------------------
+r3066 | dbera | 2006-12-03 22:40:27 -0500 (Sun, 03 Dec 2006) | 5 lines
+Changed paths:
+   M /trunk/beagled/IndexingServiceQueryable/IndexingServiceQueryable.cs
+   M /trunk/beagled/LuceneCommon.cs
+   M /trunk/beagled/LuceneQueryable.cs
+   M /trunk/beagled/Server.cs
+
+Bump version number of index due to the IsChild property, should have done that before.
+Dont set "source" if already set - allows clients using indexing-service to set own names for their backends.
+(With previous commit) Better error reporting for libbeagle clients.
+IndexingService is now usable using direct API calls.
+
+------------------------------------------------------------------------
+r3065 | dbera | 2006-12-03 22:34:43 -0500 (Sun, 03 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/Util/DateTimeUtil.cs
+   M /trunk/Util/StringFu.cs
+
+Soon all this datetime clumsiness will be over.
+
+------------------------------------------------------------------------
+r3064 | dbera | 2006-12-03 22:32:25 -0500 (Sun, 03 Dec 2006) | 3 lines
+Changed paths:
+   M /trunk/BeagleClient/IndexingService.cs
+   M /trunk/BeagleClient/Message.cs
+   M /trunk/libbeagle/beagle/beagle-timestamp.c
+   M /trunk/libbeagle/examples
+   M /trunk/libbeagle/examples/.cvsignore
+   M /trunk/libbeagle/examples/Makefile.am
+   A /trunk/libbeagle/examples/beagle-search-provider.c
+
+Add example code to use beagle as a service provider.
+Set (correct) timezone info in BeagleTimestamp struct in libbeagle.
+
+------------------------------------------------------------------------
+r3063 | joeshaw | 2006-12-03 21:39:54 -0500 (Sun, 03 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/beagled/BeagleDaemon.cs
+
+Change the GC.GetTotalMemory() threshold to 10%; otherwise there are just too many snapshots
+
+------------------------------------------------------------------------
+r3062 | joeshaw | 2006-12-03 16:07:47 -0500 (Sun, 03 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/beagled/BeagleDaemon.cs
+
+Remove debug spew
+
+------------------------------------------------------------------------
+r3061 | joeshaw | 2006-12-03 16:07:14 -0500 (Sun, 03 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/beagled/BeagleDaemon.cs
+
+Oops, fix a scale problem with the RSS size calculation
+
+------------------------------------------------------------------------
+r3060 | joeshaw | 2006-12-03 15:59:59 -0500 (Sun, 03 Dec 2006) | 17 lines
+Changed paths:
+   M /trunk/Filters/FilterArchive.cs
+   M /trunk/Util/ArrayFu.cs
+   M /trunk/Util/Scheduler.cs
+   M /trunk/Util/StringFu.cs
+   M /trunk/Util/SystemInformation.cs
+   M /trunk/beagled/BeagleDaemon.cs
+   M /trunk/beagled/IndexHelper/IndexHelper.cs
+   M /trunk/beagled/LuceneIndexingDriver.cs
+
+Index at most 30 files inside archives.  This is to avoid huge allocations
+on very large archives, like the one I have of a backed up home direcotry.
+
+Fix a major issue where we were boxing characters every time we processed
+a URI.
+
+Use DateTime.UtcNow when calculating load averages, to avoid unnecessary
+allocations related to timezones.
+
+If --heap-buddy or --heap-shot are provided, assume --debug-memory.  If
+running with --heap-shot and the RSS increases by more than 5% or 5 megs,
+or the size of GC.GetTotalMemory() increases by more than 5%,
+automatically send SIGPROF to generate a memory snapshot.
+
+Log the number of child indexables created, and whether we're running
+with BEAGLE_EXERCISE_THE_DOG.
+
+------------------------------------------------------------------------
+r3059 | aihana | 2006-12-03 01:57:07 -0500 (Sun, 03 Dec 2006) | 4 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/ja.po
+
+2006-12-03  Takeshi AIHANA <takeshi.aihana@gmail.com>
+
+	* ja.po: Updated Japanese translation for v0.2.13.
+
+------------------------------------------------------------------------
+r3058 | dbera | 2006-12-02 01:47:45 -0500 (Sat, 02 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/BeagleClient/Indexable.cs
+   M /trunk/beagled/FileSystemQueryable/FileSystemQueryable.cs
+   M /trunk/beagled/LuceneCommon.cs
+   M /trunk/beagled/LuceneIndexingDriver.cs
+   M /trunk/beagled/LuceneQueryable.cs
+
+Some more fixes wrt child-indexables. Namely, fix proper handling of child indexables in indexing     hooks. For property changes, propagate the changes to all its children - this is necessary because    some parent properties might be duplicated in child. Also some cleanup to keep the code managable.    Thanks to Joe for pointing out the crashes. Testing, more stress testing requested. Also, test the mail backends - they might be affected because of all the child indexable changes.
+
+------------------------------------------------------------------------
+r3057 | joeshaw | 2006-12-01 18:08:36 -0500 (Fri, 01 Dec 2006) | 12 lines
+Changed paths:
+   M /trunk/Filters/FilterArchive.cs
+   M /trunk/beagled/FileSystemQueryable/FileSystemQueryable.cs
+   M /trunk/search/Makefile.am
+   A /trunk/search/Tiles/ArchivedFile.cs
+   M /trunk/search/Tiles/AssemblyInfo.cs
+   M /trunk/search/Tiles/File.cs
+   M /trunk/search/Tiles/MailMessage.cs
+   M /trunk/search/Tiles/OpenWithMenu.cs
+   M /trunk/search/Tiles/Tile.cs
+   M /trunk/search/Tiles/Utils.cs
+
+Add a new archived file tile to beagle-search.  Still needs a little love.
+
+Fix an issue where ParentUris of files were the internal URIs, not the
+real URIs.
+
+Fix a crash when the OpenWith menu has no items.
+
+Mark items as being inside an archive in the archive filter.
+
+Change the "your data is being indexed" text in the notification area to
+not mention "Beagle", since it's not used anywhere else in the UI.
+
+------------------------------------------------------------------------
+r3056 | dbera | 2006-12-01 17:08:51 -0500 (Fri, 01 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/Filters/HtmlAgilityPack/HtmlDocument.cs
+
+Fix a potential crash in html parsing code. How come it was never reported ?
+
+------------------------------------------------------------------------
+r3055 | joeshaw | 2006-12-01 16:43:35 -0500 (Fri, 01 Dec 2006) | 10 lines
+Changed paths:
+   M /trunk/beagled/Server.cs
+   M /trunk/libbeagle/beagle/Makefile.am
+   M /trunk/libbeagle/beagle/beagle-hits-added-response.c
+   A /trunk/libbeagle/beagle/beagle-indexing-status-response.c
+   A /trunk/libbeagle/beagle/beagle-indexing-status-response.h
+   A /trunk/libbeagle/beagle/beagle-informational-messages-request.c
+   A /trunk/libbeagle/beagle/beagle-informational-messages-request.h
+   M /trunk/libbeagle/beagle/beagle-parser.c
+   M /trunk/libbeagle/beagle/beagle-request.c
+   M /trunk/libbeagle/beagle/beagle-search-term-response.c
+   M /trunk/libbeagle/beagle/beagle.h
+   M /trunk/libbeagle/examples/beagle-search.c
+   M /trunk/wrappers/python/beagle.defs
+
+Add the informational request message and indexing status response messages
+to libbeagle and the python bindings.  Also add sample usage to the
+examples/beagle-search.c file.
+
+Fix a logic bug in the libbeagle message parser that was causing problems
+if you sent different types of complex messages.  Remove some dead code.
+
+Add printing of the response in libbeagle apps if ENABLE_XML_DUMP is
+defined.
+
+------------------------------------------------------------------------
+r3054 | joeshaw | 2006-12-01 14:09:13 -0500 (Fri, 01 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/Filters/FilterMail.cs
+
+Add DisplayUri support to the mail filter
+
+------------------------------------------------------------------------
+r3053 | joeshaw | 2006-12-01 14:06:48 -0500 (Fri, 01 Dec 2006) | 5 lines
+Changed paths:
+   M /trunk/BeagleClient/Indexable.cs
+   M /trunk/Filters/FilterArchive.cs
+   M /trunk/beagled/FileSystemQueryable/FileSystemQueryable.cs
+   M /trunk/beagled/Filter.cs
+   M /trunk/beagled/FilterFactory.cs
+   M /trunk/beagled/LuceneQueryable.cs
+
+Make the DisplayUri a real thing rather than just selecting the ContentUri if
+the URI scheme is a UID (used in the file backend).  This makes archives
+look pretty when they're being indexed.  Also dial down the debug spew a
+little bit
+
+------------------------------------------------------------------------
+r3052 | joeshaw | 2006-12-01 13:39:30 -0500 (Fri, 01 Dec 2006) | 3 lines
+Changed paths:
+   M /trunk/BeagleClient/Indexable.cs
+   M /trunk/beagled/IndexHelper/RemoteIndexerExecutor.cs
+
+After we store child indexable streams in the helper, close them out since we
+don't need to keep them open any longer
+
+------------------------------------------------------------------------
+r3051 | joeshaw | 2006-12-01 13:38:55 -0500 (Fri, 01 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/Filters/FilterArchive.cs
+
+Clean the archive filter up a lot, add support for non-tarred gzip and bzip files
+
+------------------------------------------------------------------------
+r3050 | dbera | 2006-12-01 12:51:37 -0500 (Fri, 01 Dec 2006) | 2 lines
+Changed paths:
+   M /trunk/beagled/ExtractContent.cs
+
+Cleanup child indexables in beagle-extract-content. Print timestamp with timezone info.
+
+------------------------------------------------------------------------
+r3049 | kmaraas | 2006-12-01 06:07:31 -0500 (Fri, 01 Dec 2006) | 4 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/nb.po
+
+2006-12-01  Kjartan Maraas  <kmaraas@gnome.org>
+
+	* nb.po: Updated Norwegian bokmÃ¥l translation.
+
+------------------------------------------------------------------------
+r3048 | dbera | 2006-11-30 12:10:50 -0500 (Thu, 30 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/Filters/FilterSvg.cs
+
+Fix crash (#380544) and code cleanup in SVG Filter (patch from Alexander Macdonald).
+
+------------------------------------------------------------------------
+r3047 | joeshaw | 2006-11-29 16:58:57 -0500 (Wed, 29 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/Filters/FilterArchive.cs
+
+Also: no reason for the archive filter to implement IDisposable
+
+------------------------------------------------------------------------
+r3046 | joeshaw | 2006-11-29 16:58:11 -0500 (Wed, 29 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/Filters/FilterArchive.cs
+
+Get rid of the archive filter's 'ArchiveHandler' class.  It has no point.
+
+------------------------------------------------------------------------
+r3045 | joeshaw | 2006-11-29 16:57:20 -0500 (Wed, 29 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/beagled/ExtractContent.cs
+
+Only show the timestamp in beagle-extract-content if it's valid
+
+------------------------------------------------------------------------
+r3044 | joeshaw | 2006-11-29 15:05:37 -0500 (Wed, 29 Nov 2006) | 3 lines
+Changed paths:
+   M /trunk/Util/SystemInformation.cs
+
+Work around a problem in Mono 1.2.1 by having IsPathOnBlockDevice() return
+true if stat() fails for some reason.
+
+------------------------------------------------------------------------
+r3043 | joeshaw | 2006-11-29 14:25:43 -0500 (Wed, 29 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/beagled/Lucene.Net/Index/SegmentReader.cs
+   A /trunk/beagled/Lucene.Net/upstream-changes/25_avoid_boxing.patch
+
+Fix some unncessary boxing in Lucene
+
+------------------------------------------------------------------------
+r3042 | llipka | 2006-11-29 12:28:32 -0500 (Wed, 29 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/search/NotificationArea.cs
+   M /trunk/search/Search.cs
+
+Fix some graphical glitches with the NotificationArea like displaying it before adding a message.
+
+------------------------------------------------------------------------
+r3041 | kelemeng | 2006-11-28 21:41:36 -0500 (Tue, 28 Nov 2006) | 4 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/hu.po
+
+2006-11-29  Gabor Kelemen  <kelemeng@gnome.hu>
+
+	* hu.po: Translation updated.
+
+------------------------------------------------------------------------
+r3040 | joeshaw | 2006-11-28 17:03:57 -0500 (Tue, 28 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/beagled/FileSystemQueryable/FileSystemQueryable.cs
+
+Fix typo
+
+------------------------------------------------------------------------
+r3039 | joeshaw | 2006-11-28 16:55:26 -0500 (Tue, 28 Nov 2006) | 2 lines
+Changed paths:
+   A /trunk/BeagleClient/IndexingStatusResponse.cs
+
+Add a file I forgot from the last commit
+
+------------------------------------------------------------------------
+r3038 | dbera | 2006-11-28 16:40:13 -0500 (Tue, 28 Nov 2006) | 3 lines
+Changed paths:
+   M /trunk/Filters/FilterHtml.cs
+
+Use current encoding while decoding URLs. A lot of those nasty html filter exceptions (System.FormatException: Input string was not in the correct format) should be gone now.
+If they still show up, make sure you have a recent mono (mono bug #77931).
+
+------------------------------------------------------------------------
+r3037 | joeshaw | 2006-11-28 16:36:08 -0500 (Tue, 28 Nov 2006) | 32 lines
+Changed paths:
+   M /trunk/BeagleClient/AssemblyInfo.cs
+   A /trunk/BeagleClient/InformationalMessagesRequest.cs
+   M /trunk/BeagleClient/Makefile.am
+   M /trunk/BeagleClient/QueryableStatus.cs
+   M /trunk/BeagleClient/RemoteControl.cs
+   M /trunk/Util/Inotify.cs
+   M /trunk/Util/Scheduler.cs
+   M /trunk/beagled/AkregatorQueryable/AkregatorQueryable.cs
+   M /trunk/beagled/AssemblyInfo.cs
+   M /trunk/beagled/BlamQueryable/BlamQueryable.cs
+   M /trunk/beagled/EvolutionDataServerQueryable/EvolutionDataServerQueryable.cs
+   M /trunk/beagled/EvolutionMailDriver/EvolutionMailDriver.cs
+   M /trunk/beagled/EvolutionMailDriver/EvolutionMailIndexableGenerator.cs
+   M /trunk/beagled/FileSystemQueryable/FileCrawlTask.cs
+   M /trunk/beagled/FileSystemQueryable/FileSystemQueryable.cs
+   M /trunk/beagled/FileSystemQueryable/TreeCrawlTask.cs
+   M /trunk/beagled/GaimLogQueryable/GaimLogQueryable.cs
+   M /trunk/beagled/IndexingServiceQueryable/IndexingServiceQueryable.cs
+   A /trunk/beagled/InformationalMessagesRequestExecutor.cs
+   M /trunk/beagled/KAddressBookQueryable/KabcQueryable.cs
+   M /trunk/beagled/KMailQueryable/KMailQueryable.cs
+   M /trunk/beagled/KonqBookmarkQueryable/KonqBookmarkQueryable.cs
+   M /trunk/beagled/KonqHistoryQueryable/KonqQueryable.cs
+   M /trunk/beagled/KopeteQueryable/KopeteQueryable.cs
+   M /trunk/beagled/LabyrinthQueryable/LabyrinthQueryable.cs
+   M /trunk/beagled/LifereaQueryable/LifereaQueryable.cs
+   M /trunk/beagled/LuceneQueryable.cs
+   M /trunk/beagled/Makefile.am
+   M /trunk/beagled/QueryDriver.cs
+   M /trunk/beagled/ThunderbirdQueryable/ThunderbirdQueryable.cs
+   M /trunk/libbeagle/beagle/beagle-daemon-information-response.c
+   M /trunk/libbeagle/beagle/beagle-queryable-status.c
+   M /trunk/libbeagle/beagle/beagle-queryable-status.h
+   M /trunk/search/NotificationArea.cs
+   M /trunk/search/Search.cs
+
+Add infrastructure to signal clients whether or not we're doing the initial
+index:
+
+* Add a new request message, InformationalMessagesRequest, which is an
+asynchronous message type for getting out-of-band, general messages from
+the daemon.
+
+* Add a new response message, IndexingStatusResponse, which indicates
+whether or not the daemon is doing the initial index.
+
+* Remove the use of QueryableState throughout the code; it never worked
+well and so it's been deprecated.
+
+* Make it the responsibility of the backend to report its crawl status,
+rather than trying to guess it using QueryableState.  This makes things
+a lot more reliable as backends can track this better than the
+infrastructure.  Add support to determine this to the files, evolution
+mail, evolution data server, and gaim log backends.
+
+* Make progress percentages pulled on-demand from the backend rather than
+stored as part of the LuceneQueryable.  This feels like a cleaner design.
+
+* Hook the beagle-search UI up to the new messages, so that it can
+detect changes and present the UI to the user.
+
+And also:
+
+* Clean up some usages of the Log class in the various backends, since I
+had to touch most of them up anyway, and in the Inotify code.
+
+* Improve some logging in the code, particularly in the FSQ backend.
+
+------------------------------------------------------------------------
+r3036 | kkubasik | 2006-11-27 21:09:14 -0500 (Mon, 27 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/tools/Settings.cs
+
+Spelling error
+
+------------------------------------------------------------------------
+r3035 | joeshaw | 2006-11-27 20:03:32 -0500 (Mon, 27 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/search/NotificationArea.cs
+   M /trunk/search/Search.cs
+
+Make the notification area  little bit nicer
+
+------------------------------------------------------------------------
+r3034 | djihed | 2006-11-27 12:05:39 -0500 (Mon, 27 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/po/ChangeLog
+   M /trunk/po/ar.po
+
+Updated Arabic Translation.  Translated by Khaled Hosny
+
+------------------------------------------------------------------------
+r3033 | dbera | 2006-11-25 19:23:30 -0500 (Sat, 25 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/glue/xdgmime/README
+   M /trunk/glue/xdgmime/xdgmimealias.c
+
+Minor update to xdgmime to sync with upstream.
+
+------------------------------------------------------------------------
+r3032 | dbera | 2006-11-25 18:52:47 -0500 (Sat, 25 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/beagled/NoiseFilter.cs
+
+Fix a logic error. Pass longer numbers like my India phone number.
+
+------------------------------------------------------------------------
+r3031 | dbera | 2006-11-24 21:45:48 -0500 (Fri, 24 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/beagled/LuceneCommon.cs
+   M /trunk/beagled/NoiseFilter.cs
+
+Tokenize 001234 as 1234. Include a testing function in NoiseFilter to figure out what/how words are tokenized.
+
+------------------------------------------------------------------------
+r3030 | dbera | 2006-11-24 19:01:41 -0500 (Fri, 24 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/beagled/FileSystemQueryable/FileSystemQueryable.cs
+
+dead code
+
+------------------------------------------------------------------------
+r3028 | dbera | 2006-11-24 16:33:15 -0500 (Fri, 24 Nov 2006) | 3 lines
+Changed paths:
+   M /trunk/beagled/FileSystemQueryable/FileSystemQueryable.cs
+
+Handle child indexables for files backend. Phew, At last! Add capability of HitFilter to properly filter child documents and remap their URI correctly. Add relevant patches from dsd's patches in bugzilla.
+Oh, forgot to attribute earlier - the archive filter I checked in was written by Varadhan.
+
+------------------------------------------------------------------------
+r3027 | dbera | 2006-11-24 16:30:28 -0500 (Fri, 24 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/beagled/LuceneQueryable.cs
+
+Indexable is not marked _done_ until all the child indexables (including child of child and so on) are indexed. Which means I can crash your beagled by sending you an email attaching a zipped bad doc file ;-). This is the initial implementation - it will become better over the next few releases.
+
+------------------------------------------------------------------------
+r3026 | dbera | 2006-11-24 16:22:31 -0500 (Fri, 24 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/beagled/IndexerReceipts.cs
+   M /trunk/beagled/LuceneCommon.cs
+
+Store in the index whether an indexable is a child indexable. Store both Uri and ParentUri in both indexes for easy removal.
+
+------------------------------------------------------------------------
+r3025 | dbera | 2006-11-24 16:14:56 -0500 (Fri, 24 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/BeagleClient/Indexable.cs
+   M /trunk/beagled/ExtractContent.cs
+   M /trunk/beagled/FilterFactory.cs
+
+Improved support for child indexables wrt ParentUri (parenturi always points to the toplevel parent) and parent properties (copy properties from all parents, grand*parents as parent:foo). Changes from dsd's patches in bugzilla merged.
+
+------------------------------------------------------------------------
+r3024 | dbera | 2006-11-24 16:03:05 -0500 (Fri, 24 Nov 2006) | 3 lines
+Changed paths:
+   M /trunk/Util/UriFu.cs
+   M /trunk/beagled/FileSystemQueryable/FileSystemQueryable.cs
+   M /trunk/beagled/FileSystemQueryable/LuceneNameResolver.cs
+   M /trunk/beagled/LuceneCommon.cs
+   M /trunk/beagled/LuceneQueryingDriver.cs
+   M /trunk/beagled/QueryStringParser.cs
+
+Some useful URI functions.
+Move method to add standard file properties and common property names to Util so that archive filter (and other files-in-file filters) can use them.
+
+------------------------------------------------------------------------
+r3023 | dbera | 2006-11-24 15:48:56 -0500 (Fri, 24 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/BeagleClient/Property.cs
+   M /trunk/Filters/AssemblyInfo.cs
+   A /trunk/Filters/FilterArchive.cs
+   M /trunk/Filters/Makefile.am
+
+Add FilterArchive from bugzilla with some minor modifications. Archive filter needs some work; more interesting properties of the archive file itself needs to be stored (names of archive contents ?) and nested archives are not working.
+
+------------------------------------------------------------------------
+r3022 | dbera | 2006-11-24 15:31:56 -0500 (Fri, 24 Nov 2006) | 2 lines
+Changed paths:
+   A /trunk/Util/DateTimeUtil.cs
+   M /trunk/Util/Makefile.am
+   M /trunk/Util/Thunderbird.cs
+   M /trunk/Util/camel.cs
+   M /trunk/beagled/FileSystemQueryable/FileSystemQueryable.cs
+   M /trunk/beagled/KonqBookmarkQueryable/KonqBookmarkQueryable.cs
+   M /trunk/beagled/KonqHistoryQueryable/KonqQueryable.cs
+   M /trunk/beagled/LifereaQueryable/LifereaQueryable.cs
+   M /trunk/beagled/LuceneCommon.cs
+   M /trunk/beagled/LuceneFileQueryable.cs
+
+Some more DateTime hack - except this one fixes a fatal bug that got uncovered recently. The bug caused already indexed document to be re-indexed upon beagled restart. This was due to (1970,1,1) not being parsed as epoch but epoch-timezoneoffset. Move to gmcs is long overdue, need to flush out local changes before that.
+
+------------------------------------------------------------------------
+r3020 | llipka | 2006-11-21 14:55:02 -0500 (Tue, 21 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/search/NotificationArea.cs
+   M /trunk/search/Search.cs
+
+Very lame notification about the fact that we are still in the process of indexing data.
+
+------------------------------------------------------------------------
+r3019 | llipka | 2006-11-21 14:17:45 -0500 (Tue, 21 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/search/Makefile.am
+   A /trunk/search/NotificationArea.cs
+   M /trunk/search/Pages/Base.cs
+   M /trunk/search/Pages/QuickTips.cs
+   M /trunk/search/Search.cs
+
+Base implementation for a notification system in beagle-search. Now the goodies will follow.
+
+------------------------------------------------------------------------
+r3018 | kkubasik | 2006-11-21 03:25:48 -0500 (Tue, 21 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/search/Makefile.am
+
+I can't say I know how or why it wasn't there, but it wasn't.....
+
+------------------------------------------------------------------------
+r3017 | dbera | 2006-11-20 21:12:58 -0500 (Mon, 20 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/configure.in
+
+./configure wasnt happy if gsf is present but no wv. Its happy now. pkg-check-modules requires action-not-found for this. One more autoconf thing I didnt know. Huh!
+
+------------------------------------------------------------------------
+r3016 | joeshaw | 2006-11-20 17:43:51 -0500 (Mon, 20 Nov 2006) | 3 lines
+Changed paths:
+   M /trunk/configure.in
+
+Only check for wv1 if we have gsf-sharp, because we need both for MS Word
+filtering
+
+------------------------------------------------------------------------
+r3014 | joeshaw | 2006-11-20 15:29:27 -0500 (Mon, 20 Nov 2006) | 2 lines
+Changed paths:
+   M /trunk/NEWS
+   M /trunk/configure.in
+
+Update for 0.2.13 release
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+r3394 | joeshaw | 2007-02-07 11:28:58 -0500 (Wed, 07 Feb 2007) | 1 line
+
+Update for 0.2.16 release
+------------------------------------------------------------------------
+r3393 | joeshaw | 2007-02-07 11:24:36 -0500 (Wed, 07 Feb 2007) | 1 line
+
+Temporarily back out the opera backend for the 0.2.16 release
+------------------------------------------------------------------------
+r3392 | joeshaw | 2007-02-07 11:16:43 -0500 (Wed, 07 Feb 2007) | 1 line
+
+Bump version number on SVG filter
+------------------------------------------------------------------------
+r3391 | kkubasik | 2007-02-06 23:23:46 -0500 (Tue, 06 Feb 2007) | 3 lines
+
+ r195@kjk38-laptop:  kjk38 | 2007-02-06 23:24:16 -0500
+ Initial import of the opera history backend
+
+------------------------------------------------------------------------
+r3390 | leonardof | 2007-02-06 21:38:58 -0500 (Tue, 06 Feb 2007) | 6 lines
+
+2007-02-07  Leonardo Ferreira Fontenelle  <leonardof@svn.gnome.org>
+
+	* pt_BR.po: Updated Brazilian Portuguese translation by Igor Pires
+	Soares <igor@projetofedora.org>.
+
+
+------------------------------------------------------------------------
+r3389 | dbera | 2007-02-06 19:27:30 -0500 (Tue, 06 Feb 2007) | 2 lines
+
+Batik svg files do not declare xlink namespace. Handle that explicitly.
+
+------------------------------------------------------------------------
+r3388 | joeshaw | 2007-02-06 18:19:13 -0500 (Tue, 06 Feb 2007) | 1 line
+
+Updated SVG filter, from Alex Macdonald
+------------------------------------------------------------------------
+r3387 | joeshaw | 2007-02-06 18:17:52 -0500 (Tue, 06 Feb 2007) | 2 lines
+
+Use indexable.MimeType rather than filter.MimeType, which isn't canonical and
+shouldn't really be used outside of the filter itself
+------------------------------------------------------------------------
+r3386 | joeshaw | 2007-02-06 15:31:43 -0500 (Tue, 06 Feb 2007) | 1 line
+
+Roll back our mono requirement to 1.1.13.5
+------------------------------------------------------------------------
+r3385 | joeshaw | 2007-02-06 11:38:13 -0500 (Tue, 06 Feb 2007) | 5 lines
+
+Only set the mime type in the indexable.ContentUri.IsFile block if it
+hasn't already been set by a backend.  Fixes the problem where
+Thunderbird mails were being stored as text/plain.
+
+
+------------------------------------------------------------------------
+r3384 | dbera | 2007-02-06 11:24:12 -0500 (Tue, 06 Feb 2007) | 2 lines
+
+beagle-hit.c: "(null)" does not deserialize to null Uri. Watch for null ParentUri when serializing.
+
+------------------------------------------------------------------------
+r3383 | pgeyleg | 2007-02-06 00:26:45 -0500 (Tue, 06 Feb 2007) | 1 line
+
+dzongkha translation added
+------------------------------------------------------------------------
+r3382 | dbera | 2007-02-05 17:10:20 -0500 (Mon, 05 Feb 2007) | 2 lines
+
+Remove debug messages from Semweb.
+
+------------------------------------------------------------------------
+r3381 | jmas | 2007-02-05 16:55:18 -0500 (Mon, 05 Feb 2007) | 5 lines
+
+2007-02-05  Jordi Mas <jmas@softcatala.org>
+
+	* ca.po: Updated Catalan translation.
+
+
+------------------------------------------------------------------------
+r3380 | dbera | 2007-02-05 16:06:43 -0500 (Mon, 05 Feb 2007) | 2 lines
+
+Remove some debug messages while parsing image files.
+
+------------------------------------------------------------------------
+r3379 | joeshaw | 2007-02-05 15:57:03 -0500 (Mon, 05 Feb 2007) | 1 line
+
+Don't set IsIndexing if a folder is being recrawled due to an inotify event
+------------------------------------------------------------------------
+r3378 | joeshaw | 2007-02-05 15:36:43 -0500 (Mon, 05 Feb 2007) | 1 line
+
+Remove some unused code I accidentally committed
+------------------------------------------------------------------------
+r3377 | joeshaw | 2007-02-05 14:58:03 -0500 (Mon, 05 Feb 2007) | 21 lines
+
+Rework the way we do reporting of whether or not we're indexing to make
+it a more active task for backends, rather than passive.  This fixes
+problems trying to deal with this sanely in the file system backend.
+
+* Remove some dead code from QueryDriver.cs.
+
+* No longer declare IsIndexing_get as virtual, and replace it with a
+private instance variable.  It's now the backends' responsibility to
+set IsIndexing as the status changes, rather than waiting for the
+getter to be called and reporting the current state of things.
+
+* Update the file system backend to the new scheme.  Should fix problems
+where the "currently indexing" info box stays on in beagle-search even
+after the initial crawl has finished.
+
+* Also update Evolution mail, EDS, Gaim, and Konversation backends to
+the new scheme.
+
+* Improve the status message when indexing files inside a directory.
+
+
+------------------------------------------------------------------------
+r3376 | dbera | 2007-02-05 13:12:15 -0500 (Mon, 05 Feb 2007) | 2 lines
+
+* libbeagle/beagle/beagle-hit.c: Add ParentUri to snippet_request->hit. This is needed by some backends that check for parent uri while generating snippets.
+
+------------------------------------------------------------------------
+r3375 | dbera | 2007-02-05 12:11:20 -0500 (Mon, 05 Feb 2007) | 4 lines
+
+* Konversation backend: Add server and channel name as properties. Somehow missed this before.
+* LuceneIndexingDriver: Back out a change from yesterday. Its incorrect.
+
+
+------------------------------------------------------------------------
+r3374 | aihana | 2007-02-05 07:30:59 -0500 (Mon, 05 Feb 2007) | 4 lines
+
+2007-02-05  Takeshi AIHANA <takeshi.aihana@gmail.com>
+
+        * ja.po: Updated Japanese translation.
+
+------------------------------------------------------------------------
+r3373 | dbera | 2007-02-04 17:23:12 -0500 (Sun, 04 Feb 2007) | 4 lines
+
+Correctly handle filter versions while indexing.
+* FileSystemQueryable.cs, FileAttributesStore.cs: If filter information is not present for a file, resubmit it for indexing. Ideally, we would like to resubmit whenever a new filter version is present, but that is becoming too costly.
+* FileAttributes.cs: Valid filter can have version 0+. Fix the version checking.
+
+------------------------------------------------------------------------
+r3372 | dbera | 2007-02-04 12:21:51 -0500 (Sun, 04 Feb 2007) | 2 lines
+
+Konversation backend: Better protection against old log files. Also, fix a bug where one log file would be indexed twice.
+
+------------------------------------------------------------------------
+r3369 | dbera | 2007-02-03 18:20:51 -0500 (Sat, 03 Feb 2007) | 2 lines
+
+Filter.cs: Explicitly warn Filters if they try to register a type in constructor.
+
+------------------------------------------------------------------------
+r3368 | dnylande | 2007-02-02 18:45:45 -0500 (Fri, 02 Feb 2007) | 1 line
+
+sv.po: Swedish translation updated
+------------------------------------------------------------------------
+r3367 | dbera | 2007-02-02 18:06:38 -0500 (Fri, 02 Feb 2007) | 2 lines
+
+KMailQueryable.cs: Fix checking whether a directory is a valid kmail directory. Fixes #401767 and #391647.
+
+------------------------------------------------------------------------
+r3366 | dbera | 2007-02-02 16:10:32 -0500 (Fri, 02 Feb 2007) | 2 lines
+
+Konversation backend: return true for IsIndexing when performing initial indexing.
+
+------------------------------------------------------------------------
+r3365 | dbera | 2007-02-02 15:13:17 -0500 (Fri, 02 Feb 2007) | 2 lines
+
+Really old konversation logfiles have bad timestamp strings. Ignore those lines completely, preventing crash if you have these old files.
+
+------------------------------------------------------------------------
+r3364 | joeshaw | 2007-02-02 13:54:11 -0500 (Fri, 02 Feb 2007) | 6 lines
+
+Mono doesn't handle JITted code running in a child process after a
+fork() very well, and can often hang.  Change our process limiting code
+to execute in C after the fork, rather than in C# in the runtime.  It's
+a little less flexible in theory, but has higher reliability.
+
+
+------------------------------------------------------------------------
+r3363 | icq | 2007-02-02 09:12:23 -0500 (Fri, 02 Feb 2007) | 2 lines
+
+Updated Galician Translation
+
+------------------------------------------------------------------------
+r3362 | joeshaw | 2007-02-01 16:07:35 -0500 (Thu, 01 Feb 2007) | 1 line
+
+Also run pdftotext -q (for quiet) again
+------------------------------------------------------------------------
+r3361 | joeshaw | 2007-02-01 16:05:29 -0500 (Thu, 01 Feb 2007) | 2 lines
+
+Bleh, r3360 didn't work and just inverted the deadlock.  Just ignore and
+don't redirect stderr for now
+------------------------------------------------------------------------
+r3360 | joeshaw | 2007-02-01 15:50:24 -0500 (Thu, 01 Feb 2007) | 7 lines
+
+pdftotext completely spams stderr on some documents, which causes a
+deadlock between beagled-helper and pdftotext: pdftotext is blocking on
+additional buffer space to write out more warnings while beagled-helper
+is blocking on data from stdout.  Fix this by processing data from
+stderr before processing stdout in DoPull(), rather than deferring it
+all until DoClose().  Fixes Jan's part of bnc #402065
+
+------------------------------------------------------------------------
+r3357 | joeshaw | 2007-01-31 18:44:13 -0500 (Wed, 31 Jan 2007) | 2 lines
+
+Don't include a pre-configured beagle-crawl-system in the tarball.  Fixes
+bgo #401504
+------------------------------------------------------------------------
+r3356 | joeshaw | 2007-01-31 16:07:31 -0500 (Wed, 31 Jan 2007) | 1 line
+
+Change a couple of chatty Warns to Debugs in the KMail backend
+------------------------------------------------------------------------
+r3355 | joeshaw | 2007-01-31 15:08:29 -0500 (Wed, 31 Jan 2007) | 4 lines
+
+Add --no-snapshot to beagled to keep it from automatically snapshotting
+when --heap-shot is provided.
+
+
+------------------------------------------------------------------------
+r3354 | joeshaw | 2007-01-31 14:56:27 -0500 (Wed, 31 Jan 2007) | 17 lines
+
+Put the looping bug out to pasture once and for all.
+
+In FSQ.DoneCrawlingOneDirectory(), in the event that we get a null file
+attribute back -- which should no longer happen -- complain loudly but 
+still mark the directory as clean.  This will prevent the daemon from
+looping on that one directory.
+
+Fix our sqlite schema for our fallback FileAttributesStore.  We were
+declaring our columns as STRING -- which isn't valid -- instead of TEXT.
+This meant that fields were defaulting to being integer-like.  Filenames
+like "0009" became "9" in the database.  Bump up the schema version and
+fix that.  Also make our file_path index unique, so we don't have to
+deal with potential multiple entries in the database.
+
+Add debugging output to the FileAttributesStore.
+
+
+------------------------------------------------------------------------
+r3353 | joeshaw | 2007-01-30 17:32:00 -0500 (Tue, 30 Jan 2007) | 2 lines
+
+Use a better GenericName in the beagle-settings .desktop file, lose the
+redundant comment
+------------------------------------------------------------------------
+r3352 | joeshaw | 2007-01-30 16:34:22 -0500 (Tue, 30 Jan 2007) | 10 lines
+
+Only do the position check hack in the archive filter for gzip archives;
+looks like the position is pretty much worthless for bzip2 archives and
+it triggers this code path.
+
+Fix a bug where we were leaking a tempfile when decompressing archives
+of more than 30 files.
+
+Improve debug output when storing streams in Indexable.cs.
+
+
+------------------------------------------------------------------------
+r3351 | joeshaw | 2007-01-30 16:07:16 -0500 (Tue, 30 Jan 2007) | 6 lines
+
+Workaround archive files that cause infinite loops.  When reading from
+an archive stream, if we are extracting the maximum amount of data and
+our position in the stream isn't moving, break out of the loop and flag
+the file as bad.  Don't create child indexables for such entries.
+
+
+------------------------------------------------------------------------
+r3350 | joeshaw | 2007-01-30 15:37:11 -0500 (Tue, 30 Jan 2007) | 1 line
+
+Add more info to the ExceptionHandlingThread name
+------------------------------------------------------------------------
+r3349 | joeshaw | 2007-01-30 15:11:13 -0500 (Tue, 30 Jan 2007) | 4 lines
+
+Always dispose of the SqliteCommand, even if we get an exception.  Log
+the SQL that caused an exception inside of DoNonQuery()
+
+
+------------------------------------------------------------------------
+r3348 | joeshaw | 2007-01-30 15:01:05 -0500 (Tue, 30 Jan 2007) | 20 lines
+
+GetLastWriteTimeUtc() no longer throws an IOException if the file isn't
+there in 2.0.  It returns a silly date from 1601.  Fix various places
+(mostly in the file system backend) where we were depending on that
+behavior.
+
+Slightly reorder the flow in FilterFactory.FilterIndexable so that we
+avoid unnecessary work, and also check in here if the file has
+disappeared out from underneath us.
+
+Fix a DateTime UTC conversion problem that was still hanging around in
+FileAttributesStore.
+
+Fix our ParseExact() in StringFu.  We want to AssumeUniversal AND
+AdjustToUniversal so that dates we get back are right.  Mono is broken
+with these options right now -- see
+http://bugzilla.ximian.com/show_bug.cgi?id=80677 -- but things work well
+enough now with the broken behavior, and the AdjustToUniversal is
+necessary for when it's fixed.
+
+
+------------------------------------------------------------------------
+r3347 | dbera | 2007-01-30 12:14:11 -0500 (Tue, 30 Jan 2007) | 3 lines
+
+* F-Spot code: More protection against bad jpegs.
+* XdgMime.cs: Catch other valid exceptions when detecting mimetype.
+
+------------------------------------------------------------------------
+r3346 | joeshaw | 2007-01-29 15:52:35 -0500 (Mon, 29 Jan 2007) | 3 lines
+
+Always return false instead of true from KonversationQueryable.IsIndexing,
+because otherwise the 'your data is being indexed' info box is always
+present.
+------------------------------------------------------------------------
+r3345 | joeshaw | 2007-01-29 14:17:01 -0500 (Mon, 29 Jan 2007) | 1 line
+
+Workaround a mono bug (bxc #80320) when dealing with dates around MinValue
+------------------------------------------------------------------------
+r3344 | dbera | 2007-01-28 22:14:18 -0500 (Sun, 28 Jan 2007) | 2 lines
+
+Fix crash when parsing extremely small files with no head or body.
+
+------------------------------------------------------------------------
+r3343 | dbera | 2007-01-28 11:30:59 -0500 (Sun, 28 Jan 2007) | 2 lines
+
+Ignore Bim entries with marker PHUT. F-Spot Bim parser does not recognise them.
+
+------------------------------------------------------------------------
+r3342 | dbera | 2007-01-28 11:13:07 -0500 (Sun, 28 Jan 2007) | 2 lines
+
+Handle javascript comments properly, namely the comments can contain quote characters which should be ignored and not assumed part of a quote. Error in original HtmlAgilityPack. There is still scope of error in script and style elements. They will be reported as "System.Exception: Load() was not paused previously" and need to be fixed on demand.
+
+------------------------------------------------------------------------
+r3341 | dbera | 2007-01-27 13:39:27 -0500 (Sat, 27 Jan 2007) | 2 lines
+
+Add the changes.
+
+------------------------------------------------------------------------
+r3340 | dbera | 2007-01-27 13:35:34 -0500 (Sat, 27 Jan 2007) | 2 lines
+
+Check iptc entry for null before trying to parse it. Close memorystream after use.
+
+------------------------------------------------------------------------
+r3339 | dbera | 2007-01-26 19:57:06 -0500 (Fri, 26 Jan 2007) | 2 lines
+
+Fix a bug in extraction of JFIF comments from Jpeg files.
+
+------------------------------------------------------------------------
+r3338 | joeshaw | 2007-01-26 16:16:26 -0500 (Fri, 26 Jan 2007) | 4 lines
+
+Update some assembly requirements in configure.in, and remove some
+unnecessary ones from beagled/Makefile.am
+
+
+------------------------------------------------------------------------
+r3336 | joeshaw | 2007-01-25 18:40:53 -0500 (Thu, 25 Jan 2007) | 1 line
+
+0.2.15.1, brown paper bag release
+------------------------------------------------------------------------
+r3335 | joeshaw | 2007-01-25 18:35:51 -0500 (Thu, 25 Jan 2007) | 2 lines
+
+We need to bundle the thunderbird files in any case, regardless of whether or
+not it's enabled.
+------------------------------------------------------------------------
+r3332 | joeshaw | 2007-01-25 17:36:12 -0500 (Thu, 25 Jan 2007) | 1 line
+
+Update changelog for 0.2.15
+------------------------------------------------------------------------
