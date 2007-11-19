@@ -501,7 +501,9 @@ namespace Beagle.Daemon {
 			SystemPriorities.Renice (7);
 
 			QueryDriver.Init ();
-			Server.Init ();
+
+			Server.Init ();			
+			DBusServer.Init ();
 
 			SetupSignalHandlers ();
 			Shutdown.ShutdownEvent += OnShutdown;

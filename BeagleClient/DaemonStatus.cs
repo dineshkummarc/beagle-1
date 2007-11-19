@@ -1,7 +1,7 @@
 //
-// AssemblyInfo.cs
+// QueryableStatus.cs
 //
-// Copyright (C) 2006 Novell, Inc.
+// Copyright (C) 2007 Lukas Lipka <lukaslipka@gmail.com>
 //
 
 //
@@ -24,29 +24,10 @@
 // DEALINGS IN THE SOFTWARE.
 //
 
-using System.Reflection;
+using System;
 
-using Beagle;
+namespace Beagle {
 
-// Any request message types in the Beagle.dll file must be registered here.
-[assembly: RequestMessageTypes (
-	 typeof (IndexingServiceRequest),
-	 typeof (InformationalMessagesRequest),
-	 typeof (DaemonInformationRequest),
-	 typeof (ShutdownRequest),
-	 typeof (ReloadConfigRequest),
-	 typeof (OptimizeIndexesRequest),
-	 typeof (SnippetRequest)
-)]
-	 
-[assembly: ResponseMessageTypes (
-	 typeof (EmptyResponse),
-	 typeof (ErrorResponse),
-	 typeof (FinishedResponse),
-	 typeof (HitsAddedResponse),
-	 typeof (HitsSubtractedResponse),
-	 typeof (IndexingStatusResponse),
-	 typeof (SearchTermResponse),
-	 typeof (DaemonInformationResponse),
-	 typeof (SnippetResponse)
-)]
+	public class DaemonStatus {
+	}
+}

@@ -32,54 +32,40 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Xml.Serialization;
 
+using NDesk.DBus;
+using org.freedesktop.DBus;
+
 using Beagle.Util;
 
 namespace Beagle {
 
-	[Flags]
-	public enum QueryDomain {
-		Local        = 1,
-		System       = 2,
-		Neighborhood = 4,
-		Global       = 8
-	}
+	public class Query : IQuery {
 
-	public class Query : RequestMessage {
-
+		//private List<QueryPart> parts = new List<QueryPart> ();
 		private ArrayList parts = new ArrayList ();
+		private IList<string> exact_text = null;
+		private IList<string> stemmed_text = null;
 
-		private ArrayList exact_text = null;
-		private ArrayList stemmed_text = null;
-
-		// FIXME: This is a good default when on an airplane.
+		private int max_hits = 100;
 		private QueryDomain domain_flags = QueryDomain.Local | QueryDomain.System;
 
-		public delegate void HitsAdded (HitsAddedResponse response);
-		public event HitsAdded HitsAddedEvent;
+		public event HitsAddedDelegate HitsAdded;
+		public event HitsSubtractedDelegate HitsSubtracted;
+		public event FinishedDelegate Finished;
 
-		public delegate void HitsSubtracted (HitsSubtractedResponse response);
-		public event HitsSubtracted HitsSubtractedEvent;
-
-		public delegate void Finished (FinishedResponse response);
-		public event Finished FinishedEvent;
-
-		public Query () : base (true)
+		public Query ()
 		{
-			this.RegisterAsyncResponseHandler (typeof (HitsAddedResponse), OnHitsAdded);
-			this.RegisterAsyncResponseHandler (typeof (HitsSubtractedResponse), OnHitsSubtracted);
-			this.RegisterAsyncResponseHandler (typeof (FinishedResponse), OnFinished);
-			this.RegisterAsyncResponseHandler (typeof (ErrorResponse), OnError);
-			this.RegisterAsyncResponseHandler (typeof (SearchTermResponse), OnSearchTerms);
 		}
 
-		public Query (string str) : this ()
+		public Query (string str)
+			: this ()
 		{
 			AddText (str);
 		}
 
 		///////////////////////////////////////////////////////////////
 
-		private void OnHitsAdded (ResponseMessage r)
+		/*private void OnHitsAdded (ResponseMessage r)
 		{
 			HitsAddedResponse response = (HitsAddedResponse) r;
 
@@ -113,15 +99,21 @@ namespace Beagle {
 		{
 			SearchTermResponse response = (SearchTermResponse) r;
 			ProcessSearchTermResponse (response);
-		}
+			}*/
 
 		///////////////////////////////////////////////////////////////
 
 		// This is exposed for the benefit of QueryDriver.DoQueryLocal
-		public void ProcessSearchTermResponse (SearchTermResponse response)
+		/*public void ProcessSearchTermResponse (SearchTermResponse response)
 		{
 			exact_text = response.ExactText;
 			stemmed_text = response.StemmedText;
+		}*/
+
+		public void ProcessSearchTerms (IList<string> exact_text, IList<string> stemmed_text)
+		{
+			this.exact_text = exact_text;
+			this.stemmed_text = stemmed_text;
 		}
 
 		///////////////////////////////////////////////////////////////
@@ -133,8 +125,8 @@ namespace Beagle {
 
 		private bool is_index_listener = false;
 		public bool IsIndexListener {
-			set { is_index_listener = value; }
 			get { return is_index_listener; }
+			set { is_index_listener = value; }
 		}
 
 		///////////////////////////////////////////////////////////////
@@ -160,18 +152,15 @@ namespace Beagle {
 			AddPart (part);
 		}
 
-		[XmlArrayItem (ElementName="Part", Type=typeof (QueryPart))]
-		[XmlArray (ElementName="Parts")]
-		public ArrayList Parts {
+		//public IList<QueryPart> Parts {
+		public ICollection Parts {
 			get { return parts; }
 		}
 
-		[XmlIgnore]
-		public ICollection Text {
+		public ICollection<string> Text {
 			get { return exact_text; }
 		}
 
-		[XmlIgnore]
 		public string QuotedText {
 			get {
 				StringBuilder builder = new StringBuilder ();
@@ -192,8 +181,7 @@ namespace Beagle {
 			}
 		}
 
-		[XmlIgnore]
-		public ICollection StemmedText {
+		public ICollection<string> StemmedText {
 			get { return stemmed_text; }
 		}
 						
@@ -221,7 +209,6 @@ namespace Beagle {
 
 		///////////////////////////////////////////////////////////////
 
-		private int max_hits = 100;
 		public int MaxHits {
 			get { return max_hits; }
 			set { max_hits = value; }

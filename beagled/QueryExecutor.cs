@@ -86,7 +86,7 @@ namespace Beagle.Daemon {
 
 		public override ResponseMessage Execute (RequestMessage req)
 		{
-			this.query = (Query) req;
+			/*this.query = (Query) req;
 
 			this.result = new QueryResult ();
 			this.result.IsIndexListener = this.query.IsIndexListener;
@@ -96,6 +96,7 @@ namespace Beagle.Daemon {
 			QueryDriver.DoQuery (query,
 					     this.result,
 					     new RequestMessageExecutor.AsyncResponse (this.SendAsyncResponse));
+			*/
 
 			// Don't send a response; we'll be sending them async
 			return null;

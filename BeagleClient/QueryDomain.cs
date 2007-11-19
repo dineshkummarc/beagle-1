@@ -1,7 +1,7 @@
 //
-// AssemblyInfo.cs
+// QueryDomain.cs
 //
-// Copyright (C) 2006 Novell, Inc.
+// Copyright (C) 2007 Novell, Inc.
 //
 
 //
@@ -24,29 +24,15 @@
 // DEALINGS IN THE SOFTWARE.
 //
 
-using System.Reflection;
+using System;
 
-using Beagle;
+namespace Beagle {
 
-// Any request message types in the Beagle.dll file must be registered here.
-[assembly: RequestMessageTypes (
-	 typeof (IndexingServiceRequest),
-	 typeof (InformationalMessagesRequest),
-	 typeof (DaemonInformationRequest),
-	 typeof (ShutdownRequest),
-	 typeof (ReloadConfigRequest),
-	 typeof (OptimizeIndexesRequest),
-	 typeof (SnippetRequest)
-)]
-	 
-[assembly: ResponseMessageTypes (
-	 typeof (EmptyResponse),
-	 typeof (ErrorResponse),
-	 typeof (FinishedResponse),
-	 typeof (HitsAddedResponse),
-	 typeof (HitsSubtractedResponse),
-	 typeof (IndexingStatusResponse),
-	 typeof (SearchTermResponse),
-	 typeof (DaemonInformationResponse),
-	 typeof (SnippetResponse)
-)]
+       [Flags]
+       public enum QueryDomain {
+               Local        = 1,
+               System       = 2,
+               Neighborhood = 4,
+               Global       = 8
+       }
+}

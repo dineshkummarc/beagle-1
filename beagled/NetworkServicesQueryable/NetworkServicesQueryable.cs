@@ -35,7 +35,7 @@ namespace Beagle.Daemon.NetworkServicesQueryable {
 		{
 			// Get rid of the standard UnixTransport so that we can
 			// forward our local query to remote hosts.
-			query.Transports.Clear ();
+			/*query.Transports.Clear ();
 
 			List<string[]> network_services = Conf.Networking.GetListOptionValues (Conf.Names.NetworkServices);
 			if (network_services != null) {
@@ -122,7 +122,7 @@ namespace Beagle.Daemon.NetworkServicesQueryable {
 
 			// FIXME FIXME FIXME: Live query does not work!
 
-			return;
+			return;*/
 		}
 
 		public ISnippetReader GetSnippet (string[] query_terms, Hit hit, bool full_text)

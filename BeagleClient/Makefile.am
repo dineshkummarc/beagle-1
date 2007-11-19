@@ -12,20 +12,27 @@ endif
 
 CSFILES = 						\
 	$(srcdir)/AssemblyInfo.cs			\
+	$(srcdir)/DaemonStatus.cs			\
 	$(srcdir)/Hit.cs                		\
 	$(srcdir)/IIndexableGenerator.cs       		\
 	$(srcdir)/Indexable.cs          		\
 	$(srcdir)/IndexingService.cs			\
 	$(srcdir)/IndexingStatusResponse.cs		\
 	$(srcdir)/InformationalMessagesRequest.cs	\
+	$(srcdir)/IQuery.cs				\
+	$(srcdir)/IQueryManager.cs			\
+	$(srcdir)/IStatusManager.cs			\
 	$(srcdir)/Message.cs				\
 	$(srcdir)/Property.cs           		\
 	$(srcdir)/Query.cs              		\
+	$(srcdir)/QueryDomain.cs			\
+	$(srcdir)/QueryManager.cs			\
 	$(srcdir)/QueryPart.cs				\
 	$(srcdir)/QueryResponses.cs            		\
 	$(srcdir)/QueryableStatus.cs			\
 	$(srcdir)/RemoteControl.cs			\
 	$(srcdir)/Snippet.cs				\
+	$(srcdir)/StatusManager.cs			\
 	$(srcdir)/Transport.cs				\
 	$(srcdir)/UnixTransport.cs			\
 	$(srcdir)/Versioned.cs
@@ -36,6 +43,7 @@ LOCAL_ASSEMBLIES =					\
 ASSEMBLIES = 						\
 	$(BEAGLED_LIBS)                 		\
 	$(SHARPZIPLIBS_LIBS)				\
+	$(NDESK_DBUS_LIBS)				\
 	-r:Mono.Posix					\
 	$(LOCAL_ASSEMBLIES:%=-r:%)
 

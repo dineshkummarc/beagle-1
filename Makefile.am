@@ -22,25 +22,25 @@ SUBDIRS +=			\
 	doc
 endif
 
-if ENABLE_GUI
-SUBDIRS +=			\
-	po			\
-	images			\
-	search			\
-	ImLogViewer
-endif
+#if ENABLE_GUI
+#SUBDIRS +=			\
+#	po			\
+#	images			\
+#	search			\
+#	ImLogViewer
+#endif
 
-SUBDIRS +=			\
-	firefox-extension	\
-	tools
+#SUBDIRS +=			\
+#	firefox-extension	\
+#	tools
 
 if ENABLE_EPIPHANY_EXTENSION
 SUBDIRS += epiphany-extension
 endif
 
-if ENABLE_BLUDGEON
-SUBDIRS += bludgeon
-endif
+#if ENABLE_BLUDGEON
+#SUBDIRS += bludgeon
+#endif
 
 if ENABLE_THUNDERBIRD
 SUBDIRS += thunderbird-extension

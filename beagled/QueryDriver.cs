@@ -651,9 +651,10 @@ namespace Beagle.Daemon {
 		{
 			DehumanizeQuery (query);
 
-			SearchTermResponse search_term_response;
-			search_term_response = AssembleSearchTermResponse (query);
-			query.ProcessSearchTermResponse (search_term_response);
+			// FIXME: Lukas Lipka
+			//SearchTermResponse search_term_response;
+			//search_term_response = AssembleSearchTermResponse (query);
+			//query.ProcessSearchTermResponse (search_term_response);
 
 			QueryEachQueryable (query, result);
 		}

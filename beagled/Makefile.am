@@ -439,6 +439,7 @@ DAEMON_DLL_CSFILES = 						\
 	$(NAUTILUS_QUERYABLE_CSFILES)				\
 	$(NETWORK_SERVICES_QUERYABLE)				\
 	$(srcdir)/AssemblyInfo.cs				\
+	$(srcdir)/DBusServer.cs					\
 	$(srcdir)/ExternalMetadataQueryable.cs			\
 	$(srcdir)/FileAttributes.cs				\
 	$(srcdir)/FileAttributesStore.cs			\
@@ -490,6 +491,7 @@ DAEMON_DLL_ASSEMBLIES = 					\
 	$(BEAGLED_LIBS)                 			\
 	$(DAEMON_DLL_LOCAL_ASSEMBLIES:%=-r:%)			\
 	$(SHARPZIPLIB_LIBS)					\
+	$(NDESK_DBUS_LIBS)					\
 	-r:Mono.Data.Sqlite					\
 	-r:Mono.Posix
 
