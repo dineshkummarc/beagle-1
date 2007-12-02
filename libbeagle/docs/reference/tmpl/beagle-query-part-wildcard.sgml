@@ -1,0 +1,42 @@
+<!-- ##### SECTION Title ##### -->
+BeagleQueryPartWildcard
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT BeagleQueryPartWildcard ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION beagle_query_part_wildcard_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_query_part_wildcard_set_query_string ##### -->
+<para>
+
+</para>
+
+@part: 
+@query_string: 
+
+

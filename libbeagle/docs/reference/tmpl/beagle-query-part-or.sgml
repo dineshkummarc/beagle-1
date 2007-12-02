@@ -1,0 +1,42 @@
+<!-- ##### SECTION Title ##### -->
+BeagleQueryPartOr
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT BeagleQueryPartOr ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION beagle_query_part_or_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_query_part_or_add_subpart ##### -->
+<para>
+
+</para>
+
+@part: 
+@subpart: 
+
+

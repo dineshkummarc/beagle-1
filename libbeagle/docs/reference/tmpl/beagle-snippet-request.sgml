@@ -1,0 +1,51 @@
+<!-- ##### SECTION Title ##### -->
+BeagleSnippetRequest
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT BeagleSnippetRequest ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION beagle_snippet_request_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_snippet_request_set_hit ##### -->
+<para>
+
+</para>
+
+@request: 
+@hit: 
+
+
+<!-- ##### FUNCTION beagle_snippet_request_set_query ##### -->
+<para>
+
+</para>
+
+@request: 
+@query: 
+
+
