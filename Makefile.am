@@ -1,0 +1,6 @@
+SUBDIRS = src
+
+EXTRA_DIST = 
+
+MAINTAINERCLEANFILES = \
+	Makefile.in
