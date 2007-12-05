@@ -4,7 +4,7 @@ using System.Text;
 
 using Beagle;
 
-public class rdf {
+public class RdfQueryTool {
 	public static void Main (string[] args)
 	{
 
