@@ -49,7 +49,7 @@ namespace Beagle.Daemon {
 
 	public class LuceneQueryingDriver : LuceneCommon {
 
-		static public bool Debug = false;
+		static public bool Debug = true;
 
 		public delegate bool UriFilter (Uri uri);
 		public delegate double RelevancyMultiplier (Hit hit);
@@ -138,10 +138,120 @@ namespace Beagle.Daemon {
 		// Returns a collection of Uris
 		// HitFilter and UriFilter are ignored for now
 		// They will come into play in the final FetchDocument part
-		public ICollection DoRDFQuery (Query query)
+		public ICollection DoRDFQuery (Query _query)
 		{
+			RDFQuery query = (RDFQuery) _query;
+
+			string subject, predicate, _object;
+
+			subject = query.Subject;
+			predicate = query.Predicate;
+			_object = query.Object;
+
 			if (Debug)
-				Logger.Log.Debug ("###### {0}: Starting low-level queries", IndexName);
+				Logger.Log.Debug ("###### {0}: Starting low-level queries '{1}':'{2}'='{3}'", IndexName, subject, predicate, _object);
+
+			// ******** 8 cases **********
+
+			// Return all uris
+			if (subject == String.Empty && predicate == String.Empty && _object == String.Empty)
+				return GetAllHitsByUri ().Keys;
+
+			// Normal query
+			if (subject == String.Empty && predicate == String.Empty && _object != String.Empty) {
+				QueryPart_Text part = new QueryPart_Text ();
+				part.Text = _object;
+				query.AddPart (part);
+				return DoLowLevelRDFQuery (query);
+			}
+
+			// Return uris for all documents with this property
+			if (subject == String.Empty && predicate != String.Empty && _object == String.Empty) {
+				return GetDocsWithProperty (predicate);
+			}
+
+			// Property query
+			if (subject == String.Empty && predicate != String.Empty && _object != String.Empty) {
+				QueryPart_Property part = new QueryPart_Property ();
+				part.Type = PropertyType.Text; // FIXME
+				part.Key = predicate;
+				part.Value = _object;
+				query.AddPart (part);
+				return DoLowLevelRDFQuery (query);
+			}
+
+			// Return if the URI exists
+			if (subject != String.Empty && predicate == String.Empty && _object == String.Empty) {
+				QueryPart_Uri part = new QueryPart_Uri ();
+				part.Uri = new Uri (subject); // better be URI!
+				query.AddPart (part);
+				return DoLowLevelRDFQuery (query);
+			}
+
+			// Normal query in the document with this URI
+			if (subject != String.Empty && predicate == String.Empty && _object != String.Empty) {
+				QueryPart_Uri uri_part = new QueryPart_Uri ();
+				uri_part.Uri = new Uri (subject); // better be URI!
+				query.AddPart (uri_part);
+
+				QueryPart_Text part = new QueryPart_Text ();
+				part.Text = _object;
+				query.AddPart (part);
+
+				return DoLowLevelRDFQuery (query);
+			}
+
+			// Return URI if the document with this URI contains this property
+			if (subject != String.Empty && predicate != String.Empty && _object == String.Empty) {
+				ArrayList returned_uris = new ArrayList (1);
+
+				ArrayList uri_list = new ArrayList (1);
+				uri_list.Add (new Uri (subject));
+				ICollection hits = GetHitsForUris (uri_list);
+
+				foreach (Hit hit in hits)
+					if (hit.GetFirstProperty (predicate) != null)
+						returned_uris.Add (hit.Uri);
+
+				return returned_uris;
+			}
+
+			// Property query in the document with this URI
+			if (subject != String.Empty && predicate != String.Empty && _object != String.Empty) {
+				QueryPart_Uri uri_part = new QueryPart_Uri ();
+				uri_part.Uri = new Uri (subject); // better be URI!
+				query.AddPart (uri_part);
+
+				QueryPart_Property part = new QueryPart_Property ();
+				part.Type = PropertyType.Text; // FIXME
+				part.Key = predicate;
+				part.Value = _object;
+				query.AddPart (part);
+
+				return DoLowLevelRDFQuery (query);
+			}
+
+			throw new Exception ("Never reaches");
+		}
+
+		private ICollection GetDocsWithProperty (string propname)
+		{
+			// This is the hardest!
+			// Most of the times either all docs will have the property or
+			// neither will, but we also have to cover the rare cases.
+			// Possible approach: Do a term_enum with this property name.
+			// Keep a Set of all Docs (rather Uris) which contain that term
+			// (pretty expensive - since most probably all documents will contain that
+			// property).
+			//
+			// Another approach: Get all hits from the driver, scan them one by one
+			// and return URIs for the hits which contain the property *shudder*
+			//
+			return new ArrayList ();
+		}
+
+		private ICollection DoLowLevelRDFQuery (Query query)
+		{
 
 			Stopwatch total, a, b, c, d, e, f;
 

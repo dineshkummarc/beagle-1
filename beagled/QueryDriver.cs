@@ -645,8 +645,6 @@ namespace Beagle.Daemon {
 
 		static public ArrayList DoRDFQuery (RDFQuery query)
 		{
-			DehumanizeQuery (query);
-
 			ArrayList all_results = new ArrayList ();
 
 			foreach (Queryable q in queryables) {

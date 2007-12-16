@@ -8,16 +8,15 @@ public class RdfQueryTool {
 	public static void Main (string[] args)
 	{
 
-		if (args.Length == 0)
+		if (args.Length != 3) {
+			Console.WriteLine ("Usage: program-name <subject> <predicate> <object>");
 			return;
+		}
 
 		RDFQueryResult result;
 
-		StringBuilder sb = new StringBuilder ();
-		foreach (string arg in args)
-			sb.Append (String.Format ("{0}{1}", (sb.Length > 0 ? " " : ""), arg));
-
-		RDFQuery query = new RDFQuery (sb.ToString ());
+		Console.WriteLine ("subject:'{0}' predicate:'{1}' object:'{2}'", args [0], args [1], args [2]);
+		RDFQuery query = new RDFQuery (args [0], args [1], args [2]);
 		result = (RDFQueryResult) query.Send ();
 
 		if (result == null) {

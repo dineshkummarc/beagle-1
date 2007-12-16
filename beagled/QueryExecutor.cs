@@ -116,7 +116,9 @@ namespace Beagle.Daemon {
 		public override ResponseMessage Execute (RequestMessage request)
 		{
 			RDFQueryResult result = new RDFQueryResult ();
-			RDFQuery query = (RDFQuery) request;
+			RDFQuery query = request as RDFQuery;
+			if (query == null)
+				return new ErrorResponse ("Only RDF query please!");
 
 			result.Matches = QueryDriver.DoRDFQuery (query);
 			return result;

@@ -247,6 +247,10 @@ namespace Beagle {
 
 	public class RDFQuery : Query {
 
+		public string Subject;
+		public string Predicate;
+		public string Object;
+
 		public RDFQuery ()
 		{
 			// RDFQuery is a sync message
@@ -259,10 +263,23 @@ namespace Beagle {
 			Keepalive = false;
 		}
 
-		public RDFQuery (string str) : this ()
+		public RDFQuery (string subject, string predicate, string _object) : this ()
 		{
-			AddText (str);
+			this.Subject = (subject == null ? String.Empty : subject);
+			this.Predicate = (predicate == null ? String.Empty : predicate);
+			this.Object = (_object == null ? String.Empty : _object);
+
+			// FIXME: the query contains a dummy part that will make the query
+			// pass even if it is empty. This is needed till all the 8 cases are covered.
+			// Basically when any of the unsupported case is received, the dummy part
+			// will ensure that the query will pass and return 0 results.
+			//
+			QueryPart_Text dummy = new QueryPart_Text ();
+			dummy.Logic = QueryPartLogic.Prohibited;
+			dummy.Text = "XXXXXXXXXXXXXXXXXXXXXXXXX";
+			AddPart (dummy);
 		}
+
 	}
 
 	public class RDFQueryResult : ResponseMessage {
