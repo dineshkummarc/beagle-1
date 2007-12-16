@@ -289,12 +289,16 @@ namespace Search {
 		"        <menuitem action='Feeds'/>" +
 		"        <menuitem action='Archives'/>" +
 		"      </menu>" +
+
+#if ENABLE_AVAHI
 		"      <menu action='Domain'>" +
 		"        <menuitem action='Local'/>" +
 		"        <menuitem action='Neighborhood'/>" +
 		"      </menu>" +
-		"      <separator/>" +
+#endif
+
 		"      <menuitem action='Preferences'/>" +
+		"      <separator/>" +
 		"      <menuitem action='Quit'/>" +
 		"    </menu>" +
 		"    <menu action='Actions'>" +
@@ -382,7 +386,7 @@ namespace Search {
 
 		private void About (object obj, EventArgs args)
 		{
-			Gdk.Pixbuf logo = Beagle.Images.GetPixbuf ("system-search.png");
+			Gdk.Pixbuf logo = WidgetFu.LoadThemeIcon ("system-search", 48);
 
 			string[] people = new string[] { "Anna Dirks <anna@novell.com>",
 							 "Fredrik Hedberg <fredrik@avafan.com>",

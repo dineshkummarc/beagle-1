@@ -28,7 +28,7 @@ using System;
 using System.Collections;
 using System.IO;
 
-using Mono.Data.SqliteClient;
+using Mono.Data.Sqlite;
 
 using Beagle.Util;
 
@@ -42,22 +42,47 @@ namespace Beagle.Daemon.EvolutionMailQueryable {
 		{
 			// Make the on-disk files for folders have sane names
 			folder_name = folder_name.Replace ('/', '-');
+			folder_name = folder_name.Replace (':', '_');
 			folder_name = folder_name.Replace (',', ' '); // Causes problems with the ConnectionString otherwise
 
 			string filename = Path.Combine (directory, String.Format ("SummaryTracker-{0}-{1}.db", account_name, folder_name));
 			bool create_new_db = ! File.Exists (filename);
+			bool purge_old_db = false;
 
 			connection = GetConnection (filename);
 			try {
 				connection.Open ();
 			} catch (ApplicationException) {
-				create_new_db = true;
+				purge_old_db = true;
+			}
+
+			if (! create_new_db && ! purge_old_db) {
+				// Run a dummy SELECT statement to catch more errors
+				// indicating sqlite version mismatches.
+				using (SqliteCommand command = new SqliteCommand ()) {
+					command.Connection = connection;
+					command.CommandText = "SELECT flags FROM mapping WHERE uid = 'fo/ky'";
+
+					SqliteDataReader reader;
+
+					try {
+						reader = SqliteUtils.ExecuteReaderOrWait (command);
+						reader.Close ();
+					} catch (ApplicationException) {
+						purge_old_db = true;
+					}
+				}
+			}
+
+			if (purge_old_db) {
 				connection.Dispose ();
 
 				// Purge the old database and create a new one
 				File.Delete (filename);
 				connection = GetConnection (filename);
 				connection.Open ();
+
+				create_new_db = true;
 			}
 
 			if (create_new_db)
@@ -70,7 +95,7 @@ namespace Beagle.Daemon.EvolutionMailQueryable {
 		private static SqliteConnection GetConnection (string filename)
 		{
 			SqliteConnection connection = new SqliteConnection ();
-			connection.ConnectionString = String.Format ("version={0},encoding=UTF-8,URI=file:{1}", ExternalStringsHack.SqliteVersion, filename);
+			connection.ConnectionString = String.Format ("version={0},encoding=UTF-8,URI=file:{1}", 3, filename);
 
 			return connection;
 		}
@@ -79,9 +104,9 @@ namespace Beagle.Daemon.EvolutionMailQueryable {
 		{
 			SqliteUtils.DoNonQuery (connection,
 						"CREATE TABLE mapping (        " +
-						"  uid       STRING  UNIQUE,   " +
+						"  uid       TEXT    UNIQUE,   " +
 						"  flags     INTEGER NOT NULL, " +
-						"  last_seen STRING  NOT NULL  " +
+						"  last_seen TEXT    NOT NULL  " +
 						")");
 
 			SqliteUtils.DoNonQuery (connection,
@@ -120,10 +145,9 @@ namespace Beagle.Daemon.EvolutionMailQueryable {
 				SqliteUtils.DoNonQuery (connection,
 							"INSERT OR REPLACE INTO mapping " +
 							"  (uid, flags, last_seen) " +
-							"  VALUES ('{0}', {1}, {2})",
-							uid.Replace ("'", "''"),
-							flags,
-							StringFu.DateTimeToString (DateTime.UtcNow));
+							"  VALUES (@uid, @flags, @last_seen)",
+							new string [] {"@uid", "@flags", "@last_seen"},
+							new object [] {uid, flags, StringFu.DateTimeToString (DateTime.UtcNow)});
 			}
 		}
 
@@ -160,8 +184,9 @@ namespace Beagle.Daemon.EvolutionMailQueryable {
 		{
 			lock (connection) {
 				SqliteUtils.DoNonQuery (connection,
-							"DELETE FROM mapping WHERE uid='{0}'",
-							uid.Replace ("'", "''"));
+							"DELETE FROM mapping WHERE uid=@uid",
+							new string [] {"@uid"},
+							new object [] {uid});
 			}
 		}
 

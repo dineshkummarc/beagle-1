@@ -59,8 +59,7 @@ public class QueryTool {
 	private static bool display_hits = true;
 	private static bool flood = false;
 	private static bool listener = false;
-	private static DateTime start_date = DateTime.MinValue;
-	private static DateTime end_date = DateTime.MinValue;
+	private static bool display_cached_text = false;
 
 	private static void OnHitsAdded (HitsAddedResponse response)
 	{
@@ -87,9 +86,13 @@ public class QueryTool {
 
 			if (verbose) {
 				SnippetRequest sreq = new SnippetRequest (query, hit);
+				if (display_cached_text)
+					sreq.FullText = true;
+
 				SnippetResponse sresp = (SnippetResponse) sreq.Send ();
 				Console.WriteLine ("PaUri: {0}", hit.ParentUri != null ? hit.ParentUri.ToString () : "(null)");
-				Console.WriteLine (" Snip: {0}", sresp.Snippet != null ? sresp.Snippet : "(null)");
+				if (! display_cached_text)
+					Console.WriteLine (" Snip: {0}", sresp.Snippet != null ? sresp.Snippet : "(null)");
 				Console.WriteLine (" Type: {0}", hit.Type);
 				Console.WriteLine ("MimeT: {0}", hit.MimeType == null ? "(null)" : hit.MimeType);
 				Console.WriteLine ("  Src: {0}", hit.Source);
@@ -102,6 +105,21 @@ public class QueryTool {
 						prop.Key,
 						(prop.Type != PropertyType.Date ? prop.Value : DateTimeUtil.ToString (StringFu.StringToDateTime (prop.Value))));
 				
+
+				if (display_cached_text) {
+					Console.WriteLine ("-- Cache -------------------------------------");
+					if (sresp.SnippetList.Snippets == null)
+						Console.WriteLine ("(empty)");
+					else {
+						foreach (SnippetLine snippet_line in sresp.SnippetList.Snippets) {
+							if (snippet_line == null || snippet_line.Fragments == null)
+								Console.WriteLine ("(empty)");
+							else
+								Console.WriteLine (((Fragment)snippet_line.Fragments [0]).Text);
+						}
+					}
+					Console.WriteLine ("----------------------------------------------");
+				}
 				Console.WriteLine ();
 			}
 
@@ -145,25 +163,27 @@ public class QueryTool {
 		string usage =
 			"Usage: beagle-query [OPTIONS] <query string>\n\n" +
 			"Options:\n" +
-			"  --verbose\t\t\tPrint detailed information about each hit.\n" +
-			"  --keywords\t\t\tLists the keywords allowed in 'query string'.\n" +
-			"            \t\t\tKeyword queries can be specified as keywordname:value e.g. ext:jpg\n" +
-			"  --live-query\t\t\tRun continuously, printing notifications if a\n" +
-			"              \t\t\tquery changes.\n" +
-			"  --stats-only\t\t\tOnly display statistics about the query, not\n" +
-			"              \t\t\tthe actual results.\n" +
-			"  --max-hits\t\t\tLimit number of search results per backend\n" +
-			"            \t\t\t(default 100)\n" +
+			"  --verbose\t\tPrint detailed information about each hit.\n" +
+			"  --cache\t\tShow the entire cached text instead of a snippet\n" +
+			"         \t\tshowing the matches, requires --verbose.\n" +
+			"         \t\tFor large documents this will produce extremely large output,\n" +
+			"         \t\tso use this with uri queries or queries returning only a few results\n" + 
+			"         \t\tNot recommended for live-queries or stats-only queries.\n" +
+			"  --keywords\t\tLists the keywords allowed in 'query string'.\n" +
+			"            \t\tKeyword queries can be specified as keywordname:value e.g. ext:jpg\n" +
+			"  --live-query\t\tRun continuously, printing notifications if a\n" +
+			"              \t\tquery changes.\n" +
+			"  --stats-only\t\tOnly display statistics about the query, not\n" +
+			"              \t\tthe actual results.\n" +
+			"  --max-hits\t\tLimit number of search results per backend\n" +
+			"            \t\t(default 100)\n" +
 			"\n" +
-			"  --local <yes|no>\t\tQuery local system (default yes)\n" +
-			"  --network <yes|no>\t\tQuery other beagle systems in the neighbourhood domain specified in config (default no)\n" +
-			"                    \t\tUse 'beagle-config networking AddNeighborhoodBeagleNode hostname:portnumber' to add a remote beagle system\n" +
-			"                    \t\tThe service by default runs in port 4000\n" +
+			"  --network <yes|no>\tQuery other beagle systems in the network specified in config (default no)\n" +
 			"\n" +
-			"  --flood\t\t\tExecute the query over and over again.  Don't do that.\n" +
-			"  --listener\t\t\tExecute an index listener query.  Don't do that either.\n" +
-			"  --help\t\t\tPrint this usage message.\n" +
-			"  --version\t\t\tPrint version information.\n" +
+			"  --flood\t\tExecute the query over and over again.  Don't do that.\n" +
+			"  --listener\t\tExecute an index listener query.  Don't do that either.\n" +
+			"  --help\t\tPrint this usage message.\n" +
+			"  --version\t\tPrint version information.\n" +
 			"\n" +
 			"Query string supports an advanced query syntax.\n" +
 			"For details of the query syntax, please see http://beagle-project.org/Searching_Data\n" +
@@ -262,11 +282,6 @@ public class QueryTool {
 
 		StringBuilder query_str =  new StringBuilder ();
 
-		string[] formats = {
-			"yyyyMMdd",
-			"yyyyMMddHHmmss"
-		};
-
 		query = new Query ();
 
 		// Parse args
@@ -279,6 +294,9 @@ public class QueryTool {
 				break;
 			case "--verbose":
 				verbose = true;
+				break;
+			case "--cache":
+				display_cached_text = true;
 				break;
 			case "--stats-only":
 				verbose = true;
@@ -335,21 +353,8 @@ public class QueryTool {
 		if (listener) {
 			query.IsIndexListener = true;
 		} else {
-		
 			if (query_str.Length > 0)
 				query.AddText (query_str.ToString ());
-
-			if (start_date != DateTime.MinValue || end_date != DateTime.MinValue) {
-				QueryPart_DateRange part = new QueryPart_DateRange ();
-				
-				if (start_date != DateTime.MinValue)
-					part.StartDate = start_date;
-
-				if (end_date != DateTime.MinValue)
-					part.EndDate = end_date;
-				
-				query.AddPart (part);
-			}
 		}
 
 		query.HitsAddedEvent += OnHitsAdded;

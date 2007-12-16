@@ -103,7 +103,6 @@ TRAY =						\
 LOCAL_ASSEMBLIES =			\
 	../Util/Util.dll		\
 	../Util/UiUtil.dll		\
-	../images/Images.dll		\
 	../BeagleClient/Beagle.dll
 
 ASSEMBLIES =				\
@@ -147,6 +146,7 @@ EXTRA_DIST =			\
 	$(TILES)		\
 	$(PAGES)		\
 	$(TRAY)			\
+	$(man_MANS)		\
 	$(desktop_DATA).in	\
 	$(autostart_DATA)	\
 	beagle-search.in	\

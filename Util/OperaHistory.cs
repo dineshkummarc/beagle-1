@@ -33,18 +33,18 @@ using System.Globalization;
 namespace Beagle.Daemon.OperaQueryable {
 	
 	public class OperaHistory {
-		private string filename;
 		private ArrayList rows;
-		
+		private DateTime lastRead;
 		public enum Directives : byte {
 			RowStart		=	0x01,	// Row start (new entry)
 			Address			=	0x03,	// Web address
+			LastVisited		=	0x04,	// Last visited
 			Length			=	0x08,	// Object length (e.g. image size)
 			MimeType		=	0x09,	// Mime type
 			Attributes		=	0x10,	// Attributes
 			Encoding		=	0x0A,	// Encoding used
 			Filename 		=	0x0D,	// Local filename used for this object
-			LocalSaveTime	=	0x15,	// Time when an object was saved to the harddrive
+			LocalSaveTime		=	0x15,	// Time when an object was saved to the harddrive
 			LastChanged		=	0x17,	// Time when the object was last modified on the server
 			Compression		=	0x20	// Compression algorithm used (usually gzip)
 		}
@@ -135,11 +135,22 @@ namespace Beagle.Daemon.OperaQueryable {
 				}
 			}
 			
+			public DateTime LastVisited {
+				get {
+					try {
+						byte[] content = GetContent (Directives.LastVisited);
+						return Beagle.Util.DateTimeUtil.UnixToDateTimeUtc (Beagle.Util.BitConverter.ToUInt32 (content, 0, false));
+					} catch {
+						return DateTime.MinValue;
+					}
+				}
+			}
+			
 			public DateTime LocalSaveTime {
 				get {
 					try {
 						byte[] content = GetContent (Directives.LocalSaveTime);
-						return DateTime.Parse (encoding.GetString (content));
+						return Beagle.Util.DateTimeUtil.UnixToDateTimeUtc (Beagle.Util.BitConverter.ToUInt32 (content, 0, false));
 					} catch {
 						return DateTime.MinValue;
 					}
@@ -150,7 +161,7 @@ namespace Beagle.Daemon.OperaQueryable {
 				get {
 					try {
 						byte[] content = GetContent (Directives.LastChanged);
-						return DateTime.Parse (encoding.GetString (content));
+						return Beagle.Util.DateTimeUtil.UnixToDateTimeUtc (Beagle.Util.BitConverter.ToUInt32 (content, 0, false));
 					} catch {
 						return DateTime.MinValue;
 					}
@@ -191,20 +202,24 @@ namespace Beagle.Daemon.OperaQueryable {
 		
 		public OperaHistory (string filename)
 		{
-			this.filename = filename;
 			this.rows = new ArrayList ();
+			this.lastRead = DateTime.MinValue;
+
+			Read (filename);
 		}
 		
-		public void Read ()
+		private void Read (string filename)
 		{
-			StreamReader stream = new StreamReader (filename);
-			BinaryReader binary = new BinaryReader (stream.BaseStream);
-			
-			// Skip first 12 bytes since their purpose is yet unknown
-			binary.BaseStream.Seek (12, SeekOrigin.Begin);
-			while (binary.ReadByte () == 1) {
-				int length = Convert.ToInt32 (GetLength (binary.ReadByte (), binary.ReadByte ()));
-				ReadLine (binary.ReadBytes (length));
+			using (StreamReader stream = new StreamReader (filename)) {
+				using (BinaryReader binary = new BinaryReader (stream.BaseStream)) {
+					this.lastRead = DateTime.Now;
+					// Skip first 12 bytes since their purpose is yet unknown
+					binary.BaseStream.Seek (12, SeekOrigin.Begin);
+					while (binary.ReadByte () == 1) {
+						int length = Convert.ToInt32 (GetLength (binary.ReadByte (), binary.ReadByte ()));
+						ReadLine (binary.ReadBytes (length));
+					}
+				}
 			}
 		}
 		
@@ -226,7 +241,9 @@ namespace Beagle.Daemon.OperaQueryable {
 				
 					if (prop != null)
 						row.AddProperty (prop);
-				} catch { }
+				} catch(Exception e) { 
+					Beagle.Util.Logger.Log.Error(e);
+				}
 			}
 			
 			return row;
@@ -278,6 +295,11 @@ namespace Beagle.Daemon.OperaQueryable {
 		public IEnumerator GetEnumerator ()
 		{
 			return rows.GetEnumerator ();
+		}
+		
+		public DateTime GetLastRead() 
+		{
+			return this.lastRead;
 		}
 	}
 }

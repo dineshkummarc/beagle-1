@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 using Mono.Unix;
 using Beagle.Util;
 
@@ -29,7 +30,10 @@ namespace Search.Tiles {
 
 		protected override void LoadIcon (Gtk.Image image, int size)
 		{
-			image.Pixbuf = Beagle.Images.GetPixbuf ("note", size, size);
+			// FIXME: I wonder if there is a standard icon name for
+			// notes in the icon naming scheme because I was unable to
+			// find one. :-(
+			image.Pixbuf = WidgetFu.LoadThemeIcon ("tomboy-note", size);
 		}
 
 		public override void Open ()
@@ -68,6 +72,12 @@ namespace Search.Tiles {
 
 			details.AddLabelPair (Catalog.GetString ("Title:"), Title);
 			details.AddLabelPair (Catalog.GetString ("Last Edited:"), Utils.NiceLongDate (Timestamp));
+			
+			if(! String.IsNullOrEmpty (Hit.GetFirstProperty ("note:tag"))) {
+				string tags = String.Join (", ", Hit.GetProperties ("note:tag"));
+				details.AddLabelPair (Catalog.GetString ("Tags:"), tags);
+			}
+			
 			details.AddSnippet ();
 
 			return details;

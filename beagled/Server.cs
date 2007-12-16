@@ -45,7 +45,7 @@ namespace Beagle.Daemon {
 
 		public void RegisterHit (Hit hit)
 		{
-			Logger.Log.Debug ("httpitemhandler: registering {0}", hit.Uri);
+			//Logger.Log.Debug ("httpitemhandler: registering {0}", hit.Uri);
 
 			if (hit.Uri == null) {
 				Logger.Log.Debug ("httpitemhandler: cannot register hits with no URIs");
@@ -55,6 +55,8 @@ namespace Beagle.Daemon {
 			items [hit.Uri] = hit;
 		}
 
+		byte[] buffer = new byte [1024];
+
 		public void HandleRequest (HttpListenerContext context, System.Uri path)
 		{
 			Hit requested = (Hit) items [path];
@@ -62,7 +64,7 @@ namespace Beagle.Daemon {
 			if (requested == null)
 				return;
 
-			Logger.Log.Debug ("httpitemhandler: requested: {0}", path);
+			//Logger.Log.Debug ("httpitemhandler: requested: {0}", path);
 			context.Response.ContentType = requested.MimeType;
 			
 			// FIXME: We can only handle files for now
@@ -71,12 +73,19 @@ namespace Beagle.Daemon {
 			  return;
 			}*/
 			
-			StreamReader r = new StreamReader (new FileStream (requested.Uri.LocalPath, FileMode.Open));
-			StreamWriter w = new StreamWriter (context.Response.OutputStream);
-			
-			w.Write (r.ReadToEnd ());
-			w.Close ();
-			
+			using (BinaryReader r = new BinaryReader (new FileStream (requested.Uri.LocalPath, FileMode.Open, FileAccess.Read))) {
+				using (BinaryWriter w = new BinaryWriter (context.Response.OutputStream)) {
+
+					int count = 1024;
+					while (count == 1024) {
+						count = r.Read (buffer, 0, count);
+						if (count == 0)
+							break;
+						w.Write (buffer, 0, count);
+					}
+				}
+			}
+
 			context.Response.Close ();
 		}
 	}
@@ -96,9 +105,13 @@ namespace Beagle.Daemon {
 			this.item_handler = item_handler;
 		}
 
+		internal System.Guid Guid {
+			get { return id; }
+		}
+
 		public override void HandleConnection ()
 		{
-			Logger.Log.Debug ("HTTP Server: Serving request for {0}", context.Request.Url);
+			//Logger.Log.Debug ("HTTP Server: Serving request for {0}", context.Request.Url);
 			
 			// Query request: read content and forward to base.HandleConnection for processing
 			context.Response.KeepAlive = true;
@@ -144,7 +157,7 @@ namespace Beagle.Daemon {
 					Logger.Log.Debug ("Bailing out of HandleConnection -- shutdown requested");
 					this.thread = null;
 					Server.MarkHandlerAsKilled (this);
-					Shutdown.WorkerFinished (network_data);
+					Shutdown.WorkerFinished (context.Request.InputStream);
 					return;
 				}
 
@@ -159,7 +172,7 @@ namespace Beagle.Daemon {
 				}
 			} while (bytes_read > 0 && end_index == -1);
 			
-			Logger.Log.Debug ("HTTP Server: Handling received request message");
+			//Logger.Log.Debug ("HTTP Server: Handling received request message");
 			
 			buffer_stream.Seek (0, SeekOrigin.Begin);
 			base.HandleConnection (buffer_stream);
@@ -262,7 +275,7 @@ namespace Beagle.Daemon {
 			}
 
 			if (r) {
-				Logger.Log.Debug ("httpserver: Sent response = " + response.ToString ());
+				//Logger.Log.Debug ("httpserver: Sent response = " + response.ToString ());
 				//add end-of-document
 				context.Response.OutputStream.WriteByte (0xff);
 				context.Response.OutputStream.Flush ();
@@ -295,9 +308,18 @@ namespace Beagle.Daemon {
 
 			if (result) {
 				// Send an end of message marker
-				this.client.GetStream().WriteByte (0xff);
-				this.client.GetStream().Flush ();
+				// FIXME: Should we return false if this fails ? I think we should.
+				// There is a timing issue here - sometimes, the sending above
+				// works and this one fails.
+				try {
+					this.client.GetStream().WriteByte (0xff);
+					this.client.GetStream().Flush ();
+				} catch (IOException e) {
+					Logger.Log.Debug (e, "Caught an exception sending {0}.  Shutting down socket.", response.GetType ());
+					result = false;
+				}
 			}
+
 			return result;
 		}			
 
@@ -493,7 +515,7 @@ namespace Beagle.Daemon {
 
 		protected void OnAsyncResponse (ResponseMessage response)
 		{
-			Logger.Log.Debug ("Sending response of type {0}", response.GetType ());
+			//Logger.Log.Debug ("Sending response of type {0}", response.GetType ());
 			if (!SendResponse (response))
 				Close ();
 		}
@@ -603,7 +625,10 @@ namespace Beagle.Daemon {
 		private HttpListener http_listener;
 		private static Hashtable live_handlers = new Hashtable ();
 		private bool running = false;
-		private bool enable_http = false;
+		// FIXME: Should be changed to enable/disable network service at runtime
+		private bool enable_network_svc = false;
+		private bool webinterface = false; // web interface is enabled if (enable_network_svc || webinterface)
+		private bool indexhelper = false; // denotes if this is an instance of an IndexHelper
 
 		public static Hashtable item_handlers = new Hashtable ();
 
@@ -613,7 +638,7 @@ namespace Beagle.Daemon {
 				ScanAssemblyForExecutors (assembly);
 		}
 
-		public Server (string name, bool enable_http)
+		public Server (string name, bool indexhelper, bool enable_network_svc)
 		{
 			// Use the default name when passed null
 			if (name == null)
@@ -621,10 +646,15 @@ namespace Beagle.Daemon {
 
 			this.socket_path = Path.Combine (PathFinder.GetRemoteStorageDir (true), name);
 			this.unix_listener = new UnixListener (this.socket_path);
-			this.enable_http = enable_http;
+			this.enable_network_svc = enable_network_svc;
+			this.indexhelper = indexhelper;
+			if (this.indexhelper) {
+				this.enable_network_svc = false;
+				this.webinterface = false;
+			}
 		}
 
-		public Server (bool enable_http) : this (null, enable_http)
+		public Server (bool enable_network_svc) : this (null, false, enable_network_svc)
 		{
 		}
 
@@ -640,6 +670,9 @@ namespace Beagle.Daemon {
 		{
 			lock (live_handlers) {
 				live_handlers.Remove (handler);
+
+				if (handler is HttpConnectionHandler)
+					item_handlers.Remove (((HttpConnectionHandler) handler).Guid);
 			}
 		}
 
@@ -660,8 +693,6 @@ namespace Beagle.Daemon {
 
 			if (! Shutdown.WorkerStart (this, String.Format ("server '{0}'", socket_path)))
 				return;
-
-			ConnectionHandler handler = null;
 
 			while (this.running) {
 				UnixClient client;
@@ -687,7 +718,7 @@ namespace Beagle.Daemon {
 
 				// If client is null, the socket timed out.
 				if (client != null) {
-					handler = new UnixConnectionHandler (client);
+					ConnectionHandler handler = new UnixConnectionHandler (client);
 					lock (live_handlers)
 						live_handlers [handler] = handler;
 					ExceptionHandlingThread.Start (new ThreadStart (handler.HandleConnection));
@@ -702,12 +733,17 @@ namespace Beagle.Daemon {
 		private void HttpRun ()
 		{
 			http_listener = new HttpListener ();
+
 			string prefix = null;
 			int port = 4000;
 			bool success = false;
+			string host = "localhost";
+
+			if (enable_network_svc)
+				host = "*";
 
 			do {
-				prefix = String.Format ("http://*:{0}/", port);
+				prefix = String.Format ("http://{0}:{1}/", host, port);
 				success = true;
 
 				try {	
@@ -721,7 +757,7 @@ namespace Beagle.Daemon {
 			} while (!success);
 
 			Shutdown.WorkerStart (this.http_listener, String.Format ("HTTP Server '{0}'", prefix));
-			Logger.Log.Debug ("HTTP Server: Listening on {0}", prefix);
+			Log.Always ("HTTP Server: Listening on {0}", prefix);
 
 			while (this.running)
 			{
@@ -731,10 +767,10 @@ namespace Beagle.Daemon {
 					context = http_listener.GetContext ();
 				} catch (Exception e) {
 					// Log a warning if not due to shutdown
-					if (this.running)
-						Logger.Log.Warn (e, "HTTP Server: Exception while getting context:");
-					else
+					if (! this.running ||
+					    (! this.enable_network_svc && ! this.webinterface))
 						break;
+					Logger.Log.Warn (e, "HTTP Server: Exception while getting context:");
 				}
 
 				if (context == null)
@@ -820,7 +856,8 @@ namespace Beagle.Daemon {
 				
 
 			Shutdown.WorkerFinished (http_listener);
-			Logger.Log.Debug ("HTTP Server: '{0}' shut down...", prefix);
+			Logger.Log.Info ("HTTP Server: '{0}' shut down...", prefix);
+			http_listener = null;
 		}
 
 		public void Start ()
@@ -828,11 +865,36 @@ namespace Beagle.Daemon {
 			if (!initialized)
 				throw new Exception ("Server must be initialized before starting");
 
-			if (!Shutdown.ShutdownRequested) {
-				if (enable_http)
+			if (Shutdown.ShutdownRequested)
+				return;
+
+			if (! indexhelper) {
+				Config config = Conf.Get (Conf.Names.NetworkingConfig);
+				webinterface = config.GetOption ("WebInterface", false);
+				Conf.WatchForUpdates ();
+				Conf.Subscribe (Conf.Names.NetworkingConfig, ConfigUpdateHandler);
+
+				if (enable_network_svc || webinterface)
 					ExceptionHandlingThread.Start (new ThreadStart (this.HttpRun));
-				ExceptionHandlingThread.Start (new ThreadStart (this.Run));
 			}
+
+			ExceptionHandlingThread.Start (new ThreadStart (delegate () {
+							    try {
+								    this.Run ();
+							    } catch (ThreadAbortException) {
+								    Thread.ResetAbort ();
+							    	    Log.Debug ("Breaking out of UnixListener -- shutdown requested");
+							    	    Shutdown.WorkerFinished (this);
+							    }
+						    }));
+		}
+
+		private void StartWebserver ()
+		{
+			if (indexhelper || enable_network_svc || webinterface)
+				return;
+			webinterface = true;
+			ExceptionHandlingThread.Start (new ThreadStart (this.HttpRun));
 		}
 
 		public void Stop ()
@@ -840,9 +902,10 @@ namespace Beagle.Daemon {
 			if (this.running) {
 				this.running = false;
 				this.unix_listener.Stop ();
-				if (enable_http) {
+				if (enable_network_svc || webinterface) {
 					// Abort without bothering about anythin' else
 					this.http_listener.IgnoreWriteExceptions = true;
+					this.webinterface = false;
 					// FIXME FIXME FIXME: this.http_listener.Abort() is throwing
 					// IOExceptions when trying
 					// to close previous connections which were unexpectedly 
@@ -859,6 +922,40 @@ namespace Beagle.Daemon {
 			}
 
 			File.Delete (this.socket_path);
+		}
+
+		private void StopWebserver ()
+		{
+			if (indexhelper || enable_network_svc || ! webinterface)
+				return;
+			
+			this.http_listener.IgnoreWriteExceptions = true;
+			this.webinterface = false;
+			// FIXME FIXME FIXME: this.http_listener.Abort() is throwing
+			// IOExceptions when trying
+			// to close previous connections which were unexpectedly 
+			// closed by the client. That somehow points to a leak; why
+			// are those connections still present with listener ?
+			// http_listener should really be Abort()-ed and not Close()-ed
+			try {
+				this.http_listener.Close ();
+			} catch (IOException) {
+				Log.Debug ("IOException was thrown when trying to close previous connections which were unexpectedly closed by the client. This somehow points to a leak; why are those connections still present with listener ?");
+				Log.Debug ("Also this is preventing the abort() to complete and hence http_listener.GetContext() is still waiting for connections.");
+			}
+		}
+
+		private void ConfigUpdateHandler (Config config)
+		{
+			if (config == null || config.Name != Conf.Names.NetworkingConfig)
+				return;
+
+			bool to_webinterface = config.GetOption ("WebInterface", false);
+			Log.Debug ("WebInterface option changed to {0}", to_webinterface);
+			if (to_webinterface)
+				StartWebserver ();
+			else
+				StopWebserver ();
 		}
 
 		//////////////////////////////////////////////////////////////////////////////

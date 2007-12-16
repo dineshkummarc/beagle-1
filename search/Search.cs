@@ -143,7 +143,7 @@ namespace Search {
 		public MainWindow () : base (WindowType.Toplevel)
 		{
 			Title = Catalog.GetString ("Desktop Search");
-			Icon = Beagle.Images.GetPixbuf ("system-search.png");
+			Icon = WidgetFu.LoadThemeIcon ("system-search", 16);
 
 			DefaultWidth = 700;
 			DefaultHeight = 550;
@@ -153,6 +153,7 @@ namespace Search {
 			vbox.Spacing = 3;
 
 			uim = new UIManager (this);
+			uim.DomainChanged += OnDomainChanged;
 			uim.ScopeChanged += OnScopeChanged;
 			uim.SortChanged += OnSortChanged;
 			uim.ToggleDetails += OnToggleDetails;
@@ -173,7 +174,7 @@ namespace Search {
 
 			// The auto search after timeout feauture is now optional
 			// and can be disabled.
-			if (Beagle.Util.Conf.Searching.BeagleSearchAutoSearch) {
+			if (Conf.BeagleSearch.GetOption (Conf.Names.BeagleSearchAutoSearch, true)) {
 				entry.Changed += OnEntryChanged;
 				entry.MoveCursor += OnEntryMoveCursor;
 			}
@@ -245,7 +246,8 @@ namespace Search {
 			tips.SetTip (button, Catalog.GetString ("Start searching"), "");
 			tips.Enable ();
 
-			if (Environment.UserName == "root" && ! Conf.Daemon.AllowRoot) {
+			if (Environment.UserName == "root" &&
+			    ! Conf.Daemon.GetOption (Conf.Names.AllowRoot, false)) {
 				pages.CurrentPage = pages.PageNum (rootuser);
 				entry.Sensitive = button.Sensitive = uim.Sensitive = false;
 			} else {
@@ -257,14 +259,19 @@ namespace Search {
 				tray.Clicked += OnTrayActivated;
 				tray.Search += OnTraySearch;
 
-				string binding = Conf.Searching.ShowSearchWindowBinding.ToString ();
+				Config config = Conf.Get (Conf.Names.BeagleSearchConfig);
+				bool binding_ctrl = config.GetOption (Conf.Names.KeyBinding_Ctrl, false);
+				bool binding_alt = config.GetOption (Conf.Names.KeyBinding_Alt, false);
+				string binding_key = config.GetOption (Conf.Names.KeyBinding_Key, "F12");
+
+				string binding = new KeyBinding (binding_key, binding_ctrl, binding_alt).ToString ();
 				string tip_text = Catalog.GetString ("Desktop Search");
 
 				if (binding != String.Empty) {
 					tip_text += String.Format (" ({0})", binding);
 
 					// Attach the hide/show keybinding
-					keybinder.Bind (Conf.Searching.ShowSearchWindowBinding.ToString (), OnTrayActivated);
+					keybinder.Bind (binding, OnTrayActivated);
 				}
 
 				tray.TooltipText = tip_text;
@@ -463,6 +470,21 @@ namespace Search {
 			}
 
 			pages.CurrentPage = pages.PageNum (quicktips);
+		}
+
+		private void OnDomainChanged (QueryDomain domain, bool active)
+		{
+			if (current_query == null)
+				return;
+
+			// FIXME: Most likely refire the query.
+			// Also keep the setting, so it can be used for future queries
+			// in this running instance.
+
+			if (active)
+				current_query.AddDomain (domain);
+			else
+				current_query.RemoveDomain (domain);
 		}
 
 		private void ShowInformation (Tiles.Tile tile)

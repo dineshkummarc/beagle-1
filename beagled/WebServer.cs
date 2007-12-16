@@ -26,9 +26,11 @@
 // DEALINGS IN THE SOFTWARE.
 //
 
+using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Net;
+using System.Text;
 
 using Beagle.Util;
 
@@ -49,22 +51,47 @@ namespace Beagle.Daemon {
 
 		private static Dictionary<string, PageMapping> mappings;
 
-		// FIXME: (If and) when released, this should be changed to ExternalStringsHack.SysConfDir+something
-		// FIXME FIXME: Keep security always in mind. The doggy doesn't like to be blamed :-X
-		const string WEBSERVER_DIR = "webinterface";
+		static string webserver_dir;
 
 		static WebServer ()
 		{
 			mappings = new Dictionary<string, PageMapping> ();
 
-			mappings.Add ("/", new PageMapping ("query.html", "text/html; charset=utf-8"));
-			mappings.Add ("/queryresult.xsl", new PageMapping ("queryresult.xsl", "application/xml; charset=utf-8"));
+			mappings.Add ("/", new PageMapping ("index.xml", "text/xml; charset=utf-8"));
+			mappings.Add ("/mappings.xml", new PageMapping ("mappings.xml", "text/xml; charset=utf-8"));
+			mappings.Add ("/help.xml", new PageMapping ("help.xml", "text/xml; charset=utf-8"));
+			mappings.Add ("/index.xsl", new PageMapping ("index.xsl", "text/xml; charset=utf-8"));
+			mappings.Add ("/statusresult.xsl", new PageMapping ("statusresult.xsl", "text/xml; charset=utf-8"));
+			mappings.Add ("/hitresult.xsl", new PageMapping ("hitresult.xsl", "text/xml; charset=utf-8"));
+			mappings.Add ("/help.html", new PageMapping ("help.html", "text/html; charset=utf-8"));
 			mappings.Add ("/default.css", new PageMapping ("default.css", "text/css"));
 			// If E4X is needed, change the content-type here
 			mappings.Add ("/default.js", new PageMapping ("default.js", "text/javascript"));
-			mappings.Add ("/title_bg.png", new PageMapping ("title_bg.png", "image/png"));
-			mappings.Add ("/beagle-logo.png", new PageMapping ("beagle-logo.png", "image/png"));
-			mappings.Add ("/ajax-loader.gif", new PageMapping ("ajax-loader.gif", "image/gif"));
+			mappings.Add ("/propname-table.js", new PageMapping ("propname-table.js", "text/javascript"));
+			mappings.Add ("/images/title_bg.png", new PageMapping ("images/title_bg.png", "image/png"));
+			mappings.Add ("/images/beagle-logo.png", new PageMapping ("images/beagle-logo.png", "image/png"));
+			mappings.Add ("/images/busy-animation.gif", new PageMapping ("images/busy-animation.gif", "image/gif"));
+			mappings.Add ("/images/favicon.png", new PageMapping ("images/favicon.png", "image/png"));
+
+			webserver_dir = Environment.GetEnvironmentVariable ("BEAGLE_WEBSERVER_DIR");
+			if (webserver_dir != null) {
+				webserver_dir = Path.GetFullPath (webserver_dir);
+				if (! Directory.Exists (webserver_dir))
+					Log.Error ("BEAGLE_WEBSERVER_DIR ({0}) does not exist. Web interface disabled", webserver_dir);
+				else
+					Log.Info ("Web interface root: {0}", webserver_dir);
+				return;
+			}
+
+			webserver_dir = Path.Combine (ExternalStringsHack.DataDir, "beagle");
+			webserver_dir = Path.Combine (webserver_dir, "webinterface");
+			if (! Directory.Exists (webserver_dir))
+				webserver_dir = null;
+
+			if (webserver_dir == null)
+				Log.Error ("No BEAGLE_WEBSERVER_DIR found. Web interface disabled");
+			else
+				Log.Info ("Web interface root: {0}", webserver_dir);
 		}
 
 		static byte[] buffer = new byte [1024];
@@ -80,21 +107,29 @@ namespace Beagle.Daemon {
 # else
 		internal static void HandleStaticPages (HttpListenerContext context)
 		{
-			Log.Debug ("GET request:" + context.Request.RawUrl);
+			if (webserver_dir == null) {
+				context.Response.StatusCode = 404;
+				context.Response.Close ();
+				return;
+			}
+
+			string request_path = context.Request.Url.LocalPath;
+			//Log.Debug ("GET request:" + request_path);
+
 			context.Response.KeepAlive = false;
 			context.Response.StatusCode = (int) HttpStatusCode.OK;
 
-			if (! mappings.ContainsKey (context.Request.RawUrl)) {
+			if (! mappings.ContainsKey (request_path)) {
 				context.Response.StatusCode = 404;
 				context.Response.Close ();
 				return;
 			}
 
 			// Else serve the page
-			PageMapping mapping = mappings [context.Request.RawUrl];
+			PageMapping mapping = mappings [request_path];
 			context.Response.ContentType = mapping.ContentType;
 
-			string path = Path.Combine (WEBSERVER_DIR, mapping.Filename);
+			string path = Path.Combine (webserver_dir, mapping.Filename);
 
 			using (BinaryReader r = new BinaryReader (new FileStream (path, FileMode.Open, FileAccess.Read))) {
 				using (BinaryWriter w = new BinaryWriter (context.Response.OutputStream)) {

@@ -27,6 +27,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 
 using GMime;
@@ -78,10 +79,15 @@ namespace Beagle.Filters {
 			// Add the list of user requested maildir directories
 			// This is useful if beagle (xdgmime) does not correctly detect the mimetypes
 			// of several maildir files as message/rfc822
-			foreach (Conf.IndexingConfig.Maildir maildir in Conf.Indexing.Maildirs) {
+
+			List<string[]> values = Conf.Daemon.GetListOptionValues (Conf.Names.Maildirs);
+			if (values == null)
+				return;
+
+			foreach (string[] maildir in values) {
 				FilterFlavor flavor =
-					new FilterFlavor (new Uri (maildir.Directory + "/*").ToString (),
-							  maildir.Extension,
+					new FilterFlavor (new Uri (maildir [0] + "/*").ToString (),
+							  null, // No meaning of extension for maildir files
 							  null,
 							  1 /* Should be more than priority of text filter */);
 				AddSupportedFlavor (flavor);
@@ -223,6 +229,11 @@ namespace Beagle.Filters {
 				return;
 			}
 
+			if (handler.HtmlPart) {
+				DoPullingReaderPull ();
+				return;
+			}
+
 			string l = handler.Reader.ReadLine ();
 
 			if (l == null)
@@ -231,6 +242,23 @@ namespace Beagle.Filters {
 				AppendText (l);
 				AppendStructuralBreak ();
 			}
+		}
+
+		char[] pulling_reader_buf = null;
+		const int BUFSIZE = 1024;
+		private void DoPullingReaderPull ()
+		{
+			if (pulling_reader_buf == null)
+				pulling_reader_buf = new char [BUFSIZE];
+
+			int count = handler.Reader.Read (pulling_reader_buf, 0, BUFSIZE);
+			if (count == 0) {
+				Finished ();
+				pulling_reader_buf = null;
+				return;
+			}
+
+			AppendChars (pulling_reader_buf, 0, count);
 		}
 
 		protected override void DoClose ()
@@ -242,6 +270,7 @@ namespace Beagle.Filters {
 		{
 			if (this.handler != null && this.handler.Reader != null)
 				this.handler.Reader.Close ();
+
 			this.handler = null;
 
 			if (this.message != null) {
@@ -256,6 +285,11 @@ namespace Beagle.Filters {
 			private int depth = 0; // part recursion depth
 			private ArrayList child_indexables = new ArrayList ();
 			private TextReader reader;
+
+			private bool html_part = false;
+			internal bool HtmlPart {
+				get { return html_part; }
+			}
 
 			// Blacklist a handful of common MIME types that are
 			// either pointless on their own or ones that we don't
@@ -355,6 +389,41 @@ namespace Beagle.Filters {
 							no_child_needed = true;
 
 							this.reader = new StreamReader (stream);
+						} else if (mime_type == "text/html") {
+							no_child_needed = true;
+							html_part = true;
+							string enc = part.GetContentTypeParameter ("charset"); 
+							// DataWrapper.Stream is a very limited stream
+							// and does not allow Seek or Tell
+							// HtmlFilter requires Stream.Position=0.
+							// Play safe and create a memorystream
+							// for HTML parsing.
+
+							GMime.StreamMem mem_stream;
+							mem_stream = new GMime.StreamMem ();
+
+							GMime.Stream data_stream;
+							data_stream = ((StreamWrapper) stream).GMimeStream;
+							data_stream.WriteToStream (mem_stream);
+							data_stream.Flush ();
+
+							// The StreamWrapper and hence the memory_stream
+							// will be closed when the reader is closed
+							// after Pull()-ing is done.
+							System.IO.Stream html_stream; 
+							html_stream = new StreamWrapper (mem_stream);
+							html_stream.Seek (0, SeekOrigin.Begin);
+
+							stream.Close ();
+
+							try {
+								this.reader = FilterHtml.GetHtmlReader (html_stream, enc);
+							} catch (Exception e) {
+								Log.Debug (e, "Exception while filtering HTML email {0}", this.indexable.Uri);
+								this.reader = null;
+								html_stream.Close ();
+								html_part = false;
+							}
 						}
 					}
 
@@ -423,7 +492,6 @@ namespace Beagle.Filters {
 			}
 		}
 
-				       
 	}
 
 }

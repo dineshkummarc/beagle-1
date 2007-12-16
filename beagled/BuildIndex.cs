@@ -31,7 +31,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Threading;
+using System.Reflection;
 
 using System.Xml;
 using System.Xml.Serialization;
@@ -45,6 +47,10 @@ using Beagle.Util;
 
 using Stopwatch = Beagle.Util.Stopwatch;
 using FSQ = Beagle.Daemon.FileSystemQueryable.FileSystemQueryable;
+
+// Assembly information
+[assembly: AssemblyTitle ("beagle-build-index")]
+[assembly: AssemblyDescription ("Build an index.")]
 
 namespace Beagle.Daemon 
 {
@@ -65,10 +71,12 @@ namespace Beagle.Daemon
 			"FileAttributesStore.db",
 			"fingerprint",
 			"version",
-			"filterver.dat"
+			"filterver.dat",
+			"StaticIndex.xml"
 		};
 		
 		static string [] allowed_dirs = {
+			"config",
 			"Locks",
 			"PrimaryIndex",
 			"SecondaryIndex",
@@ -84,8 +92,8 @@ namespace Beagle.Daemon
 
 		static bool indexing = true, restart = false;
 
-		static ArrayList allowed_patterns = new ArrayList ();
-		static ArrayList denied_patterns = new ArrayList ();
+		static Regex allowed_regex = null;
+		static Regex denied_regex = null;
 
 		static Queue pending_files = new Queue ();
 		static Queue pending_directories = new Queue ();
@@ -111,7 +119,10 @@ namespace Beagle.Daemon
 
 			if (args.Length < 2)
 				PrintUsage ();
-		
+
+			ArrayList allowed_patterns = new ArrayList ();
+			ArrayList denied_patterns = new ArrayList ();
+
 			int i = 0;
 			while (i < args.Length) {
 			
@@ -168,10 +179,10 @@ namespace Beagle.Daemon
 
 					if (next_arg.IndexOf (',') != -1) {
 						foreach (string pattern in next_arg.Split (','))
-							allowed_patterns.Add (new ExcludeItem (ExcludeType.Pattern, pattern));
+							allowed_patterns.Add (pattern);
 						
 					} else {
-						allowed_patterns.Add (new ExcludeItem (ExcludeType.Pattern, next_arg));
+						allowed_patterns.Add (next_arg);
 					}
 					
 					++i;
@@ -183,10 +194,10 @@ namespace Beagle.Daemon
 
 					if (next_arg.IndexOf (',') != -1) {
 						foreach (string pattern in next_arg.Split (','))
-							denied_patterns.Add (new ExcludeItem (ExcludeType.Pattern, pattern));
+							denied_patterns.Add (pattern);
 
 					} else {
-						denied_patterns.Add (new ExcludeItem (ExcludeType.Pattern, next_arg));
+						denied_patterns.Add (next_arg);
 					}
 
 					++i;
@@ -267,18 +278,63 @@ namespace Beagle.Daemon
 				}
 			}
 
+			string config_file_path = Path.Combine (arg_output, "StaticIndex.xml");
+			string prev_source = null;
+			if (File.Exists (config_file_path)) {
+				Config static_index_config = Conf.LoadFrom (config_file_path);
+				if (static_index_config == null) {
+					Log.Error ("Invalid configuation file {0}", config_file_path);
+					Environment.Exit (1);
+				}
+
+				prev_source = static_index_config.GetOption ("Source", null);
+				if (arg_source != null && prev_source != arg_source) {
+					Log.Error ("Source already set to {0} for existing static index. Cannot set source to {1}.", prev_source, arg_source);
+					Environment.Exit (1);
+				}
+
+				// If arg_source is not given, and prev_source is present, use prev_source
+				// as the arg_source. This is useful for re-running build-index without
+				// giving --arg_source for already existing static index
+				arg_source = prev_source;
+			}
+
+			if (arg_source == null) {
+				DirectoryInfo dir = new DirectoryInfo (StringFu.SanitizePath (arg_output));
+				arg_source = dir.Name;
+			}
+
 			if (SystemInformation.UsingBattery && arg_disable_on_battery) {
 				Log.Always ("Indexer is disabled when on battery power (--disable-on-battery)");
 				Environment.Exit (0);
 			}
 
-			// Setup some exclude patterns akin to FSQ/FileNameFilter.cs
-			denied_patterns.Add (new ExcludeItem (ExcludeType.Pattern, "*~"));
-			denied_patterns.Add (new ExcludeItem (ExcludeType.Pattern, "#*#"));
-			denied_patterns.Add (new ExcludeItem (ExcludeType.Pattern, "*.o"));
-			denied_patterns.Add (new ExcludeItem (ExcludeType.Pattern, "*.a"));
-			denied_patterns.Add (new ExcludeItem (ExcludeType.Pattern, "*.aux"));
-			denied_patterns.Add (new ExcludeItem (ExcludeType.Pattern, "*.tmp"));
+			string global_files_config = Path.Combine (Conf.GlobalDir, Conf.Names.FilesQueryableConfig + ".xml");
+			if (! File.Exists (global_files_config)) {
+				Log.Error ("Global configuration file not found {0}", global_files_config);
+				Environment.Exit (0);
+			}
+
+			// Setup regexes for allowed/denied patterns
+			if (allowed_patterns.Count > 0) {
+				allowed_regex = StringFu.GetPatternRegex (allowed_patterns);
+			} else {
+				// Read the exclude values from config
+				// For system-wide indexes, only the global config value will be used
+				Config config = Conf.Get (Conf.Names.FilesQueryableConfig);
+				List<string[]> values = config.GetListOptionValues (Conf.Names.ExcludePattern);
+				if (values != null)
+					foreach (string[] exclude in values)
+						denied_patterns.Add (exclude [0]);
+
+				if (denied_patterns.Count > 0)
+					denied_regex = StringFu.GetPatternRegex (denied_patterns);
+			}
+
+			if (arg_disable_directories && arg_delete) {
+				Log.Warn ("--enable-deletion is ignored as --disable-directories is used");
+				arg_delete = false;
+			}
 
 			Log.Always ("Starting beagle-build-index (pid {0}) at {1}", Process.GetCurrentProcess ().Id, DateTime.Now);
 
@@ -317,6 +373,19 @@ namespace Beagle.Daemon
 
 			watch.Stop ();
 			Logger.Log.Debug ("Elapsed time {0}.", watch);
+
+			// Write this after indexing is done. This is because, if creating a new index,
+			// LuceneIndexingDriver.Create() is called which purges the entire directory.
+
+			if (prev_source == null) {
+				Config static_index_config = Conf.LoadNew ("StaticIndex.xml");
+
+				// Write StaticIndex.xml containing:
+				// The name of the source
+				static_index_config.SetOption ("Source", arg_source);
+				static_index_config ["Source"].Description = "Source of the static index";
+				Conf.SaveTo (static_index_config, config_file_path);
+			}
 
 			if (restart) {
 				Logger.Log.Debug ("Restarting beagle-build-index");
@@ -450,11 +519,6 @@ namespace Beagle.Daemon
 			if (arg_tag != null)
 				indexable.AddProperty (Property.NewUnsearched("Tag", arg_tag));
 
-			if (arg_source == null) {
-				DirectoryInfo dir = new DirectoryInfo (StringFu.SanitizePath (arg_output));
-				arg_source = dir.Name;
-			}
-
 			indexable.Source = arg_source;
 
 			pending_request.Add (indexable);
@@ -570,7 +634,7 @@ namespace Beagle.Daemon
 
 		static Indexable FileToIndexable (FileInfo file)
 		{
-			if (!file.Exists || Ignore (file) || fa_store.IsUpToDateAndFiltered (file.FullName))
+			if (!file.Exists || fa_store.IsUpToDateAndFiltered (file.FullName))
 				return null;
 
 			// Create the indexable and add the standard properties we
@@ -795,12 +859,9 @@ namespace Beagle.Daemon
 		
 		static void PrintUsage ()
 		{
-			string usage = 
-				"beagle-build-index: Build an index.\n" + 
-				"Web page: http://www.gnome.org/projects/beagle\n" +
-				"Copyright (C) 2005-2006 Novell, Inc.\n\n";
+			VersionFu.PrintHeader ();
 			
-			usage += 
+			string usage = 
 				"Usage: beagle-build-index [OPTIONS] --target <index_path> <path> [path]\n\n" +
 
 				"** WARNING **\n" +
@@ -815,12 +876,15 @@ namespace Beagle.Daemon
 				"  --tag [tag]\t\t\tTag index data for identification.\n" + 
 				"  --recursive\t\t\tCrawl source path recursivly.\n" + 
 				"  --enable-deletion\t\tRemove deleted files and directories from index.\n" +
+				"                   \t\tIndex should be created and always updated with this option.\n" +
+				"                   \t\tOption only works if --disable-directories is NOT specified.\n" +
 				"  --enable-text-cache\t\tBuild text-cache of documents used for snippets.\n" +
 				"  --disable-directories\t\tDon't add directories to the index.\n" +
 				"  --disable-filtering\t\tDisable all filtering of files. Only index attributes.\n" + 
 				"  --allow-pattern [pattern]\tOnly allow files that match the pattern to be indexed.\n" + 
 				"  --deny-pattern [pattern]\tKeep any files that match the pattern from being indexed.\n" + 
 				"  --disable-restart\t\tDon't restart when memory usage gets above a certain threshold.\n" +
+				"  --disable-on-battery\t\tDisable indexer while on battery power.\n" +
 				"  --debug\t\t\tEcho verbose debugging information.\n\n";
 
 			
@@ -846,21 +910,13 @@ namespace Beagle.Daemon
 			if (FileSystem.IsSpecialFile (file.FullName))
 				return true;
 
-			if (allowed_patterns.Count > 0) {
-				foreach (ExcludeItem pattern in allowed_patterns)
-					if (pattern.IsMatch (file.Name))
-						return false;
-				
-				return true;
-			}
+			if (allowed_regex != null)
+				return ! allowed_regex.IsMatch (file.Name);
 
-			foreach (ExcludeItem pattern in denied_patterns)
-				if (pattern.IsMatch (file.Name))
-					return true;
+			if (denied_regex == null)
+				return false;
 
-			// FIXME: Add more stuff here
-			
-			return false;
+			return denied_regex.IsMatch (file.Name);
 		}
 	}
 }

@@ -247,6 +247,11 @@ namespace Beagle.Daemon {
 			// Another approach: Get all hits from the driver, scan them one by one
 			// and return URIs for the hits which contain the property *shudder*
 			//
+
+			// Implementation idea: Uses PrimaryIndex only!
+			// Create a bitarray and mark all docs with that property by using a termenum
+
+			
 			return new ArrayList ();
 		}
 

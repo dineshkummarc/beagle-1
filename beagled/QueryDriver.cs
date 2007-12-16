@@ -56,15 +56,18 @@ namespace Beagle.Daemon {
 			// set flag here to stop Allow() from calling ReadBackendsFromConf() again
 			done_reading_conf = true;
 
+			Config config = Conf.Get (Conf.Names.DaemonConfig);
+
 			// To allow static indexes, "static" should be in allowed_queryables
-			if (Conf.Daemon.AllowStaticBackend)
+			if (config.GetOption (Conf.Names.AllowStaticBackend, false))
 				Allow ("static");
 
-			if (Conf.Daemon.DeniedBackends == null)
+			List<string[]> values = config.GetListOptionValues (Conf.Names.DeniedBackends);
+			if (values == null)
 				return;
 			
-			foreach (string name in Conf.Daemon.DeniedBackends)
-				denied_queryables.Add (name.ToLower ());
+			foreach (string[] name in values)
+				denied_queryables.Add (name [0].ToLower ());
 		}
 
 		static public void OnlyAllow (string name)
@@ -254,8 +257,11 @@ namespace Beagle.Daemon {
 
 			if (UseQueryable ("static")) {
 				Logger.Log.Info ("Loading user-configured static indexes.");
-				foreach (string path in Conf.Daemon.StaticQueryables)
-					static_queryables.Add (path);
+				List<string[]> values = Conf.Daemon.GetListOptionValues (Conf.Names.StaticQueryables);
+				if (values != null) {
+					foreach (string[] path in values)
+						static_queryables.Add (path [0]);
+				}
 			}
 
 			foreach (string path in static_queryables) {
@@ -289,21 +295,40 @@ namespace Beagle.Daemon {
 				Logger.Log.Error (e, "Caught exception while instantiating static queryable: {0}", index_dir.Name);
 				return false;
 			}
-			
-			if (static_queryable != null) {
-				QueryableFlavor flavor = new QueryableFlavor ();
-				flavor.Name = index_dir.Name;
-				flavor.Domain = query_domain;
-				
-				Queryable queryable = new Queryable (flavor, static_queryable);
-				queryables.Add (queryable);
-				
-				iqueryable_to_queryable [static_queryable] = queryable;
 
-				return true;
+			if (static_queryable == null)
+				return false;
+
+			// Load StaticIndex.xml from index_dir.FullName/config
+			string config_file_path = Path.Combine (index_dir.FullName, "StaticIndex.xml");
+			Config static_index_config;
+			try {
+				static_index_config = Conf.LoadFrom (config_file_path);
+				if (static_index_config == null) {
+					Log.Error ("Unable to read config from {0}", config_file_path);
+					return false;
+				}
+			} catch (Exception e) {
+				Log.Error (e, "Caught exception while reading config from {0}", config_file_path);
+				return false;
 			}
 
-			return false;
+			string source = static_index_config.GetOption ("Source", null);
+			if (source == null) {
+				Log.Error ("Invalid config file: {0}", config_file_path);
+				return false;
+			}
+
+			QueryableFlavor flavor = new QueryableFlavor ();
+			flavor.Name = source;
+			flavor.Domain = query_domain;
+
+			Queryable queryable = new Queryable (flavor, static_queryable);
+			queryables.Add (queryable);
+
+			iqueryable_to_queryable [static_queryable] = queryable;
+
+			return true;
 		}
 
 		////////////////////////////////////////////////////////
@@ -495,9 +520,13 @@ namespace Beagle.Daemon {
 					       QueryResult          result,
 					       IQueryableChangeData change_data)
 		{
-			if (queryable.AcceptQuery (query)) {
-				QueryClosure qc = new QueryClosure (queryable, query, result, change_data);
-				result.AttachWorker (qc);
+			try {
+				if (queryable.AcceptQuery (query)) {
+					QueryClosure qc = new QueryClosure (queryable, query, result, change_data);
+					result.AttachWorker (qc);
+				}
+			} catch (Exception ex) {
+				Logger.Log.Warn (ex, "Caught exception calling DoOneQuery on '{0}'", queryable.Name);
 			}
 		}
 
@@ -597,8 +626,7 @@ namespace Beagle.Daemon {
 			return search_term_response;
 		}
 
-		static private void QueryEachQueryable (Query       query,
-							QueryResult result)
+		static private void QueryEachQueryable (Query query, QueryResult result)
 		{
 			// The extra pair of calls to WorkerStart/WorkerFinished ensures:
 			// (1) that the QueryResult will fire the StartedEvent

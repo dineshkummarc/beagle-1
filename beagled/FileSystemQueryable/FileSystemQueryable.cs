@@ -26,6 +26,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -40,7 +41,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 	[PropertyKeywordMapping (Keyword="ext", PropertyName="beagle:FilenameExtension", IsKeyword=true, Description="File extension, e.g. ext:jpeg. Use ext: to search in files with no extension.")]
 	public class FileSystemQueryable : LuceneQueryable {
 
-		static public new bool Debug = true;
+		static internal bool Debug = false;
 
 		// History:
 		// 1: Initially set to force a reindex due to NameIndex changes.
@@ -65,13 +66,10 @@ namespace Beagle.Daemon.FileSystemQueryable {
 		// the appropriate IndexableGenerator.
 		private FileCrawlTask file_crawl_task;
 
-		// An IndexableGenerator that batches file removals generated
+		// An IndexableGenerator that batches file removals and additions generated
 		// from the event backends, instead of creating one task per
 		// file/directory.
-		private RemovalGenerator removal_generator;
-
-		// An IndexableGenerator that batches file additions
-		private AdditionGenerator addition_generator;
+		private FileSystemEventsGenerator fs_event_generator;
 
 		private ArrayList roots = new ArrayList ();
 		private ArrayList roots_by_path = new ArrayList ();
@@ -104,8 +102,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			file_crawl_task = new FileCrawlTask (this);
 			file_crawl_task.Source = this;
 
-			removal_generator = new RemovalGenerator (this);
-			addition_generator = new AdditionGenerator (this);
+			fs_event_generator = new FileSystemEventsGenerator (this);
 
 			uid_manager = new UidManager (FileAttributesStore, Driver);
 			xmp_handler = new XmpSidecarStore (uid_manager, this);
@@ -893,25 +890,40 @@ namespace Beagle.Daemon.FileSystemQueryable {
 		
 		//////////////////////////////////////////////////////////////////////////
 
-		private class RemovalGenerator : IIndexableGenerator {
+		// Task generator for file system events
+		// Single shared queue that everyone (should) add tasks to
+		// Maintains the order in which the events happened
+		private class FileSystemEventsGenerator : IIndexableGenerator {
 
 			private FileSystemQueryable queryable;
 			private Scheduler.Task self_task;
 
 			private object queue_lock = new object ();
-			private Queue dir_name_queue = new Queue ();
-			private Queue file_name_queue = new Queue ();
 
-			public RemovalGenerator (FileSystemQueryable queryable)
+			class Event {
+				internal string dir_name;
+				internal string file_name;
+				internal bool addition;
+
+				public Event (string dir_name, string file_name, bool addition)
+				{
+					this.dir_name = dir_name;
+					this.file_name = file_name;
+					this.addition = addition;
+				}
+			}
+
+			private Queue<Event> event_queue = new Queue<Event> ();
+
+			public FileSystemEventsGenerator (FileSystemQueryable queryable)
 			{
 				this.queryable = queryable;
 			}
 
-			public void Add (string dir_name, string file_name)
+			public void Add (string dir_name, string file_name, bool addition)
 			{
 				lock (queue_lock) {
-					dir_name_queue.Enqueue (dir_name);
-					file_name_queue.Enqueue (file_name);
+					event_queue.Enqueue (new Event (dir_name, file_name, addition));
 
 					if (self_task == null) {
 						self_task = queryable.NewAddTask (this);
@@ -923,13 +935,42 @@ namespace Beagle.Daemon.FileSystemQueryable {
 
 			public Indexable GetNextIndexable ()
 			{
-				string dir_name, file_name;
+				Event evt = null;
 
-				lock (queue_lock) {
-					dir_name = (string) dir_name_queue.Dequeue ();
-					file_name = (string) file_name_queue.Dequeue ();
+				lock (queue_lock)
+					evt = event_queue.Dequeue ();
+
+				// evt should not be null
+				if (evt.addition)
+					return GetNextAdditionIndexable (evt.dir_name, evt.file_name);
+				else
+					return GetNextRemovalIndexable (evt.dir_name, evt.file_name);
+			}
+
+			public Indexable GetNextAdditionIndexable (string dir_name, string file_name)
+			{
+				DirectoryModel dir = queryable.GetDirectoryModelByPath (dir_name);
+				if (dir == null) {
+					Log.Warn ("AdditionGenerator.GetNextIndexable failed: Couldn't find DirectoryModel for '{0}'", dir_name);
+					return null;
 				}
 
+				Guid unique_id;
+				unique_id = queryable.RegisterFile (dir, file_name);
+
+				if (unique_id == Guid.Empty)
+					return null;
+
+				string path = Path.Combine (dir.FullName, file_name);
+
+				Indexable indexable;
+				indexable = queryable.FileToIndexable (path, unique_id, dir, false);
+
+				return indexable;
+			}
+
+			public Indexable GetNextRemovalIndexable (string dir_name, string file_name)
+			{
 				// A null file name means that we're dealing with a directory
 				bool is_directory = (file_name == null);
 				DirectoryModel dir = queryable.GetDirectoryModelByPath (dir_name);
@@ -964,92 +1005,18 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			public bool HasNextIndexable ()
 			{
 				lock (queue_lock) {
-					return (dir_name_queue.Count > 0);
+					return (event_queue.Count > 0);
 				}
 			}
 
 			public string StatusName {
-				get { return "Removals from file system backend"; }
+				get { return String.Format ("Events from file system backend: left ", event_queue.Count); }
 			}
 
 			public void PostFlushHook ()
 			{
 				lock (queue_lock) {
-					if (dir_name_queue.Count > 0)
-						self_task.Reschedule = true;
-					else
-						self_task = null;
-				}
-			}
-		}
-
-		private class AdditionGenerator : IIndexableGenerator {
-
-			private FileSystemQueryable queryable;
-			private Scheduler.Task self_task = null;
-
-			private object queue_lock = new object ();
-			private Queue dir_queue = new Queue ();
-			private Queue file_name_queue = new Queue ();
-
-			public AdditionGenerator (FileSystemQueryable queryable)
-			{
-				this.queryable = queryable;
-			}
-
-			public void Add (DirectoryModel dir, string file_name)
-			{
-				lock (queue_lock) {
-					dir_queue.Enqueue (dir);
-					file_name_queue.Enqueue (file_name);
-
-					if (self_task == null) {
-						self_task = queryable.NewAddTask (this);
-						self_task.Priority = Scheduler.Priority.Immediate;
-						queryable.ThisScheduler.Add (self_task);
-					}
-				}
-			}
-
-			public Indexable GetNextIndexable ()
-			{
-				DirectoryModel dir;
-				string file_name;
-
-				lock (queue_lock) {
-					dir = (DirectoryModel) dir_queue.Dequeue ();
-					file_name = (string) file_name_queue.Dequeue ();
-				}
-
-				Guid unique_id;
-				unique_id = queryable.RegisterFile (dir, file_name);
-
-				if (unique_id == Guid.Empty)
-					return null;
-
-				string path = Path.Combine (dir.FullName, file_name);
-
-				Indexable indexable;
-				indexable = queryable.FileToIndexable (path, unique_id, dir, false);
-
-				return indexable;
-			}
-
-			public bool HasNextIndexable ()
-			{
-				lock (queue_lock) {
-					return (dir_queue.Count > 0);
-				}
-			}
-
-			public string StatusName {
-				get { return "Additions to file system backend"; }
-			}
-
-			public void PostFlushHook ()
-			{
-				lock (queue_lock) {
-					if (dir_queue.Count > 0)
+					if (event_queue.Count > 0)
 						self_task.Reschedule = true;
 					else
 						self_task = null;
@@ -1343,12 +1310,12 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			// action.
 
 			if (old_ignore && ! new_ignore) {
-				addition_generator.Add (new_dir, new_name);
+				fs_event_generator.Add (new_dir.FullName, new_name, true);
 				return;
 			}
 
 			if (! old_ignore && new_ignore) {
-				removal_generator.Add (new_dir.FullName, new_name);
+				fs_event_generator.Add (new_dir.FullName, new_name, false);
 				return;
 			}
 
@@ -1363,7 +1330,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 				// assume that the original file never made it
 				// into the index ---  thus we treat this as
 				// an Add.
-				addition_generator.Add (new_dir, new_name);
+				fs_event_generator.Add (new_dir.FullName, new_name, true);
 				return;
 			}
 
@@ -1407,22 +1374,35 @@ namespace Beagle.Daemon.FileSystemQueryable {
 		
 		private void LoadConfiguration () 
 		{
-			if (Conf.Indexing.IndexHomeDir)
+			Config config = Conf.Get (Conf.Names.FilesQueryableConfig);
+
+			if (config.GetOption (Conf.Names.IndexHomeDir, true))
 				AddRoot (PathFinder.HomeDir);
 			
-			foreach (string root in Conf.Indexing.Roots)
-				AddRoot (root);
+			List<string[]> roots = config.GetListOptionValues (Conf.Names.Roots);
+			if (roots != null)
+				foreach (string[] root in roots)
+					AddRoot (root [0]);
 			
-			Conf.Subscribe (typeof (Conf.IndexingConfig), OnConfigurationChanged);
+			Conf.Subscribe (Conf.Names.FilesQueryableConfig, OnConfigurationChanged);
 		}
 		
-		private void OnConfigurationChanged (Conf.Section section)
+		private void OnConfigurationChanged (Config config)
 		{
-			ArrayList roots_wanted = new ArrayList (Conf.Indexing.Roots);
+			if (config == null || config.Name != Conf.Names.FilesQueryableConfig)
+				return;
+
+			List<string[]> values = config.GetListOptionValues (Conf.Names.Roots);
+			if (values == null)
+				values = new List<string[]> (0);
+
+			ArrayList roots_wanted = new ArrayList (values.Count);
+			foreach (string[] root in values)
+				roots_wanted.Add (root [0]);
 			
-			if (Conf.Indexing.IndexHomeDir)
+			if (config.GetOption (Conf.Names.IndexHomeDir, true))
 				roots_wanted.Add (PathFinder.HomeDir);
-			
+
 			IList roots_to_add, roots_to_remove;
 			ArrayFu.IntersectListChanges (roots_wanted, Roots, out roots_to_add, out roots_to_remove);
 
@@ -1492,7 +1472,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 		override protected bool PreAddIndexableHook (Indexable indexable)
 		{
 			if (Debug)
-				Log.Debug ("Asking whether it's ok to index {0} [{1}]", indexable.Uri, indexable.DisplayUri);
+				Log.Debug ("Asking whether it's ok to index ({2}) {0} [{1}]", indexable.Uri, indexable.DisplayUri, indexable.Type);
 
 			// Internal URIs are always allowed.
 			if (indexable.Uri.Scheme == GuidFu.UriScheme)
@@ -1810,17 +1790,16 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			// is stored in a property.
 			Uri uri = UriFu.EscapedStringToUri (hit ["beagle:InternalUri"]);
 
-			string path = TextCache.UserCache.LookupPathRaw (uri);
+			bool self_cache = true;
+			TextReader reader = TextCache.UserCache.GetReader (uri, ref self_cache);
 
-			if (path == null)
-				return null;
-
-			// If this is self-cached, use the remapped Uri
-			if (path == TextCache.SELF_CACHE_TAG)
+			if (self_cache)
 				return SnippetFu.GetSnippetFromFile (query_terms, hit.Uri.LocalPath, full_text);
 
-			path = Path.Combine (TextCache.UserCache.TextCacheDir, path);
-			return SnippetFu.GetSnippetFromTextCache (query_terms, path, full_text);
+			if (reader == null)
+				return null;
+
+			return SnippetFu.GetSnippet (query_terms, reader, full_text);
 		}
 
 		override public void Start ()
@@ -1877,7 +1856,7 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			if (is_directory)
 				AddDirectory (dir, file_name);
 			else
-				addition_generator.Add (dir, file_name);
+				fs_event_generator.Add (dir.FullName, file_name, true);
 		}
 
 		public void HandleRemoveEvent (string directory_name, string file_name, bool is_directory)
@@ -1888,9 +1867,9 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			}
 
 			if (is_directory)
-				removal_generator.Add (Path.Combine (directory_name, file_name), null);
+				fs_event_generator.Add (Path.Combine (directory_name, file_name), null, false);
 			else
-				removal_generator.Add (directory_name, file_name);
+				fs_event_generator.Add (directory_name, file_name, false);
 		}
 
 		public void HandleMoveEvent (string old_directory_name, string old_file_name,

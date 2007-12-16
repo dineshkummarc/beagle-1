@@ -35,7 +35,6 @@ namespace Beagle.Daemon {
 
 	public abstract class LuceneQueryable : IQueryable {
 		
-		static public bool Debug = false;
 		static public bool OptimizeRightAway = false;
 
 		public delegate IIndexer IndexerCreator (string name, int minor_version);
@@ -540,6 +539,10 @@ namespace Beagle.Daemon {
 				this.queryable = queryable;
 				this.generator = generator;
 				this.Tag = generator.StatusName;
+			}
+
+			protected override string StatusName {
+				get { return generator.StatusName; }
 			}
 
 			override protected void DoTaskReal ()

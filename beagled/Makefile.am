@@ -1,6 +1,41 @@
 autostartdir = $(sysconfdir)/xdg/autostart
 autostart_DATA = beagled-autostart.desktop
 
+############################################################
+
+WEBINTERFACE_FILES =				\
+	$(srcdir)/webinterface/default.js	\
+	$(srcdir)/webinterface/propname-table.js\
+	$(srcdir)/webinterface/help.html	\
+	$(srcdir)/webinterface/mappings.xml	\
+	$(srcdir)/webinterface/index.xsl	\
+	$(srcdir)/webinterface/hitresult.xsl	\
+	$(srcdir)/webinterface/statusresult.xsl	\
+	$(srcdir)/webinterface/default.css
+
+WEBINTERFACE_INDEX_XML_IN=$(srcdir)/webinterface/index.xml.in
+WEBINTERFACE_INDEX_XML=$(srcdir)/webinterface/index.xml
+
+webinterfacedir = $(datadir)/beagle/webinterface
+webinterface_DATA =				\
+	$(WEBINTERFACE_INDEX_XML)		\
+	$(WEBINTERFACE_FILES)
+
+webinterfaceimagesdir = $(webinterfacedir)/images
+webinterfaceimages_DATA =					\
+	$(srcdir)/webinterface/images/beagle-logo.png		\
+	$(srcdir)/webinterface/images/busy-animation.gif	\
+	$(srcdir)/webinterface/images/favicon.png		\
+	$(srcdir)/webinterface/images/title_bg.png
+
+$(WEBINTERFACE_INDEX_XML): $(WEBINTERFACE_INDEX_XML_IN) $(WEBINTERFACE_FILES)
+	sed 	-e "s|\@VERSION\@|$(VERSION)|"			\
+		-e "s|\@LAST_TIME\@|$(shell date +'%x %X')|"	\
+		< $(WEBINTERFACE_INDEX_XML_IN) > $@
+
+
+############################################################
+
 # Warnings we don't want to see.
 # Most of these are thanks to DotLucene.  It would be nice if we could use
 # "#pragma warning" on these.
@@ -10,10 +45,8 @@ autostart_DATA = beagled-autostart.desktop
 # 0168 = The variable 'foo' is declared but never used
 # 0169 = The private method/field 'foo' is never used
 # 0219 = Variable is assigned but never used
-# 0436 = Ignore imported type (local SqliteClient)
 
-# unsafe arg for Mono.Data.SqliteClient fork
-CSC = $(MCS) -debug -nowarn:0162,0164,0168,0169,0219,0436 -unsafe
+CSC = $(MCS) -debug -nowarn:0162,0164,0168,0169,0219,0436
 
 BACKENDDIR = $(pkglibdir)/Backends
 
@@ -283,25 +316,6 @@ SNOWBALL_CSFILES =							\
 
 ############################################################
 
-sqlitedir = $(srcdir)/Mono.Data.SqliteClient
-
-SQLITE_CSFILES =					\
-	$(sqlitedir)/SqliteCommand.cs			\
-	$(sqlitedir)/SqliteConnection.cs		\
-	$(sqlitedir)/Sqlite.cs				\
-	$(sqlitedir)/SqliteDataAdapter.cs		\
-	$(sqlitedir)/SqliteDataReader.cs		\
-	$(sqlitedir)/SqliteExceptions.cs		\
-	$(sqlitedir)/SqliteParameterCollection.cs	\
-	$(sqlitedir)/SqliteParameter.cs			\
-	$(sqlitedir)/SqliteRowUpdatedEventArgs.cs	\
-	$(sqlitedir)/SqliteRowUpdatedEventHandler.cs	\
-	$(sqlitedir)/SqliteRowUpdatingEventArgs.cs	\
-	$(sqlitedir)/SqliteRowUpdatingEventHandler.cs	\
-	$(sqlitedir)/SqliteTransaction.cs
-
-############################################################
-
 DAEMON_DLL_TARGET = BeagleDaemonLib.dll
 
 DAEMON_DLL_CSFLAGS = -target:library $(BEAGLE_DEFINES)
@@ -396,10 +410,6 @@ OPERA_QUERYABLE_CSFILES =					\
 nautilusqueryable = $(srcdir)/NautilusMetadataQueryable
 NAUTILUS_QUERYABLE_CSFILES =					\
 	$(nautilusqueryable)/NautilusMetadataQueryable.cs
-	
-downloadqueryable = $(srcdir)/DownloadsMetadataQueryable
-DOWNLOADS_QUERYABLE_CSFILES =					\
-	$(downloadqueryable)/DownloadsMetadataQueryable.cs
 
 networkservicesqueryable = $(srcdir)/NetworkServicesQueryable
 NETWORK_SERVICES_QUERYABLE =					\
@@ -427,7 +437,6 @@ DAEMON_DLL_CSFILES = 						\
 	$(KONVERSATION_QUERYABLE_CSFILES)			\
 	$(OPERA_QUERYABLE_CSFILES)				\
 	$(NAUTILUS_QUERYABLE_CSFILES)				\
-	$(DOWNLOADS_QUERYABLE_CSFILES)				\
 	$(NETWORK_SERVICES_QUERYABLE)				\
 	$(srcdir)/AssemblyInfo.cs				\
 	$(srcdir)/ExternalMetadataQueryable.cs			\
@@ -481,15 +490,8 @@ DAEMON_DLL_ASSEMBLIES = 					\
 	$(BEAGLED_LIBS)                 			\
 	$(DAEMON_DLL_LOCAL_ASSEMBLIES:%=-r:%)			\
 	$(SHARPZIPLIB_LIBS)					\
-	-r:Mono.Data.SqliteClient				\
+	-r:Mono.Data.Sqlite					\
 	-r:Mono.Posix
-
-if USE_LOCAL_SQLITE
-DAEMON_DLL_CSFILES += $(SQLITE_CSFILES)
-DAEMON_DLL_ASSEMBLIES += -r:System.Data
-else
-DAEMON_DLL_ASSEMBLIES += -r:Mono.Data.SqliteClient
-endif
 
 if ENABLE_AVAHI
 DAEMON_DLL_CSFLAGS += -define:ENABLE_AVAHI
@@ -547,7 +549,10 @@ EVO_DLL_CSFILES = 					\
 	$(srcdir)/EvolutionBackendsAssemblyInfo.cs 	\
 	$(EDS_QUERYABLE_CSFILES) 			\
 	$(EVO_MAIL_QUERYABLE_CSFILES)
-EVO_DLL_ASSEMBLIES = $(BACKEND_ASSEMBLIES) $(EVO_LIBS)
+EVO_DLL_ASSEMBLIES = 			\
+	$(BACKEND_ASSEMBLIES)		\
+	$(EVO_LIBS)			\
+	-r:Mono.Data.Sqlite
 
 $(EVO_DLL_TARGET): $(EVO_DLL_CSFILES) $(DAEMON_DLL_LOCAL_ASSEMBLIES) $(DAEMON_DLL_TARGET)
 	$(CSC) -out:$@ $(EVO_DLL_CSFLAGS) $(EVO_DLL_CSFILES) $(EVO_DLL_ASSEMBLIES)
@@ -845,7 +850,7 @@ CRAWL_SYSTEM_IN = beagle-crawl-system.in
 CRAWL_SYSTEM = beagle-crawl-system
 
 $(CRAWL_SYSTEM): $(srcdir)/$(CRAWL_SYSTEM_IN)
-	$(WRAPPER_SEB) -e "s|\@target\@|$(CRAWL_SYSTEM)|g" < $(srcdir)/$(CRAWL_SYSTEM_IN) > $@
+	$(WRAPPER_SED) -e "s|\@target\@|$(CRAWL_SYSTEM)|g" < $(srcdir)/$(CRAWL_SYSTEM_IN) > $@
 	chmod +x $(CRAWL_SYSTEM)
 
 # OK, now back to our regularly scheduled program.  But notice all of the
@@ -873,7 +878,8 @@ ALL_TARGETS = 				\
 	$(MANAGE_INDEX_TARGET)		\
 	$(MANAGE_INDEX_WRAPPER)		\
 	$(MASTER_DELETE_TARGET)		\
-	$(MASTER_DELETE_WRAPPER)
+	$(MASTER_DELETE_WRAPPER)	\
+	$(WEBINTERFACE_INDEX_XML)
 
 if ENABLE_THUNDERBIRD
 ALL_TARGETS += $(THUNDERBIRD_TARGET)
@@ -996,6 +1002,9 @@ noinst_SCRIPTS=	\
 
 EXTRA_DIST = \
 	$(autostart_DATA)			\
+	$(WEBINTERFACE_INDEX_XML_IN)		\
+	$(webinterface_DATA)			\
+	$(webinterfaceimages_DATA)		\
 	$(WRAPPER_IN)   			\
 	$(DAEMON_WRAPPER_IN)			\
 	$(INDEX_HELPER_WRAPPER_IN)		\
@@ -1045,4 +1054,5 @@ CLEANFILES = \
 	$(BUILD_INDEX_TARGET).mdb		\
 	$(BUILD_INDEX_WRAPPER)			\
 	$(THUNDERBIRD_TARGET)			\
-	$(THUNDERBIRD_TARGET).mdb
+	$(THUNDERBIRD_TARGET).mdb		\
+	$(WEBINTERFACE_INDEX_XML)

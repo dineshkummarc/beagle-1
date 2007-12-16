@@ -36,6 +36,7 @@ using Beagle.Util;
 namespace Beagle.Daemon.TomboyQueryable {
 
 	[QueryableFlavor (Name="Tomboy", Domain=QueryDomain.Local, RequireInotify=false)]
+	[PropertyKeywordMapping (Keyword="notetag", PropertyName="note:tag", IsKeyword=false, Description="Tag associated with a tomboy note.")]
 	public class TomboyQueryable : LuceneFileQueryable, IIndexableGenerator  {
 
 		string tomboy_dir;
@@ -145,7 +146,6 @@ namespace Beagle.Daemon.TomboyQueryable {
 			Indexable indexable = new Indexable (note.Uri);
 
 			indexable.ContentUri = UriFu.PathToFileUri (file.FullName);
-
 			indexable.Timestamp = note.timestamp;
 			indexable.HitType = "Note";
 			indexable.Filtering = IndexableFiltering.AlreadyFiltered;
@@ -153,6 +153,10 @@ namespace Beagle.Daemon.TomboyQueryable {
 			indexable.AddProperty (Property.New ("dc:title", note.subject));
 			indexable.AddProperty (Property.NewUnsearched ("fixme:application","tomboy"));
 
+			// FIXME: tagging is disabled in Tomboy-0.8.x and is planned for 0.10.0
+			foreach( string s in note.tags)
+				indexable.AddProperty (Property.New ("note:tag", s));
+			
 			// We remember the note's text so that we can stuff it in
 			// the TextCache later.
 			note_text_cache [note.Uri] = note.text;

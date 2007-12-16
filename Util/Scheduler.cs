@@ -39,7 +39,7 @@ namespace Beagle.Util {
 		public delegate void EmptyQueueDelegate ();
 		public event EmptyQueueDelegate EmptyQueueEvent;
 
-		public static bool Debug = true;
+		private static bool Debug = false;
 
 		public enum Priority {
 
@@ -73,6 +73,11 @@ namespace Beagle.Util {
 			// Some metadata
 			public string Creator;
 			public string Description;
+
+			// Current status, to be implemented by instances
+			protected virtual string StatusName {
+				get { return null; }
+			}
 
 			public object Source = null; // this is just an opaque identifier
 
@@ -270,9 +275,9 @@ namespace Beagle.Util {
 						Logger.Log.Warn (ex,
 								 "Caught exception in DoTaskReal\n" +
 								 "        Tag: {0}\n" +
-								 "    Creator: {0}\n" +
-								 "Description: {0}\n" +
-								 "   Priority: {0} ({1})", 
+								 "    Creator: {1}\n" +
+								 "Description: {2}\n" +
+								 "   Priority: {3} ({4})", 
 								 Tag, Creator, Description, Priority, SubPriority);
 					}
 					sw.Stop ();
@@ -381,6 +386,9 @@ namespace Beagle.Util {
 
 				if (Description != null)
 					sb.Append (Description).Append ('\n');
+
+				if (StatusName != null)
+					sb.Append ("Status: ").Append (StatusName).Append ('\n');
 			}
 		}
 

@@ -27,6 +27,7 @@ $(EXTSTR): $(EXTSTR_IN)
 		-e "s|\@pkglibdir\@|$(pkglibdir)|g"		\
 		-e "s|\@pkgdatadir\@|$(pkgdatadir)|g"		\
 		-e "s|\@localstatedir\@|$(localstatedir)|g"	\
+		-e "s|\@datadir\@|$(datadir)|g"			\
 		-e "s|\@VERSION\@|$(VERSION)|g"			\
 		-e "s|\@GNOME_PREFIX\@|$(GNOME_PREFIX)|g"	\
 		-e "s|\@KDE_PREFIX\@|$(KDE_PREFIX)|g"		\
@@ -38,7 +39,7 @@ UTIL_CSFILES = 			        	\
 	$(srcdir)/BetterBitArray.cs		\
 	$(srcdir)/camel.cs              	\
 	$(srcdir)/CommandLineFu.cs		\
-	$(srcdir)/Conf.cs			\
+	$(srcdir)/Config.cs			\
 	$(srcdir)/DateTimeUtil.cs		\
 	$(srcdir)/DelayedTextWriter.cs		\
 	$(srcdir)/DigikamTags.cs		\
@@ -48,7 +49,6 @@ UTIL_CSFILES = 			        	\
 	$(srcdir)/ExtendedAttribute.cs  	\
 	$(srcdir)/FileAdvise.cs			\
 	$(srcdir)/FileSystem.cs			\
-	$(srcdir)/Firefox.cs			\
 	$(srcdir)/FrequencyStatistics.cs	\
 	$(srcdir)/FSpotTools.cs         	\
 	$(srcdir)/GuidFu.cs			\
@@ -126,7 +126,7 @@ UTIL_CSFILES = 			        	\
 UTIL_ASSEMBLIES =				\
 	$(BEAGLED_LIBS)				\
 	-r:System.Data				\
-	-r:Mono.Data.SqliteClient		\
+	-r:Mono.Data.Sqlite			\
 	-r:Mono.Posix				\
 	-r:System.Web				\
 	-r:ICSharpCode.SharpZipLib
@@ -220,7 +220,6 @@ uninstall-local:
 COND_CS_FILES =				\
 	$(srcdir)/ChmFile.cs		\
 	$(srcdir)/Galago.cs		\
-	$(srcdir)/Mork.cs		\
 	$(srcdir)/Thunderbird.cs
 
 EXTRA_DIST =			\

@@ -53,6 +53,8 @@ namespace Beagle.Util {
 			this.thread.Name = String.Format ("EHT {0:00000} [{1:00000} {2}] {3}:{4}", wrap_gettid (), proc.Id, proc.ProcessName,
 							  method.Target == null ? method.Method.DeclaringType.ToString () : method.Target.ToString (), method.Method.Name);
 
+			//Log.Debug ("Starting thread {0}", this.thread.Name);
+
 			try {
 				this.method ();
 			} catch (ThreadAbortException e) {
@@ -67,7 +69,10 @@ namespace Beagle.Util {
 
 			// Reset variables to help the GC
 			this.method = null;
+			string thread_name = this.thread.Name;
 			this.thread = null;
+
+			//Log.Debug ("Finished thread {0}", thread_name);
 		}
 
 		public static Thread Start (ThreadStart method)
@@ -131,9 +136,15 @@ namespace Beagle.Util {
 				foreach (Thread t in join_threads) {
 					++count;
 
-					if (! t.IsAlive)
+					if (! t.IsAlive) {
 						Log.Debug ("Skipping over finished thread {0} of {1}: {2}", count, join_threads.Count, t.Name);
-					else {
+						// If a thread from live_threads is not alive, that is a sign of a trouble
+						// Anyway, remove the thread from live_threads, since this thread is not anymore live
+						// This does not generally happen and should not happen,
+						// but rarely happens and in one case caused a continuous looping when somehow a thread remained in live_threads even though not alive
+						lock (live_threads)
+							live_threads.Remove (t);
+					} else {
 						Log.Debug ("Joining thread {0} of {1}: {2}", count, join_threads.Count, t.Name);
 						t.Join ();
 					}

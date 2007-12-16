@@ -59,7 +59,7 @@ namespace Beagle.Daemon {
 
 		static public SnippetReader GetSnippetFromTextCache (string[] query_terms, string filename, bool full_text)
 		{
-			TextReader reader = TextCache.UserCache.GetReader (filename);
+			TextReader reader = TextCache.UserCache.GetReader (new Uri (filename));
 			if (reader == null)
 				return null;
 			try {
@@ -73,7 +73,7 @@ namespace Beagle.Daemon {
 
 	public class SnippetReader : ISnippetReader, IDisposable {
 		private TextReader line_reader;
-		private ArrayList query_terms_list;
+		private ArrayList query_terms_list = null;
 		private int found_snippet_length;
 		private bool full_text;
 
@@ -135,6 +135,10 @@ namespace Beagle.Daemon {
 			this.line_reader = line_reader;
 			this.found_snippet_length = 0;
 			this.full_text = full_text;
+
+			if (query_terms == null)
+				return;
+
 			this.sliding_window = new SlidingWindow (between_snippet_words);
 
 			// remove stop words from query_terms
@@ -149,11 +153,15 @@ namespace Beagle.Daemon {
 
 		public string ReadLine ()
 		{
+			if (line_reader == null)
+				return null;
 			return line_reader.ReadLine ();
 		}
 
 		public void Close ()
 		{
+			if (line_reader == null)
+				return;
 			line_reader.Close ();
 		}
 
@@ -164,7 +172,8 @@ namespace Beagle.Daemon {
 
 		public IEnumerable GetSnippet ()
 		{
-			if (line_reader == null)
+			// No point in getting a snippet if there was no query term to mark
+			if (line_reader == null || query_terms_list == null)
 				yield break;
 
 			string str = null;
@@ -176,8 +185,14 @@ namespace Beagle.Daemon {
 			while (found_snippet_length < soft_snippet_limit) {
 				//Console.WriteLine ("Continue with last line ? {0}", continue_line);
 				if (! continue_line) {
-					if ((str = line_reader.ReadLine ()) == null)
+					try {
+						if ((str = line_reader.ReadLine ()) == null)
+							break;
+					} catch (Exception e) {
+						Log.Error ("Caught exception while fetching snippet: {0}", e.Message);
+						str = null;
 						break;
+					}
 					//Console.WriteLine ("Read line: [{0}]", str);
 					continue_line = false;
 					pos = 0;
@@ -199,6 +214,8 @@ namespace Beagle.Daemon {
 
 				yield return  snippet_line;
 			}
+
+			yield break;
 		}
 
 		static private bool IsTokenSeparator (char c)

@@ -44,6 +44,15 @@ CRAWL_RULES = \
 configdir = $(sysconfdir)/beagle
 config_DATA = $(CRAWL_RULES)
 
+GLOBAL_CONFIG_FILES = \
+	$(srcdir)/config-files/BeagleSearch.xml		\
+	$(srcdir)/config-files/Daemon.xml		\
+	$(srcdir)/config-files/FilesQueryable.xml	\
+	$(srcdir)/config-files/Networking.xml
+
+global_config_filesdir = $(sysconfdir)/beagle/config-files
+global_config_files_DATA = $(GLOBAL_CONFIG_FILES)
+
 DOC_EXTRACTOR_TARGET  = DocExtractor.exe
 DOC_EXTRACTOR_WRAPPER = beagle-doc-extractor
 DOC_EXTRACTOR_CSFILES = $(srcdir)/DocExtractor.cs
@@ -105,7 +114,7 @@ SETTINGS_CSFLAGS   =
 SETTINGS_CSFILES   = $(srcdir)/Settings.cs
 SETTINGS_RESOURCES = $(srcdir)/settings.glade $(top_srcdir)/beagled/beagled-autostart.desktop $(top_srcdir)/search/beagle-search-autostart.desktop
 SETTINGS_RESOURCES_BUILD = $(foreach res,$(SETTINGS_RESOURCES), $(addprefix -resource:,$(srcdir)/$(res)),$(notdir $(res)))
-SETTINGS_ASSEMBLIES = $(BEAGLE_UI_LIBS) -r:../Util/UiUtil.dll -r:../images/Images.dll
+SETTINGS_ASSEMBLIES = $(BEAGLE_UI_LIBS) -r:../Util/UiUtil.dll
 
 if ENABLE_AVAHI
 SETTINGS_CSFLAGS += -define:ENABLE_AVAHI
@@ -222,6 +231,7 @@ EXTRA_DIST =				\
 	$(SETTINGS_RESOURCES)		\
 	$(man_MANS)			\
 	$(CRAWL_RULES)			\
+	$(GLOBAL_CONFIG_FILES)		\
 	$(cron_SCRIPTS)			\
 	$(desktop_in_files)		\
 	$(desktop_DATA) 		\

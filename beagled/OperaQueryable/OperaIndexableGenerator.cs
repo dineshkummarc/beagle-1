@@ -32,6 +32,7 @@ using Beagle;
 using Beagle.Util;
 using Beagle.Daemon;
 using FSQ = Beagle.Daemon.FileSystemQueryable;
+using ICSharpCode.SharpZipLib.GZip;
 
 namespace Beagle.Daemon.OperaQueryable {
 	
@@ -44,19 +45,22 @@ namespace Beagle.Daemon.OperaQueryable {
 		
 		// Just in case we want to index more types in the future
 		private readonly string[] indexed_mimetypes = new string [] {
-			"text/html"
+			"text/html", "text/plain", "application/pdf"
 		};
 		
 		public OperaIndexableGenerator(OperaIndexer indexer, string cache_dir)
 		{
 			this.cache_dir = cache_dir;
 			this.indexer = indexer;
-			
+			if(history != null && history.GetLastRead() >= Directory.GetLastWriteTime(cache_dir)){
+				history_enumerator = history.GetEnumerator();
+				return;
+			}
 			try {
 				history = new OperaHistory (Path.Combine (cache_dir, "dcache4.url"));
-				history.Read ();
-				
+
 				history_enumerator = history.GetEnumerator ();
+				
 			} catch (Exception e) {
 				Logger.Log.Error (e, "Failed to list cache objects in {0}", 
 					Path.Combine (cache_dir, "dcache4.url"));
@@ -65,21 +69,28 @@ namespace Beagle.Daemon.OperaQueryable {
 		
 		public bool HasNextIndexable ()
 		{
-			do {
-				if (history_enumerator == null || !history_enumerator.MoveNext ()) {
-					return false;
-				}
-			} while (!Allowed ((OperaHistory.Row) history_enumerator.Current) ||
-					IsUpToDate ((OperaHistory.Row) history_enumerator.Current));
-			
-			return true;
+			if (history_enumerator == null)
+				return false;
+
+			while (history_enumerator.MoveNext ()) {
+				OperaHistory.Row row = (OperaHistory.Row) history_enumerator.Current;
+				if (Allowed (row) && ! IsUpToDate (row))
+					return true;
+			}
+
+			history_enumerator = null;
+			history = null; // Help the GC here
+			return false;
 		}
-		
+
 		public Indexable GetNextIndexable ()
 		{
+			OperaHistory.Row row = (OperaHistory.Row) history_enumerator.Current;
+
 			try {
-				return OperaRowToIndexable ((OperaHistory.Row) history_enumerator.Current);
-			} catch {
+				return OperaRowToIndexable (row);
+			} catch (Exception ex) {
+				Log.Error (ex, "Unable to index {0} ({1})", row.Address, row.LocalFileName);
 				return null;
 			}
 		}
@@ -94,17 +105,16 @@ namespace Beagle.Daemon.OperaQueryable {
 			
 			indexable.HitType = "WebHistory";
 			indexable.MimeType = row.MimeType;
-			indexable.Timestamp = row.LastChanged;
-			
-			indexable.AddProperty (Beagle.Property.NewDate ("fixme:saveTime", row.LocalSaveTime));
+			indexable.Timestamp = row.LastVisited;
+			indexable.AddProperty(Beagle.Property.New ("fixme:host",row.Address.Host));
 			indexable.AddProperty (Beagle.Property.NewUnsearched ("fixme:size", row.Length));
-			indexable.AddProperty (Beagle.Property.NewUnsearched ("fixme:charset", row.Encoding.ToString ()));
-			indexable.AddProperty (Beagle.Property.NewUnsearched ("fixme:compression", row.Compression));
-			indexable.AddProperty (Beagle.Property.NewKeyword (Property.ExactFilenamePropKey, row.LocalFileName));
-			indexable.AddProperty (Beagle.Property.NewKeyword (Property.FilenameExtensionPropKey, Path.GetExtension (row.LocalFileName)));
-			indexable.AddProperty (Beagle.Property.NewKeyword (Property.TextFilenamePropKey, Path.GetFileNameWithoutExtension (row.LocalFileName)));
-			
-			indexable.ContentUri = new Uri (Path.Combine (cache_dir, row.LocalFileName));
+			// hint for the filter about the charset
+			indexable.AddProperty (Property.NewUnsearched (StringFu.UnindexedNamespace + "charset", row.Encoding.ToString ()));
+
+			if(row.Compression == "gzip")	
+				indexable.SetBinaryStream (new GZipInputStream (File.OpenRead (Path.Combine (cache_dir, row.LocalFileName))));
+			else
+				indexable.ContentUri = new Uri (Path.Combine (cache_dir, row.LocalFileName));
 			
 			indexer.AttributeStore.AttachLastWriteTime (Path.Combine (cache_dir, row.LocalFileName), DateTime.UtcNow);
 			

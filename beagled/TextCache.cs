@@ -30,7 +30,7 @@ using System.Collections;
 using System.IO;
 using System.Threading;
 
-using Mono.Data.SqliteClient;
+using Mono.Data.Sqlite;
 using ICSharpCode.SharpZipLib.GZip;
 
 using Beagle.Util;
@@ -48,9 +48,8 @@ namespace Beagle.Daemon {
 
 	public class TextCache {
 
-		static public bool Debug = false;
-
-		public const string SELF_CACHE_TAG = "*self*";
+		private const string SELF_CACHE_TAG = "*self*";
+		private const string BLOB_TAG = "*blob*";
 
 		private string text_cache_dir;
 		internal string TextCacheDir {
@@ -126,12 +125,16 @@ namespace Beagle.Daemon {
 				command = new SqliteCommand ();
 				command.Connection = connection;
 				command.CommandText =
-					"SELECT filename FROM uri_index WHERE uri='blah'";
+					"SELECT filename FROM textcache_data WHERE uri='blah'";
 
 				try {
 					reader = SqliteUtils.ExecuteReaderOrWait (command);
 				} catch (ApplicationException ex) {
 					Logger.Log.Warn ("Likely sqlite database version mismatch trying to read from {0}.  Purging.", db_filename);
+					create_new_db = true;
+				} catch (SqliteException ex) {
+					// When the table name changed from 0.2.18 -> 0.3.0.
+					Logger.Log.Warn ("Sqlite error: {0}. Purging textcache.", ex.Message);
 					create_new_db = true;
 				}
 
@@ -155,10 +158,12 @@ namespace Beagle.Daemon {
 					Log.Debug (e, "Exception opening text cache {0}", db_filename);
 				}
 
+				// Database schema: uri, filename, data
 				SqliteUtils.DoNonQuery (connection,
-							"CREATE TABLE uri_index (            " +
-							"  uri      STRING UNIQUE NOT NULL,  " +
-							"  filename STRING NOT NULL          " +
+							"CREATE TABLE textcache_data (            " +
+							"  uri      TEXT UNIQUE NOT NULL,  " +
+							"  filename TEXT NOT NULL,         " +
+							"  data     BLOB                     " +
 							")");
 			}
 		}
@@ -166,8 +171,7 @@ namespace Beagle.Daemon {
 		private SqliteConnection Open (string db_filename)
 		{
 			SqliteConnection connection = new SqliteConnection ();
-			connection.ConnectionString = "version=" + ExternalStringsHack.SqliteVersion
-				+ ",encoding=UTF-8,URI=file:" + db_filename;
+			connection.ConnectionString = "version=3,encoding=UTF-8,URI=file:" + db_filename;
 			connection.Open ();
 			return connection;
 		}
@@ -186,24 +190,31 @@ namespace Beagle.Daemon {
 			return command;
 		}
 
-		private void Insert (Uri uri, string filename)
+		private void Insert (Uri uri, string filename, byte[] data)
 		{
 			lock (connection) {
 				MaybeStartTransaction_Unlocked ();
 				SqliteUtils.DoNonQuery (connection,
-							"INSERT OR REPLACE INTO uri_index (uri, filename) VALUES ('{0}', '{1}')",
-							UriToString (uri), filename);
+							"INSERT OR REPLACE INTO textcache_data (uri, filename, data) VALUES (@uri,@filename,@data)",
+							new string [] {"@uri", "@filename", "@data"},
+							new object [] {UriToString (uri), filename, data});
 			}
 		}
 
+		private string LookupPathRaw (Uri uri)
+		{
+			lock (connection)
+				return LookupPathRawUnlocked (uri);
+		}
+
 		// Returns raw path as stored in the db i.e. relative path wrt the text_cache_dir
-		private string LookupPathRawUnlocked (Uri uri, bool create_if_not_found)
+		private string LookupPathRawUnlocked (Uri uri)
 		{
 			SqliteCommand command;
 			SqliteDataReader reader = null;
 			string path = null;
 
-			command = NewCommand ("SELECT filename FROM uri_index WHERE uri='{0}'", 
+			command = NewCommand ("SELECT filename FROM textcache_data WHERE uri='{0}'", 
 			                      UriToString (uri));
 			reader = SqliteUtils.ExecuteReaderOrWait (command);
 			if (SqliteUtils.ReadOrWait (reader))
@@ -211,53 +222,13 @@ namespace Beagle.Daemon {
 			reader.Close ();
 			command.Dispose ();
 
-			if (path == null && create_if_not_found) {
-				string guid = Guid.NewGuid ().ToString ();
-				path = Path.Combine (guid.Substring (0, 2), guid.Substring (2));
-				Insert (uri, path);
-			}
-
-			if (path == SELF_CACHE_TAG)
-				return SELF_CACHE_TAG;
-
 			return path;
 		}
 
-		// Don't do this unless you know what you are doing!  If you
-		// do anything to the path you get back other than open and
-		// read the file, you will almost certainly break something.
-		// And it will be evidence that you are a bad person and that
-		// you deserve whatever horrible fate befalls you.
-		public string LookupPathRaw (Uri uri)
-		{
-			lock (connection)
-				return LookupPathRawUnlocked (uri, false);
-		}
-
-		private string LookupPath (Uri uri, bool create_if_not_found)
-		{
-			lock (connection) {
-				string path = LookupPathRawUnlocked (uri, create_if_not_found);
-				if (path == SELF_CACHE_TAG) {
-					// FIXME: How do we handle URI remapping for self-cached items?
-#if false
-					if (uri_remapper != null)
-						uri = uri_remapper (uri);
-#endif
-					if (! uri.IsFile) {
-						string msg = String.Format ("Non-file uri {0} flagged as self-cached", uri);
-						throw new Exception (msg);
-					}
-					return uri.LocalPath;
-				}
-				return path != null ? Path.Combine (text_cache_dir, path) : null;
-			}
-		}
-		
 		public void MarkAsSelfCached (Uri uri)
 		{
 			lock (connection)
-				Insert (uri, SELF_CACHE_TAG);
+				Insert (uri, SELF_CACHE_TAG, null);
 		}
 
 		private bool world_readable = false;
@@ -266,28 +237,175 @@ namespace Beagle.Daemon {
 			set { this.world_readable = value; }
 		}
 
+		private class TextCacheWriteStream : Stream {
+			public delegate void StreamClosedHandler (byte[] buffer);
+
+			const int BLOB_SIZE_LIMIT = 4 * 1024; // 4 KB
+			private byte[] buffer;
+			private int buffer_pos;
+			private Stream stream;
+			private string path;
+			private bool disposed = false;
+			private bool world_readable = true;
+			private StreamClosedHandler finished_handler;
+
+			public TextCacheWriteStream (string path, bool world_readable, StreamClosedHandler finished_handler) {
+				this.path = path;
+				this.world_readable = world_readable;
+				this.finished_handler = finished_handler;
+
+				stream = null;
+				buffer = new byte [BLOB_SIZE_LIMIT];
+				buffer_pos = 0;
+			}
+
+			public override bool CanRead {
+				get { return false; }
+			}
+
+			public override bool CanWrite {
+				get { return true; }
+			}
+
+			public override bool CanSeek {
+				get { return false; }
+			}
+
+			public override long Length {
+				get { throw new NotSupportedException (); }
+			}
+
+			public override long Position {
+				get { throw new NotSupportedException (); }
+				set { throw new NotSupportedException (); }
+			}
+
+			public override void Close ()
+			{
+				// Initially buffer is not null and stream is null
+				// Later, exactly one of them is not null
+				if (stream != null)
+					stream.Close ();
+				else
+					Array.Resize (ref buffer, buffer_pos);
+
+				finished_handler (buffer);
+				buffer = null;
+				buffer_pos = 0;
+				disposed = true;
+			}
+
+			public override void Flush ()
+			{
+				CheckObjectDisposedException ();
+
+				if (stream != null)
+					stream.Flush ();
+			}
+
+			public override long Seek (long offset, SeekOrigin origin)
+			{
+				throw new NotSupportedException ();
+			}
+
+			public override void SetLength (long value)
+			{
+				throw new NotSupportedException ();
+			}
+
+			public override int Read (byte[] array, int offset, int count)
+			{
+				throw new NotSupportedException ();
+			}
+
+			private void StoreOnDisk ()
+			{
+				if (stream != null)
+					throw new Exception ("Already writing to a file on disk.");
+
+				//Log.Debug ("Large cached text, storing in file {0}", path);
+				FileStream file_stream = new FileStream (path, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+				// We don't expect to need this again in the near future.
+				FileAdvise.FlushCache (file_stream);
+			
+				if (! world_readable) {
+					// Make files only readable by the owner.
+					Mono.Unix.Native.Syscall.chmod (path, (Mono.Unix.Native.FilePermissions) 384);
+				}
+
+				stream = file_stream;
+				stream.Write (buffer, 0, buffer_pos);
+
+				buffer_pos = 0;
+				buffer = null;
+			}
+
+			public override void Write (byte[] array, int offset, int count)
+			{
+				if (stream == null) {
+					if (buffer_pos + count < BLOB_SIZE_LIMIT) {
+						Array.Copy (array, offset, buffer, buffer_pos, count);
+						buffer_pos += count;
+						return;
+					}
+					StoreOnDisk ();
+				}
+
+				stream.Write (array, offset, count);
+			}
+
+			private void CheckObjectDisposedException ()
+			{
+			        if (disposed) {
+			                throw new ObjectDisposedException ("TextCacheWriteStream", "Stream is closed");
+			        }
+			}
+		}
+
 		public TextWriter GetWriter (Uri uri)
 		{
-			// FIXME: Uri remapping?
-			string path = LookupPath (uri, true);
+			string local_path = LookupPathRaw (uri);
 
-			FileStream fs;
-			fs = new FileStream (path, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+			// LookupPathRaw returns local path, if NOT self_cached
+			if (local_path == SELF_CACHE_TAG)
+				throw new ArgumentException ("uri", String.Format ("Cannot return TextCache writer for self-cached file {0}", uri));
 
-			// We don't expect to need this again in the near future.
-			FileAdvise.FlushCache (fs);
-			
-			GZipOutputStream stream;
-			stream = new GZipOutputStream (fs);
-
-			if (! world_readable) {
-				// Make files only readable by the owner.
-				Mono.Unix.Native.Syscall.chmod (path, (Mono.Unix.Native.FilePermissions) 384);
+			// If there is no path, create new prospective path, by called Guid.NewGuid()
+			if (local_path == null || local_path == BLOB_TAG) {
+				string guid = Guid.NewGuid ().ToString ();
+				local_path = Path.Combine (guid.Substring (0, 2), guid.Substring (2));
 			}
+
+			// Return TextCacheWriteStream (Uri, path, handler)
+			Stream stream;
+			stream = new TextCacheWriteStream (Path.Combine (text_cache_dir, local_path),
+							   world_readable,
+							   delegate (byte[] buffer)
+							   {
+								CachedDataWriteFinished (uri, local_path, buffer);
+							   });
+
+			// But after wrapping it with compression
+			stream = new GZipOutputStream (stream);
 
 			StreamWriter writer;
 			writer = new StreamWriter (new BufferedStream (stream));
 			return writer;
+		}
+
+		private void CachedDataWriteFinished (Uri uri, string path, byte[] buffer)
+		{
+			// In handler,
+			// - if buffer is null, write <uri, path, null> in db
+			if (buffer == null) {
+				Insert (uri, path, null);
+				//Log.Debug ("Storing {0} on disk: {1}", uri, path);
+			} else {
+			// - if buffer is not null, remove earlier file at path and write <uri, ** BLOB **, buffer> in db
+				File.Delete (Path.Combine (text_cache_dir, path));
+				Insert (uri, BLOB_TAG, buffer);
+				//Log.Debug ("Storing {0} on db with {1} bytes", uri, buffer.Length);
+			}
 		}
 
 		public void WriteFromReader (Uri uri, TextReader reader)
@@ -313,57 +431,80 @@ namespace Beagle.Daemon {
 			writer.Close ();
 		}
 
-		// FIXME: Uri remapping?
+		// Returns null if no snippet for this uri
 		public TextReader GetReader (Uri uri)
 		{
-			string path = LookupPath (uri, false);
-			if (path == null)
-				return null;
-
-			return GetReader (path);
+			bool self_cache = false;
+			return GetReader (uri, ref self_cache);
 		}
 
-		public TextReader GetReader (string path)
+		// If self_cache is true when called, then self_cache will be set upon return
+		public TextReader GetReader (Uri uri, ref bool self_cache)
 		{
-			FileStream file_stream;
-			try {
-				file_stream = new FileStream (path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-			} catch (FileNotFoundException ex) {
+			SqliteCommand command;
+			SqliteDataReader reader = null;
+			byte[] blob = null;
+			string filename = null;
+
+			lock (connection) {
+				command = NewCommand ("SELECT filename, data FROM textcache_data WHERE uri='{0}'", 
+				                      UriToString (uri));
+				reader = SqliteUtils.ExecuteReaderOrWait (command);
+				if (! SqliteUtils.ReadOrWait (reader)) {
+					if (self_cache)
+						self_cache = false;
+					return null;
+				}
+
+				filename = reader.GetString (0);
+				if (! reader.IsDBNull (1))
+					blob = reader.GetValue (1) as byte [];
+				reader.Close ();
+				command.Dispose ();
+			}
+
+			if (filename == SELF_CACHE_TAG) {
+				if (self_cache) {
+					self_cache = true;
+					return null;
+				}
+
+				if (! uri.IsFile) {
+					string msg = String.Format ("non-file uri {0} flagged as self-cached", uri);
+					throw new Exception (msg);
+				}
+				return new StreamReader (uri.LocalPath);
+			}
+
+			if (self_cache)
+				self_cache = false;
+
+			if (filename == BLOB_TAG && (blob == null || blob.Length == 0))
 				return null;
-			}
 
-			StreamReader reader = null;
-			try {
-				Stream stream = new GZipInputStream (file_stream);
-				reader = new StreamReader (new BufferedStream (stream));
+			Stream stream;
+			if (filename == BLOB_TAG)
+				stream = new MemoryStream (blob);
+			else
+				stream = new FileStream (Path.Combine (text_cache_dir, filename), FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
-				// This throws an exception if the file isn't compressed as follows:
-				// 1.) IOException on older versions of SharpZipLib
-				// 2.) GZipException on newer versions of SharpZipLib
-				// FIXME: Change this to GZipException when we depend
-				// on a higer version of SharpZipLib
-				reader.Peek ();
-			} catch (Exception ex) {
-				// FIXME: WTF? The Peek () above advances one character. I'm not sure
-				// why though, maybe because an exception is thrown, anyways seek to
-				// the beginning of the file.
-				file_stream.Seek (0, SeekOrigin.Begin);
-				reader = new StreamReader (file_stream);
-			}
+			stream = new GZipInputStream (stream);
+			TextReader text_reader = new StreamReader (new BufferedStream (stream));
 
-			return reader;
+			return text_reader;
 		}
 
 		public void Delete (Uri uri)
 		{
 			lock (connection) {
-				string path = LookupPathRawUnlocked (uri, false);
+				string path = LookupPathRawUnlocked (uri);
 				if (path != null) {
 					MaybeStartTransaction_Unlocked ();
 					SqliteUtils.DoNonQuery (connection,
-								"DELETE FROM uri_index WHERE uri='{0}' AND filename='{1}'", 
-								UriToString (uri), path);
-					if (path != SELF_CACHE_TAG)
+								"DELETE FROM textcache_data WHERE uri=@uri", 
+								new string [] {"@uri"},
+								new object [] {UriToString (uri)}); 
+					if (path != SELF_CACHE_TAG && path != BLOB_TAG)
 						File.Delete (Path.Combine (text_cache_dir, path));
 				}
 			}

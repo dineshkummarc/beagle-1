@@ -32,6 +32,10 @@ namespace Beagle.Util {
 			get { return "@localstatedir@"; }
 		}
 
+		static public string DataDir {
+			get { return "@datadir@"; }
+		}
+
 		static public string GnomePrefix {
 			get { return "@GNOME_PREFIX@"; }
 		}
@@ -43,7 +47,5 @@ namespace Beagle.Util {
 		static public string KdePrefix {
 			get { return "@KDE_PREFIX@"; }
 		}
-
-		public const string SqliteVersion = "@SQLITE_MAJ_VER@";
 	}
 }

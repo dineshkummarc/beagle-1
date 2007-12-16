@@ -27,6 +27,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 
 using Beagle.Util;
@@ -62,7 +63,18 @@ namespace Beagle.Daemon.KMailQueryable {
 		public KMailQueryable Queryable {
 		    get { return queryable; }
 		}
-		
+
+		////////////// Progress tracking //////////////////
+
+		private double progress = 0;
+
+		internal double Progress {
+			set { progress = value; }
+			get { return progress; }
+		}
+
+		///////////////////////////////////////////////////
+
 		private string lastGoodDirPath = ""; // cache last successful directory
 
 		public KMailIndexer (KMailQueryable queryable, string account, string root)
@@ -71,19 +83,16 @@ namespace Beagle.Daemon.KMailQueryable {
 			account_name = account;
 			mail_root = root;
 			mail_directories = new ArrayList ();
-			Log.Debug ("{1} mail_directories created for {0}", mail_root, mail_directories.Count);
 			folder_directories = new ArrayList ();
 			mbox_files = new ArrayList ();
 
 			excludes = new ArrayList ();
-			excludes.Add ("spam");
-			excludes.Add ("outbox");
-			excludes.Add ("trash");
-			excludes.Add ("drafts");
+			List<string[]> values = Conf.Daemon.GetListOptionValues (Conf.Names.ExcludeMailfolder);
+			if (values == null)
+				return;
 
-			foreach (ExcludeItem item in Conf.Indexing.Excludes)
-				if (item.Type == ExcludeType.MailFolder)
-					excludes.Add (item.Value.ToLower ());
+			foreach (string[] item in values)
+				excludes.Add (item [0].ToLower ());
 		}
 
 		/**

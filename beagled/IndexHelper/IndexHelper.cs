@@ -104,7 +104,6 @@ namespace Beagle.IndexHelper {
 
 			Log.Always ("Starting Index Helper process (version {0})", ExternalStringsHack.Version);
 			Log.Always ("Running on {0}", SystemInformation.MonoRuntimeVersion);
-			Log.Always ("Using sqlite version {0}", ExternalStringsHack.SqliteVersion);
 			Log.Always ("Extended attributes are {0}", ExtendedAttribute.Supported ? "supported" : "not supported");
 			Log.Always ("Command Line: {0}",
 				    Environment.CommandLine != null ? Environment.CommandLine : "(null)");
@@ -149,7 +148,7 @@ namespace Beagle.IndexHelper {
 			Log.Debug ("Starting messaging server");
 			bool server_has_been_started = false;
 			try {
-				server = new Server ("socket-helper", false);
+				server = new Server ("socket-helper", true, false);
 				server.Start ();
 				server_has_been_started = true;
 			} catch (InvalidOperationException ex) {

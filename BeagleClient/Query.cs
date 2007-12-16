@@ -270,9 +270,7 @@ namespace Beagle {
 			this.Object = (_object == null ? String.Empty : _object);
 
 			// FIXME: the query contains a dummy part that will make the query
-			// pass even if it is empty. This is needed till all the 8 cases are covered.
-			// Basically when any of the unsupported case is received, the dummy part
-			// will ensure that the query will pass and return 0 results.
+			// pass even if it is empty. Empty queries are not handled by default.
 			//
 			QueryPart_Text dummy = new QueryPart_Text ();
 			dummy.Logic = QueryPartLogic.Prohibited;

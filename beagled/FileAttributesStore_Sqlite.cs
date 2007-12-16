@@ -29,7 +29,7 @@ using System.Collections;
 using System.IO;
 using System.Threading;
 
-using Mono.Data.SqliteClient;
+using Mono.Data.Sqlite;
 
 using Beagle.Util;
 
@@ -135,8 +135,9 @@ namespace Beagle.Daemon {
 							")");
 
 				SqliteUtils.DoNonQuery (connection,
-							"INSERT INTO db_info (version, fingerprint) VALUES ({0}, '{1}')",
-							VERSION, index_fingerprint);
+							"INSERT INTO db_info (version, fingerprint) VALUES (@version, @index_fingerprint)",
+							new string [] {"@version", "@index_fingerprint"},
+							new object [] {VERSION, index_fingerprint});
 
 				SqliteUtils.DoNonQuery (connection,
 							"CREATE TABLE file_attributes (         " +
@@ -193,8 +194,7 @@ namespace Beagle.Daemon {
 		{
 			SqliteConnection c;			
 			c = new SqliteConnection ();
-			c.ConnectionString = "version=" + ExternalStringsHack.SqliteVersion
-				+ ",encoding=UTF-8,URI=file:" + GetDbPath (directory);
+			c.ConnectionString = "version=3,encoding=UTF-8,URI=file:" + GetDbPath (directory);
 			c.Open ();
 			return c;
 		}
@@ -296,13 +296,15 @@ namespace Beagle.Daemon {
 				ret = SqliteUtils.DoNonQuery (connection,
 							"INSERT OR REPLACE INTO file_attributes " +
 							" (unique_id, directory, filename, last_mtime, last_attrtime, filter_name, filter_version) " +
-							" VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}')",
-							GuidFu.ToShortString (fa.UniqueId),
-							fa.Directory.Replace ("'", "''"), fa.Filename.Replace ("'", "''"),
-							StringFu.DateTimeToString (fa.LastWriteTime),
-							StringFu.DateTimeToString (fa.LastAttrTime),
-							filter_name,
-							fa.FilterVersion);
+							" VALUES (@unique_id, @directory, @filename, @last_mtime, @last_attrtime, @filter_name, @filter_version)",
+							new string [] {"@unique_id", "@directory", "@filename", "@last_mtime", "@last_attrtime", "@filter_name", "@filter_version"},
+							new object [] {
+								GuidFu.ToShortString (fa.UniqueId),
+								fa.Directory.Replace ("'", "''"), fa.Filename.Replace ("'", "''"),
+								StringFu.DateTimeToString (fa.LastWriteTime),
+								StringFu.DateTimeToString (fa.LastAttrTime),
+								filter_name,
+								fa.FilterVersion});
 			}
 
 			return (ret != 0);
@@ -327,8 +329,9 @@ namespace Beagle.Daemon {
 				MaybeStartTransaction ();
 
 				SqliteUtils.DoNonQuery (connection,
-							"DELETE FROM file_attributes WHERE directory='{0}' AND filename='{1}'",
-							directory, filename);
+							"DELETE FROM file_attributes WHERE directory=@directory AND filename=@filename",
+							new string [] {"@directory", "@filename"},
+							new object [] {directory, filename});
 			}
 		}
 

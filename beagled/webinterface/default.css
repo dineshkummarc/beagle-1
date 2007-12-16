@@ -25,7 +25,7 @@
 
 body {
 	color: #444;
-	background: #fff url(title_bg.png) 0 -80px repeat-x;
+	background: #fff url(images/title_bg.png) 0 -80px repeat-x;
 	position: relative;
 	margin: 40px;
 	font-family: trebuchet ms,luxi sans,sans-serif;
@@ -35,9 +35,9 @@ body {
 
 /************ header ***************/
 
-#header img{
+#header img {
 	float: left;
-	margin: 4px;
+	margin: 0.5em;
 	border: 0px;
 }
 
@@ -48,11 +48,13 @@ body {
 
 #header form input {
 	border: 1px solid rgb(153, 51, 0);
-	margin: 5px;
+	margin-top: 0.5em;
+	margin-right: 1.2em;
+	margin-bottom: 1.8em;
 }
 
 #headerlinks {
-	float: center;
+	margin-right: 1.2em;
 }
 
 /************ End header; Start status ************/
@@ -67,19 +69,25 @@ body {
 
 #topbar {
 	clear: left;
-	height: 2em;
+	height: 1.5em;
 	background-color: #cccccc;
 	border-top: 1px dotted rgb(153, 51, 0);
-	margin-bottom: 0.5px;
-	margin-top: 0.5em;
 	padding-top: 0.25em;
+	padding-bottom: 0.25em;
 	display: none;
 }
 
 #topbar-left {
 	float: left;
 	text-align: center;
-	padding-left: .5em;
+	margin-right: 0.5em;
+	margin-left: 0.5em;
+}
+
+#topbar-left form input {
+	margin: 0.3em;
+	margin-right: 0.5em;
+	margin-left: 0.5em;
 }
 
 #topbar-left a {
@@ -92,31 +100,65 @@ body {
 	padding-right: .5em;
 }
 
+[disabled]{
+	color:#933;
+	background-color:gray;
+}
+
 /************ End status; Start result listing ***************/
 #results {
 	clear: left;
-	padding: 0.5em;
+	margin: 0.5em;
+	text-align: left;
+}
+
+#info {
+	clear: left;
+	margin: 0.5em;
+	text-align: left;
+}
+
+#help {
+	clear: left;
+	margin: 0.5em;
+	margin-left: 25%;
+	text-align: left;
+}
+
+#help-topics {
+	clear: left;
+	margin: 0.5em;
 	text-align: left;
 }
 
 .Hit {
-/*	border-left: 1px solid rgb(152, 51, 0);
-	border-top: 1px solid rgb(152, 51, 0);*/
-	padding: 0.5em;
+	margin: 0.5em;
 	float: left;
 	overflow: hidden;
 	width: 96%;
 }
 
+.Hits {
+	float: left;
+	overflow: hidden;
+	width: 96%;
+	display: none;
+}
+
+.Hits div h3 {
+	padding: 0.4em;
+	background-color: #cccccc;
+}
+
 .Title {
-	padding: 0.5em;
+	padding: 0.4em;
 	float: left;
 	border-bottom: 1px solid rgb(152, 51, 0);
 	border-left: 1px solid rgb(152, 51, 0);
 	width: 96%;
 }
 
-.Toggle {
+.Toggler {
 	padding-right: 0.1em;
 	font-weight: bold;
 }
@@ -126,7 +168,7 @@ body {
 	text-align: left;
 	font-weight: bold;
 	overflow: hidden;
-	width: 70%;
+	width: 50%;
 }
 
 .Timestamp {
@@ -145,6 +187,32 @@ body {
 	margin-left: 0.5em;
 }
 
+.Snippet {
+        clear: left;
+	width: 90%;
+	padding-top: 1em;
+	margin-left: 4em;
+	padding-left: 1em;
+	border-left: thin dotted green;
+}
+
+td.SearchProperty a{
+	visibility: hidden;
+	text-decoration: none;
+}
+
+tr.Property:hover td.SearchProperty a {
+	visibility: visible;
+}
+
+.PropertyValue {
+	color: #000066;
+}
+
+.XML {
+	display: none;
+}
+
 /*********** End results; Start footer ************/
 
 #footer {
@@ -155,6 +223,7 @@ body {
 	width: 100%;
 }
 
-.license {
+.version-info {
 	font-size: 75%;
+	color: gray;
 }

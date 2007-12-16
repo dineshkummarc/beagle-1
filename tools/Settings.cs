@@ -80,32 +80,36 @@ public class SettingsDialog
 	private IncludeView include_view;
 	private ExcludeView exclude_view;
 
-	[Widget] TreeView backends_treeview;
-	
-	private ListStore backends_list_store;
+	////////////////////////////////////////////////////////////////
+	// Backends
 
+	[Widget] ScrolledWindow backends_sw;
+
+	private BackendView backend_view;
+	
 	////////////////////////////////////////////////////////////////
 	// Zeroconf
 
-#if ENABLE_AVAHI
 	[Widget] VBox networking_box;
-
+        [Widget] CheckButton allow_webinterface_toggle;
+        [Widget] CheckButton allow_global_access_toggle;
         [Widget] Alignment networking_settings_box;
-        [Widget] Alignment networking_password_box;
 
         [Widget] ScrolledWindow networking_sw;
 
-        [Widget] CheckButton allow_global_access_toggle;
+#if ENABLE_AVAHI
+        [Widget] Alignment networking_password_box;
+
         [Widget] CheckButton require_password_toggle;
 
-        [Widget] Button add_host_button;
-        [Widget] Button remove_host_button;        
-        
         [Widget] Entry index_name_entry;
         [Widget] Entry password_entry;
 
-        private NetworkingView networking_view;
 #endif
+        [Widget] Button add_host_button;
+        
+        private NetworkingView networking_view;
+        [Widget] Button remove_host_button;        
 
 	////////////////////////////////////////////////////////////////
 	// Initialize       
@@ -119,7 +123,7 @@ public class SettingsDialog
 		Glade.XML glade = new Glade.XML (null, "settings.glade", "settings_dialog", "beagle");
 		glade.Autoconnect (this);
 
-		settings_dialog.Icon = Beagle.Images.GetPixbuf ("system-search.png");
+		settings_dialog.Icon = IconTheme.Default.LoadIcon ("system-search", 16, IconLookupFlags.NoSvg);
 		administration_frame.Visible = (Environment.UserName == "root");
 
 		include_view = new IncludeView ();
@@ -132,28 +136,26 @@ public class SettingsDialog
 		exclude_view.Show ();
 		exclude_sw.Child = exclude_view;
 
-		backends_list_store = new ListStore (typeof (string), typeof (bool));
+		backend_view = new BackendView ();
+		backend_view.Show ();
+		backends_sw.Child = backend_view;
 
-		backends_treeview.Model = backends_list_store;
-		backends_treeview.AppendColumn ("Active", new CellRendererToggle (), "active", 1);
-		backends_treeview.AppendColumn ("Active", new CellRendererText (), "text", 0);
-		
-
-#if ENABLE_AVAHI
 		networking_view = new NetworkingView ();
 		networking_view.Selection.Changed += new EventHandler (OnHostSelected);
 		networking_view.Show ();
                 networking_sw.Child = networking_view;
 		networking_box.Show ();
-#endif
+
+#if ENABLE_AVAHI
+		networking_settings_box.Visible = true;
+#endif  
 
 		LoadConfiguration ();
 
-		Conf.Subscribe (typeof (Conf.IndexingConfig), new Conf.ConfigUpdateHandler (OnConfigurationChanged));
-		Conf.Subscribe (typeof (Conf.SearchingConfig), new Conf.ConfigUpdateHandler (OnConfigurationChanged));
-#if ENABLE_AVAHI
-		Conf.Subscribe (typeof (Conf.NetworkingConfig), new Conf.ConfigUpdateHandler (OnConfigurationChanged));
-#endif
+		Conf.Subscribe (Conf.Names.FilesQueryableConfig, new Conf.ConfigUpdateHandler (OnConfigurationChanged));
+		Conf.Subscribe (Conf.Names.BeagleSearchConfig, new Conf.ConfigUpdateHandler (OnConfigurationChanged));
+		Conf.Subscribe (Conf.Names.DaemonConfig, new Conf.ConfigUpdateHandler (OnConfigurationChanged));
+		Conf.Subscribe (Conf.Names.NetworkingConfig, new Conf.ConfigUpdateHandler (OnConfigurationChanged));
 
 		ParseArgs (args);
 	}
@@ -171,11 +173,9 @@ public class SettingsDialog
 			case "--indexing":
 				notebook.Page = 1;
 				return;
-#if ENABLE_AVAHI
 			case "--networking":
 				notebook.Page = 2;
 				return;
-#endif
 			}
 		}
 	}
@@ -189,70 +189,155 @@ public class SettingsDialog
 	// Configuration
 
 	private void LoadConfiguration ()
-	{	
-		allow_root_toggle.Active = Conf.Daemon.AllowRoot;
-		auto_search_toggle.Active = Conf.Searching.BeagleSearchAutoSearch;
-		battery_toggle.Active = Conf.Indexing.IndexOnBattery;
-		screensaver_toggle.Active = Conf.Indexing.IndexFasterOnScreensaver;
+	{
+		Config fsq_config = Conf.Get (Conf.Names.FilesQueryableConfig);
+		Config daemon_config = Conf.Get (Conf.Names.DaemonConfig);
+		Config bs_config = Conf.Get (Conf.Names.BeagleSearchConfig);
+
+		allow_root_toggle.Active = daemon_config.GetOption (Conf.Names.AllowRoot, false);
+		auto_search_toggle.Active = bs_config.GetOption (Conf.Names.BeagleSearchAutoSearch, true);
+		battery_toggle.Active = daemon_config.GetOption (Conf.Names.IndexOnBattery, false);
+		screensaver_toggle.Active = daemon_config.GetOption (Conf.Names.IndexFasterOnScreensaver, true);
 
 		autostart_toggle.Active = IsAutostartEnabled ();
 
-		KeyBinding show_binding = Conf.Searching.ShowSearchWindowBinding;
+		bool binding_ctrl = bs_config.GetOption (Conf.Names.KeyBinding_Ctrl, false);
+		bool binding_alt = bs_config.GetOption (Conf.Names.KeyBinding_Alt, false);
+		string binding_key = bs_config.GetOption (Conf.Names.KeyBinding_Key, "F12");
+		KeyBinding show_binding = new KeyBinding (binding_key, binding_ctrl, binding_alt);
 		press_ctrl_toggle.Active = show_binding.Ctrl;
 		press_alt_toggle.Active = show_binding.Alt;
 		show_search_window_entry.Text = show_binding.Key;
 
-		if (Conf.Indexing.IndexHomeDir)
+		if (fsq_config.GetOption (Conf.Names.IndexHomeDir, true))
 			index_home_toggle.Active = true;
 
-		foreach (string include in Conf.Indexing.Roots)
-			include_view.AddPath (include);
+		List<string[]> values = fsq_config.GetListOptionValues (Conf.Names.Roots);
+		if (values != null)
+			foreach (string[] root in values)
+				include_view.AddPath (root [0]);
 
-		foreach (ExcludeItem exclude_item in Conf.Indexing.Excludes)
-			exclude_view.AddItem (exclude_item);
+		values = fsq_config.GetListOptionValues (Conf.Names.ExcludeSubdirectory);
+		if (values != null)
+			foreach (string[] subdir in values)
+				exclude_view.AddItem (new ExcludeItem (ExcludeType.Path, subdir [0]));
 
-		//
+		values = fsq_config.GetListOptionValues (Conf.Names.ExcludePattern);
+		if (values != null)
+			foreach (string[] pattern in values)
+				exclude_view.AddItem (new ExcludeItem (ExcludeType.Pattern, pattern [0]));
+
+		values = daemon_config.GetListOptionValues (Conf.Names.ExcludeMailfolder);
+		if (values != null)
+			foreach (string[] mailfolder in values)
+				exclude_view.AddItem (new ExcludeItem (ExcludeType.MailFolder, mailfolder [0]));
+
+		Config networking_config = Conf.Get (Conf.Names.NetworkingConfig);
+                allow_webinterface_toggle.Active = networking_config.GetOption ("WebInterface", false);
+                allow_global_access_toggle.Active = networking_config.GetOption (Conf.Names.ServiceEnabled, false);
+
+		List<string[]> services = networking_config.GetListOptionValues (Conf.Names.NetworkServices);
+		if (services != null) {
+			foreach (string[] svc in services) {
+				NetworkService s = new NetworkService ();
+				s.Name = svc [0];
+				s.UriString = svc [1];
+				s.IsProtected = false;
+				s.Cookie = null;
+				networking_view.AddNode (s);
+			}
+		}
 
 #if ENABLE_AVAHI
-                foreach (NetworkService s in Conf.Networking.NetworkServices)
-                        networking_view.AddNode (s);
-                                                                
-                allow_global_access_toggle.Active = Conf.Networking.ServiceEnabled;
-                require_password_toggle.Active = Conf.Networking.PasswordRequired;
-                index_name_entry.Text = Conf.Networking.ServiceName;
-                string password = Conf.Networking.ServicePassword.PadRight (12);
+                require_password_toggle.Active = networking_config.GetOption (Conf.Names.PasswordRequired, true);
+                index_name_entry.Text = networking_config.GetOption (Conf.Names.ServiceName, String.Empty);
+                string password = networking_config.GetOption (Conf.Names.ServicePassword, String.Empty);
+		password = password.PadRight (12);
                 password_entry.Text = password.Substring (0, 12);
 #endif
+
+		values = daemon_config.GetListOptionValues (Conf.Names.DeniedBackends);
+		if (values != null)
+			foreach (string[] backend in values)
+				backend_view.Set (backend[0], false);
 	}
 
 	private void SaveConfiguration ()
 	{
-		Conf.Daemon.AllowRoot = allow_root_toggle.Active;
-		Conf.Searching.BeagleSearchAutoSearch = auto_search_toggle.Active;
-		Conf.Indexing.IndexOnBattery = battery_toggle.Active;
-		Conf.Indexing.IndexFasterOnScreensaver = screensaver_toggle.Active;
-		
-		Conf.Searching.ShowSearchWindowBinding = new KeyBinding (show_search_window_entry.Text, 
-									 press_ctrl_toggle.Active, 
-									 press_alt_toggle.Active);
-		
-		Conf.Indexing.IndexHomeDir = index_home_toggle.Active;
-		
-		Conf.Indexing.Roots = include_view.Includes;
-		Conf.Indexing.Excludes = exclude_view.Excludes;
+		Config fsq_config = Conf.Get (Conf.Names.FilesQueryableConfig);
+		Config daemon_config = Conf.Get (Conf.Names.DaemonConfig);
+		Config bs_config = Conf.Get (Conf.Names.BeagleSearchConfig);
 
+		daemon_config.SetOption (Conf.Names.AllowRoot, allow_root_toggle.Active);
+		bs_config.SetOption (Conf.Names.BeagleSearchAutoSearch,auto_search_toggle.Active);
+		daemon_config.SetOption (Conf.Names.IndexOnBattery,battery_toggle.Active);
+		daemon_config.SetOption (Conf.Names.IndexFasterOnScreensaver, screensaver_toggle.Active);
+
+		bs_config.SetOption (Conf.Names.KeyBinding_Key, show_search_window_entry.Text);
+		bs_config.SetOption (Conf.Names.KeyBinding_Ctrl, press_ctrl_toggle.Active);
+		bs_config.SetOption (Conf.Names.KeyBinding_Alt, press_alt_toggle.Active);
+
+		fsq_config.SetOption (Conf.Names.IndexHomeDir, index_home_toggle.Active);
+
+		List<string[]> roots = new List<string[]> (include_view.Includes.Count);
+		foreach (string root in include_view.Includes) {
+			roots.Add (new string[1] {root});
+		}
+		fsq_config.SetListOptionValues (Conf.Names.Roots, roots);
+
+		List<string[]> excludes_path = new List<string[]> ();
+		List<string[]> excludes_pattern = new List<string[]> ();
+		List<string[]> excludes_mailfolder = new List<string[]> ();
+
+		foreach (ExcludeItem exclude in exclude_view.Excludes) {
+			if (exclude.Type == ExcludeType.Path)
+				excludes_path.Add (new string[1] {exclude.Value});
+			else if (exclude.Type == ExcludeType.Pattern)
+				excludes_pattern.Add (new string[1] {exclude.Value});
+			else if (exclude.Type == ExcludeType.MailFolder)
+				excludes_mailfolder.Add (new string[1] {exclude.Value});
+		}
+
+		if (excludes_path.Count > 0)
+			fsq_config.SetListOptionValues (Conf.Names.ExcludeSubdirectory, excludes_path);
+
+		if (excludes_pattern.Count > 0)
+			fsq_config.SetListOptionValues (Conf.Names.ExcludePattern, excludes_pattern);
+
+		if (excludes_mailfolder.Count > 0)
+			daemon_config.SetListOptionValues (Conf.Names.ExcludeMailfolder, excludes_mailfolder);
+
+
+		Config networking_config = Conf.Get (Conf.Names.NetworkingConfig);
+
+		networking_config.SetOption ("WebInterface", allow_webinterface_toggle.Active);
+		networking_config.SetOption (Conf.Names.ServiceEnabled, allow_global_access_toggle.Active);
 #if ENABLE_AVAHI
-                Conf.Networking.ServiceEnabled = allow_global_access_toggle.Active;
-                Conf.Networking.ServiceName = index_name_entry.Text;
-                Conf.Networking.PasswordRequired = require_password_toggle.Active;
-                Conf.Networking.ServicePassword = Password.Encode (password_entry.Text);
-                Conf.Networking.NetworkServices = networking_view.Nodes;
+		networking_config.SetOption (Conf.Names.ServiceName, index_name_entry.Text);
+		networking_config.SetOption (Conf.Names.PasswordRequired, require_password_toggle.Active);
+		networking_config.SetOption (Conf.Names.ServicePassword, Password.Encode (password_entry.Text));
 #endif
 
-		Conf.Save (true);
+		List<string[]> svcs = new List<string[]> (networking_view.Nodes.Count);
+		foreach (NetworkService svc in networking_view.Nodes) {
+			svcs.Add (new string [4] {svc.Name, svc.UriString, Convert.ToString (svc.IsProtected), svc.Cookie});
+		}
+		networking_config.SetListOptionValues (Conf.Names.NetworkServices, svcs);
+
+		Conf.Save (networking_config);
+
+		List<string[]> denied_backends = new List<string[]> ();
+
+		foreach (string backend in backend_view.Denied)
+			denied_backends.Add (new string[] { backend });
+		daemon_config.SetListOptionValues (Conf.Names.DeniedBackends, denied_backends);
+
+		Conf.Save (fsq_config);
+		Conf.Save (bs_config);
+		Conf.Save (daemon_config);
 	}
 
-	private void OnConfigurationChanged (Conf.Section section)
+	private void OnConfigurationChanged (Config config)
 	{
 		HigMessageDialog dialog = new HigMessageDialog (settings_dialog,
 								DialogFlags.Modal,
@@ -521,7 +606,6 @@ public class SettingsDialog
 
 	private void OnAddHostClicked (object o, EventArgs args) 	 
 	{
-#if ENABLE_AVAHI
                 string error_message = null;
                 bool throw_error = false;
 
@@ -561,12 +645,10 @@ public class SettingsDialog
                         foreach (NetworkService node in new_nodes)
                                 networking_view.AddNode (node);
                 }
-#endif
 	}
 	  	 
 	private void OnRemoveHostClicked (object o, EventArgs args) 	 
 	{
-#if ENABLE_AVAHI
 		// Confirm removal 	 
 		HigMessageDialog dialog  = new HigMessageDialog (settings_dialog, 	 
 								 DialogFlags.Modal, 	 
@@ -583,21 +665,18 @@ public class SettingsDialog
 		
 		networking_view.RemoveSelectedNode (); 	 
 		remove_host_button.Sensitive = false;
-#endif
 	} 	 
 	  	 
 	private void OnHostSelected (object o, EventArgs args) 	 
 	{
-#if ENABLE_AVAHI
 		remove_host_button.Sensitive = true;
-#endif  
 	}
 	
 	private void OnGlobalAccessToggled (object o, EventArgs args)
 	{
 #if ENABLE_AVAHI
 		networking_settings_box.Sensitive = allow_global_access_toggle.Active;
-#endif
+#endif  
 	}
 	
 	private void OnRequirePasswordToggled (object o, EventArgs args)
@@ -783,8 +862,6 @@ public class SettingsDialog
 		}
 	}
 
-#if ENABLE_AVAHI
-
 	////////////////////////////////////////////////////////////////
 	// NetworkingView 
 
@@ -883,7 +960,6 @@ public class SettingsDialog
 		} 	 
 	  	
 	}
-#endif
 
 	////////////////////////////////////////////////////////////////
 	// PublicfolderView 
@@ -1266,6 +1342,7 @@ public class SettingsDialog
                         Present ();
                 }
         }
+#endif
 
         ////////////////////////////////////////////////////////////////
         // AddHostDialog
@@ -1288,7 +1365,9 @@ public class SettingsDialog
                 [Glade.Widget] private SpinButton port_spin_button;
                 [Glade.Widget] private IconView icon_view;
                 
+#if ENABLE_AVAHI
                 private AvahiBrowser browser;
+#endif  
 
                 private ListStore store;
                 private Gdk.Pixbuf unlocked_icon;
@@ -1310,6 +1389,7 @@ public class SettingsDialog
 
 				services.Add (new NetworkService (name, uri, pw_required, "X"));
 			} else {
+#if ENABLE_AVAHI
 				TreeIter iter;
 
 				foreach (TreePath path in icon_view.SelectedItems) {
@@ -1325,6 +1405,7 @@ public class SettingsDialog
 					if (s != null)
 						services.Add (s);
 				}
+#endif
 			}
 			
 			return services;
@@ -1356,6 +1437,7 @@ public class SettingsDialog
 
                         this.ShowAll ();
 
+#if ENABLE_AVAHI
                         try {
                                 browser = new AvahiBrowser ();
                                 browser.HostFound += new AvahiEventHandler (OnHostFound);
@@ -1368,6 +1450,10 @@ public class SettingsDialog
                                 mdns_radio_button.Visible = false;
                                 static_radio_button.Visible = false;
                         }
+#else
+                                icon_view.Visible = false;
+                                mdns_radio_button.Visible = false;
+#endif  
                 }
                 
                 private void CreateStore ()
@@ -1388,6 +1474,7 @@ public class SettingsDialog
                         store.SetSortColumnId (COL_NAME, SortType.Ascending);
                 }
 
+#if ENABLE_AVAHI
                 private void OnHostFound (object sender, AvahiEventArgs args)
                 {
                         store.AppendValues (args.Name, 
@@ -1407,6 +1494,7 @@ public class SettingsDialog
                        store.Foreach (new TreeModelForeachFunc (ForeachFindNode));
                        store.Remove (ref found_iter);
                 }
+#endif
 
                private string find_node;
                private TreeIter found_iter;
@@ -1454,16 +1542,137 @@ public class SettingsDialog
 
                 public override void Destroy ()
                 {
+#if ENABLE_AVAHI
                         if (browser != null) {
                                 browser.Dispose ();
                                 browser.HostFound -= OnHostFound;
                                 browser.HostRemoved -= OnHostRemoved;
                                 browser = null;
                         }
-                        
+#endif 
                         base.Destroy ();
                 }
    
 	}
-#endif
+
+	////////////////////////////////////////////////////////////////
+	// BackendView
+
+	class BackendView : TreeView 
+	{
+		private ListStore store = null;
+
+		private string[] backends = new string[] {
+			"EvolutionMail",
+			"EvolutionDataServer",
+			"Thunderbird",
+			"Akregator",
+			"Blam",
+			"Files",
+			//"IndexingService", // Leave this enabled, it is vital for the Firefox plugin
+			"KMail",
+			"KNotes",
+			"KOrganizer",
+			"KAddressBook",
+			"KonqBookmark",
+			"KonquerorHistory",
+			"Konversation",
+			"Kopete",
+			"Labyrinth",
+			"Liferea",
+			"NautilusMetadata",
+			"NetworkServices", // This should be configurable in the network tab
+			"Opera",
+			"Pidgin",
+			"Tomboy"
+		};
+
+		private string[] descriptions = new string[] {
+			"Evolution's mail.",
+			"Evolution's address book, memos and tasks.",
+			"Thunderbird's email.",
+			"RSS feeds from Akregator.",
+			"RSS feeds from Blam.",
+			"Files and folders on the local file system.",
+			"Mail messages from KMail.",
+			"Notes from KNotes.",
+			"Agenda from KOrganizer.",
+			"Contacts from KAddressBook.",
+			"Konqueror's bookmarks.",
+			"Konqueror's history.",
+			"IMs and chats from Konversation.",
+			"IMs and chats from Kopete",
+			"Mind-maps from Labyrinth.",
+			"RSS feeds from Liferea.",
+			"Nautilus' metadata (emblems, notes, etc.)",
+			"Search other search services in the network (EXPERIMENTAL)",
+			"Opera's bookmarks and browsing history.",
+			"IMs and chats from Pidgin.",
+			"Notes from Tomboy."
+		};
+
+		public BackendView ()
+		{
+			this.store = new ListStore (typeof (bool), typeof (string), typeof (string));
+
+			CellRendererToggle toggle = new CellRendererToggle ();
+			toggle.Activatable = true;
+			toggle.Toggled += OnToggled;
+
+			base.Model = store;
+			base.AppendColumn (null, toggle, "active", 0);
+			base.AppendColumn (Catalog.GetString ("Name"), new CellRendererText (), "text", 1);
+			base.AppendColumn (Catalog.GetString ("Description"), new CellRendererText (), "markup", 2);
+
+			for (int i = 0; i < backends.Length; i++)
+				store.AppendValues (true, backends [i], "<i>" + Catalog.GetString (descriptions [i]) + "</i>");
+		}
+
+		public void Set (string backend, bool enabled)
+		{
+			TreeIter iter;
+
+			if (! store.GetIterFirst (out iter))
+				return;
+			
+			do {
+				string name = (string) store.GetValue (iter, 1);
+
+				if (name == backend)
+					store.SetValue (iter, 0, enabled);
+			} while (store.IterNext (ref iter));
+		}
+
+		private void OnToggled (object o, ToggledArgs args)
+		{
+			TreeIter iter;
+
+			if (! store.GetIter (out iter, new TreePath (args.Path)))
+				return;
+
+			store.SetValue (iter, 0, ! (bool) store.GetValue (iter, 0));
+		}
+
+		private List<string> GetDenied ()
+		{
+			TreeIter iter;
+			List<string> denied = new List<string> ();
+
+			if (! store.GetIterFirst (out iter))
+				return null;
+			
+			do {
+				bool enabled = (bool) store.GetValue (iter, 0);
+				
+				if (! enabled)
+					denied.Add ((string) store.GetValue (iter, 1));
+			} while (store.IterNext (ref iter));
+
+			return denied;
+		}
+
+		public List<string> Denied {
+			get { return GetDenied (); }
+		}
+	}
 }
