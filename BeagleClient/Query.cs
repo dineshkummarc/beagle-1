@@ -247,8 +247,28 @@ namespace Beagle {
 
 	public class RDFQuery : Query {
 
-		public string Subject;
+		[XmlIgnore]
+		public Uri Subject {
+			get {
+				if (SubjectString == String.Empty)
+					return null;
+				return UriFu.EscapedStringToUri (SubjectString);
+			}
+
+			set {
+				if (value == null)
+					SubjectString = String.Empty;
+				else
+					SubjectString =  UriFu.UriToEscapedString (value);
+			}
+		}
+
+		[XmlElement ("Subject")]
+		public string SubjectString = String.Empty;
+
 		public string Predicate;
+		public PropertyType PredicateType;
+
 		public string Object;
 
 		public RDFQuery ()
@@ -263,10 +283,11 @@ namespace Beagle {
 			Keepalive = false;
 		}
 
-		public RDFQuery (string subject, string predicate, string _object) : this ()
+		public RDFQuery (Uri subject, string predicate, PropertyType predicate_type, string _object) : this ()
 		{
-			this.Subject = (subject == null ? String.Empty : subject);
+			this.Subject = subject;
 			this.Predicate = (predicate == null ? String.Empty : predicate);
+			this.PredicateType = predicate_type;
 			this.Object = (_object == null ? String.Empty : _object);
 
 			// FIXME: the query contains a dummy part that will make the query
@@ -277,7 +298,6 @@ namespace Beagle {
 			dummy.Text = "XXXXXXXXXXXXXXXXXXXXXXXXX";
 			AddPart (dummy);
 		}
-
 	}
 
 	public class RDFQueryResult : ResponseMessage {

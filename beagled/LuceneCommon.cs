@@ -597,6 +597,8 @@ namespace Beagle.Daemon {
 		// Exposing this is a little bit suspicious.
 		static protected string PropertyToFieldName (PropertyType type, string key)
 		{
+			if (type == PropertyType.Internal)
+				return key;
 			return String.Format ("prop:{0}:{1}", TypeToCode (type), key);
 
 		}

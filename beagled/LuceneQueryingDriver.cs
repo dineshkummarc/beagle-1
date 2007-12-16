@@ -143,13 +143,15 @@ namespace Beagle.Daemon {
 			RDFQuery query = (RDFQuery) _query;
 
 			string subject, predicate, _object;
+			PropertyType pred_type;
 
-			subject = query.Subject;
+			subject = query.SubjectString;
 			predicate = query.Predicate;
+			pred_type = query.PredicateType;
 			_object = query.Object;
 
 			if (Debug)
-				Logger.Log.Debug ("###### {0}: Starting low-level queries '{1}':'{2}'='{3}'", IndexName, subject, predicate, _object);
+				Logger.Log.Debug ("###### {0}: Starting low-level queries '{1}' : '{4}:{2}' = '{3}'", IndexName, subject, predicate, _object, pred_type);
 
 			// ******** 8 cases **********
 
@@ -167,7 +169,7 @@ namespace Beagle.Daemon {
 
 			// Return uris for all documents with this property
 			if (subject == String.Empty && predicate != String.Empty && _object == String.Empty) {
-				return GetDocsWithProperty (predicate);
+				return GetDocsWithProperty (predicate, pred_type);
 			}
 
 			// Property query
@@ -234,7 +236,7 @@ namespace Beagle.Daemon {
 			throw new Exception ("Never reaches");
 		}
 
-		private ICollection GetDocsWithProperty (string propname)
+		private ICollection GetDocsWithProperty (string propname, PropertyType prop_type)
 		{
 			// This is the hardest!
 			// Most of the times either all docs will have the property or
@@ -248,11 +250,75 @@ namespace Beagle.Daemon {
 			// and return URIs for the hits which contain the property *shudder*
 			//
 
-			// Implementation idea: Uses PrimaryIndex only!
+			// FIXME: Uses PrimaryIndex only!
 			// Create a bitarray and mark all docs with that property by using a termenum
 
+			IndexReader primary_reader;
+			primary_reader = LuceneCommon.GetReader (PrimaryStore);
+
+			BetterBitArray all_docs = new BetterBitArray (primary_reader.MaxDoc ());
+
+			TermDocs docs = primary_reader.TermDocs ();
+			string field_name = PropertyToFieldName (prop_type, propname);
+			TermEnum enumerator = primary_reader.Terms (new Term (field_name, String.Empty));
+			Term term;
+			bool field_present = false;
+
+			do {
+				// Find all terms with given field
+				term = enumerator.Term ();
 			
-			return new ArrayList ();
+				if (term.Field () != field_name)
+					break;
+
+				field_present = true;
+
+				docs.Seek (enumerator);
+
+				// Find all docs with that term
+				while (docs.Next ())
+					all_docs [docs.Doc ()] = true;
+
+			} while (enumerator.Next ());
+
+			enumerator.Close ();
+
+			ArrayList uris = new ArrayList (primary_reader.MaxDoc ());
+
+			// If field_present is false, preempt
+			if (! field_present) {
+				docs.Close ();
+				LuceneCommon.ReleaseReader (primary_reader);
+
+				return uris;
+			}
+
+			// Go through all Uris now
+			enumerator = primary_reader.Terms (new Term ("Uri", String.Empty));
+
+			do {
+				// Find all terms with 
+				term = enumerator.Term ();
+			
+				if (term.Field () != "Uri")
+					break;
+
+				docs.Seek (enumerator);
+				// Assume only one doc with an uri.
+				// Go to the doc with this uri
+				// If this doc's id is present in bit_array, return the uri
+				if (docs.Next () && all_docs [docs.Doc ()])
+					uris.Add (term.Text ());
+
+			} while (enumerator.Next ());
+
+			// Traverse all docs in all_docs
+
+			enumerator.Close ();
+			docs.Close ();
+			LuceneCommon.ReleaseReader (primary_reader);
+
+			return uris;
 		}
 
 		private ICollection DoLowLevelRDFQuery (Query query)
