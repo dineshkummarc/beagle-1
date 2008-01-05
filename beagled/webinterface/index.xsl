@@ -99,6 +99,7 @@
 		<a href="#" onclick='show_advanced_search (); return false;'>Advance search</a>&nbsp;|&nbsp;
 		<a href="#" onclick='bookmark_query (); return false;'>Bookmark current search</a>
 	</span>
+	<div id="popup"></div>
 </xsl:template>
 
 <xsl:template name="topbar">

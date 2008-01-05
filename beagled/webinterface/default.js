@@ -736,7 +736,17 @@ function bookmark_query ()
 
 function show_advanced_search ()
 {
-	alert ("Not implemented.");
+	var settings_div = document.createElement ("div");
+	settings_div.setAttribute ("id", "popupcontent");
+	settings_div.innerHTML='<h3> More Search Options <h3>';
+
+	// FIXME: Add the common search keywords, inuri, title, date etc.
+	// FIXME: Add a 'Done' button to close this div. I think the div should be destroyed
+	// after the query is submitted, so that pressing advanced search again
+	// retains the options. So, clicking on 'Done' would merely hide the div
+	//
+
+	document.getElementById ('popup').appendChild (settings_div);
 }
 
 /******* Initial fetching and loading of the xsl/xml files *********/

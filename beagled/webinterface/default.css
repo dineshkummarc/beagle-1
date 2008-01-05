@@ -68,6 +68,20 @@ body {
 	margin-right: 1.2em;
 }
 
+/************ Transparent popup *******************/
+
+#popupcontent {
+	position: absolute;
+	background-color: white;
+	opacity: 0.85; /* Firefox only ? */
+	border: 1px solid rgb(152, 51, 0);
+	width: 90%;
+	top: 5%;
+	left: 5%;
+	z-index: 5;
+	color: black;
+}
+
 /************ End header; Start status ************/
 
 #status {
