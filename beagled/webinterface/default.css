@@ -156,6 +156,14 @@ body {
 	text-align: left;
 }
 
+#cluster {
+	border: 1px solid rgb(153, 51, 0);
+	display: none;
+	text-align: left;
+	margin: 0.5em;
+	padding: 0.5em;
+}
+
 .Hit {
 	margin: 0.5em;
 	float: left;

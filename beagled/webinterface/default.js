@@ -293,6 +293,8 @@ function state_change_search (begin_date)
 			}
 		}
 
+		display_cluster ();
+
 		// Blast all the generated hits into the document
 		for (var f = 0; f < category_funcs.length; ++ f) {
 			var div = document.getElementById (category_funcs [f].name);
@@ -314,6 +316,44 @@ function state_change_search (begin_date)
 		document.queryform.querytext.focus ();
 		document.queryform.querysubmit.disabled = false;
 	}
+}
+
+function display_cluster ()
+{
+	//cluster.dump ();
+
+	var clusters_node = document.getElementById ('cluster');
+
+	for (name in cluster.clusters) {
+		var cluster_node = document.createElement ('p');
+		var cluster_string = "<b>" + cluster.clusters [name][cluster.DISPLAY_NAME] + " (" + cluster.clusters [name][cluster.COUNT] + ")</b> ";
+		var display = false;
+		var threshold =  (cluster.clusters [name][cluster.COUNT])/9 + 1; // about 11%
+		var dropped = false;
+		for (value in cluster.clusters [name]) {
+			if (value == cluster.COUNT)
+				continue;
+
+			var count = cluster.clusters [name][value];
+			if (count >= threshold) {
+				display = true;
+				// Need to add search links for these values
+				cluster_string += ("<u>" + value + "</u>" + "(" + count + ") ");
+			} else {
+				dropped = true;
+			}
+		}
+
+		if (display) {
+			if (dropped)
+				cluster_string += "...";
+			cluster_node.innerHTML = cluster_string;
+			clusters_node.appendChild (cluster_node);
+			clusters_node.style.display = 'block';
+		}
+	}
+
+	cluster.clear ();
 }
 
 /************ Snippet handling ******************/
@@ -507,6 +547,48 @@ function classify_hit (properties)
 	return "Others";
 }
 
+/********* Cluster class ***********/
+
+var cluster = {
+	COUNT : "__count",
+	DISPLAY_NAME : "__display_name",
+
+	clusters : {},
+	clear : function ()
+		{
+			this.clusters = {}
+		},
+	add : function (property_name, display_property_name, property_value, new_hit)
+	      {
+		    if (display_property_name == null || display_property_name == "")
+			    return;
+
+		    if (! this.clusters.hasOwnProperty (property_name)) {
+			    this.clusters [property_name] = {};
+			    this.clusters [property_name][cluster.COUNT] = 0;
+			    this.clusters [property_name][cluster.DISPLAY_NAME] = display_property_name;
+		    }
+
+		    if (new_hit)
+			    this.clusters [property_name][cluster.COUNT] ++;
+
+		    if (this.clusters [property_name].hasOwnProperty (property_value))
+			    this.clusters [property_name][property_value] ++;
+		    else
+			    this.clusters [property_name][property_value] = 1;
+	      },
+	dump : function ()
+	       {
+		    for (name in this.clusters) {
+			    dump (" [" + name + "(" + this.clusters [name][cluster.DISPLAY_NAME] + ") (" + this.clusters [name][cluster.COUNT] + ")] ");
+			    for (value in this.clusters [name])
+				    if (value != cluster.COUNT)
+					    dump (value + "(" + this.clusters [name][value] + "), ");
+			    dump ("\n");
+		    }
+	       }
+}
+
 /* Processes the hit and return the category */
 function process_hit (hit)
 {
@@ -518,8 +600,6 @@ function process_hit (hit)
 		var key = properties [k].getAttribute ('Key');
 		var value = properties [k].getAttribute ('Value');
 
-		property_table [key] = value;
-
 		// Change the property names to more human friendly ones
 		var property_name = PropertyNameTable [key];
 		// Search for parent properties
@@ -528,6 +608,15 @@ function process_hit (hit)
 		if (property_name == null)
 			property_name = key;
 		properties [k].setAttribute ('Name', property_name);
+
+		if (property_name != null) {
+			if (property_table.hasOwnProperty (key))
+				cluster.add (key, property_name, value, false);
+			else
+				cluster.add (key, property_name, value, true);
+		}
+
+		property_table [key] = value;
 
 		// Change the value of date properties
 		// Date properties are never used in mappings.xml
@@ -599,6 +688,7 @@ function reset_document_content ()
 	// Reset the divs
 	document.getElementById ('info').innerHTML = '';
 	document.getElementById ('help').innerHTML = '';
+	document.getElementById ('cluster').innerHTML = '';
 	results.innerHTML = '';
 	for (var i = 0; i < categories.length; ++i) {
 		div = document.createElement ('div');

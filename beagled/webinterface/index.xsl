@@ -63,6 +63,7 @@
 		<!-- Placeholder div -->
 		<div id="login">
 		</div>
+		<div id="cluster"/>
 		<div id="results">
 			<xsl:call-template name="results"/>
 		</div>
