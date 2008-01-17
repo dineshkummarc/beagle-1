@@ -102,6 +102,13 @@ namespace Lucene.Net.Search
         /// </seealso>
         Document Doc(int i);
 		
+		 /// <summary>Expert: Returns the requested <code>fields</code> of document <code>i</code>.
+        /// Called by {@link HitCollector} implementations.
+        /// </summary>
+        /// <seealso cref="IndexReader#document(int,string[])">
+        /// </seealso>
+        Document Doc(int i, string[] fields);
+		
         /// <summary>Expert: called to re-write queries into primitive queries.</summary>
         /// <throws>  BooleanQuery.TooManyClauses </throws>
         Query Rewrite(Query query);

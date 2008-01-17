@@ -119,6 +119,11 @@ namespace Lucene.Net.Search
 			{
 				throw new System.NotSupportedException();
 			}
+			public override Document Doc(int i, string[] fields)
+			{
+				throw new System.NotSupportedException();
+			}
+			
 			
 			public override Explanation Explain(Weight weight, int doc)
 			{
@@ -186,6 +191,13 @@ namespace Lucene.Net.Search
 				docFreq += searchables[i].DocFreq(term);
 			return docFreq;
 		}
+		
+		public override Document Doc(int n, string[] fields)
+		{
+			int i = SubSearcher(n); // find searcher index
+			return searchables[i].Doc(n - starts[i], fields); // dispatch to searcher
+		}
+		
 		
 		// inherit javadoc
 		public override Document Doc(int n)

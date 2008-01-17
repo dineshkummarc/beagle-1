@@ -116,7 +116,11 @@ namespace Lucene.Net.Index
 			int i = ReaderIndex(n); // find segment num
 			return subReaders[i].Document(n - starts[i]); // dispatch to segment reader
 		}
-		
+		public override Document Document(int n, string[] fields)
+		{
+			int i = ReaderIndex(n); // find segment num
+			return subReaders[i].Document(n - starts[i], fields); // dispatch to segment reader
+		}
 		public override bool IsDeleted(int n)
 		{
 			int i = ReaderIndex(n); // find segment num
@@ -472,13 +476,14 @@ namespace Lucene.Net.Index
 		/// <summary>As yet unoptimized implementation. </summary>
 		public virtual bool SkipTo(int target)
 		{
-			do 
-			{
-				if (!Next())
-					return false;
-			}
-			while (target > Doc());
-			return true;
+			if (current != null && current.SkipTo (target - base_Renamed)) {
+				return true;
+			} else if (pointer < readers.Length) {
+				base_Renamed = starts [pointer];
+				current = TermDocs (pointer++);
+				return SkipTo (target);
+			} else
+				return false;
 		}
 		
 		private TermDocs TermDocs(int i)

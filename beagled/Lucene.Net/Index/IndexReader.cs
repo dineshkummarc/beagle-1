@@ -449,6 +449,12 @@ namespace Lucene.Net.Index
 		/// </summary>
 		public abstract Document Document(int n);
 		
+		
+		/// <summary>Returns the specified fields of the <code>n</code><sup>th</sup>
+		/// <code>Document</code> in this index. 
+		/// </summary>
+		public abstract Document Document(int n, string[] fields);
+		
 		/// <summary>Returns true if document <i>n</i> has been deleted </summary>
 		public abstract bool IsDeleted(int n);
 		

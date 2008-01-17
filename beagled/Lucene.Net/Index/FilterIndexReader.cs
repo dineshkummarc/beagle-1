@@ -156,6 +156,10 @@ namespace Lucene.Net.Index
 		{
 			return in_Renamed.Document(n);
 		}
+		public override Document Document(int n, string[] fields)
+		{
+			return in_Renamed.Document(n, fields);
+		}
 		
 		public override bool IsDeleted(int n)
 		{
