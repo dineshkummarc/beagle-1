@@ -591,6 +591,7 @@ thunderbird-extension/Makefile
 doc/Makefile
 doc/api/Makefile
 bludgeon/Makefile
+RDFAdapter/Makefile
 beagle-0.0.pc
 beagle-daemon.pc
 beagle-ui-0.0.pc
