@@ -225,8 +225,18 @@ class DumpIndexTool {
 	// Dump the fields: we do this via direct Lucene access.
 	static void DumpOneIndex_Fields (string index_name)
 	{
+		Console.WriteLine ("Index: {0}", index_name);
+
 		LuceneQueryingDriver driver;
-		driver = new LuceneQueryingDriver (index_name, -1, true);
+		try
+		{
+			driver = new LuceneQueryingDriver (index_name, -1, true);
+		}
+		catch (InvalidOperationException e)
+		{
+			Console.Error.WriteLine("There is no Lucene index in the index folder '{0}':\n{1}", index_name, e.StackTrace);
+			return;
+		}
 		
 		IndexReader reader;
 		reader = IndexReader.Open (driver.PrimaryStore);
@@ -315,6 +325,7 @@ Usage: beagle-dump-index [options] [[file or URI to match] ...]
   --uris                   Dump all Uris (default)
   --properties             Dump all properties
   --term-frequencies       Dump term frequencies
+  --fields                 Dump all fields
 
   --show-counts            Show index count totals (default)
   --hide-counts            Hide index count totals

@@ -264,7 +264,7 @@ namespace Beagle.Daemon {
 			Term term;
 			bool field_present = false;
 
-			do {
+			while (enumerator.Next ()) {
 				// Find all terms with given field
 				term = enumerator.Term ();
 			
@@ -278,8 +278,7 @@ namespace Beagle.Daemon {
 				// Find all docs with that term
 				while (docs.Next ())
 					all_docs [docs.Doc ()] = true;
-
-			} while (enumerator.Next ());
+			}
 
 			enumerator.Close ();
 
