@@ -163,6 +163,7 @@ namespace Beagle.Daemon {
 			if (subject == String.Empty && predicate == String.Empty && _object != String.Empty) {
 				QueryPart_Text part = new QueryPart_Text ();
 				part.Text = _object;
+				part.SearchFullText = false; // We only search properties in RDF query
 				query.AddPart (part);
 				return DoLowLevelRDFQuery (query);
 			}
@@ -198,6 +199,7 @@ namespace Beagle.Daemon {
 
 				QueryPart_Text part = new QueryPart_Text ();
 				part.Text = _object;
+				part.SearchFullText = false; // We only search properties in RDF query
 				query.AddPart (part);
 
 				return DoLowLevelRDFQuery (query);
