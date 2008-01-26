@@ -157,7 +157,7 @@ namespace Beagle.Daemon {
 
 			// Return all uris
 			if (subject == String.Empty && predicate == String.Empty && _object == String.Empty)
-				return GetAllHitsByUri ().Keys;
+				return GetAllHitsByUri ().Values;
 
 			// Normal query
 			if (subject == String.Empty && predicate == String.Empty && _object != String.Empty) {
@@ -165,7 +165,7 @@ namespace Beagle.Daemon {
 				part.Text = _object;
 				part.SearchFullText = false; // We only search properties in RDF query
 				query.AddPart (part);
-				return DoLowLevelRDFQuery (query);
+				return DoLowLevelRDFQuery (query, null);
 			}
 
 			// Return uris for all documents with this property
@@ -180,7 +180,8 @@ namespace Beagle.Daemon {
 				part.Key = predicate;
 				part.Value = _object;
 				query.AddPart (part);
-				return DoLowLevelRDFQuery (query);
+				string field_name = PropertyToFieldName (pred_type, predicate);
+				return DoLowLevelRDFQuery (query, field_name);
 			}
 
 			// Return if the URI exists
@@ -188,7 +189,7 @@ namespace Beagle.Daemon {
 				QueryPart_Uri part = new QueryPart_Uri ();
 				part.Uri = new Uri (subject); // better be URI!
 				query.AddPart (part);
-				return DoLowLevelRDFQuery (query);
+				return DoLowLevelRDFQuery (query, null);
 			}
 
 			// Normal query in the document with this URI
@@ -202,7 +203,7 @@ namespace Beagle.Daemon {
 				part.SearchFullText = false; // We only search properties in RDF query
 				query.AddPart (part);
 
-				return DoLowLevelRDFQuery (query);
+				return DoLowLevelRDFQuery (query, null);
 			}
 
 			// Return URI if the document with this URI contains this property
@@ -213,11 +214,15 @@ namespace Beagle.Daemon {
 				uri_list.Add (new Uri (subject));
 				ICollection hits = GetHitsForUris (uri_list);
 
+				/*
 				foreach (Hit hit in hits)
 					if (hit.GetFirstProperty (predicate) != null)
 						returned_uris.Add (hit.Uri);
+				*/
 
-				return returned_uris;
+				// FIXME FIXME FIXME this one returns all predicates not just the specified ones.
+
+				return hits;
 			}
 
 			// Property query in the document with this URI
@@ -232,12 +237,16 @@ namespace Beagle.Daemon {
 				part.Value = _object;
 				query.AddPart (part);
 
-				return DoLowLevelRDFQuery (query);
+				string field_name = PropertyToFieldName (pred_type, predicate);
+				return DoLowLevelRDFQuery (query, field_name);
 			}
 
 			throw new Exception ("Never reaches");
 		}
 
+		// FIXME FIXME FIXME: Rewrite this horrible method by keeping a field containing
+		// the names of all properties in that document ?
+		// What about SecondaryDocument ? Which index to store this field in ?
 		private ICollection GetDocsWithProperty (string propname, PropertyType prop_type)
 		{
 			// This is the hardest!
@@ -284,18 +293,39 @@ namespace Beagle.Daemon {
 
 			enumerator.Close ();
 
-			ArrayList uris = new ArrayList (primary_reader.MaxDoc ());
+			ArrayList hits = new ArrayList (primary_reader.MaxDoc ());
 
 			// If field_present is false, preempt
 			if (! field_present) {
 				docs.Close ();
 				LuceneCommon.ReleaseReader (primary_reader);
 
-				return uris;
+				return hits;
 			}
+
+			IndexReader secondary_reader = null;
+			LNS.IndexSearcher secondary_searcher = null;
+
+			if (SecondaryStore != null) {
+				secondary_reader = LuceneCommon.GetReader (SecondaryStore);
+				if (secondary_reader.NumDocs () == 0) {
+					ReleaseReader (secondary_reader);
+					secondary_reader = null;
+				}
+			}
+
+			if (secondary_reader != null)
+				secondary_searcher = new LNS.IndexSearcher (secondary_reader);
+
+			TermDocs secondary_term_docs = null;
+			if (secondary_searcher != null)
+				secondary_term_docs = secondary_searcher.Reader.TermDocs ();
+
+			string[] fields = { "Uri", field_name };
 
 			// Go through all Uris now
 			enumerator = primary_reader.Terms (new Term ("Uri", String.Empty));
+			Document doc;
 
 			do {
 				// Find all terms with 
@@ -308,8 +338,11 @@ namespace Beagle.Daemon {
 				// Assume only one doc with an uri.
 				// Go to the doc with this uri
 				// If this doc's id is present in bit_array, return the uri
-				if (docs.Next () && all_docs [docs.Doc ()])
-					uris.Add (term.Text ());
+				if (docs.Next () && all_docs [docs.Doc ()]) {
+					doc = primary_reader.Document (docs.Doc (), fields);
+					Hit hit = CreateHit (doc, secondary_searcher, secondary_term_docs, fields);
+					hits.Add (hit); 
+				}
 
 			} while (enumerator.Next ());
 
@@ -319,10 +352,10 @@ namespace Beagle.Daemon {
 			docs.Close ();
 			LuceneCommon.ReleaseReader (primary_reader);
 
-			return uris;
+			return hits;
 		}
 
-		private ICollection DoLowLevelRDFQuery (Query query)
+		private ICollection DoLowLevelRDFQuery (Query query, string field_name)
 		{
 
 			Stopwatch total, a, b, c, d, e, f;
@@ -507,7 +540,15 @@ namespace Beagle.Daemon {
 
 			int count = 0;
 			Document doc;
-			ArrayList matched_uris = new ArrayList (primary_matches.TrueCount);
+			ArrayList hits = new ArrayList (primary_matches.TrueCount);
+
+			TermDocs secondary_term_docs = null;
+			if (secondary_searcher != null)
+				secondary_term_docs = secondary_searcher.Reader.TermDocs ();
+		
+			string[] fields = (field_name != null) ?
+					new string[] { "Uri", field_name } :
+					null;
 
 			for (int match_index = primary_matches.GetNextTrueIndex (0);
 			     match_index < primary_matches.Count; 
@@ -515,7 +556,7 @@ namespace Beagle.Daemon {
 
 				count++;
 
-				doc = primary_searcher.Doc (match_index, fields_uri);
+				doc = primary_searcher.Doc (match_index, fields);
 
 				// If we have a UriFilter, apply it.
 				// RDF FIXME: Ignore Uri Filter for now
@@ -526,10 +567,8 @@ namespace Beagle.Daemon {
 				//		continue;
 				//}
 
-				// Get only the uri
-				//Uri uri = UriFu.EscapedStringToUri (doc.Get ("Uri"));
-				string uri = doc.Get ("Uri");
-				matched_uris.Add (uri);
+				Hit hit = CreateHit (doc, secondary_searcher, secondary_term_docs, fields);
+				hits.Add (hit); 
 			}
 
 			e.Stop ();
@@ -569,7 +608,7 @@ namespace Beagle.Daemon {
 				Logger.Log.Debug ("###### {0}: Total query run in {1}", IndexName, total);
 			}
 
-			return matched_uris;
+			return hits;
 		}
 
 		// Returns the lowest matching score before the results are
@@ -1033,7 +1072,6 @@ namespace Beagle.Daemon {
 
 		// Two arrays we need for quickly creating lucene documents and check if they are valid
 		static string[] fields_timestamp_uri = { "Timestamp", "Uri" };
-		static string[] fields_uri = {"Uri"};
 
 		private static void GenerateQueryResults (IndexReader       primary_reader,
 							  LNS.IndexSearcher primary_searcher,
@@ -1354,6 +1392,17 @@ namespace Beagle.Daemon {
 					LNS.IndexSearcher secondary_searcher,
 					TermDocs term_docs)
 		{
+			return CreateHit ( primary_doc,
+					secondary_searcher,
+					term_docs,
+					null);
+		}
+
+		private static Hit CreateHit ( Document primary_doc,
+					LNS.IndexSearcher secondary_searcher,
+					TermDocs term_docs,
+					string[] fields)
+		{
 			Hit hit = DocumentToHit (primary_doc);
 
 			if (secondary_searcher == null)
@@ -1366,7 +1415,10 @@ namespace Beagle.Daemon {
 
 			// Move to the first (and only) matching term doc
 			term_docs.Next ();
-			Document secondary_doc = secondary_searcher.Doc (term_docs.Doc ());
+			Document secondary_doc =
+				(fields == null) ?
+				secondary_searcher.Doc (term_docs.Doc ()) :
+				secondary_searcher.Doc (term_docs.Doc (), fields);
 
 			// If we are using the secondary index, now we need to
 			// merge the properties from the secondary index

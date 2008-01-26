@@ -38,7 +38,13 @@ public class RdfQueryTool {
 			return;
 		}
 
-		foreach (string uri in result.Matches)
-			Console.WriteLine (" - [{0}]", uri);
+		foreach (Hit hit in result.Hits) {
+			foreach (Property prop in hit.Properties)
+				Console.WriteLine ("<{0}> <{1}> \"{2}\" .",
+						hit.Uri,
+						prop.Key,
+						prop.Value);
+		}
+	
 	}
 }

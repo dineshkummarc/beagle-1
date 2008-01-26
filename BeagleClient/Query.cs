@@ -301,8 +301,8 @@ namespace Beagle {
 	}
 
 	public class RDFQueryResult : ResponseMessage {
-		[XmlArray (ElementName="Matches")]
-		[XmlArrayItem (ElementName="Uri", Type=typeof (string))]
-		public ArrayList Matches = new ArrayList ();
+		[XmlArray (ElementName="Hits")]
+		[XmlArrayItem (ElementName="Hit", Type=typeof (Hit))]
+		public ArrayList Hits = new ArrayList ();
 	}
 }

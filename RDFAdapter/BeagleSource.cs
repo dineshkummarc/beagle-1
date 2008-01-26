@@ -38,6 +38,12 @@ public class BeagleSource : SelectableSource {
 		return sink.StatementCount > 0;
 	}
 
+	public bool Contains (Resource resource)
+	{
+		// FIXME !
+		throw new NotImplementedException ("BeagleSource.Contains (Resource)");
+	}
+
 	// we provide only distinct statements
 	public bool Distinct {
 		get { return true; }
@@ -89,20 +95,22 @@ public class BeagleSource : SelectableSource {
 		RDFQuery query = new RDFQuery (s, p, ptype, o);
 		RDFQueryResult result = (RDFQueryResult) query.Send ();
 		
-		foreach (string uri in result.Matches) {
-			Entity subject = new Entity (uri);
-			Entity predicate = new Entity ("beagle:unknown");
-			Resource _object = null;
+		foreach (Hit hit in result.Hits) {
+			Entity subject = new Entity (hit.Uri.ToString ()); //FIXME: Do we have to use strings here?
+			foreach (Property prop in hit.Properties) {
+				Entity predicate = new Entity (prop.Key);
+				Resource _object = null;
 			
-			// for some properties the object is actually an URI (Entity)
-			if (predicate == "Uri" || predicate == "ParentUri" || predicate == "ParentDirUri")
-				_object = new Entity("beagle:unkown");
-			else
-				_object = new Literal("beagle:unkown");
+				// for some properties the object is actually an URI (Entity)
+				if (predicate == "Uri" || predicate == "ParentUri" || predicate == "ParentDirUri")
+					_object = new Entity(prop.Value);
+					else
+				_object = new Literal(prop.Value);
 
-			// now create a the statement and add it to the result
-			Statement st = new Statement (subject, predicate, _object);
-			sink.Add (st);
+				// now create a the statement and add it to the result
+				Statement st = new Statement (subject, predicate, _object);
+				sink.Add (st);
+			}
 		}
 	}
 

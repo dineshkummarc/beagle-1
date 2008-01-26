@@ -120,7 +120,7 @@ namespace Beagle.Daemon {
 			if (query == null)
 				return new ErrorResponse ("Only RDF query please!");
 
-			result.Matches = QueryDriver.DoRDFQuery (query);
+			result.Hits = QueryDriver.DoRDFQuery (query);
 			return result;
 		}
 	}
