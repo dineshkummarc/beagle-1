@@ -104,6 +104,7 @@ UTIL_CSFILES = 			        	\
 	$(srcdir)/SemWeb/UriMap.cs              \
 	$(srcdir)/SemWeb/Resource.cs            \
 	$(srcdir)/SemWeb/Statement.cs           \
+	$(srcdir)/SemWeb/Interfaces.cs		\
 	$(srcdir)/SemWeb/Store.cs               \
 	$(srcdir)/SemWeb/MemoryStore.cs         \
 	$(srcdir)/SemWeb/SQLStore.cs            \
@@ -113,15 +114,21 @@ UTIL_CSFILES = 			        	\
 	$(srcdir)/SemWeb/RdfWriter.cs           \
 	$(srcdir)/SemWeb/RdfXmlWriter.cs        \
 	$(srcdir)/SemWeb/N3Writer.cs            \
-	$(srcdir)/SemWeb/RSquary.cs             \
+	$(srcdir)/SemWeb/Query.cs	        \
 	$(srcdir)/SemWeb/LiteralFilters.cs      \
 	$(srcdir)/SemWeb/Query.cs               \
+	$(srcdir)/SemWeb/GraphMatch.cs		\
+	$(srcdir)/SemWeb/LiteralFilters.cs	\
 	$(srcdir)/SemWeb/Inference.cs           \
 	$(srcdir)/SemWeb/RDFS.cs                \
+	$(srcdir)/SemWeb/SpecialRelations.cs	\
 	$(srcdir)/SemWeb/Algos.cs               \
-	$(srcdir)/SemWeb/Remote.cs              \
+	$(srcdir)/SemWeb/SparqlClient.cs	\
 	$(srcdir)/SemWeb/XPathSemWebNavigator.cs\
 	$(srcdir)/PropertyKeywordAttribute.cs
+
+# Semweb compile flag
+CSFLAGS += -define:DOTNET2
 
 UTIL_ASSEMBLIES =				\
 	$(BEAGLED_LIBS)				\
