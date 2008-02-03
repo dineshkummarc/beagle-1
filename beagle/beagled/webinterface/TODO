@@ -1,0 +1,18 @@
+= TODO =
+ - Metadata + Title mappings
+ - Category mapping is incomplete
+ - Dynamic Hit Count
+ - Icons/Background for Hit Type
+ - Snippet support
+ - Cross-browser support (Sarissa?)
+ - Floating category list?
+ - Limit the number of results shown
+
+= Long-Term TODO =
+ - Implement `Beagle Settings`
+ - Implement an "advanced search" with date based searching etc.
+
+= Dream Come True TODO =
+ - Blocking another search while the current search is going on is not implemented properly yet.
+   Multiple xmlhttp search requests don't work with beagle.
+ - Multi-user and non-local browser support for webbeagle (login system, lots of other problems as well)
