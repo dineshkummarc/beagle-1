@@ -14,6 +14,9 @@
 
 
 <!-- jslib sources used for executing beagle -->
+<script type="text/javascript">
+    var JS_LIB_DEBUG = false;
+</script>
 <script type="text/javascript" src="jslib/jslib.js"/>
 <script type="text/javascript" src="jslib/io/file.js"/>
 <script type="text/javascript" src="jslib/io/fileUtils.js"/>
@@ -122,4 +125,30 @@
         <menuitem command="ShowPrefsCmd"/> 
    </menupopup>
 </statusbar> 
+
+<!-- Beagle Search History sidebar -->
+<menupopup id="viewSidebarMenu">
+    <menuitem key="key-view-sidebar" observes="ViewSidebar"  />
+</menupopup>
+
+<keyset id="mainKeyset">
+    <key
+	id="key-view-sidebar"
+	command="ViewSidebar"
+	key="&beagle.sidebar.commandkey;" 
+	modifiers="&beagle.sidebar.modifierskey;" />
+</keyset>
+
+<broadcasterset id="mainBroadcasterSet"> 
+    <broadcaster
+	id="ViewSidebar" 
+        label="&beagle.sidebar.title;"
+        autoCheck="false"
+        type="checkbox"
+        group="sidebar"
+        sidebarurl="chrome://beagle/content/sidebar.xul"
+        sidebartitle="&beagle.sidebar.title;"
+        oncommand="toggleSidebar('ViewSidebar');" />
+</broadcasterset>
+
 </overlay>

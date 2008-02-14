@@ -44,7 +44,10 @@ namespace Beagle.Daemon.KonqQueryable {
 		// ISO-Latin1 is 28591
 		private Encoding latin_encoding = Encoding.GetEncoding (28591);
 
-		public KonqQueryable () : base ("KonqHistoryIndex")
+		// Store URLs in the right form
+		const int MINOR_VERSION = 1;
+
+		public KonqQueryable () : base ("KonqHistoryIndex", MINOR_VERSION)
 		{
 			/* How to determine kio-http cache location ?
 			 * From KDE web-page it looks like /var/tmp/kdecache-$USERNAME/http
@@ -148,7 +151,7 @@ namespace Beagle.Daemon.KonqQueryable {
 		{
 			if (path.EndsWith (".new"))
 				return;
-			Indexable indexable = FileToIndexable (path);
+			Indexable indexable = FileToIndexable (path, false);
 			if (indexable == null)
 				return;
 			Scheduler.Task task = NewAddTask (indexable);
@@ -160,7 +163,7 @@ namespace Beagle.Daemon.KonqQueryable {
 
 		/////////////////////////////////////////////////
 		
-		private Indexable FileToIndexable (string path) {
+		private Indexable FileToIndexable (string path, bool crawl_mode) {
 			//Logger.Log.Debug ("KonqQ: Trying to index " + path);
 
 			FileStream stream;
@@ -190,7 +193,7 @@ namespace Beagle.Daemon.KonqQueryable {
 					return null; // we wont index bad files and non-html files
 				}
 
-				Logger.Log.Debug ("KonqQ: Indexing " + path + " with url=" + url);
+				//Logger.Log.Debug ("KonqQ: Indexing " + path + " with url=" + url);
 				Uri uri = new Uri (url, true);
 				if (uri.Scheme == Uri.UriSchemeHttps) {
 					Logger.Log.Error ("Indexing secure https:// URIs is not secure!");
@@ -204,6 +207,7 @@ namespace Beagle.Daemon.KonqQueryable {
 				indexable.AddProperty (Property.NewUnstored ("fixme:urltoken", StringFu.UrlFuzzyDivide (url)));
 				// hint for the filter about the charset
 				indexable.AddProperty (Property.NewUnsearched (StringFu.UnindexedNamespace + "charset", charset));
+				indexable.Crawled = crawl_mode;
 			
 				DateTime date = DateTimeUtil.UnixToDateTimeUtc (0);
 				date = date.AddSeconds (Int64.Parse (creation_date));
@@ -224,7 +228,7 @@ namespace Beagle.Daemon.KonqQueryable {
 		{
 			if (current_file == null)
 				return null;
-			return FileToIndexable (current_file.FullName);
+			return FileToIndexable (current_file.FullName, true);
 		}
 		
 		public bool HasNextIndexable ()
@@ -261,5 +265,22 @@ namespace Beagle.Daemon.KonqQueryable {
 		public void PostFlushHook ()
 		{ }
 
+		protected override QueryPart QueryPartHook (QueryPart part)
+		{
+			if (part is QueryPart_Property) {
+				QueryPart_Property prop_part = (QueryPart_Property) part;
+				if (prop_part.Key == "inuri") { // special case
+					QueryPart_Property new_part = new QueryPart_Property ();
+					new_part.Logic = prop_part.Logic;
+					new_part.Key = "fixme:urltoken";
+					new_part.Type = PropertyType.Text;
+					new_part.Value = prop_part.Value;
+
+					return new_part;
+				}
+			}
+
+			return part;
+		}
 	}
 }

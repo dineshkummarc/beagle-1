@@ -212,7 +212,7 @@ var beagle = {
         if(storage_directory == "")
             storage_directory = this.ENV.get("HOME") + "/.beagle";
         if (!this.FILE_UTILS.exists (storage_directory)) {
-            alert(_("beagle_check_env_error"));
+            alert(_f("beagle_check_env_error",[storage_directory]));
             return false;
         }
         this.dataPath = storage_directory + "/ToIndex";
@@ -421,6 +421,13 @@ var beagle = {
         {
             meta.push("t:fixme:referrer=" + page.referrer);
         }
+
+	// Tokenize the url
+	var loc = page.location;
+	var url_tokenized = loc.host + " " + loc.port + " " + loc.pathname + " " + loc.hash + " " + loc.search;
+	url_tokenized = url_tokenized.replace(/\./g, " ").replace(/\//g, " ").replace(/&/g, " ").replace (/\+/g, " ").replace (/=/g, " ").replace(/%../g, " ");
+	meta.push("t:beagle:inuri=" + url_tokenized);
+
         meta = meta.concat(this.tasks[url]['meta'])
         beagle.writeRawMetadata(meta,tmpfilepath);
     },

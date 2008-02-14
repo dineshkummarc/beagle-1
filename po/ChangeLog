@@ -1,3 +1,84 @@
+2008-02-08  Luca Ferretti  <elle.uca@libero.it>
+
+	* it.po: Updated Italian translation by Gianvito Cavasoli.
+
+2008-02-08  Inaki Larranaga Murgoitio  <dooteo@euskalgnu.org>
+
+	* eu.po: Updated Basque translation.
+
+2008-02-07  Artur Flinta  <aflinta@svn.gnome.org>
+
+	* pl.po: Updated Polish translation by GNOME PL Team.
+
+2008-02-06  Jorge Gonzalez  <jorgegonz@svn.gnome.org>  
+
+	* es.po: Updated Spanish translation
+
+2008-02-01  Luca Ferretti  <elle.uca@libero.it>
+
+	* it.po: Updated Italian translation by Gianvito Cavasoli.
+
+2008-01-29  Djihed Afifi <djihed@gmail.com> 
+
+	* ar.po: Updated Arabic Translation by Khaled Hosny.
+
+2008-01-27  Jorge Gonzalez  <jorgegonz@svn.gnome.org>  
+
+	* es.po: Updated Spanish translation                     
+
+2008-01-25  Daniel Nylander <po@danielnylander.se>
+
+	* sv.po: Updated Swedish translation.
+
+2008-01-18  Gil Forcada  <gforcada@gnome.org>
+
+	* tr.po: Updated Turkish translation to pass msgfmt -cv.
+
+2008-01-13  Takeshi AIHANA <takeshi.aihana@gmail.com>
+
+	* ja.po: Updated Japanese translation.
+
+2008-01-12  Jorge Gonzalez  <jorgegonz@svn.gnome.org>
+
+	* es.po: Updated Spanish translation
+
+2008-01-07  Yair Hershkovitz  <yairhr@gmail.com>
+
+	* he.po: Updated Hebrew translation from Rosseta.
+
+2007-12-31  Yannig Marchegay <yannig@marchegay.org>
+
+	* oc.po: Updated Occitan translation.
+
+2007-12-31  Wadim Dziedzic  <wadimd@svn.gnome.org>
+
+	* pl.po: Updated polish translation
+
+2007-12-30  Jorge Gonzalez  <jorgegonz@svn.gnome.org>  
+
+	* es.po: Updated Spanish translation 
+
+2007-12-28  Daniel Nylander <po@danielnylander.se>
+
+	* sv.po: Updated Swedish translation.
+
+2007-12-26  Djihed Afifi <djihed@gmail.com> 
+
+	* ar.po: Updated Arabic Translation by Khaled Hosny.
+
+2007-12-22  Leonardo Ferreira Fontenelle  <leonardof@svn.gnome.org>
+
+	* pt_BR.po: Brazilian Portuguese translation updated by Igor Pires
+	Soares and myself.
+
+2007-12-16  Jorge Gonzalez  <jorgegonz@svn.gnome.org>
+
+        * es.po: Updated Spanish translation
+
+2007-12-11  Daniel Nylander <po@danielnylander.se>
+
+	* sv.po: Updated Swedish translation.
+
 2007-12-06  Jorge Gonzalez  <jorgegonz@svn.gnome.org>
 
         * es.po: Updated Spanish translation.

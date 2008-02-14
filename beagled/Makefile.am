@@ -26,6 +26,7 @@ webinterfaceimages_DATA =					\
 	$(srcdir)/webinterface/images/beagle-logo.png		\
 	$(srcdir)/webinterface/images/busy-animation.gif	\
 	$(srcdir)/webinterface/images/favicon.png		\
+	$(srcdir)/webinterface/images/system-search.png		\
 	$(srcdir)/webinterface/images/title_bg.png
 
 $(WEBINTERFACE_INDEX_XML): $(WEBINTERFACE_INDEX_XML_IN) $(WEBINTERFACE_FILES)
@@ -381,6 +382,11 @@ KOPETE_QUERYABLE_CSFILES =					\
 	$(kopetequeryable)/KopeteQueryable.cs 	 		\
 	$(kopetequeryable)/KopeteCrawler.cs
 
+empathyqueryable = $(srcdir)/EmpathyQueryable
+EMPATHY_QUERYABLE_CSFILES =					\
+	$(empathyqueryable)/EmpathyQueryable.cs 	 		\
+	$(empathyqueryable)/EmpathyCrawler.cs
+
 knotesqueryable = $(srcdir)/KNotesQueryable
 KNOTES_QUERYABLE_CSFILES =					\
 	$(knotesqueryable)/KNotesQueryable.cs
@@ -438,7 +444,9 @@ DAEMON_DLL_CSFILES = 						\
 	$(OPERA_QUERYABLE_CSFILES)				\
 	$(NAUTILUS_QUERYABLE_CSFILES)				\
 	$(NETWORK_SERVICES_QUERYABLE)				\
+	$(EMPATHY_QUERYABLE_CSFILES)			\
 	$(srcdir)/AssemblyInfo.cs				\
+	$(srcdir)/BatteryMonitor.cs				\
 	$(srcdir)/ExternalMetadataQueryable.cs			\
 	$(srcdir)/FileAttributes.cs				\
 	$(srcdir)/FileAttributesStore.cs			\
@@ -490,6 +498,7 @@ DAEMON_DLL_ASSEMBLIES = 					\
 	$(BEAGLED_LIBS)                 			\
 	$(DAEMON_DLL_LOCAL_ASSEMBLIES:%=-r:%)			\
 	$(SHARPZIPLIB_LIBS)					\
+	$(NDESK_DBUS_GLIB_LIBS)					\
 	-r:Mono.Data.Sqlite					\
 	-r:Mono.Posix
 
@@ -614,6 +623,7 @@ DAEMON_LOCAL_ASSEMBLIES =			\
 DAEMON_ASSEMBLIES =				\
 	$(BEAGLED_LIBS)				\
 	$(SHARPZIPLIB_LIBS)			\
+	$(NDESK_DBUS_GLIB_LIBS)			\
 	$(DAEMON_LOCAL_ASSEMBLIES:%=-r:%)	\
 	-r:Mono.Posix
 
@@ -658,6 +668,7 @@ INDEX_HELPER_ASSEMBLIES = \
 	$(BEAGLED_LIBS)				\
 	$(SHARPZIPLIB_LIBS)			\
 	$(INDEX_HELPER_LOCAL_ASSEMBLIES:%=-r:%)	\
+	$(NDESK_DBUS_GLIB_LIBS)			\
 	-r:Mono.Posix
 
 $(INDEX_HELPER_TARGET): $(INDEX_HELPER_CSFILES) $(INDEX_HELPER_LOCAL_ASSEMBLIES)
@@ -810,6 +821,7 @@ BUILD_INDEX_LOCAL_ASSEMBLIES = \
 BUILD_INDEX_ASSEMBLIES = \
 	$(BEAGLED_LIBS)				\
 	$(DAEMON_LOCAL_ASSEMBLIES:%=-r:%)	\
+	$(NDESK_DBUS_GLIB_LIBS)			\
 	-r:Mono.Posix
 
 $(BUILD_INDEX_TARGET): $(BUILD_INDEX_CSFILES) $(BUILD_INDEX_LOCAL_ASSEMBLIES)
@@ -1001,6 +1013,7 @@ noinst_SCRIPTS=	\
 	$(SNIPPET_TEST_WRAPPER)
 
 EXTRA_DIST = \
+	$(srcdir)/Zeroconf.cs			\
 	$(autostart_DATA)			\
 	$(WEBINTERFACE_INDEX_XML_IN)		\
 	$(webinterface_DATA)			\

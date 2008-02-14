@@ -31,9 +31,9 @@ using Beagle.Daemon;
 using Beagle.Util;
 
 namespace Beagle.Filters {
-	[PropertyKeywordMapping (Keyword="pkggroup", PropertyName="pkg:group", IsKeyword=false, Description="Group to which the package belongs e.g. System/Configuration/Packaging")]
+
 	public class FilterDeb : Beagle.Filters.FilterPackage {
-	
+
 		public FilterDeb ()
 		{
 		}
@@ -48,6 +48,7 @@ namespace Beagle.Filters {
 			SafeProcess pc = new SafeProcess ();
 			pc.Arguments = new string [] { "dpkg-deb", "-I", FileInfo.FullName};
 			pc.RedirectStandardOutput = true;
+			pc.UseLangC = true;
 			
 			try {
 				pc.Start ();

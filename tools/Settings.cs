@@ -421,11 +421,9 @@ public class SettingsDialog
 		reader.Close ();
 
 		if (! enabled) {
-			// FIXME: gnome-session has a bug in which autostart overrides
-			// break if Hidden=true is set.
-			writer.WriteLine ("# FIXME: Hidden=true has to be commented out for GNOME autostart to be");
-			writer.WriteLine ("# disabled, but KDE requires it to disable autostart.");
-			writer.WriteLine ("#Hidden=true");
+			writer.WriteLine ("# Setting Hidden=true unintuitively disables autostart on KDE and");
+			writer.WriteLine ("# GNOME >= 2.19.2, but it breaks disabling of autostart in older GNOME.");
+			writer.WriteLine ("Hidden=true");
 			writer.WriteLine ("X-GNOME-Autostart-enabled=false");
 		}
 
@@ -439,11 +437,9 @@ public class SettingsDialog
 		reader.Close ();
 
 		if (! enabled) {
-			// FIXME: gnome-session has a bug in which autostart overrides
-			// break if Hidden=true is set.
-			writer.WriteLine ("# FIXME: Hidden=true has to be commented out for GNOME autostart to be");
-			writer.WriteLine ("# disabled, but KDE requires it to disable autostart.");
-			writer.WriteLine ("#Hidden=true");
+			writer.WriteLine ("# Setting Hidden=true unintuitively disables autostart on KDE and");
+			writer.WriteLine ("# GNOME >= 2.19.2, but it breaks disabling of autostart in older GNOME.");
+			writer.WriteLine ("Hidden=true");
 			writer.WriteLine ("X-GNOME-Autostart-enabled=false");
 		}
 
@@ -887,14 +883,14 @@ public class SettingsDialog
 			column.Title = Catalog.GetString ("Name");
 			CellRendererText renderer = new CellRendererText ();
 			column.PackStart (renderer, true);
-			column.SetCellDataFunc (renderer, NameCellFunc);
+			column.SetCellDataFunc (renderer, new TreeCellDataFunc (NameCellFunc));
 			AppendColumn (column);
 
                         column = new TreeViewColumn ();
                         column.Title = Catalog.GetString ("Address");
                         renderer = new CellRendererText ();
                         column.PackStart (renderer, true);
-                        column.SetCellDataFunc (renderer, AddressCellFunc);
+                        column.SetCellDataFunc (renderer, new TreeCellDataFunc (AddressCellFunc));
                         AppendColumn (column);
 		
 		}
@@ -1584,7 +1580,13 @@ public class SettingsDialog
 			"NetworkServices", // This should be configurable in the network tab
 			"Opera",
 			"Pidgin",
-			"Tomboy"
+			"Tomboy",
+			/* System-wide indexes */
+			"applications",
+			"documentation",
+			"manpages",
+			"monodoc",
+			"windows"
 		};
 
 		private string[] descriptions = new string[] {
@@ -1608,7 +1610,13 @@ public class SettingsDialog
 			"Search other search services in the network (EXPERIMENTAL)",
 			"Opera's bookmarks and browsing history.",
 			"IMs and chats from Pidgin.",
-			"Notes from Tomboy."
+			"Notes from Tomboy.",
+			/* System-wide indexes */
+			"(System) Applications",
+			"(System) Help files",
+			"(System) Manual pages",
+			"(System) Mono documentation",
+			"(System) Files from Windows' partition"
 		};
 
 		public BackendView ()

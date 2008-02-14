@@ -38,7 +38,6 @@ using Beagle.Util;
 namespace Beagle.Daemon.FileSystemQueryable {
 
 	[QueryableFlavor (Name="Files", Domain=QueryDomain.Local | QueryDomain.Neighborhood, RequireInotify=false)]
-	[PropertyKeywordMapping (Keyword="ext", PropertyName="beagle:FilenameExtension", IsKeyword=true, Description="File extension, e.g. ext:jpeg. Use ext: to search in files with no extension.")]
 	public class FileSystemQueryable : LuceneQueryable {
 
 		static internal bool Debug = false;
@@ -52,7 +51,8 @@ namespace Beagle.Daemon.FileSystemQueryable {
 		// 5: Keyword properies in the private namespace are no longer lower cased; this is required to
 		//    offset the change in LuceneCommon.cs
 		// 6: Store beagle:FileType property denoting type of file like document, source, music etc.
-		const int MINOR_VERSION = 6;
+		// 7: Store filesize as fixme:filesize
+		const int MINOR_VERSION = 7;
 
 		private object big_lock = new object ();
 
@@ -246,6 +246,11 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			indexable.DisplayUri = UriFu.PathToFileUri (path);
 			indexable.Crawled = crawl_mode;
 			indexable.Filtering = Beagle.IndexableFiltering.Always;
+
+			FileInfo fi = new FileInfo (path);
+			if (fi == null)
+				return null; // You never know when files could vanish
+			indexable.AddProperty (Property.NewUnsearched ("fixme:filesize", fi.Length));
 
 			AddStandardPropertiesToIndexable (indexable, Path.GetFileName (path), parent, true);
 
@@ -1740,14 +1745,6 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			return true;
 		}
 
-		override public bool AcceptQuery (Query query)
-		{
-			// A bit of a hack to remap URIs requested in QueryPart_Uri
-			RemapQueryParts (query.Parts);
-
-			return true;
-		}
-
 		override public bool HasUri (Uri uri)
 		{
 			Uri internal_uri = ExternalToInternalUri (uri);
@@ -1758,20 +1755,22 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			return base.HasUri (internal_uri);
 		}
 
-		// Remap uri in querypart_uri
-		private void RemapQueryParts (ICollection parts)
+		protected override QueryPart QueryPartHook(QueryPart part)
 		{
-			foreach (QueryPart part in parts) {
-				if (part is QueryPart_Or)
-					RemapQueryParts (((QueryPart_Or) part).SubParts);
-				else if (part is QueryPart_Uri) {
-					QueryPart_Uri p =  (QueryPart_Uri) part;
-					RemapUriQueryPart (ref p);
-				}
+			if (part is QueryPart_Uri)
+				return RemapUriQueryPart ((QueryPart_Uri) part);
+
+			if (part is QueryPart_Property) {
+				QueryPart_Property prop_part = (QueryPart_Property) part;
+				if (prop_part.Key == "inuri") // special case
+					return RemapInUriQueryPart (prop_part);
 			}
+
+			return part;
 		}
 
-		private void RemapUriQueryPart (ref QueryPart_Uri part)
+		// Remap uri in querypart_uri
+		private QueryPart_Uri RemapUriQueryPart (QueryPart_Uri part)
 		{
 			Uri new_uri = ExternalToInternalUri (part.Uri);
 			Log.Debug ("Remapping QueryPart_Uri from {0} to {1}", part.Uri, new_uri);
@@ -1781,7 +1780,67 @@ namespace Beagle.Daemon.FileSystemQueryable {
 			if (new_uri == null)
 				new_uri = new Uri ("no-match:///"); // Will never match
 
-			part.Uri = new_uri;
+			QueryPart_Uri new_part = new QueryPart_Uri ();
+			new_part.Uri = new_uri;
+			new_part.Logic = part.Logic;
+
+			return new_part;
+		}
+
+		private QueryPart RemapInUriQueryPart (QueryPart_Property part)
+		{
+			string query = part.Value;
+
+			if (query.StartsWith ("/"))
+				query = UriFu.PathToFileUriString (query); // Make an URI
+
+			if (query.StartsWith ("file:///")) {
+				QueryPart_Property prop_part = new QueryPart_Property ();
+				prop_part.Logic = part.Logic;
+				prop_part.Key = Property.ParentDirUriPropKey;
+				prop_part.Type = PropertyType.Keyword;
+
+				Uri uri = ExternalToInternalUri (UriFu.EscapedStringToUri (query));
+				if (uri == null)
+					prop_part.Value = "no-match:///"; // FIXME: Returning null should work here
+				else
+					// From LuceneCommon.cs:AddPropertyToDocument since ParentDirUriPropKey is a private property
+					prop_part.Value = UriFu.UriToEscapedString (uri);
+
+				Log.Debug ("Remapped inuri={0} to {1}={2}", query, Property.ParentDirUriPropKey, prop_part.Value);
+				return prop_part;
+			}
+
+			QueryPart_Or parent_dirs = new QueryPart_Or ();
+			parent_dirs.Logic = part.Logic;
+
+			lock (big_lock) {
+				// Absolute path was not given.
+				// Traverse the directories to find directories with _EXACTLY_ this name
+				foreach (LuceneNameResolver.NameInfo info in uid_manager.GetAllDirectoryNameInfo (query)) {
+					QueryPart_Property prop_part = new QueryPart_Property ();
+					prop_part.Logic = QueryPartLogic.Required;
+					prop_part.Type = PropertyType.Keyword;
+					prop_part.Key = Property.ParentDirUriPropKey;
+					prop_part.Value = GuidFu.ToUriString (info.Id);
+
+					parent_dirs.Add (prop_part);
+				}
+			}
+
+			Log.Debug ("Found {0} matching dirs with containing '{1}' in name", parent_dirs.SubParts.Count, query);
+			if (parent_dirs.SubParts.Count == 0) {
+				// Add dummy query to match nothing
+				QueryPart_Property prop_part = new QueryPart_Property ();
+				prop_part.Logic = QueryPartLogic.Required;
+				prop_part.Type = PropertyType.Keyword;
+				prop_part.Key = Property.ParentDirUriPropKey;
+				prop_part.Value = "no-match:///";
+
+				parent_dirs.Add (prop_part);
+			}
+
+			return parent_dirs;
 		}
 
 		override public ISnippetReader GetSnippet (string [] query_terms, Hit hit, bool full_text)

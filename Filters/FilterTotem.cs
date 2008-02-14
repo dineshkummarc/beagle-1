@@ -48,6 +48,10 @@ namespace Beagle.Filters {
 			SetFileType ("video");
 		}
 
+		internal static int Priority {
+			get { return 1 + FilterMPlayerVideo.Priority; }
+		}
+
 		protected override void RegisterSupportedTypes ()
 		{
 			// Get the list of mime-types from the totem-video-indexer
@@ -56,6 +60,7 @@ namespace Beagle.Filters {
 			pc.Arguments = new string [] { "totem-video-indexer", "--mimetype" };
 			pc.RedirectStandardOutput = true;
 			pc.RedirectStandardError = true;
+			pc.UseLangC = true;
 
 			try {
 				pc.Start ();
@@ -71,7 +76,7 @@ namespace Beagle.Filters {
 
 			while ((str = pout.ReadLine ()) != null) {
 				FilterFlavor flavor = FilterFlavor.NewFromMimeType (str);
-				flavor.Priority = 1; // Prefer Totem filter over MPlayer
+				flavor.Priority = Priority;
 
 				AddSupportedFlavor (flavor);
 
@@ -85,8 +90,14 @@ namespace Beagle.Filters {
 
 		protected override void DoPullProperties ()
 		{
+			if (FileInfo == null) {
+				Log.Error ("FilterTotem: Unable to extract properties for non-file data");
+				Error ();
+				return;
+			}
+
 			SafeProcess pc = new SafeProcess ();
-			pc.Arguments = new string [] { "totem-video-indexer", UriFu.UriToEscapedString (this.Indexable.Uri) };
+			pc.Arguments = new string [] { "totem-video-indexer", FileInfo.FullName };
 			pc.RedirectStandardOutput = true;
 			pc.RedirectStandardError = true;
 

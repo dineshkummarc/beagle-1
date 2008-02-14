@@ -59,6 +59,13 @@
 				</a>
 			</span>
 			<span class="Timestamp" name="Timestamp">
+				<!-- Pushing the filesize information to the right, just before the timestamp -->
+				<xsl:if test="Properties/Property[@Key='fixme:filesize']">
+					<span class="Filesize" name="Filesize">
+						<xsl:variable name="filesize"><xsl:value-of select="Properties/Property[@Key='fixme:filesize']/@Value"/></xsl:variable>
+						<i><xsl:value-of select="ceiling ($filesize div 1024)"/> KB</i>&nbsp;
+					</span>
+				</xsl:if>
 				<xsl:value-of select="@Timestamp"/>
 			</span>
 		</div>
@@ -119,7 +126,7 @@
 		<xsl:for-each select="Property">
 			<xsl:if test="@Name != ''">
 				<tr class="Property">
-				<td class="SearchProperty"><a href="#" onclick="search_property(this); return false;">Search</a></td>
+				<td class="SearchProperty"><a href="#" onclick="search_property(this); return false;"><img src="images/system-search.png" alt="Search for this property and value" title="Search for this property and value" /></a></td>
 				<td class="PropertyKey" key="{@Key}"><xsl:value-of select="@Name"/></td>
 				<td class="PropertyValue" type="{@Type}"><xsl:value-of select="@Value"/></td>
 				</tr>

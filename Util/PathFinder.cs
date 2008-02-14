@@ -206,5 +206,27 @@ namespace Beagle.Util {
 				return dir;
 			}
 		}
+
+		// Location of the global config files.
+		// Once installted, it is Sysconfdir/beagle
+		// Otherwise it is $BEAGLE_CONF_DIR
+		static string config_data_dir = null;
+		static public string ConfigDataDir {
+			get {
+				if (config_data_dir == null) {
+					config_data_dir = Environment.GetEnvironmentVariable ("BEAGLE_CONF_DIR");
+					if (config_data_dir == null)
+						config_data_dir = Path.Combine (ExternalStringsHack.SysConfDir, "beagle");
+
+					if (config_data_dir.EndsWith ("/"))
+						config_data_dir = config_data_dir.Remove (config_data_dir.Length - 1, 1);
+					config_data_dir = Path.GetFullPath (config_data_dir);
+					if (! Directory.Exists (config_data_dir))
+						throw new Exception ("Global config directory '"+config_data_dir+"' doesn't exist");
+				}
+
+				return config_data_dir;
+			}
+		}
 	}
 }

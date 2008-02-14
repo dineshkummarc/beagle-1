@@ -75,12 +75,14 @@ namespace Beagle.Filters {
 
 		public FilterMPlayerVideo ()
 		{
-			// 1: Priority update after FilterVideo was added
+			// 1: Version update after FilterVideo was added
 			SetVersion (1);
 
 			PreLoad = false;
 			SetFileType ("video");
 		}
+
+		internal const int Priority = 0; // default
 
 		protected override void RegisterSupportedTypes ()
 		{
@@ -110,10 +112,17 @@ namespace Beagle.Filters {
 
 		protected override void DoPullProperties ()
 		{
+			if (FileInfo == null) {
+				Log.Error ("FilterMPlayerVideo: Unable to extract properties for non-file data");
+				Error ();
+				return;
+			}
+
 			SafeProcess pc = new SafeProcess ();
 			pc.Arguments = new string [] { "mplayer", "-vo", "null", "-ao", "null", "-frames", "0", "-identify", FileInfo.FullName };
 			pc.RedirectStandardOutput = true;
 			pc.RedirectStandardError = true;
+			pc.UseLangC = true;
 
 			// Let mplayer run for 10 seconds, max.
 			pc.CpuLimit = 10;

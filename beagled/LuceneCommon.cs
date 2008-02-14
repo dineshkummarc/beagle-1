@@ -49,6 +49,7 @@ namespace Beagle.Daemon {
 	public class LuceneCommon {
 
 		public delegate bool HitFilter (Hit hit);
+		public delegate QueryPart QueryPartHook (QueryPart query_part);
 
 		// VERSION HISTORY
 		// ---------------
@@ -1129,7 +1130,7 @@ namespace Beagle.Daemon {
 		// Queries
 		//
 
-		static private LNS.Query StringToQuery (string field_name,
+		static internal LNS.Query StringToQuery (string field_name,
 							string text,
 							ArrayList term_list)
 		{
@@ -1386,6 +1387,7 @@ namespace Beagle.Daemon {
 		static protected void QueryPartToQuery (QueryPart     abstract_part,
 							bool          only_build_primary_query,
 							ArrayList     term_list,
+							QueryPartHook query_part_hook,
 							out LNS.Query primary_query,
 							out LNS.Query secondary_query,
 							out HitFilter hit_filter)
@@ -1406,6 +1408,14 @@ namespace Beagle.Daemon {
 			if (abstract_part.Logic == QueryPartLogic.Prohibited)
 				hit_filter = null;
 
+			if (abstract_part == null)
+				return;
+
+			// Run the backend hook first.
+			// This gives a chance to modify create new queries based on
+			// backend specific properties
+
+			abstract_part = query_part_hook (abstract_part);
 			if (abstract_part == null)
 				return;
 
@@ -1535,49 +1545,6 @@ namespace Beagle.Daemon {
 				return;
 			}
 
-			if (abstract_part is QueryPart_Property) {
-				QueryPart_Property part = (QueryPart_Property) abstract_part;
-
-				string field_name;
-				if (part.Key == QueryPart_Property.AllProperties)
-					field_name = TypeToWildcardField (part.Type);
-				else
-					field_name = PropertyToFieldName (part.Type, part.Key);
-
-				if (part.Type == PropertyType.Text)
-					primary_query = StringToQuery (field_name, part.Value, term_list);
-				else {
-					Term term;
-					term = new Term (field_name, part.Value.ToLower ());
-					if (term_list != null)
-						term_list.Add (term);
-					primary_query = new LNS.TermQuery (term);
-				}
-
-				// Properties can live in either index
-				if (! only_build_primary_query && primary_query != null)
-					secondary_query = primary_query.Clone () as LNS.Query;
-
-				return;
-			}
-
-			if (abstract_part is QueryPart_Uri) {
-				QueryPart_Uri part = (QueryPart_Uri) abstract_part;
-
-				// Do a term query on the Uri field.
-				// This is probably less efficient that using a TermEnum;
-				// but this is required for the query API where the uri query
-				// can be part of a prohibited query or a boolean or query.
-				Term term;
-				term = new Term ("Uri", UriFu.UriToEscapedString (part.Uri));
-				if (term_list != null)
-					term_list.Add (term);
-				primary_query = new LNS.TermQuery (term);
-
-				// Query only the primary index
-				return;
-			}
-
 			if (abstract_part is QueryPart_DateRange) {
 
 				QueryPart_DateRange part = (QueryPart_DateRange) abstract_part;
@@ -1619,7 +1586,7 @@ namespace Beagle.Daemon {
 					// correctly, because we can't tell which part of an OR we matched
 					// against to filter correctly.  This affects date range queries.
 					QueryPartToQuery (sub_part, only_build_primary_query,
-							  term_list,
+							  term_list, query_part_hook,
 							  out p_subq, out s_subq, out sub_hit_filter);
 					if (p_subq != null)
 						p_query.Add (p_subq, false, false);
@@ -1637,6 +1604,52 @@ namespace Beagle.Daemon {
 
 				return;
 			} 
+
+			if (abstract_part is QueryPart_Uri) {
+				QueryPart_Uri part = (QueryPart_Uri) abstract_part;
+
+				// Do a term query on the Uri field.
+				// This is probably less efficient that using a TermEnum;
+				// but this is required for the query API where the uri query
+				// can be part of a prohibited query or a boolean or query.
+				Term term;
+				term = new Term ("Uri", UriFu.UriToEscapedString (part.Uri));
+				if (term_list != null)
+					term_list.Add (term);
+				primary_query = new LNS.TermQuery (term);
+
+				// Query only the primary index
+				return;
+			}
+
+			if (abstract_part is QueryPart_Property) {
+				QueryPart_Property part = (QueryPart_Property) abstract_part;
+
+				string field_name;
+				if (part.Key == QueryPart_Property.AllProperties)
+					field_name = TypeToWildcardField (part.Type);
+				else
+					field_name = PropertyToFieldName (part.Type, part.Key);
+
+				if (part.Type == PropertyType.Text)
+					primary_query = StringToQuery (field_name, part.Value, term_list);
+				else {
+					Term term;
+					if (field_name.StartsWith ("prop:k:" + Property.PrivateNamespace))
+						term = new Term (field_name, part.Value);
+					else
+						term = new Term (field_name, part.Value.ToLower ());
+					if (term_list != null)
+						term_list.Add (term);
+					primary_query = new LNS.TermQuery (term);
+				}
+
+				// Properties can live in either index
+				if (! only_build_primary_query && primary_query != null)
+					secondary_query = primary_query.Clone () as LNS.Query;
+
+				return;
+			}
 
 			throw new Exception ("Unhandled QueryPart type! " + abstract_part.ToString ());
 		}

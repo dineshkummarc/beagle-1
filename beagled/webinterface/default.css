@@ -27,13 +27,18 @@ body {
 	color: #444;
 	background: #fff url(images/title_bg.png) 0 -80px repeat-x;
 	position: relative;
-	margin: 40px;
+	margin: 30px;
 	font-family: trebuchet ms,luxi sans,sans-serif;
 	font-size: 96%;
 	text-align: center;
 }
 
 /************ header ***************/
+
+#menubar {
+	margin: -30px; /* with respect to body margin */
+	float: right;
+}
 
 #header img {
 	float: left;
@@ -53,7 +58,13 @@ body {
 	margin-bottom: 1.8em;
 }
 
-#headerlinks {
+#querytext {
+	background-image: url('images/system-search.png');
+	background-repeat: no-repeat;
+	padding-left:20px;
+}
+
+#searchoptions {
 	margin-right: 1.2em;
 }
 
@@ -171,6 +182,10 @@ body {
 	width: 50%;
 }
 
+.Timestamp .Filesize {
+	color: #808080;
+}
+
 .Timestamp {
 	float: right;
 	text-align: right;
@@ -203,6 +218,11 @@ td.SearchProperty a{
 
 tr.Property:hover td.SearchProperty a {
 	visibility: visible;
+}
+
+td.SearchProperty a img {
+	height: 15px;
+	border: 0px;
 }
 
 .PropertyValue {

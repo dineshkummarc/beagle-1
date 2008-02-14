@@ -54,6 +54,9 @@ namespace Beagle.Daemon {
 		public delegate bool UriFilter (Uri uri);
 		public delegate double RelevancyMultiplier (Hit hit);
 
+		public LuceneQueryingDriver (string index_name, bool read_only)
+			: this (index_name, -1, read_only) { }
+
 		public LuceneQueryingDriver (string index_name, int minor_version, bool read_only) 
 			: base (index_name, minor_version)
 		{
@@ -388,6 +391,7 @@ namespace Beagle.Daemon {
 				QueryPartToQuery (part,
 						  false, // we want both primary and secondary queries
 						  part.Logic == QueryPartLogic.Required ? term_list : null,
+						  query_part_hook,
 						  out primary_part_query,
 						  out secondary_part_query,
 						  out part_hit_filter);
@@ -616,6 +620,7 @@ namespace Beagle.Daemon {
 		public void DoQuery (Query               query,
 				     IQueryResult        result,
 				     ICollection         search_subset_uris, // should be internal uris
+				     QueryPartHook       query_part_hook,
 				     UriFilter           uri_filter,
 				     HitFilter           hit_filter)
 		{

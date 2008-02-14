@@ -224,6 +224,17 @@ namespace Beagle.Daemon {
 				}
 			}
 
+			// Special case
+			if (key == "inuri") {
+				QueryPart_Property inuri_part = new QueryPart_Property ();
+				inuri_part.Logic = (IsProhibited ? QueryPartLogic.Prohibited : QueryPartLogic.Required);
+				inuri_part.Key = "inuri";
+				inuri_part.Value = text;
+				inuri_part.Type = PropertyType.Keyword;
+				Log.Debug ("Handing special query 'inuri:{0}'", text);
+				return inuri_part;
+			}
+
 			// Non-keyword queries by directly using property names
 			// Query of form property:namespace:name=value
 			// which is translated to a non-keyword query
@@ -266,7 +277,7 @@ namespace Beagle.Daemon {
 			PropertyType[] prop_type;
 			int num;
 
-			is_present = PropertyKeywordFu.GetPropertyDetails (key, out num, out prop_string, out prop_type);
+			is_present = PropertyKeywordFu.GetMapping (key, out num, out prop_string, out prop_type);
 			// if key is not present in the mapping, assume the query is a text query
 			// i.e. if token is foo:bar and there is no mappable property named foo,
 			// assume "foo:bar" as text query

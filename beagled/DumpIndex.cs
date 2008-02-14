@@ -225,18 +225,8 @@ class DumpIndexTool {
 	// Dump the fields: we do this via direct Lucene access.
 	static void DumpOneIndex_Fields (string index_name)
 	{
-		Console.WriteLine ("Index: {0}", index_name);
-
 		LuceneQueryingDriver driver;
-		try
-		{
-			driver = new LuceneQueryingDriver (index_name, -1, true);
-		}
-		catch (InvalidOperationException e)
-		{
-			Console.Error.WriteLine("There is no Lucene index in the index folder '{0}':\n{1}", index_name, e.StackTrace);
-			return;
-		}
+		driver = new LuceneQueryingDriver (index_name, -1, true);
 		
 		IndexReader reader;
 		reader = IndexReader.Open (driver.PrimaryStore);

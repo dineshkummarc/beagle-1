@@ -36,9 +36,7 @@ using Beagle.Util;
 
 namespace Beagle.Daemon.NautilusMetadataQueryable {
 
-	[PropertyKeywordMapping (Keyword="emblem",  PropertyName="nautilus:emblem", IsKeyword=true, Description="Use emblem to identify items tagged with a specific emblem in nautilus.")]
-	[QueryableFlavor (Name="NautilusMetadata", Domain=QueryDomain.Local, RequireInotify=false,
-			  DependsOn="Files")]
+	[QueryableFlavor (Name="NautilusMetadata", Domain=QueryDomain.Local, RequireInotify=false, DependsOn="Files")]
 	public class NautilusMetadataQueryable : ExternalMetadataQueryable, IIndexableGenerator  {
 
 		private string nautilus_dir;
@@ -182,6 +180,13 @@ namespace Beagle.Daemon.NautilusMetadataQueryable {
 		
 		public void PostFlushHook () { }
 
+		static private bool IsXmlFile (string path, string name)
+		{
+			return (Path.GetExtension (name) == ".xml" && File.Exists (Path.Combine (path, name)));
+		}
+
+		private DirectoryWalker.FileFilter is_xml_file = new DirectoryWalker.FileFilter (IsXmlFile);
+
 		public bool HasNextIndexable ()
 		{
 			if (metadata != null) {
@@ -195,7 +200,7 @@ namespace Beagle.Daemon.NautilusMetadataQueryable {
 
 			while (metadata == null) {
 				if (metafiles == null)
-					metafiles = DirectoryWalker.GetFiles (nautilus_dir).GetEnumerator ();
+					metafiles = DirectoryWalker.GetItems (nautilus_dir, is_xml_file).GetEnumerator ();
 
 				if (! metafiles.MoveNext ())
 					return false;

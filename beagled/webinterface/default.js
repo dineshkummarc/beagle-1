@@ -541,31 +541,39 @@ function process_hit (hit)
 /************* Datetime parsing routines ***************/
 
 // We're putting these here so they're reused. Much faster this way.
-var regexp = /^(.{4})(.{2})(.{2})/;
-var time = new Date ().toLocaleFormat ("%Y%m%d%H%M%S");
-var timestamp = new Date ();
+var regexp = /^(.{4})(.{2})(.{2})(.{2})(.{2})(.{2})/;
 function humanise_timestamp (ts) 
 {
 	var array = regexp.exec (ts);
-	timestamp.setFullYear (array [1]);
 	// Erm. Months are counted from 0 in javascript for some reason <_<
-	timestamp.setMonth (array [2] - 1);
-	timestamp.setDate (array [3]);
-	// < 1 day
-	if ( (time - ts) < 1000000 ) {
-		return "Today";
-	// < 2 days
-	} else if ( (time - ts) < 2000000 ) {
-		return "Yesterday";
-	// < 7 days
-	} else if ( (time - ts) < 7000000 ) {
-		return timestamp.toLocaleFormat ('%A');
-	// < 1 year
-	} else if ( (time - ts) < 10000000000 ) {
-		return timestamp.toLocaleFormat ('%B %e');
-	} else {
-		return timestamp.toLocaleFormat ('%B %e, %Y')
+	var timestamp = new Date (Date.UTC (array [1], array [2] - 1, array [3], array [4], array [5], array [6]));
+
+	var now = new Date ();
+	var today = new Date (now.getFullYear (), now.getMonth (), now.getDate ());
+
+	if (timestamp >= today ) {
+		return "Today " + timestamp.toLocaleFormat ('%I:%M %p');
 	}
+
+	// 1 day = 86,400,000 msecs
+	var yesterday = new Date (today.getTime () - 86400000);
+	if (timestamp >= yesterday) {
+		return "Yesterday " + timestamp.toLocaleFormat ('%I:%M %p');
+	}
+	
+	// This week (ignoring the seconds part)
+	var week_begin = new Date (today.getTime () - (86400000 * today.getDay ()));
+	if (timestamp >= week_begin) {
+		return timestamp.toLocaleFormat ('%A') + " " + timestamp.toLocaleFormat ('%I:%M %p');
+	}
+
+	// This year
+	var year_begin = new Date (today.getFullYear, 0, 1);
+	if (timestamp >= year_begin) {
+		return timestamp.toLocaleFormat ('%B %e');
+	}
+
+	return timestamp.toLocaleFormat ('%B %e, %Y')
 }
 
 /**************** Code to handle styles and ui issues ******************/
@@ -700,6 +708,35 @@ function toggle_category (category)
 			document.getElementById (category.name).style.display = 'none';
 		}
 	}
+}
+
+/******* Add to bookmark *******************************************/
+
+function bookmark_query ()
+{
+	// Firefox specific !
+	if (! window.sidebar) {
+		alert ("Adding bookmarks only supported in Firefox!");
+		return;
+	}
+
+	var title = document.queryform.querytext.value;
+	if (title == "")
+		return;
+
+	var url = "http://" + document.location.host + "/?search=" + escape (title);
+
+	// Using window.sidebar.addPanel () will create bookmark that will open in sidebar
+	var answer = confirm ("Due to limitations in Firefox the bookmark will open in the sidebar. To open it in the main window, uncheck the option in the Property of this bookmark. Continue ?");
+	if (answer)
+		window.sidebar.addPanel (title, url, "");
+}
+
+/******* Advance search GUI ****************************************/
+
+function show_advanced_search ()
+{
+	alert ("Not implemented.");
 }
 
 /******* Initial fetching and loading of the xsl/xml files *********/

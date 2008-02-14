@@ -71,6 +71,7 @@ namespace Beagle.Filters {
 
 			try {
 				FileStream fs = File.Open (path, FileMode.Open, FileAccess.Read, FileShare.Read);
+				//FIXME: Use XmlSerializerFactory instead of creating a new serializer everytime
 				XmlSerializer serializer = new XmlSerializer (typeof (ExternalFilterInfoContainer));
 				ExternalFilterInfoContainer container = (ExternalFilterInfoContainer) serializer.Deserialize (fs);
 				fs.Close ();
@@ -180,6 +181,7 @@ namespace Beagle.Filters {
 			SafeProcess pc = new SafeProcess ();
 			pc.Arguments = argv;
 			pc.RedirectStandardOutput = true;
+			pc.UseLangC = true;
 
 			// Let the external filter run for 2 minutes, max.
 			pc.CpuLimit = 120;

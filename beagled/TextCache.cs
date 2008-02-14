@@ -50,7 +50,10 @@ namespace Beagle.Daemon {
 
 		private const string SELF_CACHE_TAG = "*self*";
 		private const string BLOB_TAG = "*blob*";
-
+		public SqliteCommand InsertCommand;
+		public SqliteCommand LookupPathCommand;
+		public SqliteCommand LookupDataCommand;
+		public SqliteCommand DeleteCommand;
 		private string text_cache_dir;
 		internal string TextCacheDir {
 			get { return text_cache_dir; }
@@ -166,8 +169,20 @@ namespace Beagle.Daemon {
 							"  data     BLOB                     " +
 							")");
 			}
+			this.InitCommands ();
 		}
 
+		private void InitCommands ()
+		{
+			InsertCommand = new SqliteCommand (this.connection);
+			InsertCommand.CommandText = "INSERT OR REPLACE INTO textcache_data (uri, filename, data) VALUES (@uri,@filename,@data)";
+			LookupPathCommand = new SqliteCommand (this.connection);
+			LookupPathCommand.CommandText = "SELECT filename FROM textcache_data WHERE uri=@uri";
+			LookupDataCommand = new SqliteCommand (this.connection);
+			LookupDataCommand.CommandText = "SELECT filename, data FROM textcache_data WHERE uri=@uri";
+			DeleteCommand = new SqliteCommand (this.connection);
+			DeleteCommand.CommandText = "DELETE FROM textcache_data WHERE uri=@uri";
+		}
 		private SqliteConnection Open (string db_filename)
 		{
 			SqliteConnection connection = new SqliteConnection ();
@@ -194,10 +209,11 @@ namespace Beagle.Daemon {
 		{
 			lock (connection) {
 				MaybeStartTransaction_Unlocked ();
-				SqliteUtils.DoNonQuery (connection,
-							"INSERT OR REPLACE INTO textcache_data (uri, filename, data) VALUES (@uri,@filename,@data)",
-							new string [] {"@uri", "@filename", "@data"},
-							new object [] {UriToString (uri), filename, data});
+				InsertCommand.Parameters.AddWithValue ("@uri",UriToString (uri));
+				InsertCommand.Parameters.AddWithValue ("@filename",filename);
+				InsertCommand.Parameters.AddWithValue ("@data", data);
+				SqliteUtils.DoNonQuery (InsertCommand);
+
 			}
 		}
 
@@ -210,18 +226,14 @@ namespace Beagle.Daemon {
 		// Returns raw path as stored in the db i.e. relative path wrt the text_cache_dir
 		private string LookupPathRawUnlocked (Uri uri)
 		{
-			SqliteCommand command;
-			SqliteDataReader reader = null;
+			//SqliteCommand command;
 			string path = null;
-
-			command = NewCommand ("SELECT filename FROM textcache_data WHERE uri='{0}'", 
-			                      UriToString (uri));
-			reader = SqliteUtils.ExecuteReaderOrWait (command);
-			if (SqliteUtils.ReadOrWait (reader))
-				path = reader.GetString (0);
-			reader.Close ();
-			command.Dispose ();
-
+			LookupPathCommand.Parameters.AddWithValue ("@uri", UriToString (uri));
+			using (SqliteDataReader reader = SqliteUtils.ExecuteReaderOrWait (LookupPathCommand)) {
+				if (SqliteUtils.ReadOrWait (reader))
+					path = reader.GetString (0);
+			}
+			
 			return path;
 		}
 
@@ -441,26 +453,24 @@ namespace Beagle.Daemon {
 		// If self_cache is true when called, then self_cache will be set upon return
 		public TextReader GetReader (Uri uri, ref bool self_cache)
 		{
-			SqliteCommand command;
-			SqliteDataReader reader = null;
 			byte[] blob = null;
 			string filename = null;
 
 			lock (connection) {
-				command = NewCommand ("SELECT filename, data FROM textcache_data WHERE uri='{0}'", 
-				                      UriToString (uri));
-				reader = SqliteUtils.ExecuteReaderOrWait (command);
-				if (! SqliteUtils.ReadOrWait (reader)) {
-					if (self_cache)
-						self_cache = false;
-					return null;
-				}
+				
+				LookupDataCommand.Parameters.AddWithValue("@uri",UriToString (uri));
+				using (SqliteDataReader reader = SqliteUtils.ExecuteReaderOrWait (LookupDataCommand)) {
+					if (! SqliteUtils.ReadOrWait (reader)) {
+						if (self_cache)
+							self_cache = false;
+						return null;
+					}
 
 				filename = reader.GetString (0);
 				if (! reader.IsDBNull (1))
 					blob = reader.GetValue (1) as byte [];
-				reader.Close ();
-				command.Dispose ();
+				}
+
 			}
 
 			if (filename == SELF_CACHE_TAG) {
@@ -500,10 +510,8 @@ namespace Beagle.Daemon {
 				string path = LookupPathRawUnlocked (uri);
 				if (path != null) {
 					MaybeStartTransaction_Unlocked ();
-					SqliteUtils.DoNonQuery (connection,
-								"DELETE FROM textcache_data WHERE uri=@uri", 
-								new string [] {"@uri"},
-								new object [] {UriToString (uri)}); 
+					DeleteCommand.Parameters.AddWithValue("@uri", UriToString (uri));
+					SqliteUtils.DoNonQuery (DeleteCommand);
 					if (path != SELF_CACHE_TAG && path != BLOB_TAG)
 						File.Delete (Path.Combine (text_cache_dir, path));
 				}
