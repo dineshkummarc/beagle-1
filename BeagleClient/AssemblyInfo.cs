@@ -30,13 +30,14 @@ using Beagle;
 
 // Any request message types in the Beagle.dll file must be registered here.
 [assembly: RequestMessageTypes (
+	 typeof (CountMatchQuery),
+	 typeof (DaemonInformationRequest),
 	 typeof (IndexingServiceRequest),
 	 typeof (InformationalMessagesRequest),
-	 typeof (Query),
-	 typeof (DaemonInformationRequest),
-	 typeof (ShutdownRequest),
-	 typeof (ReloadConfigRequest),
 	 typeof (OptimizeIndexesRequest),
+	 typeof (Query),
+	 typeof (ReloadConfigRequest),
+	 typeof (ShutdownRequest),
 	 typeof (SnippetRequest),
 	 typeof (RDFQuery)
 )]
@@ -51,5 +52,7 @@ using Beagle;
 	 typeof (SearchTermResponse),
 	 typeof (DaemonInformationResponse),
 	 typeof (SnippetResponse),
-	 typeof (RDFQueryResult)
+	 typeof (RDFQueryResult),
+	 typeof (SnippetResponse),
+	 typeof (CountMatchQueryResponse)
 )]

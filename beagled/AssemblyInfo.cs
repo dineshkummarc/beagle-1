@@ -52,7 +52,8 @@ using Beagle.Daemon;
 	typeof (ReloadConfigExecutor),
 	typeof (ShutdownExecutor),
 	typeof (SnippetExecutor),
-	typeof (RDFQueryExecutor)
+	typeof (RDFQueryExecutor),
+	typeof (CountMatchQueryExecutor)
 )]
 
 // All backends in this assembly must be registered here.
@@ -77,5 +78,5 @@ using Beagle.Daemon;
 	typeof (Beagle.Daemon.PidginQueryable.PidginQueryable),
 	typeof (Beagle.Daemon.StaticQueryable),
 	typeof (Beagle.Daemon.TomboyQueryable.TomboyQueryable),
-    typeof (Beagle.Daemon.EmpathyQueryable.EmpathyQueryable)                   
+	typeof (Beagle.Daemon.EmpathyQueryable.EmpathyQueryable)                   
 )]

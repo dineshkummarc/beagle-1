@@ -136,12 +136,194 @@ namespace Beagle.Daemon {
 
 		////////////////////////////////////////////////////////////////
 
+		// Core steps to do query
+		// The top-level methods use these steps
+
+		// Returns the lists of terms in the query
+		private ArrayList AssembleQuery (Query			query,
+						 QueryPartHook		query_part_hook,
+					    	 HitFilter		hit_filter,
+					    	 out ArrayList		primary_required_part_queries,
+					    	 out ArrayList		secondary_required_part_queries,
+					    	 out LNS.BooleanQuery	primary_prohibited_part_query,
+					    	 out LNS.BooleanQuery	secondary_prohibited_part_query,
+						 out AndHitFilter	all_hit_filters)
+		{
+			primary_required_part_queries = null;
+			secondary_required_part_queries = null;
+			primary_prohibited_part_query = null;
+			secondary_prohibited_part_query = null;
+
+			all_hit_filters = new AndHitFilter ();
+			if (hit_filter != null)
+				all_hit_filters.Add (hit_filter);
+
+			ArrayList term_list = new ArrayList ();
+
+			foreach (QueryPart part in query.Parts) {
+				LNS.Query primary_part_query;
+				LNS.Query secondary_part_query;
+				HitFilter part_hit_filter;
+				QueryPartToQuery (part,
+						  false, // we want both primary and secondary queries
+						  part.Logic == QueryPartLogic.Required ? term_list : null,
+						  query_part_hook,
+						  out primary_part_query,
+						  out secondary_part_query,
+						  out part_hit_filter);
+
+				if (primary_part_query == null)
+					continue;
+
+				switch (part.Logic) {
+					
+				case QueryPartLogic.Required:
+					if (primary_required_part_queries == null) {
+						primary_required_part_queries = new ArrayList ();
+						secondary_required_part_queries = new ArrayList ();
+					}
+					primary_required_part_queries.Add (primary_part_query);
+					secondary_required_part_queries.Add (secondary_part_query);
+					
+					if (part_hit_filter != null)
+						all_hit_filters.Add (part_hit_filter);
+					
+					break;
+
+				case QueryPartLogic.Prohibited:
+					if (primary_prohibited_part_query == null)
+						primary_prohibited_part_query = new LNS.BooleanQuery ();
+					primary_prohibited_part_query.Add (primary_part_query, false, false);
+
+					if (secondary_part_query != null) {
+						if (secondary_prohibited_part_query == null)
+							secondary_prohibited_part_query = new LNS.BooleanQuery ();
+						secondary_prohibited_part_query.Add (secondary_part_query, false, false);
+					}
+
+					if (part_hit_filter != null) {
+						NotHitFilter nhf;
+						nhf = new NotHitFilter (part_hit_filter);
+						all_hit_filters.Add (new HitFilter (nhf.HitFilter));
+					}
+
+					break;
+				}
+			}
+
+			return term_list;
+		}
+
+		private void BuildSearchers (out IndexReader primary_reader,
+					    out LNS.IndexSearcher primary_searcher,
+					    out IndexReader secondary_reader,
+					    out LNS.IndexSearcher secondary_searcher)
+		{
+			secondary_reader = null;
+			secondary_searcher = null;
+
+			primary_reader = LuceneCommon.GetReader (PrimaryStore);
+			primary_searcher = new LNS.IndexSearcher (primary_reader);
+
+			if (SecondaryStore != null) {
+				secondary_reader = LuceneCommon.GetReader (SecondaryStore);
+				if (secondary_reader.NumDocs () == 0) {
+					ReleaseReader (secondary_reader);
+					secondary_reader = null;
+				}
+			}
+
+			if (secondary_reader != null)
+				secondary_searcher = new LNS.IndexSearcher (secondary_reader);
+		}
+
+		private void CloseSearchers (IndexReader primary_reader,
+					    LNS.IndexSearcher primary_searcher,
+					    IndexReader secondary_reader,
+					    LNS.IndexSearcher secondary_searcher)
+		{
+			primary_searcher.Close ();
+			if (secondary_searcher != null)
+				secondary_searcher.Close ();
+			ReleaseReader (primary_reader);
+			if (secondary_reader != null)
+				ReleaseReader (secondary_reader);
+		}
+
+		private void CreateQueryWhitelists (ICollection		search_subset_uris,
+						    LNS.IndexSearcher	primary_searcher,
+						    LNS.IndexSearcher	secondary_searcher,
+						    LNS.BooleanQuery	primary_prohibited_part_query,
+						    LNS.BooleanQuery	secondary_prohibited_part_query,
+						    out LuceneBitArray	primary_whitelist,
+						    out LuceneBitArray	secondary_whitelist)
+		{
+			primary_whitelist = null;
+			secondary_whitelist = null;
+			
+			if (search_subset_uris != null && search_subset_uris.Count > 0) {
+				primary_whitelist = new LuceneBitArray (primary_searcher);
+				if (secondary_searcher != null)
+					secondary_whitelist = new LuceneBitArray (secondary_searcher);
+
+				foreach (Uri uri in search_subset_uris) {
+					primary_whitelist.AddUri (uri);
+					if (secondary_whitelist != null)
+						secondary_whitelist.AddUri (uri);
+				}
+				primary_whitelist.FlushUris ();
+				if (secondary_whitelist != null)
+					secondary_whitelist.FlushUris ();
+			}
+
+
+			// Build blacklists from our prohibited parts.
+			
+			LuceneBitArray primary_blacklist = null;
+			LuceneBitArray secondary_blacklist = null;
+
+			if (primary_prohibited_part_query != null) {
+				primary_blacklist = new LuceneBitArray (primary_searcher,
+									primary_prohibited_part_query);
+				
+				if (secondary_searcher != null) {
+					secondary_blacklist = new LuceneBitArray (secondary_searcher);
+					if (secondary_prohibited_part_query != null)
+						secondary_blacklist.Or (secondary_prohibited_part_query);
+					primary_blacklist.Join (secondary_blacklist);
+				}
+			}
+
+			
+			// Combine our whitelist and blacklist into just a whitelist.
+			
+			if (primary_blacklist != null) {
+				if (primary_whitelist == null) {
+					primary_blacklist.Not ();
+					primary_whitelist = primary_blacklist;
+				} else {
+					primary_whitelist.AndNot (primary_blacklist);
+				}
+			}
+
+			if (secondary_blacklist != null) {
+				if (secondary_whitelist == null) {
+					secondary_blacklist.Not ();
+					secondary_whitelist = secondary_blacklist;
+				} else {
+					secondary_whitelist.AndNot (secondary_blacklist);
+				}
+			}
+		}
+
 		///////// RDF fu ///////////////////////////////////////////////
 
 		// Returns a collection of Uris
 		// HitFilter and UriFilter are ignored for now
 		// They will come into play in the final FetchDocument part
-		public ICollection DoRDFQuery (Query _query)
+		// FIXME: Should RDFQuery do any query mapping using backend_query_part_hook ?
+		// I think it should.
+		public ICollection DoRDFQuery (Query _query, QueryPartHook query_part_hook)
 		{
 			RDFQuery query = (RDFQuery) _query;
 
@@ -168,7 +350,7 @@ namespace Beagle.Daemon {
 				part.Text = _object;
 				part.SearchFullText = false; // We only search properties in RDF query
 				query.AddPart (part);
-				return DoLowLevelRDFQuery (query, null);
+				return DoLowLevelRDFQuery (query, null, query_part_hook);
 			}
 
 			// Return uris for all documents with this property
@@ -184,7 +366,7 @@ namespace Beagle.Daemon {
 				part.Value = _object;
 				query.AddPart (part);
 				string field_name = PropertyToFieldName (pred_type, predicate);
-				return DoLowLevelRDFQuery (query, field_name);
+				return DoLowLevelRDFQuery (query, field_name, query_part_hook);
 			}
 
 			// Return if the URI exists
@@ -192,7 +374,7 @@ namespace Beagle.Daemon {
 				QueryPart_Uri part = new QueryPart_Uri ();
 				part.Uri = new Uri (subject); // better be URI!
 				query.AddPart (part);
-				return DoLowLevelRDFQuery (query, null);
+				return DoLowLevelRDFQuery (query, null, query_part_hook);
 			}
 
 			// Normal query in the document with this URI
@@ -206,7 +388,7 @@ namespace Beagle.Daemon {
 				part.SearchFullText = false; // We only search properties in RDF query
 				query.AddPart (part);
 
-				return DoLowLevelRDFQuery (query, null);
+				return DoLowLevelRDFQuery (query, null, query_part_hook);
 			}
 
 			// Return URI if the document with this URI contains this property
@@ -241,7 +423,7 @@ namespace Beagle.Daemon {
 				query.AddPart (part);
 
 				string field_name = PropertyToFieldName (pred_type, predicate);
-				return DoLowLevelRDFQuery (query, field_name);
+				return DoLowLevelRDFQuery (query, field_name, query_part_hook);
 			}
 
 			throw new Exception ("Never reaches");
@@ -358,7 +540,9 @@ namespace Beagle.Daemon {
 			return hits;
 		}
 
-		private ICollection DoLowLevelRDFQuery (Query query, string field_name)
+		private ICollection DoLowLevelRDFQuery (Query query,
+							string field_name,
+							QueryPartHook query_part_hook)
 		{
 
 			Stopwatch total, a, b, c, d, e, f;
@@ -376,55 +560,26 @@ namespace Beagle.Daemon {
 
 			// Assemble all of the parts into a bunch of Lucene queries
 
-			ArrayList primary_required_part_queries = null;
-			ArrayList secondary_required_part_queries = null;
+			ArrayList primary_required_part_queries;
+			ArrayList secondary_required_part_queries;
 
-			LNS.BooleanQuery primary_prohibited_part_query = null;
-			LNS.BooleanQuery secondary_prohibited_part_query = null;
+			LNS.BooleanQuery primary_prohibited_part_query;
+			LNS.BooleanQuery secondary_prohibited_part_query;
 
-			ArrayList term_list = new ArrayList ();
+			AndHitFilter all_hit_filters;
 
-			foreach (QueryPart part in query.Parts) {
-				LNS.Query primary_part_query;
-				LNS.Query secondary_part_query;
-				HitFilter part_hit_filter;
-				QueryPartToQuery (part,
-						  false, // we want both primary and secondary queries
-						  part.Logic == QueryPartLogic.Required ? term_list : null,
-						  query_part_hook,
-						  out primary_part_query,
-						  out secondary_part_query,
-						  out part_hit_filter);
+			ArrayList term_list;
 
-				if (primary_part_query == null)
-					continue;
+			// Assemble all of the parts into a bunch of Lucene queries
 
-				switch (part.Logic) {
-					
-				case QueryPartLogic.Required:
-					if (primary_required_part_queries == null) {
-						primary_required_part_queries = new ArrayList ();
-						secondary_required_part_queries = new ArrayList ();
-					}
-					primary_required_part_queries.Add (primary_part_query);
-					secondary_required_part_queries.Add (secondary_part_query);
-					
-					break;
-
-				case QueryPartLogic.Prohibited:
-					if (primary_prohibited_part_query == null)
-						primary_prohibited_part_query = new LNS.BooleanQuery ();
-					primary_prohibited_part_query.Add (primary_part_query, false, false);
-
-					if (secondary_part_query != null) {
-						if (secondary_prohibited_part_query == null)
-							secondary_prohibited_part_query = new LNS.BooleanQuery ();
-						secondary_prohibited_part_query.Add (secondary_part_query, false, false);
-					}
-
-					break;
-				}
-			}
+			term_list = AssembleQuery (query,
+				query_part_hook,
+				null,
+				out primary_required_part_queries,
+				out secondary_required_part_queries,
+				out primary_prohibited_part_query,
+				out secondary_prohibited_part_query,
+				out all_hit_filters);
 
 			a.Stop ();
 			if (Debug)
@@ -444,23 +599,12 @@ namespace Beagle.Daemon {
 
 			IndexReader primary_reader;
 			LNS.IndexSearcher primary_searcher;
-			IndexReader secondary_reader = null;
-			LNS.IndexSearcher secondary_searcher = null;
+			IndexReader secondary_reader;
+			LNS.IndexSearcher secondary_searcher;
 
-			primary_reader = LuceneCommon.GetReader (PrimaryStore);
-			primary_searcher = new LNS.IndexSearcher (primary_reader);
+			// Create the searchers that we will need.
 
-			if (SecondaryStore != null) {
-				secondary_reader = LuceneCommon.GetReader (SecondaryStore);
-				if (secondary_reader.NumDocs () == 0) {
-					ReleaseReader (secondary_reader);
-					secondary_reader = null;
-				}
-			}
-
-			if (secondary_reader != null)
-				secondary_searcher = new LNS.IndexSearcher (secondary_reader);
-
+			BuildSearchers (out primary_reader, out primary_searcher, out secondary_reader, out secondary_searcher);
 			b.Stop ();
 			if (Debug)
 				Log.Debug ("###### {0}: Readers/searchers built in {1}", IndexName, b);
@@ -469,47 +613,14 @@ namespace Beagle.Daemon {
 			c.Start ();
 			
 			// Possibly create our whitelists from the search subset.
-
-			LuceneBitArray primary_whitelist = null;
-			LuceneBitArray secondary_whitelist = null;
-			
-			// Build blacklists from our prohibited parts.
-			
-			LuceneBitArray primary_blacklist = null;
-			LuceneBitArray secondary_blacklist = null;
-
-			if (primary_prohibited_part_query != null) {
-				primary_blacklist = new LuceneBitArray (primary_searcher,
-									primary_prohibited_part_query);
-				
-				if (secondary_searcher != null) {
-					secondary_blacklist = new LuceneBitArray (secondary_searcher);
-					if (secondary_prohibited_part_query != null)
-						secondary_blacklist.Or (secondary_prohibited_part_query);
-					primary_blacklist.Join (secondary_blacklist);
-				}
-			}
-
-			
-			// Combine our whitelist and blacklist into just a whitelist.
-			
-			if (primary_blacklist != null) {
-				if (primary_whitelist == null) {
-					primary_blacklist.Not ();
-					primary_whitelist = primary_blacklist;
-				} else {
-					primary_whitelist.AndNot (primary_blacklist);
-				}
-			}
-
-			if (secondary_blacklist != null) {
-				if (secondary_whitelist == null) {
-					secondary_blacklist.Not ();
-					secondary_whitelist = secondary_blacklist;
-				} else {
-					secondary_whitelist.AndNot (secondary_blacklist);
-				}
-			}
+			LuceneBitArray primary_whitelist, secondary_whitelist;
+			CreateQueryWhitelists (null,
+				primary_searcher,
+				secondary_searcher,
+				primary_prohibited_part_query,
+				secondary_prohibited_part_query,
+				out primary_whitelist,
+				out secondary_whitelist);
 
 			c.Stop ();
 			if (Debug)
@@ -585,14 +696,7 @@ namespace Beagle.Daemon {
 			//
 
 			f.Start ();
-			
-			primary_searcher.Close ();
-			if (secondary_searcher != null)
-				secondary_searcher.Close ();
-			ReleaseReader (primary_reader);
-			if (secondary_reader != null)
-				ReleaseReader (secondary_reader);
-
+			CloseSearchers (primary_reader, primary_searcher, secondary_reader, secondary_searcher);
 			f.Stop ();
 			
 			if (Debug)
@@ -615,8 +719,90 @@ namespace Beagle.Daemon {
 			return hits;
 		}
 
-		// Returns the lowest matching score before the results are
-		// truncated.
+		////////////////////////////////////////////////////////////////
+
+		public int DoCountMatchQuery (Query query, QueryPartHook query_part_hook)
+		{
+			if (Debug)
+				Logger.Log.Debug ("###### {0}: Starting low-level queries", IndexName);
+
+			Stopwatch total;
+			total = new Stopwatch ();
+			total.Start ();
+
+			ArrayList primary_required_part_queries;
+			ArrayList secondary_required_part_queries;
+
+			LNS.BooleanQuery primary_prohibited_part_query;
+			LNS.BooleanQuery secondary_prohibited_part_query;
+
+			AndHitFilter all_hit_filters;
+
+			ArrayList term_list;
+			term_list = AssembleQuery ( query,
+						    query_part_hook,
+						    null,
+						    out primary_required_part_queries,
+						    out secondary_required_part_queries,
+						    out primary_prohibited_part_query,
+						    out secondary_prohibited_part_query,
+						    out all_hit_filters);
+
+			// If we have no required parts, give up.
+			if (primary_required_part_queries == null)
+				return 0;
+
+			IndexReader primary_reader;
+			LNS.IndexSearcher primary_searcher;
+			IndexReader secondary_reader;
+			LNS.IndexSearcher secondary_searcher;
+
+			BuildSearchers (out primary_reader, out primary_searcher, out secondary_reader, out secondary_searcher);
+
+			// Build whitelists and blacklists for search subsets.
+			LuceneBitArray primary_whitelist, secondary_whitelist;
+			CreateQueryWhitelists (null,
+				primary_searcher,
+				secondary_searcher,
+				primary_prohibited_part_query,
+				secondary_prohibited_part_query,
+				out primary_whitelist,
+				out secondary_whitelist);
+
+			// Now run the low level queries against our indexes.
+			BetterBitArray primary_matches = null;
+			if (primary_required_part_queries != null) {
+
+				if (secondary_searcher != null)
+					primary_matches = DoRequiredQueries_TwoIndex (primary_searcher,
+										      secondary_searcher,
+										      primary_required_part_queries,
+										      secondary_required_part_queries,
+										      primary_whitelist,
+										      secondary_whitelist);
+				else
+					primary_matches = DoRequiredQueries (primary_searcher,
+									     primary_required_part_queries,
+									     primary_whitelist);
+
+			} 
+
+			int result = 0;
+			// FIXME: Pass the count through uri-filter and other validation checks
+			if (primary_matches != null)
+				result = primary_matches.TrueCount;
+
+			CloseSearchers (primary_reader, primary_searcher, secondary_reader, secondary_searcher);
+
+			total.Stop ();
+			if (Debug)
+				Logger.Log.Debug ("###### {0}: Total query run in {1}", IndexName, total);
+
+			return result;
+		}
+
+		////////////////////////////////////////////////////////////////
+
 		public void DoQuery (Query               query,
 				     IQueryResult        result,
 				     ICollection         search_subset_uris, // should be internal uris
@@ -640,70 +826,26 @@ namespace Beagle.Daemon {
 			total.Start ();
 			a.Start ();
 
-			// Assemble all of the parts into a bunch of Lucene queries
+			ArrayList primary_required_part_queries;
+			ArrayList secondary_required_part_queries;
 
-			ArrayList primary_required_part_queries = null;
-			ArrayList secondary_required_part_queries = null;
-
-			LNS.BooleanQuery primary_prohibited_part_query = null;
-			LNS.BooleanQuery secondary_prohibited_part_query = null;
+			LNS.BooleanQuery primary_prohibited_part_query;
+			LNS.BooleanQuery secondary_prohibited_part_query;
 
 			AndHitFilter all_hit_filters;
-			all_hit_filters = new AndHitFilter ();
-			if (hit_filter != null)
-				all_hit_filters.Add (hit_filter);
 
-			ArrayList term_list = new ArrayList ();
+			ArrayList term_list;
 
-			foreach (QueryPart part in query.Parts) {
-				LNS.Query primary_part_query;
-				LNS.Query secondary_part_query;
-				HitFilter part_hit_filter;
-				QueryPartToQuery (part,
-						  false, // we want both primary and secondary queries
-						  part.Logic == QueryPartLogic.Required ? term_list : null,
-						  out primary_part_query,
-						  out secondary_part_query,
-						  out part_hit_filter);
+			// Assemble all of the parts into a bunch of Lucene queries
 
-				if (primary_part_query == null)
-					continue;
-
-				switch (part.Logic) {
-					
-				case QueryPartLogic.Required:
-					if (primary_required_part_queries == null) {
-						primary_required_part_queries = new ArrayList ();
-						secondary_required_part_queries = new ArrayList ();
-					}
-					primary_required_part_queries.Add (primary_part_query);
-					secondary_required_part_queries.Add (secondary_part_query);
-					
-					if (part_hit_filter != null)
-						all_hit_filters.Add (part_hit_filter);
-					
-					break;
-
-				case QueryPartLogic.Prohibited:
-					if (primary_prohibited_part_query == null)
-						primary_prohibited_part_query = new LNS.BooleanQuery ();
-					primary_prohibited_part_query.Add (primary_part_query, false, false);
-
-					if (secondary_part_query != null) {
-						if (secondary_prohibited_part_query == null)
-							secondary_prohibited_part_query = new LNS.BooleanQuery ();
-						secondary_prohibited_part_query.Add (secondary_part_query, false, false);
-					}
-
-					if (part_hit_filter != null) {
-						NotHitFilter nhf;
-						nhf = new NotHitFilter (part_hit_filter);
-						all_hit_filters.Add (new HitFilter (nhf.HitFilter));
-					}
-
-					break;
-				}
-			}
+			term_list = AssembleQuery (query,
+				query_part_hook,
+				hit_filter,
+				out primary_required_part_queries,
+				out secondary_required_part_queries,
+				out primary_prohibited_part_query,
+				out secondary_prohibited_part_query,
+				out all_hit_filters);
 
 			a.Stop ();
 			if (Debug)
@@ -719,26 +861,14 @@ namespace Beagle.Daemon {
 			// Now that we have all of these nice queries, let's execute them!
 			//
 
-			// Create the searchers that we will need.
-
 			IndexReader primary_reader;
 			LNS.IndexSearcher primary_searcher;
-			IndexReader secondary_reader = null;
-			LNS.IndexSearcher secondary_searcher = null;
+			IndexReader secondary_reader;
+			LNS.IndexSearcher secondary_searcher;
 
-			primary_reader = LuceneCommon.GetReader (PrimaryStore);
-			primary_searcher = new LNS.IndexSearcher (primary_reader);
+			// Create the searchers that we will need.
 
-			if (SecondaryStore != null) {
-				secondary_reader = LuceneCommon.GetReader (SecondaryStore);
-				if (secondary_reader.NumDocs () == 0) {
-					ReleaseReader (secondary_reader);
-					secondary_reader = null;
-				}
-			}
-
-			if (secondary_reader != null)
-				secondary_searcher = new LNS.IndexSearcher (secondary_reader);
+			BuildSearchers (out primary_reader, out primary_searcher, out secondary_reader, out secondary_searcher);
 
 			b.Stop ();
 			if (Debug)
@@ -746,65 +876,16 @@ namespace Beagle.Daemon {
 
 			// Build whitelists and blacklists for search subsets.
 			c.Start ();
-			
+
 			// Possibly create our whitelists from the search subset.
-
-			LuceneBitArray primary_whitelist = null;
-			LuceneBitArray secondary_whitelist = null;
-			
-			if (search_subset_uris != null && search_subset_uris.Count > 0) {
-				primary_whitelist = new LuceneBitArray (primary_searcher);
-				if (secondary_searcher != null)
-					secondary_whitelist = new LuceneBitArray (secondary_searcher);
-
-				foreach (Uri uri in search_subset_uris) {
-					primary_whitelist.AddUri (uri);
-					if (secondary_whitelist != null)
-						secondary_whitelist.AddUri (uri);
-				}
-				primary_whitelist.FlushUris ();
-				if (secondary_whitelist != null)
-					secondary_whitelist.FlushUris ();
-			}
-
-
-			// Build blacklists from our prohibited parts.
-			
-			LuceneBitArray primary_blacklist = null;
-			LuceneBitArray secondary_blacklist = null;
-
-			if (primary_prohibited_part_query != null) {
-				primary_blacklist = new LuceneBitArray (primary_searcher,
-									primary_prohibited_part_query);
-				
-				if (secondary_searcher != null) {
-					secondary_blacklist = new LuceneBitArray (secondary_searcher);
-					if (secondary_prohibited_part_query != null)
-						secondary_blacklist.Or (secondary_prohibited_part_query);
-					primary_blacklist.Join (secondary_blacklist);
-				}
-			}
-
-			
-			// Combine our whitelist and blacklist into just a whitelist.
-			
-			if (primary_blacklist != null) {
-				if (primary_whitelist == null) {
-					primary_blacklist.Not ();
-					primary_whitelist = primary_blacklist;
-				} else {
-					primary_whitelist.AndNot (primary_blacklist);
-				}
-			}
-
-			if (secondary_blacklist != null) {
-				if (secondary_whitelist == null) {
-					secondary_blacklist.Not ();
-					secondary_whitelist = secondary_blacklist;
-				} else {
-					secondary_whitelist.AndNot (secondary_blacklist);
-				}
-			}
+			LuceneBitArray primary_whitelist, secondary_whitelist;
+			CreateQueryWhitelists (search_subset_uris,
+				primary_searcher,
+				secondary_searcher,
+				primary_prohibited_part_query,
+				secondary_prohibited_part_query,
+				out primary_whitelist,
+				out secondary_whitelist);
 
 			c.Stop ();
 			if (Debug)
@@ -860,14 +941,7 @@ namespace Beagle.Daemon {
 			//
 
 			f.Start ();
-			
-			primary_searcher.Close ();
-			if (secondary_searcher != null)
-				secondary_searcher.Close ();
-			ReleaseReader (primary_reader);
-			if (secondary_reader != null)
-				ReleaseReader (secondary_reader);
-
+			CloseSearchers (primary_reader, primary_searcher, secondary_reader, secondary_searcher);
 			f.Stop ();
 			
 			if (Debug)

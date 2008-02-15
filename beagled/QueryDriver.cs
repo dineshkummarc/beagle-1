@@ -632,7 +632,7 @@ namespace Beagle.Daemon {
 		{
 			ArrayList all_results = new ArrayList ();
 
-			foreach (Queryable q in queryables) {
+			foreach (Queryable q in Queryables) {
 				if (! q.AcceptQuery (query))
 					continue;
 
@@ -643,6 +643,24 @@ namespace Beagle.Daemon {
 			}
 
 			return all_results;
+		}
+
+		////////////////////////////////////////////////////////
+
+		static public int DoCountMatchQuery (CountMatchQuery query)
+		{
+			DehumanizeQuery (query);
+
+			int num_matches = 0;
+
+			foreach (Queryable q in Queryables) {
+				if (! q.AcceptQuery (query))
+					continue;
+
+				num_matches += q.DoCountMatchQuery (query);
+			}
+
+			return num_matches;
 		}
 
 		////////////////////////////////////////////////////////

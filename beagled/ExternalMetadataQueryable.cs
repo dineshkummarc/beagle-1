@@ -69,6 +69,11 @@ namespace Beagle.Daemon {
 			return null;
 		}
 
+		public int DoCountMatchQuery (Query query)
+		{
+			return 0;
+		}
+
 		public ISnippetReader GetSnippet (string[] query_terms, Hit hit, bool full_text)
 		{
 			return null;

@@ -282,7 +282,7 @@ namespace Beagle.Daemon {
 
 		public ICollection DoRDFQuery (Query query)
 		{
-			return Driver.DoRDFQuery (query);
+			return Driver.DoRDFQuery (query, backend_query_part_hook);
 		}
 
 		public void DoQuery (Query                query,
@@ -359,6 +359,12 @@ namespace Beagle.Daemon {
 					our_uri_filter,
 					our_hit_filter);
 		}
+
+		public int DoCountMatchQuery (Query query)
+		{
+			return Driver.DoCountMatchQuery (query, backend_query_part_hook);
+		}
+
 
 		/////////////////////////////////////////
 

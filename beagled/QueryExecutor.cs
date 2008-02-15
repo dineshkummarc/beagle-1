@@ -124,4 +124,19 @@ namespace Beagle.Daemon {
 			return result;
 		}
 	}
+
+	[RequestMessage (typeof (CountMatchQuery))]
+	public class CountMatchQueryExecutor : RequestMessageExecutor {
+
+		public override ResponseMessage Execute (RequestMessage request)
+		{
+			CountMatchQueryResponse result = new CountMatchQueryResponse ();
+			CountMatchQuery query = request as CountMatchQuery;
+			if (query == null)
+				return new ErrorResponse ("Only CountMatch query please!");
+
+			result.NumMatches = QueryDriver.DoCountMatchQuery (query);
+			return result;
+		}
+	}
 }
