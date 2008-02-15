@@ -282,7 +282,7 @@ namespace Beagle.Daemon {
 
 		public ICollection DoRDFQuery (Query query)
 		{
-			return Driver.DoRDFQuery (query, backend_query_part_hook);
+			return Driver.DoRDFQuery (query);
 		}
 
 		public void DoQuery (Query                query,

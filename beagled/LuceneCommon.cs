@@ -1415,7 +1415,9 @@ namespace Beagle.Daemon {
 			// This gives a chance to modify create new queries based on
 			// backend specific properties
 
-			abstract_part = query_part_hook (abstract_part);
+			if (query_part_hook != null)
+				abstract_part = query_part_hook (abstract_part);
+
 			if (abstract_part == null)
 				return;
 

@@ -322,8 +322,8 @@ namespace Beagle.Daemon {
 		// HitFilter and UriFilter are ignored for now
 		// They will come into play in the final FetchDocument part
 		// FIXME: Should RDFQuery do any query mapping using backend_query_part_hook ?
-		// I think it should.
-		public ICollection DoRDFQuery (Query _query, QueryPartHook query_part_hook)
+		// I think it should not. QueryPart hooks are for human beings, RDF is for softwares.
+		public ICollection DoRDFQuery (Query _query)
 		{
 			RDFQuery query = (RDFQuery) _query;
 
@@ -350,7 +350,7 @@ namespace Beagle.Daemon {
 				part.Text = _object;
 				part.SearchFullText = false; // We only search properties in RDF query
 				query.AddPart (part);
-				return DoLowLevelRDFQuery (query, null, _object, query_part_hook);
+				return DoLowLevelRDFQuery (query, null, _object);
 			}
 
 			// Return uris for all documents with this property
@@ -361,12 +361,12 @@ namespace Beagle.Daemon {
 			// Property query
 			if (subject == String.Empty && predicate != String.Empty && _object != String.Empty) {
 				QueryPart_Property part = new QueryPart_Property ();
-				part.Type = PropertyType.Text; // FIXME
+				part.Type = pred_type;
 				part.Key = predicate;
 				part.Value = _object;
 				query.AddPart (part);
 				string field_name = PropertyToFieldName (pred_type, predicate);
-				return DoLowLevelRDFQuery (query, field_name, _object, query_part_hook);
+				return DoLowLevelRDFQuery (query, field_name, _object);
 			}
 
 			// Return if the URI exists
@@ -375,7 +375,7 @@ namespace Beagle.Daemon {
 				part.Uri = new Uri (subject); // better be URI!
 				query.AddPart (part);
 				// FIXME: Which properties to return in the hit? All or none ?
-				return DoLowLevelRDFQuery (query, null, null, query_part_hook);
+				return DoLowLevelRDFQuery (query, null, null);
 			}
 
 			// Normal query in the document with this URI
@@ -389,7 +389,7 @@ namespace Beagle.Daemon {
 				part.SearchFullText = false; // We only search properties in RDF query
 				query.AddPart (part);
 
-				return DoLowLevelRDFQuery (query, null, _object, query_part_hook);
+				return DoLowLevelRDFQuery (query, null, _object);
 			}
 
 			// Return URI if the document with this URI contains this property
@@ -413,13 +413,13 @@ namespace Beagle.Daemon {
 				query.AddPart (uri_part);
 
 				QueryPart_Property part = new QueryPart_Property ();
-				part.Type = PropertyType.Text; // FIXME
+				part.Type = pred_type;
 				part.Key = predicate;
 				part.Value = _object;
 				query.AddPart (part);
 
 				string field_name = PropertyToFieldName (pred_type, predicate);
-				return DoLowLevelRDFQuery (query, field_name, _object, query_part_hook);
+				return DoLowLevelRDFQuery (query, field_name, _object);
 			}
 
 			throw new Exception ("Never reaches");
@@ -452,11 +452,12 @@ namespace Beagle.Daemon {
 
 			TermDocs docs = primary_reader.TermDocs ();
 			string field_name = PropertyToFieldName (prop_type, propname);
+			Console.WriteLine (field_name);
 			TermEnum enumerator = primary_reader.Terms (new Term (field_name, String.Empty));
 			Term term;
 			bool field_present = false;
 
-			while (enumerator.Next ()) {
+			do {
 				// Find all terms with given field
 				term = enumerator.Term ();
 			
@@ -470,10 +471,12 @@ namespace Beagle.Daemon {
 				// Find all docs with that term
 				while (docs.Next ())
 					all_docs [docs.Doc ()] = true;
-			}
+			} while (enumerator.Next ());
+			Console.WriteLine (field_present);
 
 			enumerator.Close ();
 
+			// Maxdoc could be millions!
 			ArrayList hits = new ArrayList (primary_reader.MaxDoc ());
 
 			// If field_present is false, preempt
@@ -538,8 +541,7 @@ namespace Beagle.Daemon {
 
 		private ICollection DoLowLevelRDFQuery (Query query,
 							string field_name,
-							string field_value,
-							QueryPartHook query_part_hook)
+							string field_value)
 		{
 
 			Stopwatch total, a, b, c, d, e, f;
@@ -570,7 +572,7 @@ namespace Beagle.Daemon {
 			// Assemble all of the parts into a bunch of Lucene queries
 
 			term_list = AssembleQuery (query,
-				query_part_hook,
+				null,
 				null,
 				out primary_required_part_queries,
 				out secondary_required_part_queries,
