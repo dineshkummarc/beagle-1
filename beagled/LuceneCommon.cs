@@ -2002,6 +2002,11 @@ namespace Beagle.Daemon {
 		// a lot of memory.  Don't call it without a good reason!
 		public ICollection GetHitsForUris (ICollection uris)
 		{
+			return GetHitsForUris (uris, null);
+		}
+
+		public ICollection GetHitsForUris (ICollection uris, string[] fields)
+		{
 			Hashtable hits_by_uri = UriFu.NewHashtable ();
 
 			LNS.IndexSearcher primary_searcher = GetSearcher (PrimaryStore);
@@ -2012,7 +2017,9 @@ namespace Beagle.Daemon {
 			LNS.Hits primary_hits = primary_searcher.Search (uri_query);
 
 			for (int i = 0; i < primary_hits.Length (); i++) {
-				Document doc = primary_hits.Doc (i);
+				Document doc = ((fields == null) ?
+					primary_hits.Doc (i) :
+					primary_hits.Doc (i, fields));
 
 				Uri u = GetUriFromDocument (doc);
 
@@ -2024,7 +2031,9 @@ namespace Beagle.Daemon {
 				LNS.Hits secondary_hits = secondary_searcher.Search (uri_query);
 
 				for (int i = 0; i < secondary_hits.Length (); i++) {
-					Document doc = secondary_hits.Doc (i);
+					Document doc = ((fields == null) ?
+						secondary_hits.Doc (i) :
+						secondary_hits.Doc (i, fields));
 
 					Uri uri = GetUriFromDocument (doc);
 					Hit hit = (Hit) hits_by_uri [uri];

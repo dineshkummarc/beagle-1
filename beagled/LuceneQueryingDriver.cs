@@ -350,7 +350,7 @@ namespace Beagle.Daemon {
 				part.Text = _object;
 				part.SearchFullText = false; // We only search properties in RDF query
 				query.AddPart (part);
-				return DoLowLevelRDFQuery (query, null, query_part_hook);
+				return DoLowLevelRDFQuery (query, null, _object, query_part_hook);
 			}
 
 			// Return uris for all documents with this property
@@ -366,7 +366,7 @@ namespace Beagle.Daemon {
 				part.Value = _object;
 				query.AddPart (part);
 				string field_name = PropertyToFieldName (pred_type, predicate);
-				return DoLowLevelRDFQuery (query, field_name, query_part_hook);
+				return DoLowLevelRDFQuery (query, field_name, _object, query_part_hook);
 			}
 
 			// Return if the URI exists
@@ -374,7 +374,8 @@ namespace Beagle.Daemon {
 				QueryPart_Uri part = new QueryPart_Uri ();
 				part.Uri = new Uri (subject); // better be URI!
 				query.AddPart (part);
-				return DoLowLevelRDFQuery (query, null, query_part_hook);
+				// FIXME: Which properties to return in the hit? All or none ?
+				return DoLowLevelRDFQuery (query, null, null, query_part_hook);
 			}
 
 			// Normal query in the document with this URI
@@ -388,7 +389,7 @@ namespace Beagle.Daemon {
 				part.SearchFullText = false; // We only search properties in RDF query
 				query.AddPart (part);
 
-				return DoLowLevelRDFQuery (query, null, query_part_hook);
+				return DoLowLevelRDFQuery (query, null, _object, query_part_hook);
 			}
 
 			// Return URI if the document with this URI contains this property
@@ -397,15 +398,10 @@ namespace Beagle.Daemon {
 
 				ArrayList uri_list = new ArrayList (1);
 				uri_list.Add (new Uri (subject));
-				ICollection hits = GetHitsForUris (uri_list);
 
-				/*
-				foreach (Hit hit in hits)
-					if (hit.GetFirstProperty (predicate) != null)
-						returned_uris.Add (hit.Uri);
-				*/
-
-				// FIXME FIXME FIXME this one returns all predicates not just the specified ones.
+				string field_name = PropertyToFieldName (pred_type, predicate);
+				string[] fields = { "Uri", "Timestamp", field_name };
+				ICollection hits = GetHitsForUris (uri_list, fields);
 
 				return hits;
 			}
@@ -423,7 +419,7 @@ namespace Beagle.Daemon {
 				query.AddPart (part);
 
 				string field_name = PropertyToFieldName (pred_type, predicate);
-				return DoLowLevelRDFQuery (query, field_name, query_part_hook);
+				return DoLowLevelRDFQuery (query, field_name, _object, query_part_hook);
 			}
 
 			throw new Exception ("Never reaches");
@@ -506,7 +502,7 @@ namespace Beagle.Daemon {
 			if (secondary_searcher != null)
 				secondary_term_docs = secondary_searcher.Reader.TermDocs ();
 
-			string[] fields = { "Uri", field_name };
+			string[] fields = { "Uri", "Timestamp", field_name };
 
 			// Go through all Uris now
 			enumerator = primary_reader.Terms (new Term ("Uri", String.Empty));
@@ -542,6 +538,7 @@ namespace Beagle.Daemon {
 
 		private ICollection DoLowLevelRDFQuery (Query query,
 							string field_name,
+							string field_value,
 							QueryPartHook query_part_hook)
 		{
 
@@ -662,7 +659,7 @@ namespace Beagle.Daemon {
 				secondary_term_docs = secondary_searcher.Reader.TermDocs ();
 		
 			string[] fields = (field_name != null) ?
-					new string[] { "Uri", field_name } :
+					new string[] { "Uri", "Timestamp", field_name } :
 					null;
 
 			for (int match_index = primary_matches.GetNextTrueIndex (0);
@@ -670,8 +667,6 @@ namespace Beagle.Daemon {
 			     match_index = primary_matches.GetNextTrueIndex (++ match_index)) {
 
 				count++;
-
-				doc = primary_searcher.Doc (match_index, fields);
 
 				// If we have a UriFilter, apply it.
 				// RDF FIXME: Ignore Uri Filter for now
@@ -682,8 +677,52 @@ namespace Beagle.Daemon {
 				//		continue;
 				//}
 
-				Hit hit = CreateHit (doc, secondary_searcher, secondary_term_docs, fields);
-				hits.Add (hit); 
+				// If predicate was not specified but object was specified,
+				// then figure out the right predicate
+				if (field_name == null && field_value != null) {
+					Hit hit = new Hit ();
+					doc = primary_searcher.Doc (match_index);
+					hit.Uri = GetUriFromDocument (doc);
+					hit.Timestamp = StringFu.StringToDateTime (doc.Get ("Timestamp"));
+
+					bool found_matching_predicate = false;
+
+					foreach (Field field in doc.Fields ()) {
+						if (! FieldIsPredicate (field, field_value))
+							continue;
+
+						Property prop;
+						prop = GetPropertyFromDocument (field, doc, true);
+						if (prop != null)
+							hit.AddProperty (prop);
+						found_matching_predicate = true;
+					}
+
+					if (secondary_searcher != null) {
+						foreach (Field field in doc.Fields ()) {
+							if (! FieldIsPredicate (field, field_value))
+								continue;
+
+							Property prop;
+							prop = GetPropertyFromDocument (field, doc, false);
+							if (prop != null)
+								hit.AddProperty (prop);
+							found_matching_predicate = true;
+						}
+					}
+
+					if (! found_matching_predicate) {
+						// No matching predicate found
+						// This means some unstored field matched the query
+						// FIXME: Add a synthetic property #text
+						hit.AddProperty (Property.New ("#text", field_value));
+					}
+					
+					hits.Add (hit);
+				} else {
+					doc = primary_searcher.Doc (match_index, fields);
+					hits.Add (CreateHit (doc, secondary_searcher, secondary_term_docs, fields));
+				}
 			}
 
 			e.Stop ();
@@ -717,6 +756,57 @@ namespace Beagle.Daemon {
 			}
 
 			return hits;
+		}
+
+		// FIXME: This basically queries the value against the field
+		// and is really really slow!
+		private bool FieldIsPredicate (Field field, string value)
+		{
+			string field_name = field.Name ();
+			string field_value = field.StringValue ();
+			Console.WriteLine ("Reverse searching for '{0}' value in {1}='{2}'", value, field_name, field_value);
+			// Simply run the value of the property against the right analyzer
+			// and check if there is any match
+			TokenStream source = IndexingAnalyzer.TokenStream (field_name, new StringReader (field_value));
+			StringBuilder sb = new StringBuilder ();
+			try {
+				Lucene.Net.Analysis.Token token;
+				while (true) {
+					token = source.Next ();
+					if (token == null)
+						break;
+					sb.Append (token.TermText ());
+					sb.Append (" ");
+					break;
+				}
+			} finally {
+				try {
+					source.Close ();
+				} catch { }
+			}
+
+			string field_analyzed = sb.ToString ();
+			sb.Length = 0;
+
+			source = QueryAnalyzer.TokenStream (field_name, new StringReader (value));
+			try {
+				Lucene.Net.Analysis.Token token;
+				while (true) {
+					token = source.Next ();
+					if (token == null)
+						break;
+					sb.Append (token.TermText ());
+					sb.Append (" ");
+					break;
+				}
+			} finally {
+				try {
+					source.Close ();
+				} catch { }
+			}
+
+			string value_analyzed = sb.ToString ();
+			return field_analyzed.Contains (value_analyzed);
 		}
 
 		////////////////////////////////////////////////////////////////
