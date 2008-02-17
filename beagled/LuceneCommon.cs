@@ -83,7 +83,8 @@ namespace Beagle.Daemon {
 		// 18: add IsPersistent to properties, and adjust coded values
 		//     in AddPropertyToDocument() and GetPropertyFromDocument();
 		//     changed subdate field format rules for better readability
-		private const int MAJOR_VERSION = 18;
+		// 19: store a list of current properties in a field
+		private const int MAJOR_VERSION = 19;
 		private int minor_version = 0;
 
 		private string index_name;
@@ -524,6 +525,9 @@ namespace Beagle.Daemon {
 					}
 				} else if (fieldName == "PropertyKeyword")
 					return new LowerCaseFilter (new SingletonTokenStream (reader.ReadToEnd ()));
+				else if (fieldName == "Properties")
+					return new WhitespaceTokenizer (new StringReader (reader.ReadToEnd ()));
+
 
 				TokenStream outstream;
 				outstream = base.TokenStream (fieldName, reader);
@@ -856,6 +860,11 @@ namespace Beagle.Daemon {
 					
 				AddPropertyToDocument (prop, target_doc);
 			}
+
+			// Now add a field containing a whitespace separated list of other fields in the document
+			AddFieldProperies (primary_doc);
+			if (secondary_doc != null)
+				AddFieldProperies (secondary_doc);
 		}
 
 		static private Document CreateSecondaryDocument (Uri uri, Uri parent_uri)
@@ -928,6 +937,7 @@ namespace Beagle.Daemon {
 				}
 			}
 
+			AddFieldProperies (new_doc);
 			return new_doc;
 		}
 
@@ -949,7 +959,36 @@ namespace Beagle.Daemon {
 				}
 			}
 
+			AddFieldProperies (doc);
 			return doc;
+		}
+
+		// Add a new field with whitespace separated names of the existing fields
+		static protected void AddFieldProperies (Document doc)
+		{
+			const string Separator = " ";
+
+			StringBuilder sb = new StringBuilder ();
+			bool seen_properties = false;
+
+			foreach (Field f in doc.Fields ()) {
+				if (f.Name () == "Properties") {
+					seen_properties = true;
+					continue;
+				}
+
+				sb.Append (f.Name ());
+				sb.Append (Separator);
+			}
+
+			if (sb.Length > 0)
+				sb.Length -= Separator.Length;
+
+			if (seen_properties)
+				doc.RemoveFields ("Properties");
+
+			Field field = new Field ("Properties", sb.ToString (), Field.Store.YES, Field.Index.TOKENIZED); // FIXME: Field.Store.No
+			doc.Add (field);
 		}
 
 		static protected Uri GetUriFromDocument (Document doc)
@@ -1633,11 +1672,13 @@ namespace Beagle.Daemon {
 				else
 					field_name = PropertyToFieldName (part.Type, part.Key);
 
+				// Details of the conversion here depends on BeagleAnalyzer::TokenStream
 				if (part.Type == PropertyType.Text)
 					primary_query = StringToQuery (field_name, part.Value, term_list);
 				else {
 					Term term;
-					if (field_name.StartsWith ("prop:k:" + Property.PrivateNamespace))
+					// FIXME: Handle date queries for other date fields
+					if (part.Type == PropertyType.Internal || field_name.StartsWith ("prop:k:" + Property.PrivateNamespace))
 						term = new Term (field_name, part.Value);
 					else
 						term = new Term (field_name, part.Value.ToLower ());

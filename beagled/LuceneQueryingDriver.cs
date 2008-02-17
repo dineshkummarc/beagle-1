@@ -355,7 +355,15 @@ namespace Beagle.Daemon {
 
 			// Return uris for all documents with this property
 			if (subject == String.Empty && predicate != String.Empty && _object == String.Empty) {
-				return GetDocsWithProperty (predicate, pred_type);
+				string field_name = PropertyToFieldName (pred_type, predicate);
+
+				QueryPart_Property part = new QueryPart_Property ();
+				part.Type = PropertyType.Internal;
+				part.Key = "Properties";
+				part.Value = field_name;
+				query.AddPart (part);
+
+				return DoLowLevelRDFQuery (query, field_name, null);
 			}
 
 			// Property query
@@ -423,120 +431,6 @@ namespace Beagle.Daemon {
 			}
 
 			throw new Exception ("Never reaches");
-		}
-
-		// FIXME FIXME FIXME: Rewrite this horrible method by keeping a field containing
-		// the names of all properties in that document ?
-		// What about SecondaryDocument ? Which index to store this field in ?
-		private ICollection GetDocsWithProperty (string propname, PropertyType prop_type)
-		{
-			// This is the hardest!
-			// Most of the times either all docs will have the property or
-			// neither will, but we also have to cover the rare cases.
-			// Possible approach: Do a term_enum with this property name.
-			// Keep a Set of all Docs (rather Uris) which contain that term
-			// (pretty expensive - since most probably all documents will contain that
-			// property).
-			//
-			// Another approach: Get all hits from the driver, scan them one by one
-			// and return URIs for the hits which contain the property *shudder*
-			//
-
-			// FIXME: Uses PrimaryIndex only!
-			// Create a bitarray and mark all docs with that property by using a termenum
-
-			IndexReader primary_reader;
-			primary_reader = LuceneCommon.GetReader (PrimaryStore);
-
-			BetterBitArray all_docs = new BetterBitArray (primary_reader.MaxDoc ());
-
-			TermDocs docs = primary_reader.TermDocs ();
-			string field_name = PropertyToFieldName (prop_type, propname);
-			Console.WriteLine (field_name);
-			TermEnum enumerator = primary_reader.Terms (new Term (field_name, String.Empty));
-			Term term;
-			bool field_present = false;
-
-			do {
-				// Find all terms with given field
-				term = enumerator.Term ();
-			
-				if (term.Field () != field_name)
-					break;
-
-				field_present = true;
-
-				docs.Seek (enumerator);
-
-				// Find all docs with that term
-				while (docs.Next ())
-					all_docs [docs.Doc ()] = true;
-			} while (enumerator.Next ());
-			Console.WriteLine (field_present);
-
-			enumerator.Close ();
-
-			// Maxdoc could be millions!
-			ArrayList hits = new ArrayList (primary_reader.MaxDoc ());
-
-			// If field_present is false, preempt
-			if (! field_present) {
-				docs.Close ();
-				LuceneCommon.ReleaseReader (primary_reader);
-
-				return hits;
-			}
-
-			IndexReader secondary_reader = null;
-			LNS.IndexSearcher secondary_searcher = null;
-
-			if (SecondaryStore != null) {
-				secondary_reader = LuceneCommon.GetReader (SecondaryStore);
-				if (secondary_reader.NumDocs () == 0) {
-					ReleaseReader (secondary_reader);
-					secondary_reader = null;
-				}
-			}
-
-			if (secondary_reader != null)
-				secondary_searcher = new LNS.IndexSearcher (secondary_reader);
-
-			TermDocs secondary_term_docs = null;
-			if (secondary_searcher != null)
-				secondary_term_docs = secondary_searcher.Reader.TermDocs ();
-
-			string[] fields = { "Uri", "Timestamp", field_name };
-
-			// Go through all Uris now
-			enumerator = primary_reader.Terms (new Term ("Uri", String.Empty));
-			Document doc;
-
-			do {
-				// Find all terms with 
-				term = enumerator.Term ();
-			
-				if (term.Field () != "Uri")
-					break;
-
-				docs.Seek (enumerator);
-				// Assume only one doc with an uri.
-				// Go to the doc with this uri
-				// If this doc's id is present in bit_array, return the uri
-				if (docs.Next () && all_docs [docs.Doc ()]) {
-					doc = primary_reader.Document (docs.Doc (), fields);
-					Hit hit = CreateHit (doc, secondary_searcher, secondary_term_docs, fields);
-					hits.Add (hit); 
-				}
-
-			} while (enumerator.Next ());
-
-			// Traverse all docs in all_docs
-
-			enumerator.Close ();
-			docs.Close ();
-			LuceneCommon.ReleaseReader (primary_reader);
-
-			return hits;
 		}
 
 		private ICollection DoLowLevelRDFQuery (Query query,

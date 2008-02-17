@@ -248,7 +248,13 @@ namespace Beagle.Daemon {
 	}
 
 #if false
+	// To build: gmcs NoiseFilter.cs LuceneCommon.cs -r:../Util/Util.dll -r:../BeagleClient/Beagle.dll -r:BeagleDaemonLib.dll
 	public class AnalyzerTest {
+		public static void Main ()
+		{
+			Analyze (Console.In);
+		}
+
 		public static void Analyze (TextReader reader)
 		{
 			Lucene.Net.Analysis.Token lastToken = null;
