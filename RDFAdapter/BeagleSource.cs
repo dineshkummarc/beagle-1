@@ -76,23 +76,7 @@ public class BeagleSource : SelectableSource {
 			}
 		}
 
-		// extract the property type from the property
-		// e.g. from prop:k:beagle:MimeType
-		PropertyType ptype = PropertyType.Internal;
-
-		if (p != null) {
-			if ((p.Length > 7) && p.StartsWith ("prop:")) {
-				switch (p [5]) {
-					case 't': ptype = PropertyType.Text; break;
-					case 'k': ptype = PropertyType.Keyword; break;
-					case 'd': ptype = PropertyType.Date; break;
-				}
-				// remove the prop:?:, which will be added by beagle later
-				p = p.Substring (7);
-			}
-		}
-
-		RDFQuery query = new RDFQuery (s, p, ptype, o);
+		RDFQuery query = new RDFQuery (s, p, o);
 		RDFQueryResult result = (RDFQueryResult) query.Send ();
 		
 		foreach (Hit hit in result.Hits) {

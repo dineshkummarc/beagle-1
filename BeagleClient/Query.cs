@@ -283,13 +283,29 @@ namespace Beagle {
 			Keepalive = false;
 		}
 
-		public RDFQuery (Uri subject, string predicate, PropertyType predicate_type, string _object) : this ()
+		public RDFQuery (Uri subject, string predicate, string _object) : this ()
 		{
+			// extract the property type from the property, and remove the prop:?: prefix
+			// e.g. from prop:k:beagle:MimeType
+			PropertyType ptype = PropertyType.Internal;
+			
+			if (predicate != null) {
+				if ((predicate.Length > 7) && predicate.StartsWith ("prop:")) {
+					switch (predicate [5]) {
+						case 't': ptype = PropertyType.Text; break;
+						case 'k': ptype = PropertyType.Keyword; break;
+						case 'd': ptype = PropertyType.Date; break;
+					}
+					// remove the prop:?:, which will be added by beagle later
+					predicate = predicate.Substring (7);
+				}
+			}
+
 			this.Subject = subject;
 			this.Predicate = (predicate == null ? String.Empty : predicate);
-			this.PredicateType = predicate_type;
+			this.PredicateType = ptype;
 			this.Object = (_object == null ? String.Empty : _object);
-
+						
 			// FIXME: the query contains a dummy part that will make the query
 			// pass even if it is empty. Empty queries are not handled by default.
 			//
