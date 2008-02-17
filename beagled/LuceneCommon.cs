@@ -337,8 +337,11 @@ namespace Beagle.Daemon {
 				// http://mail-archives.apache.org/mod_mbox/lucene-java-user/200504.mbox/%3c4265767B.5090307@getopt.org%3e
 				enumerator = reader.Terms ();
 
-				while (enumerator.Next ()) {
+				do {
 					Term term = enumerator.Term ();
+					if (term == null)
+						break;
+
 					positions = reader.TermPositions (term);
 
 					while (positions.Next ()) {
@@ -349,7 +352,7 @@ namespace Beagle.Daemon {
 					}
 					positions.Close ();
 					positions = null;
-				}
+				} while (enumerator.Next ());
 
 				enumerator.Close ();
 				enumerator = null;
