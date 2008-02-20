@@ -29,9 +29,23 @@ using SemWeb;
 public class SemWebClient {
 	public static void Main (string[] args)
 	{
+		System.Console.Out.WriteLine();
+		System.Console.Out.WriteLine("Querying for all Triples with MimeType:");
+		query(new Statement(null, new Entity("prop:k:beagle:MimeType"), null));
+		
+		System.Console.Out.WriteLine();
+		System.Console.Out.WriteLine("Querying for all Triples with FileSize:");
+		query(new Statement(null, new Entity("prop:k:fixme:filesize"), null));
+		
+		System.Console.Out.WriteLine();
+		System.Console.Out.WriteLine("Querying for all Triples:");
+		query(Statement.All);
+	}
+	
+	public static void query(Statement filter) {
 		RdfWriter writer = new N3Writer (System.Console.Out);
 		SelectableSource source = new BeagleSource();
-		source.Select (Statement.All, writer);
+		source.Select (filter, writer);
 		writer.Close ();
 	}
 }
