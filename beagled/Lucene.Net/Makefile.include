@@ -211,5 +211,6 @@ LUCENE_2_1_CSFILES =						\
 # Stuff we don't build because we don't use it and it
 # introduces additional library dependencies.
 IGNORED_LUCENE_CSFILES =			\
-        $(lucenedir)/Search/RemoteSearchable.cs
+        $(lucenedir)/Search/RemoteSearchable.cs	\
+	$(lucenedir)/AssemblyInfo.cs
 
