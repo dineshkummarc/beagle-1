@@ -379,7 +379,7 @@ namespace Beagle.Daemon {
 
 			// Create a new store.
 			Lucene.Net.Store.Directory store;
-			store = Lucene.Net.Store.FSDirectory.GetDirectory (path, LockDirectory, true);
+			store = Lucene.Net.Store.FSDirectory.GetDirectory (path, new Lucene.Net.Store.SimpleFSLockFactory (LockDirectory));
 
 			// Create an empty index in that store.
 			IndexWriter writer;
@@ -436,9 +436,15 @@ namespace Beagle.Daemon {
 			fingerprint = reader.ReadLine ();
 			reader.Close ();
 
+			Lucene.Net.Store.LockFactory lock_factory;
+			if (read_only_mode)
+				lock_factory = Lucene.Net.Store.NoLockFactory.GetNoLockFactory ();
+			else
+				lock_factory = new Lucene.Net.Store.SimpleFSLockFactory (LockDirectory);
+
 			// Create stores for our indexes.
-			primary_store = Lucene.Net.Store.FSDirectory.GetDirectory (PrimaryIndexDirectory, LockDirectory, false, read_only_mode);
-			secondary_store = Lucene.Net.Store.FSDirectory.GetDirectory (SecondaryIndexDirectory, LockDirectory, false, read_only_mode);
+			primary_store = Lucene.Net.Store.FSDirectory.GetDirectory (PrimaryIndexDirectory, lock_factory);
+			secondary_store = Lucene.Net.Store.FSDirectory.GetDirectory (SecondaryIndexDirectory, lock_factory);
 		}
 
 		////////////////////////////////////////////////////////////////
@@ -1332,11 +1338,11 @@ namespace Beagle.Daemon {
 				if (d1 != 1 || d2 != DateTime.DaysInMonth (y2, m2)) {
 					LNS.BooleanQuery sub_query;
 					sub_query = new LNS.BooleanQuery ();
-					sub_query.Add (ym_query, true, false);
-					sub_query.Add (NewDayQuery (field_name, d1, d2), true, false);
-					top_level_query.Add (sub_query, false, false);
+					sub_query.Add (ym_query, LNS.BooleanClause.Occur.MUST);
+					sub_query.Add (NewDayQuery (field_name, d1, d2), LNS.BooleanClause.Occur.MUST);
+					top_level_query.Add (sub_query, LNS.BooleanClause.Occur.SHOULD);
 				} else {
-					top_level_query.Add (ym_query, false, false);
+					top_level_query.Add (ym_query, LNS.BooleanClause.Occur.SHOULD);
 				}
 
 			} else {
@@ -1345,9 +1351,9 @@ namespace Beagle.Daemon {
 				if (d1 > 1) {
 					LNS.BooleanQuery sub_query;
 					sub_query = new LNS.BooleanQuery ();
-					sub_query.Add (NewYearMonthQuery (field_name, y1, m1), true, false);
-					sub_query.Add (NewDayQuery (field_name, d1, DateTime.DaysInMonth (y1, m1)), true, false);
-					top_level_query.Add (sub_query, false, false);
+					sub_query.Add (NewYearMonthQuery (field_name, y1, m1), LNS.BooleanClause.Occur.MUST);
+					sub_query.Add (NewDayQuery (field_name, d1, DateTime.DaysInMonth (y1, m1)), LNS.BooleanClause.Occur.MUST);
+					top_level_query.Add (sub_query, LNS.BooleanClause.Occur.SHOULD);
 					
 					++m1;
 					if (m1 == 13) {
@@ -1360,9 +1366,9 @@ namespace Beagle.Daemon {
 				if (d2 < DateTime.DaysInMonth (y2, m2)) {
 					LNS.BooleanQuery sub_query;
 					sub_query = new LNS.BooleanQuery ();
-					sub_query.Add (NewYearMonthQuery (field_name, y2, m2), true, false);
-					sub_query.Add (NewDayQuery (field_name, 1, d2), true, false);
-					top_level_query.Add (sub_query, false, false);
+					sub_query.Add (NewYearMonthQuery (field_name, y2, m2), LNS.BooleanClause.Occur.MUST);
+					sub_query.Add (NewDayQuery (field_name, 1, d2), LNS.BooleanClause.Occur.MUST);
+					top_level_query.Add (sub_query, LNS.BooleanClause.Occur.SHOULD);
 
 					--m2;
 					if (m2 == 0) {
@@ -1374,7 +1380,7 @@ namespace Beagle.Daemon {
 				// Generate the query for the "middle" of our period, if it is non-empty
 				if (y1 < y2 || ((y1 == y2) && m1 <= m2))
 					top_level_query.Add (NewYearMonthQuery (field_name, y1, m1, y2, m2),
-							     false, false);
+							     LNS.BooleanClause.Occur.SHOULD);
 			}
 				
 			return top_level_query;
@@ -1432,14 +1438,14 @@ namespace Beagle.Daemon {
 					LNS.Query subquery;
 					subquery = StringToQuery ("Text", part.Text, term_list);
 					if (subquery != null) {
-						p_query.Add (subquery, false, false);
+						p_query.Add (subquery, LNS.BooleanClause.Occur.SHOULD);
 						added_subquery = true;
 					}
 
 					// FIXME: HotText is ignored for now!
 					// subquery = StringToQuery ("HotText", part.Text);
 					// if (subquery != null) {
-					//    p_query.Add (subquery, false, false);
+					//    p_query.Add (subquery, LNS.BooleanClause.Occur.SHOULD);
 					//    added_subquery = true;
 					// }
 				}
@@ -1448,10 +1454,10 @@ namespace Beagle.Daemon {
 					LNS.Query subquery;
 					subquery = StringToQuery ("PropertyText", part.Text, term_list);
 					if (subquery != null) {
-						p_query.Add (subquery, false, false);
+						p_query.Add (subquery, LNS.BooleanClause.Occur.SHOULD);
 						// Properties can live in either index
 						if (! only_build_primary_query)
-							s_query.Add (subquery.Clone () as LNS.Query, false, false);
+							s_query.Add (subquery.Clone () as LNS.Query, LNS.BooleanClause.Occur.SHOULD);
 						added_subquery = true;
 					}
 
@@ -1482,10 +1488,10 @@ namespace Beagle.Daemon {
 						if (term_list != null)
 							term_list.Add (term);
 						subquery = new LNS.TermQuery (term);
-						p_query.Add (subquery, false, false);
+						p_query.Add (subquery, LNS.BooleanClause.Occur.SHOULD);
 						// Properties can live in either index
 						if (! only_build_primary_query)
-							s_query.Add (subquery.Clone () as LNS.Query, false, false);
+							s_query.Add (subquery.Clone () as LNS.Query, LNS.BooleanClause.Occur.SHOULD);
 					} else {
 						// Reset these so we return a null query
 						p_query = null;
@@ -1515,26 +1521,26 @@ namespace Beagle.Daemon {
 				// Search text content
 				term = new Term ("Text", query_string_lower);
 				subquery = new LNS.WildcardQuery (term);
-				p_query.Add (subquery, false, false);
+				p_query.Add (subquery, LNS.BooleanClause.Occur.SHOULD);
 				term_list.Add (term);
 
 				// Search text properties
 				term = new Term ("PropertyText", query_string_lower);
 				subquery = new LNS.WildcardQuery (term);
-				p_query.Add (subquery, false, false);
+				p_query.Add (subquery, LNS.BooleanClause.Occur.SHOULD);
 				// Properties can live in either index
 				if (! only_build_primary_query)
-					s_query.Add (subquery.Clone () as LNS.Query, false, false);
+					s_query.Add (subquery.Clone () as LNS.Query, LNS.BooleanClause.Occur.SHOULD);
 				term_list.Add (term);
 
 				// Search property keywords
 				term = new Term ("PropertyKeyword", query_string_lower);
 				term_list.Add (term);
 				subquery = new LNS.WildcardQuery (term);
-				p_query.Add (subquery, false, false);
+				p_query.Add (subquery, LNS.BooleanClause.Occur.SHOULD);
 				// Properties can live in either index
 				if (! only_build_primary_query)
-					s_query.Add (subquery.Clone () as LNS.Query, false, false);
+					s_query.Add (subquery.Clone () as LNS.Query, LNS.BooleanClause.Occur.SHOULD);
 
 				primary_query = p_query;
 				if (! only_build_primary_query)
@@ -1587,9 +1593,9 @@ namespace Beagle.Daemon {
 							  term_list, query_part_hook,
 							  out p_subq, out s_subq, out sub_hit_filter);
 					if (p_subq != null)
-						p_query.Add (p_subq, false, false);
+						p_query.Add (p_subq, LNS.BooleanClause.Occur.SHOULD);
 					if (s_subq != null)
-						s_query.Add (s_subq, false, false);
+						s_query.Add (s_subq, LNS.BooleanClause.Occur.SHOULD);
 					if (sub_hit_filter != null) {
 						if (or_hit_filter == null)
 							or_hit_filter = new OrHitFilter ();
@@ -1678,7 +1684,7 @@ namespace Beagle.Daemon {
 
 			int cursor = 0;
 			if (extra_requirement != null) {
-				top_query.Add (extra_requirement, true, false);
+				top_query.Add (extra_requirement, LNS.BooleanClause.Occur.MUST);
 				++cursor;
 			}
 
@@ -1690,7 +1696,7 @@ namespace Beagle.Daemon {
 					LNS.BooleanQuery bq;
 					bq = new LNS.BooleanQuery ();
 					bottom_queries.Add (bq);
-					top_query.Add (bq, false, false);
+					top_query.Add (bq, LNS.BooleanClause.Occur.SHOULD);
 				}
 			}
 
@@ -1708,7 +1714,7 @@ namespace Beagle.Daemon {
 						cursor = 0;
 				}
 				
-				target.Add (subquery, false, false);
+				target.Add (subquery, LNS.BooleanClause.Occur.SHOULD);
 			}
 
 			return top_query;
