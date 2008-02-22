@@ -253,7 +253,7 @@ namespace Lucene.Net.Store
 		
 		public override System.String ToString()
 		{
-			return "SimpleFSLock@" + lockFile;
+			return "SimpleFSLock@" + lockFile.FullName;
 		}
 		
 		static public Beagle.Util.Logger Logger = null;
