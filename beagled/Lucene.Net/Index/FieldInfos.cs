@@ -231,16 +231,9 @@ namespace Lucene.Net.Index
 		
 		public int FieldNumber(System.String fieldName)
 		{
-			try
-			{
-				FieldInfo fi = FieldInfo(fieldName);
-				if (fi != null)
-					return fi.number;
-			}
-			catch (System.IndexOutOfRangeException ioobe)
-			{
-				return - 1;
-			}
+			FieldInfo fi = FieldInfo(fieldName);
+			if (fi != null)
+				return fi.number;
 			return - 1;
 		}
 		
