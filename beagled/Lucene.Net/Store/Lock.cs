@@ -68,6 +68,7 @@ namespace Lucene.Net.Store
 			bool locked = Obtain();
 			int maxSleepCount = (int) (lockWaitTimeout / LOCK_POLL_INTERVAL);
 			int sleepCount = 0;
+			maxSleepCount = System.Math.Max (maxSleepCount, 1);
 			while (!locked)
 			{
 				if (sleepCount++ == maxSleepCount)
