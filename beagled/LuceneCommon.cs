@@ -101,7 +101,7 @@ namespace Beagle.Daemon {
 		private Lucene.Net.Store.Directory secondary_store = null;
 
 		// Flush if more than this number of requests
-		public const int RequestFlushThreshold = 37; // a total arbitrary magic number
+		public const int RequestFlushThreshold = Lucene.Net.Index.IndexWriter.DEFAULT_MAX_BUFFERED_DOCS; // Use same value as Lucene's flush threshold
 
 		//////////////////////////////////////////////////////////////////////////////
 
