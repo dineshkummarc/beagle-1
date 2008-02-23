@@ -4,14 +4,14 @@ From: D Bera <dbera.web@gmail.com>
 
 Index: QueryParser/ParseException.cs
 ===================================================================
---- QueryParser/ParseException.cs	(revision 4506)
+--- QueryParser/ParseException.cs	(revision 4529)
 +++ QueryParser/ParseException.cs	(working copy)
 @@ -161,7 +161,7 @@
  		public System.String[] tokenImage;
  		
  		/// <summary> The end of line string for this machine.</summary>
 -		protected internal System.String eol = SupportClass.AppSettings.Get("line.separator", "\n");
-+		protected internal System.String eol = System.Environment.NewLine;
+++		protected internal System.String eol = System.Environment.NewLine;
  		
  		/// <summary> Used to convert raw characters to their escaped version
  		/// when these raw version cannot be used as part of an ASCII
@@ -22,47 +22,28 @@ Index: QueryParser/ParseException.cs
 -}
 \ No newline at end of file
 +}
-Index: Analysis/Standard/ParseException.cs
-===================================================================
---- Analysis/Standard/ParseException.cs	(revision 4506)
-+++ Analysis/Standard/ParseException.cs	(working copy)
-@@ -141,7 +141,7 @@
- 		public System.String[] tokenImage;
- 		
- 		/// <summary> The end of line string for this machine.</summary>
--		protected internal System.String eol = SupportClass.AppSettings.Get("line.separator", "\n");
-+		protected internal System.String eol = System.Environment.NewLine;
- 		
- 		/// <summary> Used to convert raw characters to their escaped version
- 		/// when these raw version cannot be used as part of an ASCII
-@@ -208,4 +208,4 @@
- 			return retval.ToString();
- 		}
- 	}
--}
-\ No newline at end of file
-+}
 Index: Store/FSDirectory.cs
 ===================================================================
---- Store/FSDirectory.cs	(revision 4510)
+--- Store/FSDirectory.cs	(revision 4529)
 +++ Store/FSDirectory.cs	(working copy)
 @@ -89,7 +89,7 @@
  		/// the <code>getDirectory</code> methods that take a
  		/// <code>lockFactory</code> (for example, {@link #GetDirectory(String, LockFactory)}).
  		/// </deprecated>
 -		public static readonly System.String LOCK_DIR = SupportClass.AppSettings.Get("Lucene.Net.lockDir", System.IO.Path.GetTempPath());
-+		/// REMOVED - D Bera
+++		/// REMOVED - D Bera
  		
  		/// <summary>The default class which implements filesystem-based directories. </summary>
  		private static System.Type IMPL;
-@@ -313,47 +313,13 @@
- 					// Locks are disabled:
- 					lockFactory = NoLockFactory.GetNoLockFactory();
+@@ -315,54 +315,11 @@
  				}
-+				// D Bera: Ignore system property Lucene.Net.Store.FSDirectoryLockFactoryClass
  				else
  				{
--					System.String lockClassName = SupportClass.AppSettings.Get("Lucene.Net.Store.FSDirectoryLockFactoryClass", "");
++					// Our default lock is SimpleFSLockFactory;
++					// default lockDir is our index directory:
++					lockFactory = new SimpleFSLockFactory(path);
++					doClearLockID = true;
+ 					System.String lockClassName = SupportClass.AppSettings.Get("Lucene.Net.Store.FSDirectoryLockFactoryClass", "");
 -					
 -					if (lockClassName != null && !lockClassName.Equals(""))
 -					{
@@ -79,7 +60,7 @@ Index: Store/FSDirectory.cs
 -						
 -						try
 -						{
--							lockFactory = (LockFactory) System.Activator.CreateInstance(c);
+-							lockFactory = (LockFactory) System.Activator.CreateInstance(c, true);
 -						}
 -						catch (System.UnauthorizedAccessException e)
 -						{
@@ -89,9 +70,18 @@ Index: Store/FSDirectory.cs
 -						{
 -							throw new System.IO.IOException("unable to cast LockClass " + lockClassName + " instance to a LockFactory");
 -						}
--                        catch (System.Exception)
+-                        catch (System.Exception ex)
 -                        {
--                            throw new System.IO.IOException("InstantiationException when instantiating LockClass " + lockClassName);
+-                            throw new System.IO.IOException("InstantiationException when instantiating LockClass " + lockClassName + "\nDetails:" + ex.Message);
+-                        }
+-
+-                        if (lockFactory is NativeFSLockFactory)
+-                        {
+-                            ((NativeFSLockFactory) lockFactory).SetLockDir(path);
+-                        }
+-                        else if (lockFactory is SimpleFSLockFactory)
+-                        {
+-                            ((SimpleFSLockFactory) lockFactory).SetLockDir(path);
 -                        }
 -                    }
 -					else
@@ -101,14 +91,10 @@ Index: Store/FSDirectory.cs
 -						lockFactory = new SimpleFSLockFactory(path);
 -						doClearLockID = true;
 -					}
-+					// Our default lock is SimpleFSLockFactory;
-+					// default lockDir is our index directory:
-+					lockFactory = new SimpleFSLockFactory(path);
-+					doClearLockID = true;
  				}
  			}
  			
-@@ -666,7 +632,7 @@
+@@ -675,7 +632,7 @@
  			{
  				try
  				{
@@ -119,9 +105,9 @@ Index: Store/FSDirectory.cs
  				catch (System.Security.SecurityException)
 Index: SupportClass.cs
 ===================================================================
---- SupportClass.cs	(revision 4506)
+--- SupportClass.cs	(revision 4529)
 +++ SupportClass.cs	(working copy)
-@@ -620,60 +620,6 @@
+@@ -681,107 +681,6 @@
          }
      }
  
@@ -130,6 +116,38 @@ Index: SupportClass.cs
 -    /// </summary>
 -    public class AppSettings
 -    {
+-        static System.Collections.Specialized.ListDictionary settings = new System.Collections.Specialized.ListDictionary();
+-
+-        /// <summary>
+-        /// 
+-        /// </summary>
+-        /// <param name="key"></param>
+-        /// <param name="defValue"></param>
+-        public static void Set(System.String key, int defValue)
+-        {
+-            settings[key] = defValue;
+-        }
+-
+-        /// <summary>
+-        /// 
+-        /// </summary>
+-        /// <param name="key"></param>
+-        /// <param name="defValue"></param>
+-        public static void Set(System.String key, long defValue)
+-        {
+-            settings[key] = defValue;
+-        }
+-
+-        /// <summary>
+-        /// 
+-        /// </summary>
+-        /// <param name="Key"></param>
+-        /// <param name="Value"></param>
+-        public static void Set(System.String key, System.String defValue)
+-        {
+-            settings[key] = defValue;
+-        }
+-
 -        /// <summary>
 -        /// 
 -        /// </summary>
@@ -138,6 +156,11 @@ Index: SupportClass.cs
 -        /// <returns></returns>
 -        public static int Get(System.String key, int defValue)
 -        {
+-            if (settings[key] != null)
+-            {
+-                return (int) settings[key];
+-            }
+-
 -            System.String theValue = System.Configuration.ConfigurationSettings.AppSettings.Get(key);
 -            if (theValue == null)
 -            {
@@ -154,6 +177,11 @@ Index: SupportClass.cs
 -        /// <returns></returns>
 -        public static long Get(System.String key, long defValue)
 -        {
+-            if (settings[key] != null)
+-            {
+-                return (long) settings[key];
+-            }
+-
 -            System.String theValue = System.Configuration.ConfigurationSettings.AppSettings.Get(key);
 -            if (theValue == null)
 -            {
@@ -170,6 +198,11 @@ Index: SupportClass.cs
 -        /// <returns></returns>
 -        public static System.String Get(System.String key, System.String defValue)
 -        {
+-            if (settings[key] != null)
+-            {
+-                return (System.String) settings[key];
+-            }
+-
 -            System.String theValue = System.Configuration.ConfigurationSettings.AppSettings.Get(key);
 -            if (theValue == null)
 -            {
@@ -182,7 +215,7 @@ Index: SupportClass.cs
      public static System.Collections.SortedList TailMap(System.Collections.SortedList list, System.Object limit)
      {
          System.Collections.Comparer comparer = System.Collections.Comparer.Default;
-@@ -724,7 +670,7 @@
+@@ -880,7 +779,7 @@
          {
              if (compressionAdapter == null)
              {
@@ -191,18 +224,258 @@ Index: SupportClass.cs
                  if (compressionLibClassName == null)
                      throw new System.SystemException("Compression support not configured"); 
  
-@@ -736,4 +682,4 @@
+@@ -892,4 +791,4 @@
              }
          }
      }
 -}
 \ No newline at end of file
 +}
+Index: upstream-changes/12_remove-warnings-appsettings.patch
+===================================================================
+--- upstream-changes/12_remove-warnings-appsettings.patch	(revision 4521)
++++ upstream-changes/12_remove-warnings-appsettings.patch	(working copy)
+@@ -290,3 +290,235 @@
+ -}
+ \ No newline at end of file
+ +}
++***********************************
++Index: QueryParser/ParseException.cs
++===================================================================
++--- QueryParser/ParseException.cs	(revision 4529)
+++++ QueryParser/ParseException.cs	(working copy)
++@@ -161,7 +161,7 @@
++ 		public System.String[] tokenImage;
++ 		
++ 		/// <summary> The end of line string for this machine.</summary>
++-		protected internal System.String eol = SupportClass.AppSettings.Get("line.separator", "\n");
++++		protected internal System.String eol = System.Environment.NewLine;
++ 		
++ 		/// <summary> Used to convert raw characters to their escaped version
++ 		/// when these raw version cannot be used as part of an ASCII
++@@ -228,4 +228,4 @@
++ 			return retval.ToString();
++ 		}
++ 	}
++-}
++\ No newline at end of file
+++}
++Index: Store/FSDirectory.cs
++===================================================================
++--- Store/FSDirectory.cs	(revision 4529)
+++++ Store/FSDirectory.cs	(working copy)
++@@ -89,7 +89,7 @@
++ 		/// the <code>getDirectory</code> methods that take a
++ 		/// <code>lockFactory</code> (for example, {@link #GetDirectory(String, LockFactory)}).
++ 		/// </deprecated>
++-		public static readonly System.String LOCK_DIR = SupportClass.AppSettings.Get("Lucene.Net.lockDir", System.IO.Path.GetTempPath());
++++		/// REMOVED - D Bera
++ 		
++ 		/// <summary>The default class which implements filesystem-based directories. </summary>
++ 		private static System.Type IMPL;
++@@ -315,54 +315,11 @@
++ 				}
++ 				else
++ 				{
+++					// Our default lock is SimpleFSLockFactory;
+++					// default lockDir is our index directory:
+++					lockFactory = new SimpleFSLockFactory(path);
+++					doClearLockID = true;
++ 					System.String lockClassName = SupportClass.AppSettings.Get("Lucene.Net.Store.FSDirectoryLockFactoryClass", "");
++-					
++-					if (lockClassName != null && !lockClassName.Equals(""))
++-					{
++-						System.Type c;
++-						
++-						try
++-						{
++-							c = System.Type.GetType(lockClassName);
++-						}
++-						catch (System.Exception)
++-						{
++-							throw new System.IO.IOException("unable to find LockClass " + lockClassName);
++-						}
++-						
++-						try
++-						{
++-							lockFactory = (LockFactory) System.Activator.CreateInstance(c, true);
++-						}
++-						catch (System.UnauthorizedAccessException e)
++-						{
++-							throw new System.IO.IOException("IllegalAccessException when instantiating LockClass " + lockClassName);
++-						}
++-						catch (System.InvalidCastException)
++-						{
++-							throw new System.IO.IOException("unable to cast LockClass " + lockClassName + " instance to a LockFactory");
++-						}
++-                        catch (System.Exception ex)
++-                        {
++-                            throw new System.IO.IOException("InstantiationException when instantiating LockClass " + lockClassName + "\nDetails:" + ex.Message);
++-                        }
++-
++-                        if (lockFactory is NativeFSLockFactory)
++-                        {
++-                            ((NativeFSLockFactory) lockFactory).SetLockDir(path);
++-                        }
++-                        else if (lockFactory is SimpleFSLockFactory)
++-                        {
++-                            ((SimpleFSLockFactory) lockFactory).SetLockDir(path);
++-                        }
++-                    }
++-					else
++-					{
++-						// Our default lock is SimpleFSLockFactory;
++-						// default lockDir is our index directory:
++-						lockFactory = new SimpleFSLockFactory(path);
++-						doClearLockID = true;
++-					}
++ 				}
++ 			}
++ 			
++@@ -675,7 +632,7 @@
++ 			{
++ 				try
++ 				{
++-					System.String name = SupportClass.AppSettings.Get("Lucene.Net.FSDirectory.class", typeof(FSDirectory).FullName);
+++					System.String name = typeof(FSDirectory).FullName;
++ 					IMPL = System.Type.GetType(name);
++ 				}
++ 				catch (System.Security.SecurityException)
++Index: SupportClass.cs
++===================================================================
++--- SupportClass.cs	(revision 4529)
+++++ SupportClass.cs	(working copy)
++@@ -681,107 +681,6 @@
++         }
++     }
++ 
++-    /// <summary>
++-    /// 
++-    /// </summary>
++-    public class AppSettings
++-    {
++-        static System.Collections.Specialized.ListDictionary settings = new System.Collections.Specialized.ListDictionary();
++-
++-        /// <summary>
++-        /// 
++-        /// </summary>
++-        /// <param name="key"></param>
++-        /// <param name="defValue"></param>
++-        public static void Set(System.String key, int defValue)
++-        {
++-            settings[key] = defValue;
++-        }
++-
++-        /// <summary>
++-        /// 
++-        /// </summary>
++-        /// <param name="key"></param>
++-        /// <param name="defValue"></param>
++-        public static void Set(System.String key, long defValue)
++-        {
++-            settings[key] = defValue;
++-        }
++-
++-        /// <summary>
++-        /// 
++-        /// </summary>
++-        /// <param name="Key"></param>
++-        /// <param name="Value"></param>
++-        public static void Set(System.String key, System.String defValue)
++-        {
++-            settings[key] = defValue;
++-        }
++-
++-        /// <summary>
++-        /// 
++-        /// </summary>
++-        /// <param name="key"></param>
++-        /// <param name="defValue"></param>
++-        /// <returns></returns>
++-        public static int Get(System.String key, int defValue)
++-        {
++-            if (settings[key] != null)
++-            {
++-                return (int) settings[key];
++-            }
++-
++-            System.String theValue = System.Configuration.ConfigurationSettings.AppSettings.Get(key);
++-            if (theValue == null)
++-            {
++-                return defValue;
++-            }
++-            return System.Convert.ToInt16(theValue.Trim());
++-        }
++-
++-        /// <summary>
++-        /// 
++-        /// </summary>
++-        /// <param name="key"></param>
++-        /// <param name="defValue"></param>
++-        /// <returns></returns>
++-        public static long Get(System.String key, long defValue)
++-        {
++-            if (settings[key] != null)
++-            {
++-                return (long) settings[key];
++-            }
++-
++-            System.String theValue = System.Configuration.ConfigurationSettings.AppSettings.Get(key);
++-            if (theValue == null)
++-            {
++-                return defValue;
++-            }
++-            return System.Convert.ToInt32(theValue.Trim());
++-        }
++-
++-        /// <summary>
++-        /// 
++-        /// </summary>
++-        /// <param name="key"></param>
++-        /// <param name="defValue"></param>
++-        /// <returns></returns>
++-        public static System.String Get(System.String key, System.String defValue)
++-        {
++-            if (settings[key] != null)
++-            {
++-                return (System.String) settings[key];
++-            }
++-
++-            System.String theValue = System.Configuration.ConfigurationSettings.AppSettings.Get(key);
++-            if (theValue == null)
++-            {
++-                return defValue;
++-            }
++-            return theValue;
++-        }
++-    }
++-
++     public static System.Collections.SortedList TailMap(System.Collections.SortedList list, System.Object limit)
++     {
++         System.Collections.Comparer comparer = System.Collections.Comparer.Default;
++@@ -880,7 +779,7 @@
++         {
++             if (compressionAdapter == null)
++             {
++-                System.String compressionLibClassName = SupportClass.AppSettings.Get("Lucene.Net.CompressionLib.class", null);
+++                System.String compressionLibClassName = null;
++                 if (compressionLibClassName == null)
++                     throw new System.SystemException("Compression support not configured"); 
++ 
++@@ -892,4 +791,4 @@
++             }
++         }
++     }
++-}
++\ No newline at end of file
+++}
++Index: upstream-changes/12_remove-warnings-appsettings.patch
++===================================================================
 Index: Index/SegmentReader.cs
 ===================================================================
---- Index/SegmentReader.cs	(revision 4506)
+--- Index/SegmentReader.cs	(revision 4529)
 +++ Index/SegmentReader.cs	(working copy)
-@@ -725,7 +725,7 @@
+@@ -731,7 +731,7 @@
  			{
  				try
  				{
@@ -211,36 +484,16 @@ Index: Index/SegmentReader.cs
  					IMPL = System.Type.GetType(name);
  				}
                  catch (System.Security.SecurityException se)
-@@ -746,4 +746,4 @@
+@@ -752,4 +752,4 @@
  			}
  		}
  	}
 -}
 \ No newline at end of file
 +}
-Index: Util/Constants.cs
-===================================================================
---- Util/Constants.cs	(revision 4506)
-+++ Util/Constants.cs	(working copy)
-@@ -53,7 +53,7 @@
- 		
-         // {{Aroush-2.1 those next constants are Java specific, what's the equivlant in C#?
- 		/// <summary>The value of <tt>System.getProperty("java.version")<tt>. *</summary>
--		public static readonly System.String JAVA_VERSION = System.Configuration.ConfigurationSettings.AppSettings.Get("java.version");     // {{Aroush-1.9}}
-+		public static readonly System.String JAVA_VERSION = String.Empty;     // {{Aroush-1.9}}
- 		/// <summary>True iff this is Java version 1.1. </summary>
- 		public static readonly bool JAVA_1_1 = JAVA_VERSION.StartsWith("1.1.");
- 		/// <summary>True iff this is Java version 1.2. </summary>
-@@ -71,4 +71,4 @@
- 		/// <summary>True iff running on SunOS. </summary>
- 		public static readonly bool SUN_OS = OS_NAME.StartsWith("SunOS");
- 	}
--}
-\ No newline at end of file
-+}
 Index: Document/DateTools.cs
 ===================================================================
---- Document/DateTools.cs	(revision 4506)
+--- Document/DateTools.cs	(revision 4529)
 +++ Document/DateTools.cs	(working copy)
 @@ -106,35 +106,35 @@
  			{

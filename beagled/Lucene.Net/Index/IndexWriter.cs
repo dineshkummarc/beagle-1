@@ -95,7 +95,7 @@ namespace Lucene.Net.Index
 		public const int DEFAULT_MERGE_FACTOR = 10;
 		
 		/// <summary> Default value is 10. Change using {@link #SetMaxBufferedDocs(int)}.</summary>
-		public const int DEFAULT_MAX_BUFFERED_DOCS = 10;
+		public const int DEFAULT_MAX_BUFFERED_DOCS = 30;
 		
 		/// <summary> Default value is 1000. Change using
 		/// {@link #SetMaxBufferedDeleteTerms(int)}.
@@ -711,8 +711,6 @@ namespace Lucene.Net.Index
 					writeLock.Release(); // release write lock
 					writeLock = null;
 				}
-
-				segmentInfos.Optimize (directory);
 			}
 			finally
 			{
@@ -1078,6 +1076,8 @@ namespace Lucene.Net.Index
 					int minSegment = segmentInfos.Count - mergeFactor;
 					MergeSegments(segmentInfos, minSegment < 0?0:minSegment, segmentInfos.Count);
 				}
+
+				segmentInfos.Optimize (directory);
 			}
 		}
 		

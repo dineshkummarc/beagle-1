@@ -89,7 +89,7 @@ namespace Lucene.Net.Store
 		/// the <code>getDirectory</code> methods that take a
 		/// <code>lockFactory</code> (for example, {@link #GetDirectory(String, LockFactory)}).
 		/// </deprecated>
-		public static readonly System.String LOCK_DIR = SupportClass.AppSettings.Get("Lucene.Net.lockDir", System.IO.Path.GetTempPath());
++		/// REMOVED - D Bera
 		
 		/// <summary>The default class which implements filesystem-based directories. </summary>
 		private static System.Type IMPL;
@@ -315,54 +315,11 @@ namespace Lucene.Net.Store
 				}
 				else
 				{
+					// Our default lock is SimpleFSLockFactory;
+					// default lockDir is our index directory:
+					lockFactory = new SimpleFSLockFactory(path);
+					doClearLockID = true;
 					System.String lockClassName = SupportClass.AppSettings.Get("Lucene.Net.Store.FSDirectoryLockFactoryClass", "");
-					
-					if (lockClassName != null && !lockClassName.Equals(""))
-					{
-						System.Type c;
-						
-						try
-						{
-							c = System.Type.GetType(lockClassName);
-						}
-						catch (System.Exception)
-						{
-							throw new System.IO.IOException("unable to find LockClass " + lockClassName);
-						}
-						
-						try
-						{
-							lockFactory = (LockFactory) System.Activator.CreateInstance(c, true);
-						}
-						catch (System.UnauthorizedAccessException e)
-						{
-							throw new System.IO.IOException("IllegalAccessException when instantiating LockClass " + lockClassName);
-						}
-						catch (System.InvalidCastException)
-						{
-							throw new System.IO.IOException("unable to cast LockClass " + lockClassName + " instance to a LockFactory");
-						}
-                        catch (System.Exception ex)
-                        {
-                            throw new System.IO.IOException("InstantiationException when instantiating LockClass " + lockClassName + "\nDetails:" + ex.Message);
-                        }
-
-                        if (lockFactory is NativeFSLockFactory)
-                        {
-                            ((NativeFSLockFactory) lockFactory).SetLockDir(path);
-                        }
-                        else if (lockFactory is SimpleFSLockFactory)
-                        {
-                            ((SimpleFSLockFactory) lockFactory).SetLockDir(path);
-                        }
-                    }
-					else
-					{
-						// Our default lock is SimpleFSLockFactory;
-						// default lockDir is our index directory:
-						lockFactory = new SimpleFSLockFactory(path);
-						doClearLockID = true;
-					}
 				}
 			}
 			
@@ -675,7 +632,7 @@ namespace Lucene.Net.Store
 			{
 				try
 				{
-					System.String name = SupportClass.AppSettings.Get("Lucene.Net.FSDirectory.class", typeof(FSDirectory).FullName);
+					System.String name = typeof(FSDirectory).FullName;
 					IMPL = System.Type.GetType(name);
 				}
 				catch (System.Security.SecurityException)
