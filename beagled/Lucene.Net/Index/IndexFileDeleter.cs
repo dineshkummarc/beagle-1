@@ -35,7 +35,7 @@ namespace Lucene.Net.Index
 		private SegmentInfos segmentInfos;
 		private System.IO.TextWriter infoStream;
 		
-		internal IndexFileDeleter(SegmentInfos segmentInfos, Directory directory)
+		public IndexFileDeleter(SegmentInfos segmentInfos, Directory directory)
 		{
 			this.segmentInfos = segmentInfos;
 			this.directory = directory;
@@ -63,7 +63,7 @@ namespace Lucene.Net.Index
 		/// file is successfully deleted.
 		/// </summary>
 		
-		internal void  FindDeletableFiles()
+		public void  FindDeletableFiles()
 		{
 			
 			// Gather all "current" segments:
@@ -313,7 +313,10 @@ namespace Lucene.Net.Index
 			{
 				pending = new System.Collections.Hashtable();
 			}
-			pending.Add(fileName, fileName);
+            if (pending.ContainsKey(fileName) == false)
+            {
+                pending.Add(fileName, fileName);
+            }
 		}
 		
 		internal void  CommitPendingFiles()
@@ -327,7 +330,7 @@ namespace Lucene.Net.Index
 				System.Collections.IEnumerator it = pending.GetEnumerator();
 				while (it.MoveNext())
 				{
-					deletable.Add(it.Current);
+					deletable.Add(((System.Collections.DictionaryEntry)(it.Current)).Value);
 				}
 				pending = null;
 				DeleteFiles();
@@ -343,7 +346,7 @@ namespace Lucene.Net.Index
 			deletable.Add(fileName);
 		}
 		
-		internal void  DeleteFiles()
+		public void  DeleteFiles()
 		{
 			if (deletable != null)
 			{

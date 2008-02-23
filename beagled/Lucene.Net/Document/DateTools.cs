@@ -106,35 +106,35 @@ namespace Lucene.Net.Documents
 			{
 				lock (DAY_FORMAT)
 				{
-					result = dt.ToString(DAY_FORMAT);
+					result = result = dt.ToString(DAY_FORMAT);
 				}
 			}
 			else if (resolution == Resolution.HOUR)
 			{
 				lock (HOUR_FORMAT)
 				{
-					result = dt.ToString(HOUR_FORMAT);
+					result = result = dt.ToString(HOUR_FORMAT);
 				}
 			}
 			else if (resolution == Resolution.MINUTE)
 			{
 				lock (MINUTE_FORMAT)
 				{
-					result = dt.ToString(MINUTE_FORMAT);
+					result = result = dt.ToString(MINUTE_FORMAT);
 				}
 			}
 			else if (resolution == Resolution.SECOND)
 			{
 				lock (SECOND_FORMAT)
 				{
-					result = dt.ToString(SECOND_FORMAT);
+					result = result = dt.ToString(SECOND_FORMAT);
 				}
 			}
 			else if (resolution == Resolution.MILLISECOND)
 			{
 				lock (MILLISECOND_FORMAT)
 				{
-					result = dt.ToString(MILLISECOND_FORMAT);
+					result = result = dt.ToString(MILLISECOND_FORMAT);
 				}
 			}
 			else
@@ -181,7 +181,7 @@ namespace Lucene.Net.Documents
 				lock (YEAR_FORMAT)
 				{
 					date = new System.DateTime(Convert.ToInt16(dateString.Substring(0, 4)),
-                        0, 0, 0, 0, 0, 0);
+                        1, 1, 0, 0, 0, 0);
 				}
 			}
 			else if (dateString.Length == 6)
@@ -190,7 +190,7 @@ namespace Lucene.Net.Documents
 				{
                     date = new System.DateTime(Convert.ToInt16(dateString.Substring(0, 4)),
                         Convert.ToInt16(dateString.Substring(4, 2)),
-                        0, 0, 0, 0, 0);
+                        1, 0, 0, 0, 0);
 				}
 			}
 			else if (dateString.Length == 8)

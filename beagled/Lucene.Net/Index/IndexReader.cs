@@ -405,12 +405,14 @@ namespace Lucene.Net.Index
 		
 		public static bool IndexExists(System.IO.FileInfo directory)
 		{
-			string[] files = System.IO.Directory.GetFileSystemEntries(directory.FullName);
-                        for (int i = 0; i < files.Length; i++)
-                        {
-			    files[i] = System.IO.Path.GetFileName (files[i]);
-                        }
-			return SegmentInfos.GetCurrentSegmentGeneration(files) != - 1;
+            if (System.IO.Directory.Exists(directory.FullName))
+            {
+                return SegmentInfos.GetCurrentSegmentGeneration(System.IO.Directory.GetFileSystemEntries(directory.FullName)) != - 1;
+            }
+            else
+            {
+                return false;
+            }
 		}
 		
 		/// <summary> Returns <code>true</code> if an index exists at the specified directory.
@@ -750,7 +752,7 @@ namespace Lucene.Net.Index
 		/// 
 		/// </summary>
 		/// <throws>  IOException </throws>
-		protected internal void  Commit()
+		public void  Commit()
 		{
 			lock (this)
 			{

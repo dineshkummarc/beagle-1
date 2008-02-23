@@ -61,6 +61,12 @@ namespace Lucene.Net.Index
 			get {   return fieldInfos;  }
 		}
 
+        public IndexInput ProxStream
+        {
+            get {   return proxStream;  }
+            set {   proxStream = value; }
+        }
+
 		private class Norm
 		{
 			private void  InitBlock(SegmentReader enclosingInstance)
@@ -725,7 +731,7 @@ namespace Lucene.Net.Index
 			{
 				try
 				{
-					System.String name = typeof(SegmentReader).FullName;
+					System.String name = SupportClass.AppSettings.Get("Lucene.Net.SegmentReader.class", typeof(SegmentReader).FullName);
 					IMPL = System.Type.GetType(name);
 				}
                 catch (System.Security.SecurityException se)

@@ -324,10 +324,17 @@ namespace Lucene.Net.Search
 				buffer.Append(":");
 			}
 			
+            bool appendSpace = false;
+
 			buffer.Append("\"");
 			System.Collections.IEnumerator i = termArrays.GetEnumerator();
 			while (i.MoveNext())
 			{
+                if (appendSpace == true)
+                    buffer.Append(" ");
+                else
+                    appendSpace = true;
+
 				Term[] terms = (Term[]) i.Current;
 				if (terms.Length > 1)
 				{
@@ -344,8 +351,6 @@ namespace Lucene.Net.Search
 				{
 					buffer.Append(terms[0].Text());
 				}
-				if (i.MoveNext())
-					buffer.Append(" ");
 			}
 			buffer.Append("\"");
 			
@@ -373,9 +378,7 @@ namespace Lucene.Net.Search
                 System.Collections.IEnumerator iter2 = other.termArrays.GetEnumerator();
                 while (iter1.MoveNext() && iter2.MoveNext())
                 {
-                    Term item1 = (Term) iter1.Current;
-                    Term item2 = (Term) iter2.Current;
-                    if (!item1.Equals(item2))
+                    if (SupportClass.Compare.CompareTermArrays((Term[]) iter1.Current, (Term[]) iter2.Current) == false)
                         return false;
                 }
                 iter1 = this.positions.GetEnumerator();

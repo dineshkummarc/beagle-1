@@ -89,7 +89,7 @@ namespace Lucene.Net.Store
 		/// the <code>getDirectory</code> methods that take a
 		/// <code>lockFactory</code> (for example, {@link #GetDirectory(String, LockFactory)}).
 		/// </deprecated>
-		/// REMOVED - D Bera
+		public static readonly System.String LOCK_DIR = SupportClass.AppSettings.Get("Lucene.Net.lockDir", System.IO.Path.GetTempPath());
 		
 		/// <summary>The default class which implements filesystem-based directories. </summary>
 		private static System.Type IMPL;
@@ -172,7 +172,7 @@ namespace Lucene.Net.Store
 			FSDirectory dir;
 			lock (DIRECTORIES.SyncRoot)
 			{
-				dir = (FSDirectory) DIRECTORIES[file];
+				dir = (FSDirectory) DIRECTORIES[file.FullName];
 				if (dir == null)
 				{
 					try
@@ -184,7 +184,7 @@ namespace Lucene.Net.Store
 						throw new System.SystemException("cannot load FSDirectory class: " + e.ToString(), e);
 					}
 					dir.Init(file, lockFactory);
-					DIRECTORIES[file] = dir;
+					DIRECTORIES[file.FullName] = dir;
 				}
 				else
 				{
@@ -258,7 +258,7 @@ namespace Lucene.Net.Store
 				tmpBool = System.IO.Directory.Exists(directory.FullName);
 			if (tmpBool)
 			{
-                System.String[] files = System.IO.Directory.GetFileSystemEntries(directory.FullName);   // directory.list(IndexFileNameFilter.GetFilter()); // clear old files  // {{Aroush-2.1}} we don't want all files in the directory but a filtered list
+                System.String[] files = SupportClass.FileSupport.GetLuceneIndexFiles(directory.FullName, IndexFileNameFilter.GetFilter());
 				if (files == null)
 					throw new System.IO.IOException("Cannot read directory " + directory.FullName);
 				for (int i = 0; i < files.Length; i++)
@@ -313,13 +313,56 @@ namespace Lucene.Net.Store
 					// Locks are disabled:
 					lockFactory = NoLockFactory.GetNoLockFactory();
 				}
-				// D Bera: Ignore system property Lucene.Net.Store.FSDirectoryLockFactoryClass
 				else
 				{
-					// Our default lock is SimpleFSLockFactory;
-					// default lockDir is our index directory:
-					lockFactory = new SimpleFSLockFactory(path);
-					doClearLockID = true;
+					System.String lockClassName = SupportClass.AppSettings.Get("Lucene.Net.Store.FSDirectoryLockFactoryClass", "");
+					
+					if (lockClassName != null && !lockClassName.Equals(""))
+					{
+						System.Type c;
+						
+						try
+						{
+							c = System.Type.GetType(lockClassName);
+						}
+						catch (System.Exception)
+						{
+							throw new System.IO.IOException("unable to find LockClass " + lockClassName);
+						}
+						
+						try
+						{
+							lockFactory = (LockFactory) System.Activator.CreateInstance(c, true);
+						}
+						catch (System.UnauthorizedAccessException e)
+						{
+							throw new System.IO.IOException("IllegalAccessException when instantiating LockClass " + lockClassName);
+						}
+						catch (System.InvalidCastException)
+						{
+							throw new System.IO.IOException("unable to cast LockClass " + lockClassName + " instance to a LockFactory");
+						}
+                        catch (System.Exception ex)
+                        {
+                            throw new System.IO.IOException("InstantiationException when instantiating LockClass " + lockClassName + "\nDetails:" + ex.Message);
+                        }
+
+                        if (lockFactory is NativeFSLockFactory)
+                        {
+                            ((NativeFSLockFactory) lockFactory).SetLockDir(path);
+                        }
+                        else if (lockFactory is SimpleFSLockFactory)
+                        {
+                            ((SimpleFSLockFactory) lockFactory).SetLockDir(path);
+                        }
+                    }
+					else
+					{
+						// Our default lock is SimpleFSLockFactory;
+						// default lockDir is our index directory:
+						lockFactory = new SimpleFSLockFactory(path);
+						doClearLockID = true;
+					}
 				}
 			}
 			
@@ -336,7 +379,7 @@ namespace Lucene.Net.Store
 		/// <summary>Returns an array of strings, one for each Lucene index file in the directory. </summary>
 		public override System.String[] List()
 		{
-            System.String[] files = System.IO.Directory.GetFileSystemEntries(directory.FullName);   // IndexFileNameFilter.GetFilter());   // {{Aroush-2.1}} we want to limit the files to the list
+            System.String[] files = SupportClass.FileSupport.GetLuceneIndexFiles(directory.FullName, IndexFileNameFilter.GetFilter());
             for (int i = 0; i < files.Length; i++)
             {
                 System.IO.FileInfo fi = new System.IO.FileInfo(files[i]);
@@ -610,7 +653,7 @@ namespace Lucene.Net.Store
 				{
 					lock (DIRECTORIES.SyncRoot)
 					{
-						DIRECTORIES.Remove(directory);
+						DIRECTORIES.Remove(directory.FullName);
 					}
 				}
 			}
@@ -632,7 +675,7 @@ namespace Lucene.Net.Store
 			{
 				try
 				{
-					System.String name = typeof(FSDirectory).FullName;
+					System.String name = SupportClass.AppSettings.Get("Lucene.Net.FSDirectory.class", typeof(FSDirectory).FullName);
 					IMPL = System.Type.GetType(name);
 				}
 				catch (System.Security.SecurityException)
@@ -670,13 +713,9 @@ namespace Lucene.Net.Store
 		/// <summary>Method used for testing. Returns true if the underlying
 		/// file descriptor is valid.
 		/// </summary>
-		virtual internal bool FDValid
+		public virtual bool IsFDValid()
 		{
-			get
-			{
-				return true; // return file.getFD().valid();    // {{Aroush-2.1 in .NET, how do we do this?
-			}
-			
+			return (file.BaseStream != null);
 		}
 		
 		private class Descriptor : System.IO.BinaryReader
@@ -718,6 +757,11 @@ namespace Lucene.Net.Store
 		private Descriptor file;
 		internal bool isClone;
 		
+        public bool isClone_ForNUnitTest
+        {
+            get { return isClone; }
+        }
+
 		public FSIndexInput(System.IO.FileInfo path)
 		{
 			file = new Descriptor(this, path, System.IO.FileAccess.Read);

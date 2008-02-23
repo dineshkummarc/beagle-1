@@ -166,7 +166,7 @@ namespace Lucene.Net.Index
 					System.Collections.IEnumerator it = ((System.Collections.ICollection) readerToFields[reader]).GetEnumerator();
 					while (it.MoveNext())
 					{
-						if (fieldSelector.Accept((System.String) it.Current) != FieldSelectorResult.NO_LOAD)
+						if (fieldSelector.Accept((System.String)((System.Collections.DictionaryEntry)it.Current).Value) != FieldSelectorResult.NO_LOAD)
 						{
 							include = true;
 							break;
@@ -357,7 +357,7 @@ namespace Lucene.Net.Index
 				if (fieldIterator == null)
 				{
 					fieldIterator = SupportClass.TailMap(Enclosing_Instance.fieldToReader, field).Keys.GetEnumerator();
-					System.Object generatedAux = fieldIterator.Current; // Skip field to get next one
+                    fieldIterator.MoveNext();                     // Skip field to get next one
 				}
 				while (fieldIterator.MoveNext())
 				{

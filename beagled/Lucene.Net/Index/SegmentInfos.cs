@@ -149,7 +149,7 @@ namespace Lucene.Net.Index
 			int prefixLen = IndexFileNames.SEGMENTS.Length + 1;
 			for (int i = 0; i < files.Length; i++)
 			{
-				System.String file = files[i];
+				System.String file = (new System.IO.FileInfo(files[i])).Name;
 				if (file.StartsWith(IndexFileNames.SEGMENTS) && !file.Equals(IndexFileNames.SEGMENTS_GEN))
 				{
 					if (file.Equals(IndexFileNames.SEGMENTS))
@@ -162,7 +162,11 @@ namespace Lucene.Net.Index
 					}
 					else
 					{
+#if !PRE_LUCENE_NET_2_0_0_COMPATIBLE
+                        long v = Lucene.Net.Documents.NumberTools.ToLong(file.Substring(prefixLen));
+#else
 						long v = System.Convert.ToInt64(file.Substring(prefixLen), 16);
+#endif
 						if (v > max)
 						{
 							max = v;
@@ -254,7 +258,11 @@ namespace Lucene.Net.Index
 			}
 			else
 			{
+#if !PRE_LUCENE_NET_2_0_0_COMPATIBLE
+                generation = Lucene.Net.Documents.NumberTools.ToLong(segmentFileName.Substring(1 + IndexFileNames.SEGMENTS.Length));
+#else
 				generation = System.Convert.ToInt64(segmentFileName.Substring(1 + IndexFileNames.SEGMENTS.Length), 16);
+#endif
 			}
 			lastGeneration = generation;
 			
@@ -379,9 +387,16 @@ namespace Lucene.Net.Index
 		public override System.Object Clone()
 		{
 			SegmentInfos sis = new SegmentInfos();
-			for (int i = 0; i < sis.Count; i++)
+
+			// Copy Fields. const and static fields are ignored
+			sis.counter = this.counter;
+			sis.version = this.version;
+			sis.generation = this.generation;
+			sis.lastGeneration = this.lastGeneration;
+
+			for (int i = 0; i < this.Count; i++)
 			{
-				sis.Add(((SegmentInfo) this[i]).Clone());
+				sis.Add(((SegmentInfo)this[i]).Clone());
 			}
 			return sis;
 		}
@@ -740,7 +755,6 @@ namespace Lucene.Net.Index
 			string[] files = directory.List();
 
 			System.Collections.ArrayList segment_names = new System.Collections.ArrayList();
-
 			foreach (SegmentInfo si in this)
 				segment_names.Add (si.name);
 
@@ -749,14 +763,11 @@ namespace Lucene.Net.Index
 				if (segment_names.Contains (basename))
 					continue;
 
-				// Allowed files deletable, segments, segments.gen, segments_N
-				if (basename == IndexFileNames.DELETABLE || basename.StartsWith (IndexFileNames.SEGMENTS))
+				if (basename == IndexFileNames.DELETABLE || basename == IndexFileNames.SEGMENTS)
 					continue;
 
 				Console.WriteLine ("WARNING! Deleting stale data {0}", file);
-				try {
-					directory.DeleteFile (file);
-				} catch { /* Could be already deleted. */ }
+				directory.DeleteFile (file);
 			}
 		}
 	}

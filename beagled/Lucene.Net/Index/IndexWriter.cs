@@ -95,7 +95,7 @@ namespace Lucene.Net.Index
 		public const int DEFAULT_MERGE_FACTOR = 10;
 		
 		/// <summary> Default value is 10. Change using {@link #SetMaxBufferedDocs(int)}.</summary>
-		public const int DEFAULT_MAX_BUFFERED_DOCS = 30;
+		public const int DEFAULT_MAX_BUFFERED_DOCS = 10;
 		
 		/// <summary> Default value is 1000. Change using
 		/// {@link #SetMaxBufferedDeleteTerms(int)}.
@@ -711,6 +711,8 @@ namespace Lucene.Net.Index
 					writeLock.Release(); // release write lock
 					writeLock = null;
 				}
+
+				segmentInfos.Optimize (directory);
 			}
 			finally
 			{
@@ -907,12 +909,16 @@ namespace Lucene.Net.Index
 		{
 			lock (this)
 			{
+#if !PRE_LUCENE_NET_2_0_0_COMPATIBLE
+                return "_ram_" + Lucene.Net.Documents.NumberTools.ToString(ramSegmentInfos.counter++);
+#else
 				return "_ram_" + System.Convert.ToString(ramSegmentInfos.counter++, 16);
+#endif
 			}
 		}
 		
 		// for test purpose
-		internal int GetSegmentCount()
+		public int GetSegmentCount()
 		{
 			lock (this)
 			{
@@ -921,7 +927,7 @@ namespace Lucene.Net.Index
 		}
 		
 		// for test purpose
-		internal int GetRamSegmentCount()
+		public int GetRamSegmentCount()
 		{
 			lock (this)
 			{
@@ -930,7 +936,7 @@ namespace Lucene.Net.Index
 		}
 		
 		// for test purpose
-		internal int GetDocCount(int i)
+		public int GetDocCount(int i)
 		{
 			lock (this)
 			{
@@ -949,7 +955,11 @@ namespace Lucene.Net.Index
 		{
 			lock (this)
 			{
+#if !PRE_LUCENE_NET_2_0_0_COMPATIBLE
+                return "_" + Lucene.Net.Documents.NumberTools.ToString(segmentInfos.counter++);
+#else
 				return "_" + System.Convert.ToString(segmentInfos.counter++, 16);
+#endif
 			}
 		}
 		
@@ -1068,8 +1078,6 @@ namespace Lucene.Net.Index
 					int minSegment = segmentInfos.Count - mergeFactor;
 					MergeSegments(segmentInfos, minSegment < 0?0:minSegment, segmentInfos.Count);
 				}
-
-				segmentInfos.Optimize (directory);
 			}
 		}
 		
@@ -2051,7 +2059,7 @@ namespace Lucene.Net.Index
 		}
 		
 		// For test purposes.
-		internal int GetBufferedDeleteTermsSize()
+		public int GetBufferedDeleteTermsSize()
 		{
 			lock (this)
 			{
@@ -2060,7 +2068,7 @@ namespace Lucene.Net.Index
 		}
 		
 		// For test purposes.
-		internal int GetNumBufferedDeleteTerms()
+		public int GetNumBufferedDeleteTerms()
 		{
 			lock (this)
 			{
