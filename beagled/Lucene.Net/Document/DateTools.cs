@@ -106,35 +106,35 @@ namespace Lucene.Net.Documents
 			{
 				lock (DAY_FORMAT)
 				{
-					result = result = dt.ToString(DAY_FORMAT);
+					result = dt.ToString(DAY_FORMAT);
 				}
 			}
 			else if (resolution == Resolution.HOUR)
 			{
 				lock (HOUR_FORMAT)
 				{
-					result = result = dt.ToString(HOUR_FORMAT);
+					result = dt.ToString(HOUR_FORMAT);
 				}
 			}
 			else if (resolution == Resolution.MINUTE)
 			{
 				lock (MINUTE_FORMAT)
 				{
-					result = result = dt.ToString(MINUTE_FORMAT);
+					result = dt.ToString(MINUTE_FORMAT);
 				}
 			}
 			else if (resolution == Resolution.SECOND)
 			{
 				lock (SECOND_FORMAT)
 				{
-					result = result = dt.ToString(SECOND_FORMAT);
+					result = dt.ToString(SECOND_FORMAT);
 				}
 			}
 			else if (resolution == Resolution.MILLISECOND)
 			{
 				lock (MILLISECOND_FORMAT)
 				{
-					result = result = dt.ToString(MILLISECOND_FORMAT);
+					result = dt.ToString(MILLISECOND_FORMAT);
 				}
 			}
 			else

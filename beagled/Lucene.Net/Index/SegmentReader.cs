@@ -725,7 +725,7 @@ namespace Lucene.Net.Index
 			{
 				try
 				{
-					System.String name = SupportClass.AppSettings.Get("Lucene.Net.SegmentReader.class", typeof(SegmentReader).FullName);
+					System.String name = typeof(SegmentReader).FullName;
 					IMPL = System.Type.GetType(name);
 				}
                 catch (System.Security.SecurityException se)

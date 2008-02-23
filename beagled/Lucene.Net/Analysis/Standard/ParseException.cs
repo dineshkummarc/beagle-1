@@ -141,7 +141,7 @@ namespace Lucene.Net.Analysis.Standard
 		public System.String[] tokenImage;
 		
 		/// <summary> The end of line string for this machine.</summary>
-		protected internal System.String eol = SupportClass.AppSettings.Get("line.separator", "\n");
+		protected internal System.String eol = System.Environment.NewLine;
 		
 		/// <summary> Used to convert raw characters to their escaped version
 		/// when these raw version cannot be used as part of an ASCII

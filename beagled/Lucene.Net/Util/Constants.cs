@@ -53,7 +53,7 @@ namespace Lucene.Net.Util
 		
         // {{Aroush-2.1 those next constants are Java specific, what's the equivlant in C#?
 		/// <summary>The value of <tt>System.getProperty("java.version")<tt>. *</summary>
-		public static readonly System.String JAVA_VERSION = System.Configuration.ConfigurationSettings.AppSettings.Get("java.version");     // {{Aroush-1.9}}
+		public static readonly System.String JAVA_VERSION = String.Empty;     // {{Aroush-1.9}}
 		/// <summary>True iff this is Java version 1.1. </summary>
 		public static readonly bool JAVA_1_1 = JAVA_VERSION.StartsWith("1.1.");
 		/// <summary>True iff this is Java version 1.2. </summary>

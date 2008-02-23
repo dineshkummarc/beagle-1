@@ -620,60 +620,6 @@ public class SupportClass
         }
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
-    public class AppSettings
-    {
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="key"></param>
-        /// <param name="defValue"></param>
-        /// <returns></returns>
-        public static int Get(System.String key, int defValue)
-        {
-            System.String theValue = System.Configuration.ConfigurationSettings.AppSettings.Get(key);
-            if (theValue == null)
-            {
-                return defValue;
-            }
-            return System.Convert.ToInt16(theValue.Trim());
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="key"></param>
-        /// <param name="defValue"></param>
-        /// <returns></returns>
-        public static long Get(System.String key, long defValue)
-        {
-            System.String theValue = System.Configuration.ConfigurationSettings.AppSettings.Get(key);
-            if (theValue == null)
-            {
-                return defValue;
-            }
-            return System.Convert.ToInt32(theValue.Trim());
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="key"></param>
-        /// <param name="defValue"></param>
-        /// <returns></returns>
-        public static System.String Get(System.String key, System.String defValue)
-        {
-            System.String theValue = System.Configuration.ConfigurationSettings.AppSettings.Get(key);
-            if (theValue == null)
-            {
-                return defValue;
-            }
-            return theValue;
-        }
-    }
-
     public static System.Collections.SortedList TailMap(System.Collections.SortedList list, System.Object limit)
     {
         System.Collections.Comparer comparer = System.Collections.Comparer.Default;
@@ -724,7 +670,7 @@ public class SupportClass
         {
             if (compressionAdapter == null)
             {
-                System.String compressionLibClassName = SupportClass.AppSettings.Get("Lucene.Net.CompressionLib.class", null);
+                System.String compressionLibClassName = null;
                 if (compressionLibClassName == null)
                     throw new System.SystemException("Compression support not configured"); 
 
