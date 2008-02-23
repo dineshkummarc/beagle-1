@@ -392,7 +392,14 @@ namespace Lucene.Net.Index
 		/// </returns>
 		public static bool IndexExists(System.String directory)
 		{
-			return IndexExists(new System.IO.FileInfo(directory));
+            if (System.IO.Directory.Exists(directory))
+            {
+                return SegmentInfos.GetCurrentSegmentGeneration(System.IO.Directory.GetFileSystemEntries(directory)) != - 1;
+            }
+            else
+            {
+                return false;
+            }
 		}
 		
 		/// <summary> Returns <code>true</code> if an index exists at the specified directory.
@@ -960,9 +967,9 @@ namespace Lucene.Net.Index
 			
 			try
 			{
-				System.IO.FileInfo file = new System.IO.FileInfo(filename);
-				System.String dirname = new System.IO.FileInfo(file.FullName).DirectoryName;
-				filename = file.Name;
+				string filepath = System.IO.Path.GetFullPath(filename);
+				System.String dirname = System.IO.Path.GetDirectoryName(filepath);
+				filename = System.IO.Path.GetFileName(filepath);
 				dir = FSDirectory.GetDirectory(dirname);
 				cfr = new CompoundFileReader(dir, filename);
 				

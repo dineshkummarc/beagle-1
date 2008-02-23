@@ -149,7 +149,7 @@ namespace Lucene.Net.Index
 			int prefixLen = IndexFileNames.SEGMENTS.Length + 1;
 			for (int i = 0; i < files.Length; i++)
 			{
-				System.String file = (new System.IO.FileInfo(files[i])).Name;
+				System.String file = System.IO.Path.GetFileName(files[i]);
 				if (file.StartsWith(IndexFileNames.SEGMENTS) && !file.Equals(IndexFileNames.SEGMENTS_GEN))
 				{
 					if (file.Equals(IndexFileNames.SEGMENTS))
@@ -561,8 +561,7 @@ namespace Lucene.Net.Index
 							files = System.IO.Directory.GetFileSystemEntries(fileDirectory.FullName);
                             for (int i = 0; i < files.Length; i++)
                             {
-                                System.IO.FileInfo fi = new System.IO.FileInfo(files[i]);
-                                files[i] = fi.Name;
+                                files[i] = System.IO.Path.GetFileName (files[i]);
                             }
                         }
 						

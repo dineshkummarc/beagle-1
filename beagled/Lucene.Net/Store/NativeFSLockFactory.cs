@@ -196,21 +196,21 @@ namespace Lucene.Net.Store
 				{
 					lockName = lockPrefix + "-n-" + lockName;
 				}
-				System.IO.FileInfo lockFile = new System.IO.FileInfo(System.IO.Path.Combine(lockDir.FullName, lockName));
+				string lockFile = System.IO.Path.Combine(lockDir.FullName, lockName);
 				bool tmpBool2;
-				if (System.IO.File.Exists(lockFile.FullName))
+				if (System.IO.File.Exists(lockFile))
 					tmpBool2 = true;
 				else
-					tmpBool2 = System.IO.Directory.Exists(lockFile.FullName);
+					tmpBool2 = System.IO.Directory.Exists(lockFile);
 				bool tmpBool3;
-				if (System.IO.File.Exists(lockFile.FullName))
+				if (System.IO.File.Exists(lockFile))
 				{
-					System.IO.File.Delete(lockFile.FullName);
+					System.IO.File.Delete(lockFile);
 					tmpBool3 = true;
 				}
-				else if (System.IO.Directory.Exists(lockFile.FullName))
+				else if (System.IO.Directory.Exists(lockFile))
 				{
-					System.IO.Directory.Delete(lockFile.FullName);
+					System.IO.Directory.Delete(lockFile);
 					tmpBool3 = true;
 				}
 				else

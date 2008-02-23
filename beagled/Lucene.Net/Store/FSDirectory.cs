@@ -89,7 +89,7 @@ namespace Lucene.Net.Store
 		/// the <code>getDirectory</code> methods that take a
 		/// <code>lockFactory</code> (for example, {@link #GetDirectory(String, LockFactory)}).
 		/// </deprecated>
-+		/// REMOVED - D Bera
+		/// REMOVED - D Bera
 		
 		/// <summary>The default class which implements filesystem-based directories. </summary>
 		private static System.Type IMPL;
@@ -142,8 +142,6 @@ namespace Lucene.Net.Store
 		/// </returns>
 		public static FSDirectory GetDirectory(System.IO.FileInfo file, LockFactory lockFactory)
 		{
-			file = new System.IO.FileInfo(file.FullName);
-			
 			bool tmpBool;
 			if (System.IO.File.Exists(file.FullName))
 				tmpBool = true;
@@ -263,16 +261,16 @@ namespace Lucene.Net.Store
 					throw new System.IO.IOException("Cannot read directory " + directory.FullName);
 				for (int i = 0; i < files.Length; i++)
 				{
-					System.IO.FileInfo file = new System.IO.FileInfo(System.IO.Path.Combine(directory.FullName, files[i]));
+					string file = System.IO.Path.Combine(directory.FullName, files[i]);
 					bool tmpBool2;
-					if (System.IO.File.Exists(file.FullName))
+					if (System.IO.File.Exists(file))
 					{
-						System.IO.File.Delete(file.FullName);
+						System.IO.File.Delete(file);
 						tmpBool2 = true;
 					}
-					else if (System.IO.Directory.Exists(file.FullName))
+					else if (System.IO.Directory.Exists(file))
 					{
-						System.IO.Directory.Delete(file.FullName);
+						System.IO.Directory.Delete(file);
 						tmpBool2 = true;
 					}
 					else
@@ -319,7 +317,6 @@ namespace Lucene.Net.Store
 					// default lockDir is our index directory:
 					lockFactory = new SimpleFSLockFactory(path);
 					doClearLockID = true;
-					System.String lockClassName = SupportClass.AppSettings.Get("Lucene.Net.Store.FSDirectoryLockFactoryClass", "");
 				}
 			}
 			
@@ -339,8 +336,7 @@ namespace Lucene.Net.Store
             System.String[] files = SupportClass.FileSupport.GetLuceneIndexFiles(directory.FullName, IndexFileNameFilter.GetFilter());
             for (int i = 0; i < files.Length; i++)
             {
-                System.IO.FileInfo fi = new System.IO.FileInfo(files[i]);
-                files[i] = fi.Name;
+		files[i] = System.IO.Path.GetFileName(files[i]);
             }
 			return files;
 		}
@@ -348,34 +344,29 @@ namespace Lucene.Net.Store
 		/// <summary>Returns true iff a file with the given name exists. </summary>
 		public override bool FileExists(System.String name)
 		{
-			System.IO.FileInfo file = new System.IO.FileInfo(System.IO.Path.Combine(directory.FullName, name));
-			bool tmpBool;
-			if (System.IO.File.Exists(file.FullName))
-				tmpBool = true;
-			else
-				tmpBool = System.IO.Directory.Exists(file.FullName);
-			return tmpBool;
+			string file = System.IO.Path.Combine(directory.FullName, name);
+			return System.IO.File.Exists(file) || System.IO.Directory.Exists(file);
 		}
 		
 		/// <summary>Returns the time the named file was last modified. </summary>
 		public override long FileModified(System.String name)
 		{
-			System.IO.FileInfo file = new System.IO.FileInfo(System.IO.Path.Combine(directory.FullName, name));
-			return (file.LastWriteTime.Ticks);
+			string file = System.IO.Path.Combine(directory.FullName, name);
+			return (System.IO.File.GetLastWriteTime(file).Ticks);
 		}
 		
 		/// <summary>Returns the time the named file was last modified. </summary>
 		public static long FileModified(System.IO.FileInfo directory, System.String name)
 		{
-			System.IO.FileInfo file = new System.IO.FileInfo(System.IO.Path.Combine(directory.FullName, name));
-			return (file.LastWriteTime.Ticks);
+			string file = System.IO.Path.Combine(directory.FullName, name);
+			return (System.IO.File.GetLastWriteTime(file).Ticks);
 		}
 		
 		/// <summary>Set the modified time of an existing file to now. </summary>
 		public override void  TouchFile(System.String name)
 		{
-			System.IO.FileInfo file = new System.IO.FileInfo(System.IO.Path.Combine(directory.FullName, name));
-			file.LastWriteTime = System.DateTime.Now;
+			string file = System.IO.Path.Combine(directory.FullName, name);
+			System.IO.File.SetLastWriteTimeUtc(file, System.DateTime.UtcNow);
 		}
 		
 		/// <summary>Returns the length in bytes of a file in the directory. </summary>
@@ -388,16 +379,16 @@ namespace Lucene.Net.Store
 		/// <summary>Removes an existing file in the directory. </summary>
 		public override void  DeleteFile(System.String name)
 		{
-			System.IO.FileInfo file = new System.IO.FileInfo(System.IO.Path.Combine(directory.FullName, name));
+			string file = System.IO.Path.Combine(directory.FullName, name);
 			bool tmpBool;
-			if (System.IO.File.Exists(file.FullName))
+			if (System.IO.File.Exists(file))
 			{
-				System.IO.File.Delete(file.FullName);
+				System.IO.File.Delete(file);
 				tmpBool = true;
 			}
-			else if (System.IO.Directory.Exists(file.FullName))
+			else if (System.IO.Directory.Exists(file))
 			{
-				System.IO.Directory.Delete(file.FullName);
+				System.IO.Directory.Delete(file);
 				tmpBool = true;
 			}
 			else
