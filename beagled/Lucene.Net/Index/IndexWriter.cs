@@ -711,8 +711,6 @@ namespace Lucene.Net.Index
 					writeLock.Release(); // release write lock
 					writeLock = null;
 				}
-
-				segmentInfos.Optimize (directory);
 			}
 			finally
 			{
@@ -1070,6 +1068,8 @@ namespace Lucene.Net.Index
 					int minSegment = segmentInfos.Count - mergeFactor;
 					MergeSegments(segmentInfos, minSegment < 0?0:minSegment, segmentInfos.Count);
 				}
+
+				segmentInfos.Optimize (directory);
 			}
 		}
 		

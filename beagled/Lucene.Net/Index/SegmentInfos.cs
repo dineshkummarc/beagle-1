@@ -740,6 +740,7 @@ namespace Lucene.Net.Index
 			string[] files = directory.List();
 
 			System.Collections.ArrayList segment_names = new System.Collections.ArrayList();
+
 			foreach (SegmentInfo si in this)
 				segment_names.Add (si.name);
 
@@ -748,11 +749,14 @@ namespace Lucene.Net.Index
 				if (segment_names.Contains (basename))
 					continue;
 
-				if (basename == IndexFileNames.DELETABLE || basename == IndexFileNames.SEGMENTS)
+				// Allowed files deletable, segments, segments.gen, segments_N
+				if (basename == IndexFileNames.DELETABLE || basename.StartsWith (IndexFileNames.SEGMENTS))
 					continue;
 
 				Console.WriteLine ("WARNING! Deleting stale data {0}", file);
-				directory.DeleteFile (file);
+				try {
+					directory.DeleteFile (file);
+				} catch { /* Could be already deleted. */ }
 			}
 		}
 	}
