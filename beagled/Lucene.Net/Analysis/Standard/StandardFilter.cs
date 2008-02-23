@@ -32,8 +32,8 @@ namespace Lucene.Net.Analysis.Standard
         {
         }
 		
-        private static readonly System.String APOSTROPHE_TYPE = Lucene.Net.Analysis.Standard.StandardTokenizerConstants.tokenImage[Lucene.Net.Analysis.Standard.StandardTokenizerConstants.APOSTROPHE];
-        private static readonly System.String ACRONYM_TYPE = Lucene.Net.Analysis.Standard.StandardTokenizerConstants.tokenImage[Lucene.Net.Analysis.Standard.StandardTokenizerConstants.ACRONYM];
+        private static readonly System.String APOSTROPHE_TYPE = Lucene.Net.Analysis.Standard.StandardTokenizerImpl.TOKEN_TYPES[Lucene.Net.Analysis.Standard.StandardTokenizerImpl.APOSTROPHE];
+        private static readonly System.String ACRONYM_TYPE = Lucene.Net.Analysis.Standard.StandardTokenizerImpl.TOKEN_TYPES[Lucene.Net.Analysis.Standard.StandardTokenizerImpl.ACRONYM];
 		
         /// <summary>Returns the next token in the stream, or null at EOS.
         /// <p>Removes <tt>'s</tt> from the end of words.

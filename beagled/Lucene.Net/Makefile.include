@@ -24,15 +24,9 @@ LUCENE_2_1_CSFILES =						\
 	$(lucenedir)/Analysis/StopFilter.cs			\
 	$(lucenedir)/Analysis/StopAnalyzer.cs			\
 	$(lucenedir)/Analysis/Standard/StandardTokenizer.cs	\
-	$(lucenedir)/Analysis/Standard/Token.cs			\
-	$(lucenedir)/Analysis/Standard/TokenMgrError.cs		\
 	$(lucenedir)/Analysis/Standard/StandardAnalyzer.cs	\
 	$(lucenedir)/Analysis/Standard/StandardFilter.cs	\
-	$(lucenedir)/Analysis/Standard/FastCharStream.cs	\
-	$(lucenedir)/Analysis/Standard/StandardTokenizerTokenManager.cs		\
-	$(lucenedir)/Analysis/Standard/StandardTokenizerConstants.cs		\
-	$(lucenedir)/Analysis/Standard/CharStream.cs		\
-	$(lucenedir)/Analysis/Standard/ParseException.cs	\
+	$(lucenedir)/Analysis/Standard/StandardTokenizerImpl.cs	\
 	$(lucenedir)/Analysis/TokenStream.cs			\
 	$(lucenedir)/Analysis/WordlistLoader.cs			\
 	$(lucenedir)/Analysis/SimpleAnalyzer.cs			\
