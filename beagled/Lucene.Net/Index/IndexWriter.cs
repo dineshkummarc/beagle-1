@@ -711,6 +711,8 @@ namespace Lucene.Net.Index
 					writeLock.Release(); // release write lock
 					writeLock = null;
 				}
+
+				segmentInfos.Optimize (directory);
 			}
 			finally
 			{
