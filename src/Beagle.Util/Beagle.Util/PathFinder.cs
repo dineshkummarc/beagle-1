@@ -2,6 +2,7 @@
 // PathFinder.cs
 //
 // Copyright (C) 2004 Novell, Inc.
+// Copyright (C) 2008 Lukas Lipka <lukaslipka@gmail.com>
 //
 
 //
@@ -30,15 +31,10 @@ using System.IO;
 
 namespace Beagle.Util {
 
-	public class PathFinder {
-
-		private PathFinder () { }
+	public static class PathFinder {
 
 		static public string[] Paths {
-			get {
-				string env_var = Environment.GetEnvironmentVariable ("PATH");
-				return env_var.Split (':');
-			}
+			get { return Environment.GetEnvironmentVariable ("PATH").Split (':'); }
 		}
 
 		static public string PkgLibDir {

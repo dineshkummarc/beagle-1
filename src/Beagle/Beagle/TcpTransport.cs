@@ -1,28 +1,8 @@
 //
-// UnixTransport.cs
+// TcpTransport.cs
 //
 // Copyright (C) 2005 Novell, Inc.
-// Copyright (C) 2007 Lukas Lipka <lukaslipka@gmail.com>.
-//
-
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the "Software"),
-// to deal in the Software without restriction, including without limitation
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,
-// and/or sell copies of the Software, and to permit persons to whom the
-// Software is furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
+// Copyright (C) 2008 Lukas Lipka <lukaslipka@gmail.com>
 //
 
 using System;
@@ -31,36 +11,20 @@ using System.Net;
 using System.Net.Sockets;
 using System.Xml.Serialization;
 using System.Threading;
-using Mono.Unix;
 
 using Beagle.Util;
 
 namespace Beagle {
 
-	public class UnixTransport : Transport {
+	public class TcpTransport : Transport {
 		
-		private string socket_name = null;
-		private UnixClient client = null;
+		private TcpClient client = null;
+		private const int port = 2517;
+
 		private byte[] network_data = new byte [4096];
 
-		public UnixTransport ()
-			: this (null)
-		{			
-		}
-
-		public UnixTransport (string client_name)
-			: base (true)
+		public TcpTransport () : base (true)
 		{
-			// Use the default socket name when passed null
-			if (String.IsNullOrEmpty (client_name))
-				client_name = "socket";
-
-			string storage_dir = PathFinder.GetRemoteStorageDir (false);
-
-			if (storage_dir == null)
-				throw new System.Net.Sockets.SocketException ();
-
-			this.socket_name = Path.Combine (storage_dir, client_name);
 		}
 
 		public override void Close ()
@@ -84,7 +48,7 @@ namespace Beagle {
 
 		protected override void SendRequest (RequestMessage request)
 		{
-			client = new UnixClient (this.socket_name);
+			client = new TcpClient (new IPEndPoint (IPAddress.Loopback, port));
 			NetworkStream stream = client.GetStream ();
 			
 			base.SendRequest (request, stream);
@@ -183,8 +147,8 @@ namespace Beagle {
 
 				Array.Clear (buffer, 0, buffer.Length);
 
-				int bytes_read;
-				bytes_read = stream.Read (buffer, 0, buffer.Length);
+				int bytes_read = stream.Read (buffer, 0, buffer.Length);
+
 				if (bytes_read == 0)
 					break;
 
@@ -197,13 +161,8 @@ namespace Beagle {
 					deserialize_stream.Write (buffer, 0, end_index);
 					deserialize_stream.Seek (0, SeekOrigin.Begin);
 
-#if ENABLE_XML_DUMP
-					StreamReader r = new StreamReader (deserialize_stream);
-					Logger.Log.Debug ("Received response:\n{0}\n", r.ReadToEnd ());
-					deserialize_stream.Seek (0, SeekOrigin.Begin);
-#endif
+					ResponseMessage resp = null;
 
-					ResponseMessage resp;
 					try {
 						ResponseWrapper wrapper;
 						wrapper = (ResponseWrapper) resp_serializer.Deserialize (deserialize_stream);
@@ -269,12 +228,6 @@ namespace Beagle {
 			}
 
 			this.BufferStream.Seek (0, SeekOrigin.Begin);
-
-#if ENABLE_XML_DUMP
-			StreamReader dump_reader = new StreamReader (this.BufferStream);
-			Logger.Log.Debug ("Received response:\n{0}\n", dump_reader.ReadToEnd ());
-			this.BufferStream.Seek (0, SeekOrigin.Begin);
-#endif
 			
 			ResponseMessage resp = null;
 

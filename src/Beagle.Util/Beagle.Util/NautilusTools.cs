@@ -137,6 +137,7 @@ namespace Beagle.Util {
 			return directory;
 		}
 
+#if false
 		public static void Main (string[] args)
 		{
 			foreach (string a in args) {
@@ -152,8 +153,8 @@ namespace Beagle.Util {
 
 					Console.WriteLine ();
 				}
-			}
-			
+			}			
 		}
+#endif
 	}
 }

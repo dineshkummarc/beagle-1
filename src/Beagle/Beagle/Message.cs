@@ -85,7 +85,12 @@ namespace Beagle {
 			this.keepalive = keepalive;
 
 			// Register the Unix socket transport by default
+
+#if LINUX
 			this.RegisterTransport (new UnixTransport ());
+#else
+			this.RegisterTransport (new TcpTransport ());
+#endif
 		}
 
 		public RequestMessage ()

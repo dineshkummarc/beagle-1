@@ -24,18 +24,13 @@
 // DEALINGS IN THE SOFTWARE.
 //
 
-
-
-namespace Beagle {
-
-	public interface IIndexableGenerator {
-
+namespace Beagle
+{
+	public interface IIndexableGenerator
+	{
 		Indexable GetNextIndexable ();
-
 		bool HasNextIndexable ();
-
 		string StatusName { get; }
-
 		void PostFlushHook ();
 	}
 }

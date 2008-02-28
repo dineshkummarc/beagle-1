@@ -186,7 +186,7 @@ namespace Beagle.Util {
 			return true;
 		}
 
-#if true
+#if false
 		public static void Main (string[] args)
 		{
 			if (args.Length != 1)

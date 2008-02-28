@@ -165,9 +165,9 @@ namespace Beagle.Util {
 			get {
 				throw new System.NotSupportedException();
 			}
-			set {
-				throw new System.NotSupportedException();
-			}
+			//set {
+			//	throw new System.NotSupportedException();
+			//}
 		}
 		public override long Position {
 			get {

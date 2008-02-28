@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.50727</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{F6C2E799-417F-4C13-B5A8-47B98A9B7733}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Beagle</RootNamespace>
+    <AssemblyName>Beagle</AssemblyName>
+    <StartupObject>
+    </StartupObject>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+  <ItemGroup>
+    <Compile Include="Beagle\TcpTransport.cs" />
+    <Compile Include="Beagle\Hit.cs" />
+    <Compile Include="Beagle\IIndexableGenerator.cs" />
+    <Compile Include="Beagle\Indexable.cs" />
+    <Compile Include="Beagle\IndexingService.cs" />
+    <Compile Include="Beagle\IndexingStatusResponse.cs" />
+    <Compile Include="Beagle\InformationalMessagesRequest.cs" />
+    <Compile Include="Beagle\Message.cs" />
+    <Compile Include="Beagle\Property.cs" />
+    <Compile Include="Beagle\Query.cs" />
+    <Compile Include="Beagle\QueryableStatus.cs" />
+    <Compile Include="Beagle\QueryPart.cs" />
+    <Compile Include="Beagle\QueryResponses.cs" />
+    <Compile Include="Beagle\RemoteControl.cs" />
+    <Compile Include="Beagle\Snippet.cs" />
+    <Compile Include="Beagle\Transport.cs" />
+    <Compile Include="Beagle\UnixTransport.cs" />
+    <Compile Include="Beagle\Versioned.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="glib-sharp, Version=2.8.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f" />
+    <Reference Include="Mono.Posix, Version=2.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\win-deps\Mono.Posix.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.XML" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Beagle.Util\Beagle.Util.csproj">
+      <Project>{EED7CCE3-A6A2-4163-ACBC-0CA649070432}</Project>
+      <Name>Beagle.Util</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>
