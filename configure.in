@@ -1,16 +1,8 @@
-###
-### Welcome to Beagle's configure.in.  We hope you enjoy your stay.
-###
-
-AC_INIT(beagled/BeagleDaemon.cs)
+AC_INIT(src/Beagle.Daemon/Beagle.Daemon/BeagleDaemon.cs)
 AC_CANONICAL_SYSTEM
 AM_INIT_AUTOMAKE(beagle, 0.3.3)
 
-########################################################################
-
-###
-### Some dependencies
-###
+# Dependencies
 
 MONO_REQUIRED=1.2.4
 MONODOC_REQUIRED=1.2.4
@@ -617,33 +609,31 @@ dnl ----------------------------------------------
 
 AC_OUTPUT([
 Makefile
-Util/Makefile
-Util/Util.dll.config
-glue/Makefile
-BeagleClient/Makefile
-beagled/Makefile
-Filters/Makefile
-tools/Makefile
-tools/beagle-settings.desktop.in
-search/Makefile
-search/beagle-search.desktop.in
-ImLogViewer/Makefile
-epiphany-extension/Makefile
-firefox-extension/Makefile
-thunderbird-extension/Makefile
+src/Makefile
+src/libbeagleglue/Makefile
+src/Beagle.Util/Makefile
+src/Beagle.Util/AssemblyInfo.cs
+src/Beagle.Util/Beagle.Util/ExternalStringsHack.cs
+src/Beagle.Util/Beagle.Util.dll.config
+src/Beagle/Makefile
+src/Beagle/AssemblyInfo.cs
+src/Beagle.Daemon/Makefile
+src/Beagle.Daemon/AssemblyInfo.cs
+src/Beagle.Filters/Makefile
+src/Beagle.Filters/AssemblyInfo.cs
 doc/Makefile
 doc/api/Makefile
-bludgeon/Makefile
-conf-data/Makefile
-beagle-0.0.pc
-beagle-daemon.pc
-beagle-ui-0.0.pc
-beagle.spec
+data/conf-data/Makefile
+data/beagle-0.0.pc
+data/beagle-daemon.pc
+data/beagle-ui-0.0.pc
+data/beagle.spec
 po/Makefile.in
 ])
 
 echo "
-	Beagle version:           ${VERSION}
+beagle-${VERSION}
+
 	Target OS:		  ${os}
 	Inotify:		  ${enable_inotify}
 
@@ -666,7 +656,6 @@ echo "
 
 	Monitor screensaver       ${have_xss}
 	beagle-search GUI	  ${enable_gui}
-
 	Qt beagle-settings GUI    ${enable_qt}
 
 	Build docs?               ${with_docs}

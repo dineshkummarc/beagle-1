@@ -2,6 +2,7 @@
 // AssemblyInfo.cs
 //
 // Copyright (C) 2006 Novell, Inc.
+// Copyright (C) 2008 Lukas Lipka <lukaslipka@gmail.com>
 //
 
 //
@@ -25,10 +26,14 @@
 //
 
 using System.Reflection;
-
 using Beagle;
 
-// Any request message types in the Beagle.dll file must be registered here.
+[assembly: AssemblyVersion("@VERSION@")]
+[assembly: AssemblyTitle ("Beagle")]
+
+// Any request and response message types in the Beagle.dll file
+// must be registered here.
+
 [assembly: RequestMessageTypes (
 	 typeof (CountMatchQuery),
 	 typeof (DaemonInformationRequest),
@@ -53,3 +58,4 @@ using Beagle;
 	 typeof (SnippetResponse),
 	 typeof (CountMatchQueryResponse)
 )]
+

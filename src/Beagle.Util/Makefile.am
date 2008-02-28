@@ -5,11 +5,12 @@
 CSC = $(MCS) -debug -nowarn:0169,0414
 CSFLAGS = -target:library
 
-UTIL_TARGET = Util.dll
-UTIL_TARGET_CONFIG = $(UTIL_TARGET).config
+ASSEMBLY_NAME = Beagle.Util
+ASSEMBLY = $(ASSEMBLY_NAME).dll
+ASSEMBLY_CONFIG = $(UTIL_TARGET).config
 
-UI_UTIL_TARGET = UiUtil.dll
-UI_UTIL_TARGET_CONFIG = $(UI_UTIL_TARGET).config
+#UI_UTIL_TARGET = Beagle.UiUtil.dll
+#UI_UTIL_TARGET_CONFIG = $(UI_UTIL_TARGET).config
 
 if OS_LINUX
 CSFLAGS += -define:OS_LINUX
@@ -34,132 +35,132 @@ $(EXTSTR): $(EXTSTR_IN)
 		-e "s|\@SQLITE_MAJ_VER\@|$(SQLITE_MAJ_VER)|g"	\
 		< $(EXTSTR_IN) > $@
 
-UTIL_CSFILES = 			        	\
-	$(srcdir)/ArrayFu.cs              	\
-	$(srcdir)/Battery.cs			\
-	$(srcdir)/BetterBitArray.cs		\
-	$(srcdir)/camel.cs              	\
-	$(srcdir)/Config.cs			\
-	$(srcdir)/DateTimeUtil.cs		\
-	$(srcdir)/DelayedTextWriter.cs		\
-	$(srcdir)/DigikamTags.cs		\
-	$(srcdir)/DirectoryWalker.cs		\
-	$(srcdir)/Evolution.cs			\
-	$(srcdir)/ExceptionHandlingThread.cs	\
-	$(srcdir)/ExtendedAttribute.cs  	\
-	$(srcdir)/FileAdvise.cs			\
-	$(srcdir)/FileSystem.cs			\
-	$(srcdir)/FrequencyStatistics.cs	\
-	$(srcdir)/FSpotTools.cs         	\
-	$(srcdir)/GuidFu.cs			\
-	$(srcdir)/HtmlRemovingReader.cs		\
-	$(srcdir)/ICalParser.cs              	\
-	$(srcdir)/ImBuddy.cs              	\
-	$(srcdir)/Inotify.cs			\
-	$(srcdir)/KdeUtils.cs			\
-	$(srcdir)/KonqHistoryUtil.cs		\
-	$(srcdir)/LineReader.cs			\
-	$(srcdir)/Log.cs			\
-	$(srcdir)/Logger.cs             	\
-	$(srcdir)/MultiReader.cs        	\
-	$(srcdir)/NautilusTools.cs      	\
-	$(srcdir)/NetworkService.cs		\
-	$(srcdir)/Note.cs               	\
-	$(srcdir)/OperaHistory.cs		\
-	$(srcdir)/Password.cs			\
-	$(srcdir)/PathFinder.cs			\
-	$(srcdir)/PullingReader.cs      	\
-	$(srcdir)/ReflectionFu.cs		\
-	$(srcdir)/SafeProcess.cs		\
-	$(srcdir)/Scheduler.cs			\
-	$(srcdir)/SmallIntArray.cs		\
-	$(srcdir)/Stopwatch.cs			\
-	$(srcdir)/StringFu.cs           	\
-	$(srcdir)/StringMatcher.cs		\
-	$(srcdir)/SystemInformation.cs		\
-	$(srcdir)/SystemPriorities.cs		\
-	$(srcdir)/TeeTextWriter.cs		\
-	$(srcdir)/ThreadPond.cs			\
-	$(srcdir)/Timeline.cs			\
-	$(srcdir)/TopScores.cs			\
-	$(srcdir)/TypeCacheAttribute.cs		\
-	$(srcdir)/UnclosableStream.cs		\
-	$(srcdir)/UriFu.cs			\
-	$(srcdir)/VersionFu.cs			\
-	$(srcdir)/XdgMime.cs			\
-	$(srcdir)/XmlFu.cs			\
-	$(srcdir)/F-Spot/Bim.cs			\
-	$(srcdir)/F-Spot/BitConverter.cs	\
-	$(srcdir)/F-Spot/Exif.cs		\
-	$(srcdir)/F-Spot/IptcFile.cs		\
-	$(srcdir)/F-Spot/JpegHeader.cs		\
-	$(srcdir)/F-Spot/MetadataStore.cs	\
-	$(srcdir)/F-Spot/PngFile.cs		\
-	$(srcdir)/F-Spot/PixbufUtils.cs		\
-	$(srcdir)/F-Spot/Tiff.cs		\
-	$(srcdir)/F-Spot/XmpFile.cs		\
-	$(srcdir)/Hal/AccessControl.cs		\
-	$(srcdir)/Hal/CPUFreq.cs		\
-	$(srcdir)/Hal/Context.cs		\
-	$(srcdir)/Hal/Device.cs			\
-	$(srcdir)/Hal/IAccessControl.cs		\
-	$(srcdir)/Hal/ICPUFreq.cs		\
-	$(srcdir)/Hal/IDevice.cs		\
-	$(srcdir)/Hal/IKillSwitch.cs		\
-	$(srcdir)/Hal/ILaptopPanel.cs		\
-	$(srcdir)/Hal/ILightSensor.cs		\
-	$(srcdir)/Hal/IManager.cs		\
-	$(srcdir)/Hal/IStorage.cs		\
-	$(srcdir)/Hal/ISystemPowerManagement.cs	\
-	$(srcdir)/Hal/IVolume.cs		\
-	$(srcdir)/Hal/IVolumeCrypto.cs		\
-	$(srcdir)/Hal/KillSwitch.cs		\
-	$(srcdir)/Hal/LaptopPanel.cs		\
-	$(srcdir)/Hal/LightSensor.cs		\
-	$(srcdir)/Hal/Manager.cs		\
-	$(srcdir)/Hal/PropertyModification.cs	\
-	$(srcdir)/Hal/Storage.cs		\
-	$(srcdir)/Hal/SystemPowerManagement.cs	\
-	$(srcdir)/Hal/Volume.cs			\
-	$(srcdir)/Hal/VolumeCrypto.cs		\
-	$(srcdir)/SemWeb/AssemblyInfo.cs        \
-	$(srcdir)/SemWeb/NamespaceManager.cs    \
-	$(srcdir)/SemWeb/Util.cs                \
-	$(srcdir)/SemWeb/UriMap.cs              \
-	$(srcdir)/SemWeb/Resource.cs            \
-	$(srcdir)/SemWeb/Statement.cs           \
-	$(srcdir)/SemWeb/Store.cs               \
-	$(srcdir)/SemWeb/MemoryStore.cs         \
-	$(srcdir)/SemWeb/SQLStore.cs            \
-	$(srcdir)/SemWeb/RdfReader.cs           \
-	$(srcdir)/SemWeb/RdfXmlReader.cs        \
-	$(srcdir)/SemWeb/N3Reader.cs            \
-	$(srcdir)/SemWeb/RdfWriter.cs           \
-	$(srcdir)/SemWeb/RdfXmlWriter.cs        \
-	$(srcdir)/SemWeb/N3Writer.cs            \
-	$(srcdir)/SemWeb/RSquary.cs             \
-	$(srcdir)/SemWeb/LiteralFilters.cs      \
-	$(srcdir)/SemWeb/Query.cs               \
-	$(srcdir)/SemWeb/Inference.cs           \
-	$(srcdir)/SemWeb/RDFS.cs                \
-	$(srcdir)/SemWeb/Algos.cs               \
-	$(srcdir)/SemWeb/Remote.cs              \
-	$(srcdir)/SemWeb/XPathSemWebNavigator.cs\
+ASSEMBLY_SOURCES = \
+	$(srcdir)/ArrayFu.cs \
+	$(srcdir)/Battery.cs \
+	$(srcdir)/BetterBitArray.cs \
+	$(srcdir)/Camel.cs \
+	$(srcdir)/Config.cs \
+	$(srcdir)/DateTimeUtil.cs \
+	$(srcdir)/DelayedTextWriter.cs \
+	$(srcdir)/DigikamTags.cs \
+	$(srcdir)/DirectoryWalker.cs \
+	$(srcdir)/Evolution.cs \
+	$(srcdir)/ExceptionHandlingThread.cs \
+	$(srcdir)/ExtendedAttribute.cs \
+	$(srcdir)/FileAdvise.cs \
+	$(srcdir)/FileSystem.cs \
+	$(srcdir)/FrequencyStatistics.cs \
+	$(srcdir)/FSpotTools.cs \
+	$(srcdir)/GuidFu.cs \
+	$(srcdir)/HtmlRemovingReader.cs \
+	$(srcdir)/ICalParser.cs \
+	$(srcdir)/ImBuddy.cs \
+	$(srcdir)/Inotify.cs \
+	$(srcdir)/KdeUtils.cs \
+	$(srcdir)/KonqHistoryUtil.cs \
+	$(srcdir)/LineReader.cs \
+	$(srcdir)/Log.cs \
+	$(srcdir)/Logger.cs \
+	$(srcdir)/MultiReader.cs \
+	$(srcdir)/NautilusTools.cs \
+	$(srcdir)/NetworkService.cs \
+	$(srcdir)/Note.cs \
+	$(srcdir)/OperaHistory.cs \
+	$(srcdir)/Password.cs \
+	$(srcdir)/PathFinder.cs \
+	$(srcdir)/PullingReader.cs \
+	$(srcdir)/ReflectionFu.cs \
+	$(srcdir)/SafeProcess.cs \
+	$(srcdir)/Scheduler.cs \
+	$(srcdir)/SmallIntArray.cs \
+	$(srcdir)/Stopwatch.cs \
+	$(srcdir)/StringFu.cs \
+	$(srcdir)/StringMatcher.cs \
+	$(srcdir)/SystemInformation.cs \
+	$(srcdir)/SystemPriorities.cs \
+	$(srcdir)/TeeTextWriter.cs \
+	$(srcdir)/ThreadPond.cs	\
+	$(srcdir)/Timeline.cs \
+	$(srcdir)/TopScores.cs \
+	$(srcdir)/TypeCacheAttribute.cs \
+	$(srcdir)/UnclosableStream.cs \
+	$(srcdir)/UriFu.cs \
+	$(srcdir)/VersionFu.cs \
+	$(srcdir)/XdgMime.cs \
+	$(srcdir)/XmlFu.cs \
+	$(srcdir)/F-Spot/Bim.cs \
+	$(srcdir)/F-Spot/BitConverter.cs \
+	$(srcdir)/F-Spot/Exif.cs \
+	$(srcdir)/F-Spot/IptcFile.cs \
+	$(srcdir)/F-Spot/JpegHeader.cs \
+	$(srcdir)/F-Spot/MetadataStore.cs \
+	$(srcdir)/F-Spot/PngFile.cs \
+	$(srcdir)/F-Spot/PixbufUtils.cs \
+	$(srcdir)/F-Spot/Tiff.cs \
+	$(srcdir)/F-Spot/XmpFile.cs \
+	$(srcdir)/Hal/AccessControl.cs \
+	$(srcdir)/Hal/CPUFreq.cs \
+	$(srcdir)/Hal/Context.cs \
+	$(srcdir)/Hal/Device.cs \
+	$(srcdir)/Hal/IAccessControl.cs \
+	$(srcdir)/Hal/ICPUFreq.cs \
+	$(srcdir)/Hal/IDevice.cs \
+	$(srcdir)/Hal/IKillSwitch.cs \
+	$(srcdir)/Hal/ILaptopPanel.cs \
+	$(srcdir)/Hal/ILightSensor.cs \
+	$(srcdir)/Hal/IManager.cs \
+	$(srcdir)/Hal/IStorage.cs \
+	$(srcdir)/Hal/ISystemPowerManagement.cs \
+	$(srcdir)/Hal/IVolume.cs \
+	$(srcdir)/Hal/IVolumeCrypto.cs \
+	$(srcdir)/Hal/KillSwitch.cs \
+	$(srcdir)/Hal/LaptopPanel.cs \
+	$(srcdir)/Hal/LightSensor.cs \
+	$(srcdir)/Hal/Manager.cs \
+	$(srcdir)/Hal/PropertyModification.cs \
+	$(srcdir)/Hal/Storage.cs \
+	$(srcdir)/Hal/SystemPowerManagement.cs \
+	$(srcdir)/Hal/Volume.cs \
+	$(srcdir)/Hal/VolumeCrypto.cs \
+	$(srcdir)/SemWeb/AssemblyInfo.cs \
+	$(srcdir)/SemWeb/NamespaceManager.cs \
+	$(srcdir)/SemWeb/Util.cs \
+	$(srcdir)/SemWeb/UriMap.cs \
+	$(srcdir)/SemWeb/Resource.cs \
+	$(srcdir)/SemWeb/Statement.cs \
+	$(srcdir)/SemWeb/Store.cs \
+	$(srcdir)/SemWeb/MemoryStore.cs \
+	$(srcdir)/SemWeb/SQLStore.cs \
+	$(srcdir)/SemWeb/RdfReader.cs \
+	$(srcdir)/SemWeb/RdfXmlReader.cs \
+	$(srcdir)/SemWeb/N3Reader.cs \
+	$(srcdir)/SemWeb/RdfWriter.cs \
+	$(srcdir)/SemWeb/RdfXmlWriter.cs \
+	$(srcdir)/SemWeb/N3Writer.cs \
+	$(srcdir)/SemWeb/RSquary.cs \
+	$(srcdir)/SemWeb/LiteralFilters.cs \
+	$(srcdir)/SemWeb/Query.cs \
+	$(srcdir)/SemWeb/Inference.cs \
+	$(srcdir)/SemWeb/RDFS.cs \
+	$(srcdir)/SemWeb/Algos.cs \
+	$(srcdir)/SemWeb/Remote.cs \
+	$(srcdir)/SemWeb/XPathSemWebNavigator.cs \
 	$(srcdir)/QueryKeywordMapping.cs
 
-UTIL_ASSEMBLIES =				\
-	$(BEAGLED_LIBS)				\
-	$(NDESK_DBUS_GLIB_LIBS)			\
-	-r:System.Data				\
-	-r:Mono.Data.Sqlite			\
-	-r:Mono.Posix				\
-	-r:System.Web				\
-	-r:ICSharpCode.SharpZipLib
-
 if ENABLE_THUNDERBIRD
-UTIL_CSFILES +=					\
+ASSEMBLY_SOURCES += \
 	$(srcdir)/Thunderbird.cs
 endif
+
+ASSEMBLY_REFERENCES = \
+	$(BEAGLED_LIBS) \
+	$(NDESK_DBUS_GLIB_LIBS) \
+	-r:System.Data \
+	-r:Mono.Data.Sqlite \
+	-r:Mono.Posix \
+	-r:System.Web \
+	-r:ICSharpCode.SharpZipLib
 
 if ENABLE_AVAHI
 CSFLAGS += -define:ENABLE_AVAHI
@@ -207,22 +208,11 @@ endif
 $(UI_UTIL_TARGET): $(UI_UTIL_CSFILES) $(UTIL_TARGET)
 	$(CSC) -unsafe -out:$@ $(CSFLAGS) $(UI_UTIL_CSFILES) $(UI_UTIL_ASSEMBLIES)
 
-INOTIFY_TEST_CSFILES =				\
-	$(srcdir)/Inotify.cs			\
-	$(srcdir)/Log.cs			\
-	$(srcdir)/Logger.cs			\
-	$(srcdir)/DelayedTextWriter.cs		\
-	$(srcdir)/TeeTextWriter.cs		\
-	$(srcdir)/DirectoryWalker.cs		\
-	$(srcdir)/FileSystem.cs			\
-	$(srcdir)/ExceptionHandlingThread.cs
-
 Inotify.exe: $(INOTIFY_TEST_CSFILES)
 	$(CSC) -unsafe -out:$@ $^ -r:Mono.Posix -define:INOTIFY_TEST -define:ENABLE_INOTIFY
 
 ALL_TARGETS =			\
-	$(UTIL_TARGET)		\
-	$(INOTIFY_EXE)
+	$(UTIL_TARGET)
 
 if ENABLE_GUI
 ALL_TARGETS += $(UI_UTIL_TARGET)
@@ -249,8 +239,9 @@ COND_CS_FILES =				\
 	$(srcdir)/Thunderbird.cs
 
 EXTRA_DIST =			\
+	AssemblyInfo.cs.in \
 	$(EXTSTR_IN)		\
-	$(UTIL_CSFILES)		\
+	$(ASSEMBLY_SOURCES)	\
 	$(UI_UTIL_CSFILES)	\
 	$(COND_CS_FILES)	\
 	UiUtil.dll.config	\
