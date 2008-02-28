@@ -1,61 +1,55 @@
 CSC = $(MCS) -debug
 
-TARGET = Beagle.dll
+ASSEMBLY_NAME = Beagle
+ASSEMBLY = $(ASSEMBLY_NAME).dll
 
-CSFLAGS = 						\
-	-target:library					\
-	$(BEAGLE_DEFINES)
+CSFLAGS = -ASSEMBLY:library $(BEAGLE_DEFINES)
 
 if ENABLE_AVAHI
 CSFLAGS += -define:ENABLE_AVAHI
 endif
 
-CSFILES = 						\
-	$(srcdir)/AssemblyInfo.cs			\
-	$(srcdir)/Hit.cs                		\
-	$(srcdir)/IIndexableGenerator.cs       		\
-	$(srcdir)/Indexable.cs          		\
-	$(srcdir)/IndexingService.cs			\
-	$(srcdir)/IndexingStatusResponse.cs		\
-	$(srcdir)/InformationalMessagesRequest.cs	\
-	$(srcdir)/Message.cs				\
-	$(srcdir)/Property.cs           		\
-	$(srcdir)/Query.cs              		\
-	$(srcdir)/QueryPart.cs				\
-	$(srcdir)/QueryResponses.cs            		\
-	$(srcdir)/QueryableStatus.cs			\
-	$(srcdir)/RemoteControl.cs			\
-	$(srcdir)/Snippet.cs				\
-	$(srcdir)/Transport.cs				\
-	$(srcdir)/UnixTransport.cs			\
-	$(srcdir)/Versioned.cs
+ASSEMBLY_SOURCES = \
+	Beagle/AssemblyInfo.cs \
+	Beagle/Hit.cs \
+	Beagle/IIndexableGenerator.cs \
+	Beagle/Indexable.cs \
+	Beagle/IndexingService.cs \
+	Beagle/IndexingStatusResponse.cs \
+	Beagle/InformationalMessagesRequest.cs \
+	Beagle/Message.cs \
+	Beagle/Property.cs \
+	Beagle/Query.cs \
+	Beagle/QueryPart.cs \
+	Beagle/QueryResponses.cs \
+	Beagle/QueryableStatus.cs \
+	Beagle/RemoteControl.cs \
+	Beagle/Snippet.cs \
+	Beagle/Transport.cs \
+	Beagle/UnixTransport.cs \
+	Beagle/Versioned.cs
 
-LOCAL_ASSEMBLIES =					\
-	../Util/Util.dll
+ASSEMBLY_REFERENCES = \
+	-r:../Beagle.Util/Beagle.Util.dll \
+	$(BEAGLED_LIBS) \
+	$(SHARPZIPLIBS_LIBS) \
+	-r:Mono.Posix
 
-ASSEMBLIES = 						\
-	$(BEAGLED_LIBS)                 		\
-	$(SHARPZIPLIBS_LIBS)				\
-	-r:Mono.Posix					\
-	$(LOCAL_ASSEMBLIES:%=-r:%)
+$(ASSEMBLY): $(ASSEMBLY_SOURCES)
+	$(CSC) -out:$@ $(CSFLAGS) $(ASSEMBLY_SOURCES) $(ASSEMBLY_REFERENCES)
 
-RESOURCES =
+all: $(ASSEMBLY)
 
-$(TARGET): $(CSFILES) $(LOCAL_ASSEMBLIES) $(RESOURCES)
-	$(CSC) -out:$@ $(CSFLAGS) $(CSFILES) $(ASSEMBLIES) $(RESOURCES)
-
-all: $(TARGET)
-
-install-data-local: $(TARGET)
+install-data-local: $(ASSEMBLY)
 	$(mkinstalldirs) $(DESTDIR)$(pkglibdir)
-	$(INSTALL_DATA) $(TARGET) $(TARGET).mdb $(DESTDIR)$(pkglibdir)
+	$(INSTALL_DATA) $(ASSEMBLY) $(ASSEMBLY).mdb $(DESTDIR)$(pkglibdir)
 
 uninstall-local:
-	rm -f $(DESTDIR)$(pkglibdir)/$(TARGET) $(DESTDIR)$(pkglibdir)/$(TARGET).mdb
+	rm -f $(DESTDIR)$(pkglibdir)/$(ASSEMBLY) $(DESTDIR)$(pkglibdir)/$(ASSEMBLY).mdb
 
-EXTRA_DIST =		\
-	$(CSFILES)
+EXTRA_DIST = \
+	$(ASSEMBLY_SOURCES)
 
-CLEANFILES =		\
-	$(TARGET)	\
-	$(TARGET).mdb
+CLEANFILES = \
+	$(ASSEMBLY) \
+	$(ASSEMBLY).mdb
