@@ -67,7 +67,7 @@ namespace Lucene.Net.Store
 			failureReason = null;
 			int maxSleepCount = (int) (lockWaitTimeout / LOCK_POLL_INTERVAL);
 			int sleepCount = 0;
-			maxSleepCount = System.Math.Max (maxSleepCount, 1);
+			maxSleepCount = System.Math.Min (maxSleepCount, 1);
 			SimpleFSLock.Log ("Lock.Obtain timeout={0} maxsleepcount={1}", lockWaitTimeout, maxSleepCount);
 			bool locked = Obtain();
 			while (!locked)

@@ -266,6 +266,10 @@ namespace Beagle.Daemon {
 				text_cache.BeginTransaction ();
 				
 			IndexWriter primary_writer, secondary_writer;
+			// FIXME: Lock obtain time-out can happen here; if that happens,
+			// an exception will be thrown and this method will break in the middle
+			// leaving IndexWriters unclosed! Same for any Lucene.Net-index modification
+			// methods.
 			primary_writer = new IndexWriter (PrimaryStore, IndexingAnalyzer, false);
 			secondary_writer = null;
 

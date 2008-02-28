@@ -436,15 +436,15 @@ namespace Beagle.Daemon {
 			fingerprint = reader.ReadLine ();
 			reader.Close ();
 
-			Lucene.Net.Store.LockFactory lock_factory;
-			if (read_only_mode)
-				lock_factory = Lucene.Net.Store.NoLockFactory.GetNoLockFactory ();
-			else
-				lock_factory = new Lucene.Net.Store.SimpleFSLockFactory (LockDirectory);
-
 			// Create stores for our indexes.
-			primary_store = Lucene.Net.Store.FSDirectory.GetDirectory (PrimaryIndexDirectory, lock_factory);
-			secondary_store = Lucene.Net.Store.FSDirectory.GetDirectory (SecondaryIndexDirectory, lock_factory);
+			// Use separate lock factories since each lock factory is tied to the index directory
+			if (read_only_mode) {
+				primary_store = Lucene.Net.Store.FSDirectory.GetDirectory (PrimaryIndexDirectory, Lucene.Net.Store.NoLockFactory.GetNoLockFactory ());
+				secondary_store = Lucene.Net.Store.FSDirectory.GetDirectory (SecondaryIndexDirectory, Lucene.Net.Store.NoLockFactory.GetNoLockFactory ());
+			} else {
+				primary_store = Lucene.Net.Store.FSDirectory.GetDirectory (PrimaryIndexDirectory, new Lucene.Net.Store.SimpleFSLockFactory (LockDirectory));
+				secondary_store = Lucene.Net.Store.FSDirectory.GetDirectory (SecondaryIndexDirectory, new Lucene.Net.Store.SimpleFSLockFactory (LockDirectory));
+			}
 		}
 
 		////////////////////////////////////////////////////////////////

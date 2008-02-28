@@ -271,7 +271,7 @@ namespace Beagle.Daemon {
 		}
 	}
 
-#if false
+#if Noisefilter
 	public class AnalyzerTest {
 		public static void Main ()
 		{
