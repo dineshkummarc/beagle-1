@@ -39,7 +39,7 @@ using ICSharpCode.SharpZipLib.GZip;
 
 namespace Beagle.Filters {
     
-	public class FilterAbiWord : Beagle.Daemon.Filter {
+	public class FilterAbiWord : Filter {
 
 		Hashtable hotStyles;
 		bool is_gzipped;

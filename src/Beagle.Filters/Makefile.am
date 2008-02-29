@@ -1,178 +1,165 @@
-
-FILTERDIR = $(pkglibdir)/Filters
 CSC = $(MCS) -debug
-
-TARGET = Filters.dll
-
 CSFLAGS = -target:library $(BEAGLE_DEFINES)
 
-# Found at http://sharptoolbox.madgeek.com/
-HAP_CSFILES =						\
-	$(srcdir)/HtmlAgilityPack/crc32.cs		\
-	$(srcdir)/HtmlAgilityPack/Header.cs		\
-	$(srcdir)/HtmlAgilityPack/HtmlAttribute.cs	\
-	$(srcdir)/HtmlAgilityPack/HtmlDocument.cs	\
-	$(srcdir)/HtmlAgilityPack/HtmlEntity.cs		\
-	$(srcdir)/HtmlAgilityPack/HtmlNode.cs		\
-	$(srcdir)/HtmlAgilityPack/HtmlNodeNavigator.cs	\
-	$(srcdir)/HtmlAgilityPack/MixedCodeDocument.cs	\
-	$(srcdir)/HtmlAgilityPack/tools.cs
+ASSEMBLY_NAME = Beagle.Filters
+ASSEMBLY = $(ASSEMBLY_NAME).dll
+
+FILTERDIR = $(pkglibdir)/Filters
+
+# HtmlAgilityPack found at http://sharptoolbox.madgeek.com/
+# RTF is a local copy of http://svn.myrealbox.com/viewcvs/trunk/mcs/class/Managed.Windows.Forms/System.Windows.Forms.RTF/
 
 include TagLib/TagLib.sources
-
 include 7zip/7zip.sources
 
-# Local copy of http://svn.myrealbox.com/viewcvs/trunk/mcs/class/Managed.Windows.Forms/System.Windows.Forms.RTF/
-SWF_RTF_CSFILES =						\
-	$(srcdir)/System.Windows.Forms.RTF/Charcode.cs		\
-	$(srcdir)/System.Windows.Forms.RTF/Charset.cs		\
-	$(srcdir)/System.Windows.Forms.RTF/CharsetFlags.cs	\
-	$(srcdir)/System.Windows.Forms.RTF/CharsetType.cs	\
-	$(srcdir)/System.Windows.Forms.RTF/ClassDelegate.cs	\
-	$(srcdir)/System.Windows.Forms.RTF/Color.cs		\
-	$(srcdir)/System.Windows.Forms.RTF/DestinationDelegate.cs \
-	$(srcdir)/System.Windows.Forms.RTF/Font.cs		\
-	$(srcdir)/System.Windows.Forms.RTF/KeysInit.cs		\
-	$(srcdir)/System.Windows.Forms.RTF/KeyStruct.cs		\
-	$(srcdir)/System.Windows.Forms.RTF/Major.cs		\
-	$(srcdir)/System.Windows.Forms.RTF/Minor.cs		\
-	$(srcdir)/System.Windows.Forms.RTF/RTF.cs		\
-	$(srcdir)/System.Windows.Forms.RTF/RTFException.cs	\
-	$(srcdir)/System.Windows.Forms.RTF/StandardCharCode.cs	\
-	$(srcdir)/System.Windows.Forms.RTF/StandardCharName.cs	\
-	$(srcdir)/System.Windows.Forms.RTF/Style.cs		\
-	$(srcdir)/System.Windows.Forms.RTF/StyleElement.cs	\
-	$(srcdir)/System.Windows.Forms.RTF/StyleType.cs		\
-	$(srcdir)/System.Windows.Forms.RTF/TextMap.cs		\
-	$(srcdir)/System.Windows.Forms.RTF/TokenClass.cs
-
-CSFILES = 				\
-	$(srcdir)/AssemblyInfo.cs	\
-	$(HAP_CSFILES)			\
-	$(SWF_RTF_CSFILES)		\
-	$(7ZIP_CSFILES)			\
-	$(srcdir)/FilterAbiword.cs	\
-	$(srcdir)/FilterArchive.cs	\
-	$(srcdir)/FilterAudio.cs	\
-	$(srcdir)/FilterBmp.cs		\
-	$(srcdir)/FilterBoo.cs		\
-	$(srcdir)/FilterC.cs		\
-	$(srcdir)/FilterCSharp.cs	\
-	$(srcdir)/FilterCpp.cs		\
-	$(srcdir)/FilterDeb.cs		\
-	$(srcdir)/FilterDesktop.cs	\
-	$(srcdir)/FilterDocbook.cs	\
-	$(srcdir)/FilterEbuild.cs	\
-	$(srcdir)/FilterExternal.cs	\
-	$(srcdir)/FilterEmpathyLog.cs	\
-	$(srcdir)/FilterFortran.cs	\
-	$(srcdir)/FilterGif.cs		\
-	$(srcdir)/FilterHtml.cs		\
-	$(srcdir)/FilterIgnore.cs	\
-	$(srcdir)/FilterImage.cs	\
-	$(srcdir)/FilterJava.cs		\
-	$(srcdir)/FilterJpeg.cs		\
-	$(srcdir)/FilterJs.cs		\
-	$(srcdir)/FilterKAddressBook.cs \
-	$(srcdir)/FilterKCal.cs		\
-	$(srcdir)/FilterKNotes.cs	\
-	$(srcdir)/FilterKOrganizer.cs	\
-	$(srcdir)/FilterKonqHistory.cs	\
-	$(srcdir)/FilterKopeteLog.cs	\
-	$(srcdir)/FilterLabyrinth.cs	\
-	$(srcdir)/FilterLisp.cs		\
-	$(srcdir)/FilterM3U.cs		\
-	$(srcdir)/FilterMPlayerVideo.cs	\
-	$(srcdir)/FilterMail.cs		\
-	$(srcdir)/FilterMan.cs		\
-	$(srcdir)/FilterMatlab.cs	\
-	$(srcdir)/FilterMonodoc.cs	\
-	$(srcdir)/FilterOpenOffice.cs	\
-	$(srcdir)/FilterPackage.cs	\
-	$(srcdir)/FilterPascal.cs	\
-	$(srcdir)/FilterPdf.cs		\
-	$(srcdir)/FilterPerl.cs		\
-	$(srcdir)/FilterPhp.cs		\
-	$(srcdir)/FilterPidginLog.cs	\
-	$(srcdir)/FilterPls.cs		\
-	$(srcdir)/FilterPng.cs		\
-	$(srcdir)/FilterPython.cs	\
-	$(srcdir)/FilterRPM.cs		\
-	$(srcdir)/FilterRTF.cs		\
-	$(srcdir)/FilterRuby.cs		\
-	$(srcdir)/FilterScilab.cs	\
-	$(srcdir)/FilterScribus.cs	\
-	$(srcdir)/FilterShellscript.cs	\
-	$(srcdir)/FilterSource.cs	\
-	$(srcdir)/FilterSpreadsheet.cs	\
-	$(srcdir)/FilterSvg.cs		\
-	$(srcdir)/FilterTeX.cs		\
-	$(srcdir)/FilterText.cs	        \
-	$(srcdir)/FilterTiff.cs		\
-	$(srcdir)/FilterTotem.cs	\
-	$(srcdir)/FilterVideo.cs	\
-	$(srcdir)/FilterXslt.cs
+ASSEMBLY_SOURCES = \
+	AssemblyInfo.cs	\
+	Beagle.Filters/Filter.cs	\
+	Beagle.Filters/FilterFlavor.cs	\
+	Beagle.Filters/FilterFactory.cs	\
+	Beagle.Filters/FilterAbiword.cs	\
+	Beagle.Filters/FilterArchive.cs	\
+	Beagle.Filters/FilterAudio.cs	\
+	Beagle.Filters/FilterBmp.cs		\
+	Beagle.Filters/FilterBoo.cs		\
+	Beagle.Filters/FilterC.cs		\
+	Beagle.Filters/FilterCSharp.cs	\
+	Beagle.Filters/FilterCpp.cs		\
+	Beagle.Filters/FilterDeb.cs		\
+	Beagle.Filters/FilterDesktop.cs	\
+	Beagle.Filters/FilterDocbook.cs	\
+	Beagle.Filters/FilterEbuild.cs	\
+	Beagle.Filters/FilterExternal.cs	\
+	Beagle.Filters/FilterEmpathyLog.cs	\
+	Beagle.Filters/FilterFortran.cs	\
+	Beagle.Filters/FilterGif.cs		\
+	Beagle.Filters/FilterHtml.cs		\
+	Beagle.Filters/FilterIgnore.cs	\
+	Beagle.Filters/FilterImage.cs	\
+	Beagle.Filters/FilterJava.cs		\
+	Beagle.Filters/FilterJpeg.cs		\
+	Beagle.Filters/FilterJs.cs		\
+	Beagle.Filters/FilterKAddressBook.cs \
+	Beagle.Filters/FilterKCal.cs		\
+	Beagle.Filters/FilterKNotes.cs	\
+	Beagle.Filters/FilterKOrganizer.cs	\
+	Beagle.Filters/FilterKonqHistory.cs	\
+	Beagle.Filters/FilterKopeteLog.cs	\
+	Beagle.Filters/FilterLabyrinth.cs	\
+	Beagle.Filters/FilterLisp.cs		\
+	Beagle.Filters/FilterM3U.cs		\
+	Beagle.Filters/FilterMPlayerVideo.cs	\
+	Beagle.Filters/FilterMail.cs		\
+	Beagle.Filters/FilterMan.cs		\
+	Beagle.Filters/FilterMatlab.cs	\
+	Beagle.Filters/FilterMonodoc.cs	\
+	Beagle.Filters/FilterOpenOffice.cs	\
+	Beagle.Filters/FilterPackage.cs	\
+	Beagle.Filters/FilterPascal.cs	\
+	Beagle.Filters/FilterPdf.cs		\
+	Beagle.Filters/FilterPerl.cs		\
+	Beagle.Filters/FilterPhp.cs		\
+	Beagle.Filters/FilterPidginLog.cs	\
+	Beagle.Filters/FilterPls.cs		\
+	Beagle.Filters/FilterPng.cs		\
+	Beagle.Filters/FilterPython.cs	\
+	Beagle.Filters/FilterRPM.cs		\
+	Beagle.Filters/FilterRTF.cs		\
+	Beagle.Filters/FilterRuby.cs		\
+	Beagle.Filters/FilterScilab.cs	\
+	Beagle.Filters/FilterScribus.cs	\
+	Beagle.Filters/FilterShellscript.cs	\
+	Beagle.Filters/FilterSource.cs	\
+	Beagle.Filters/FilterSpreadsheet.cs	\
+	Beagle.Filters/FilterSvg.cs		\
+	Beagle.Filters/FilterTeX.cs		\
+	Beagle.Filters/FilterText.cs	        \
+	Beagle.Filters/FilterTiff.cs		\
+	Beagle.Filters/FilterTotem.cs	\
+	Beagle.Filters/FilterVideo.cs	\
+	Beagle.Filters/FilterXslt.cs \
+	HtmlAgilityPack/crc32.cs		\
+	HtmlAgilityPack/Header.cs		\
+	HtmlAgilityPack/HtmlAttribute.cs	\
+	HtmlAgilityPack/HtmlDocument.cs	\
+	HtmlAgilityPack/HtmlEntity.cs		\
+	HtmlAgilityPack/HtmlNode.cs		\
+	HtmlAgilityPack/HtmlNodeNavigator.cs	\
+	HtmlAgilityPack/MixedCodeDocument.cs	\
+	HtmlAgilityPack/tools.cs \
+	System.Windows.Forms.RTF/Charcode.cs		\
+	System.Windows.Forms.RTF/Charset.cs		\
+	System.Windows.Forms.RTF/CharsetFlags.cs	\
+	System.Windows.Forms.RTF/CharsetType.cs	\
+	System.Windows.Forms.RTF/ClassDelegate.cs	\
+	System.Windows.Forms.RTF/Color.cs		\
+	System.Windows.Forms.RTF/DestinationDelegate.cs \
+	System.Windows.Forms.RTF/Font.cs		\
+	System.Windows.Forms.RTF/KeysInit.cs		\
+	System.Windows.Forms.RTF/KeyStruct.cs		\
+	System.Windows.Forms.RTF/Major.cs		\
+	System.Windows.Forms.RTF/Minor.cs		\
+	System.Windows.Forms.RTF/RTF.cs		\
+	System.Windows.Forms.RTF/RTFException.cs	\
+	System.Windows.Forms.RTF/StandardCharCode.cs	\
+	System.Windows.Forms.RTF/StandardCharName.cs	\
+	System.Windows.Forms.RTF/Style.cs		\
+	System.Windows.Forms.RTF/StyleElement.cs	\
+	System.Windows.Forms.RTF/StyleType.cs		\
+	System.Windows.Forms.RTF/TextMap.cs		\
+	System.Windows.Forms.RTF/TokenClass.cs \
+	$(7ZIP_CSFILES)
 
 if ENABLE_GSF_SHARP
-CSFILES += 				\
-	$(srcdir)/FilterOle.cs		\
-	$(srcdir)/FilterPPT.cs
+ASSEMBLY_SOURCES += FilterOle.cs FilterPPT.cs
 
 if ENABLE_WV1
-CSFILES += \
-	$(srcdir)/FilterDOC.cs		
+ASSEMBLY_SOURCES += FilterDOC.cs		
 endif
 endif
 
 if HAS_LIBCHM
-CSFILES += 				\
-	$(srcdir)/FilterChm.cs
+ASSEMBLY_SOURCES += FilterChm.cs
 endif
 
-
-LOCAL_ASSEMBLIES =				\
-	../Util/Util.dll			\
-	../BeagleClient/Beagle.dll		\
-	../beagled/BeagleDaemonPlugins.dll
-
-ASSEMBLIES =				\
-	$(BEAGLED_LIBS)			\
-	$(SHARPZIPLIB_LIBS)		\
-	-r:Mono.Posix			\
-	-r:System.Web			\
-	$(LOCAL_ASSEMBLIES:%=-r:%)
-
-RESOURCES =
+ASSEMBLY_REFERENCES = \
+	-r:../Beagle.Util/Beagle.Util.dll \
+	-r:../Beagle/Beagle.dll \
+	$(BEAGLED_LIBS) \
+	$(SHARPZIPLIB_LIBS) \
+	-r:Mono.Posix \
+	-r:System.Web
 
 if INTERNAL_TAGLIB
-CSFILES += $(TAGLIB_CSFILES)
+ASSEMBLY_SOURCES += $(TAGLIB_CSFILES)
 else
-ASSEMBLIES += $(TAGLIB_SHARP_LIBS)
+ASSEMBLY_REFERENCES += $(TAGLIB_SHARP_LIBS)
 endif
 
-$(TARGET): $(CSFILES) $(LOCAL_ASSEMBLIES)
-	$(CSC) -out:$@ $(CSFLAGS) $(CSFILES) $(ASSEMBLIES) $(RESOURCES)
+$(ASSEMBLY): $(ASSEMBLY_SOURCES)
+	$(CSC) -out:$@ $(CSFLAGS) $(ASSEMBLY_SOURCES) $(ASSEMBLY_REFERENCES)
 
-all: $(TARGET)
+all: $(ASSEMBLY)
 
-install-data-local: $(TARGET)
+install-data-local: $(ASSEMBLY)
 	$(mkinstalldirs) $(DESTDIR)$(FILTERDIR)
-	$(INSTALL_DATA) $(TARGET) $(TARGET).mdb $(DESTDIR)$(FILTERDIR)
+	$(INSTALL_DATA) $(ASSEMBLY) $(ASSEMBLY).mdb $(DESTDIR)$(FILTERDIR)
 
 uninstall-local:
-	rm -f $(DESTDIR)$(FILTERDIR)/$(TARGET)
-	rm -f $(DESTDIR)$(FILTERDIR)/$(TARGET).mdb
+	rm -f $(DESTDIR)$(FILTERDIR)/$(ASSEMBLY)
+	rm -f $(DESTDIR)$(FILTERDIR)/$(ASSEMBLY).mdb
 
 COND_CS_FILES = \
-	$(srcdir)/FilterOle.cs		\
-	$(srcdir)/FilterPPT.cs		\
-	$(srcdir)/FilterDOC.cs		\
-	$(srcdir)/FilterChm.cs
+	Beagle.Filters/FilterOle.cs \
+	Beagle.Filters/FilterPPT.cs \
+	Beagle.Filters/FilterDOC.cs \
+	Beagle.Filters/FilterChm.cs
 
-EXTRA_DIST =			\
-	$(CSFILES)		\
+EXTRA_DIST = \
+	$(ASSEMBLY_SOURCES) \
 	$(COND_CS_FILES)
 
-CLEANFILES =		\
-	$(TARGET)	\
-	$(TARGET).mdb
+CLEANFILES = \
+	$(ASSEMBLY) \
+	$(ASSEMBLY).mdb
+

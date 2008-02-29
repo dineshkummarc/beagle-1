@@ -35,7 +35,6 @@ using System.Diagnostics;
 using System.Xml;
 using System.Xml.Serialization;
 
-using Beagle.Daemon;
 using Beagle.Util;
 
 namespace Beagle.Filters {
@@ -61,7 +60,7 @@ namespace Beagle.Filters {
 		public ExternalFilterInfo [] Items;
 	}
 
-	public class FilterExternal : Beagle.Daemon.Filter {
+	public class FilterExternal : Filter {
 
 		private ExternalFilterInfo [] filters = null;
 

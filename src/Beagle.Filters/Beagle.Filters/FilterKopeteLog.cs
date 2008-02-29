@@ -29,11 +29,10 @@ using System.IO;
 using System.Xml;
 
 using Beagle.Util;
-using Beagle.Daemon;
 
 namespace Beagle.Filters {
 
-	public class FilterKopeteLog : Beagle.Daemon.Filter {
+	public class FilterKopeteLog : Filter {
 
 		public FilterKopeteLog ()
 		{

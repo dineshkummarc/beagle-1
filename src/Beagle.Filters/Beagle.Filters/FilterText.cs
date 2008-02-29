@@ -27,16 +27,17 @@
 using System;
 using System.IO;
 
-using Beagle.Daemon;
-
 namespace Beagle.Filters {
 
-	public class FilterText : Beagle.Daemon.Filter {
+	public class FilterText : Filter {
+
+		private const long LENGTH_CUTOFF = 5 * 1024 * 1024; // 5 Mb
 
 		public FilterText ()
 		{
 			SnippetMode = true;
 			OriginalIsText = true;
+
 			SetFileType ("document");
 		}
 
@@ -50,8 +51,6 @@ namespace Beagle.Filters {
 			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("text/x-authors"));
 			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("text/x-copying"));
 		}
-
-		const long LENGTH_CUTOFF = 5 * 1024 * 1024; // 5 Mb
 
 		override protected void DoOpen (FileInfo file)
 		{

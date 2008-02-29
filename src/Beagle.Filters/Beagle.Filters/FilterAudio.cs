@@ -32,7 +32,7 @@ using TagLib;
 
 namespace Beagle.Filters {
 
-	public class FilterAudio : Beagle.Daemon.Filter {
+	public class FilterAudio : Filter {
 
 		public FilterAudio ()
 		{

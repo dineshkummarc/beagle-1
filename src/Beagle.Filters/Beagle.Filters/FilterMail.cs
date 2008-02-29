@@ -33,12 +33,11 @@ using System.IO;
 using GMime;
 
 using Beagle;
-using Beagle.Daemon;
 using Beagle.Util;
 
 namespace Beagle.Filters {
 
-	public class FilterMail : Beagle.Daemon.Filter, IDisposable {
+	public class FilterMail : Filter, IDisposable {
 
 		private static bool gmime_initialized = false;
 		private static bool gmime_broken = false;

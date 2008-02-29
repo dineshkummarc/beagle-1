@@ -11,7 +11,7 @@ using Beagle.Filters;
 [assembly: AssemblyTitle ("Beagle.Filters")]
 
 // All filter types have to be listed here to be loaded.
-[assembly: Beagle.Daemon.FilterTypes (
+[assembly: FilterTypes (
 	 typeof(FilterAbiWord),
 	 typeof(FilterApplication),
 	 typeof(FilterArchive),

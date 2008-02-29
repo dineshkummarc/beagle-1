@@ -30,11 +30,10 @@ using System.Diagnostics;
 using System.Globalization;
 
 using Beagle.Util;
-using Beagle.Daemon;
 
 namespace Beagle.Filters {
 
-	public class FilterMPlayerVideo : Beagle.Daemon.Filter {
+	public class FilterMPlayerVideo : Filter {
 	
 		private int width = -1;
 		private int height = -1;

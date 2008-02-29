@@ -39,7 +39,7 @@ using HtmlAgilityPack;
 
 namespace Beagle.Filters {
 
-	public class FilterHtml : Beagle.Daemon.Filter {
+	public class FilterHtml : Filter {
 
 		// When see <b> push "b" in the stack
 		// When see </b> pop from the stack

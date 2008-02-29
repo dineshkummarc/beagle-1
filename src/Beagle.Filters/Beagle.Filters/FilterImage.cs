@@ -35,7 +35,7 @@ using SemWeb;
 
 namespace Beagle.Filters {
 
-	public abstract class FilterImage : Beagle.Daemon.Filter {
+	public abstract class FilterImage : Filter {
 
 		// 1: Base
 		// 2: Added fspot:IsIndexed field, added width & height properties

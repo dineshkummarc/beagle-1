@@ -31,7 +31,7 @@ using System.IO;
 using System.Text;
 namespace Beagle.Filters {
 
-	public abstract class FilterSource : Beagle.Daemon.Filter {
+	public abstract class FilterSource : Filter {
 
 		protected enum LangType {
 			None,
@@ -54,14 +54,15 @@ namespace Beagle.Filters {
 			StringConstant
 		};
 		
-		LineType SrcLineType;
-		string StrConstIdentifier;
-		StringBuilder token;
-
-		private int version = 0;
+		private LineType SrcLineType;
+		private string StrConstIdentifier;
+		private StringBuilder token;
 
 		public FilterSource ()
 		{
+			// 0: Base
+			base.SetVersion (0);
+
 			// Initialize the linetype member.
 			SrcLineType = LineType.None;
 			SrcLangType = LangType.None;
@@ -75,8 +76,7 @@ namespace Beagle.Filters {
 
 		protected new void SetVersion (int version)
 		{
-			this.version += version;
-			base.SetVersion (version);
+			base.SetVersion (base.Version + version);
 		}
 
 		protected abstract Dictionary<string, bool> KeyWordsHash {

@@ -35,7 +35,7 @@ using Beagle.Daemon;
 
 namespace Beagle.Filters {
 
-	public class FilterTotem : Beagle.Daemon.Filter {
+	public class FilterTotem : Filter {
 
 		static bool Debug = false;
 

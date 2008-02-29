@@ -27,14 +27,15 @@
 using System;
 using System.IO;
 
-using Beagle.Daemon;
-
 namespace Beagle.Filters {
-	public class FilterPls : Beagle.Daemon.Filter {
+
+	public class FilterPls : Filter {
+
 		public FilterPls ()
 		{
 			SnippetMode = false;
 			OriginalIsText = true;
+
 			SetFileType ("audio");
 		}
 
@@ -46,6 +47,7 @@ namespace Beagle.Filters {
 		protected override void DoOpen (FileInfo file)
 		{
 			string line = TextReader.ReadLine ();
+
 			if (line != "[Playlist]")
 				Error ();
 		}
@@ -53,8 +55,10 @@ namespace Beagle.Filters {
 		override protected void DoPull ()
 		{
 			bool pull = false;
+
 			do {
 				string line = TextReader.ReadLine ();
+
 				if (line == null) {
 					Finished ();
 					return;
@@ -64,9 +68,9 @@ namespace Beagle.Filters {
 				//	FileX=<path>
 				//	TitleX=<title>
 				//	other lines
-				if (line.StartsWith ("File") ||
-				    line.StartsWith ("Title")) {
+				if (line.StartsWith ("File") || line.StartsWith ("Title")) {
 					int index = line.IndexOf ('=');
+
 					if (index != -1 && index < (line.Length - 1))
 						pull = AppendLine (line.Substring (index + 1));
 				}

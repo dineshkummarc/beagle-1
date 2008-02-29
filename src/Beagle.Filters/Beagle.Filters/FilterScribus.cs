@@ -30,10 +30,11 @@ using System.Xml;
 using System.Text;
 
 using Beagle.Util;
-using Beagle.Daemon;
 
 namespace Beagle.Filters {
-	public class FilterScribus : Beagle.Daemon.Filter {
+
+	public class FilterScribus : Filter {
+
 		// These two arrays contain the mapping from attributes in a scribus
 		// file to actual beagle property names
 		private static string[] scribus_attributes = { "TITLE", "KEYWORDS", "COMMENTS", "DOCSOURCE", "DOCCONTRIB", "DOCRELATION", "DOCIDENT", "PUBLISHER", "AUTHOR", "DOCCOVER", "DOCRIGHTS" };

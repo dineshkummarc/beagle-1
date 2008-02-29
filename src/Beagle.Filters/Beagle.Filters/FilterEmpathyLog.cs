@@ -31,11 +31,10 @@ using System.Xml.XPath;
 using System.Collections.Generic;
 
 using Beagle.Util;
-using Beagle.Daemon;
 
 namespace Beagle.Filters {
 
-	public class FilterEmpathyLog : Beagle.Daemon.Filter {
+	public class FilterEmpathyLog : Filter {
 
 		public FilterEmpathyLog ()
 		{
@@ -52,36 +51,39 @@ namespace Beagle.Filters {
 		{
 			AddProperty (Beagle.Property.NewUnsearched ("fixme:client", "Empathy"));
 
-
 			XmlTextReader reader = new XmlTextReader (base.TextReader);
+
 			XPathDocument xdoc = new XPathDocument(reader);
 			XPathNavigator xnav = xdoc.CreateNavigator();
 			XPathNodeIterator xiter =  xnav.Select("//message");
+
 			bool have_identity = false;
 			List<string> speakingtoids = new List<string>();
-			//FIXME: GetStarts and Finishs
-//			DateTime start = DateTime.MinValue;
-//			DateTime end = DateTime.MinValue;
-			xiter.MoveNext();
-			while(xiter.MoveNext()){
 
-				this.AppendText (xiter.Current.Value.ToString());
+			// FIXME: GetStarts and Finishs
+			// DateTime start = DateTime.MinValue;
+			// DateTime end = DateTime.MinValue;
+
+			xiter.MoveNext();
+
+			while (xiter.MoveNext ()) {
+
+				AppendText (xiter.Current.Value.ToString ());
 				AppendWhiteSpace ();
 				
-				if(xiter.Current.GetAttribute ("isuser",String.Empty) == "true"&& !have_identity){
-					AddProperty (Beagle.Property.NewUnsearched ("fixme:identity",xiter.Current.GetAttribute("id",String.Empty)));
+				if (xiter.Current.GetAttribute ("isuser", String.Empty) == "true" && !have_identity) {
+					AddProperty (Beagle.Property.NewUnsearched ("fixme:identity", xiter.Current.GetAttribute ("id", String.Empty)));
 					have_identity = true;
-				}else{
-					if(!speakingtoids.Contains (xiter.Current.GetAttribute("id",String.Empty))){ 
+				} else {
+					if (!speakingtoids.Contains (xiter.Current.GetAttribute ("id",String.Empty))) { 
 						AddProperty (Beagle.Property.New ("fixme:speakingto", xiter.Current.GetAttribute ("id", String.Empty)));
 						AddProperty (Beagle.Property.New ("fixme:speakingto_alias", xiter.Current.GetAttribute ("name", String.Empty)));
-						speakingtoids.Add (xiter.Current.GetAttribute("id",String.Empty));
+						speakingtoids.Add (xiter.Current.GetAttribute ("id",String.Empty));
 					}
 				}
 			}
 			
 		}
-
 		
 	}
 }

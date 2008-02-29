@@ -13,7 +13,7 @@ using TagLib;
 
 namespace Beagle.Filters {
 
-	public class FilterVideo : Beagle.Daemon.Filter {
+	public class FilterVideo : Filter {
 	
 		public FilterVideo ()
 		{

@@ -28,11 +28,10 @@ using System;
 using System.IO;
 
 using Beagle.Util;
-using Beagle.Daemon;
 
 namespace Beagle.Filters {
 
-	public class FilterPidginLog : Beagle.Daemon.Filter {
+	public class FilterPidginLog : Filter {
 
 		public FilterPidginLog ()
 		{

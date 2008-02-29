@@ -1,10 +1,7 @@
 //
 // FilterPdf.cs: Very simplistic PDF filter
 //
-// Author:
-//   Christopher Orr <dashboard@protactin.co.uk>
-//
-// Copyright 2004 by Christopher Orr
+// Copyright (C) 2004 Christopher Orr <dashboard@protactin.co.uk>
 //
 
 using System;
@@ -12,13 +9,18 @@ using System.IO;
 using System.Diagnostics;
 
 using Beagle.Util;
-using Beagle.Daemon;
 using Beagle.Util.Xmp;
 using SemWeb;
 
 namespace Beagle.Filters {
 
-	public class FilterPdf : Beagle.Daemon.Filter {
+	public class FilterPdf : Filter {
+
+		// FIXME: we should have a reasonable failure mode if pdftotext is
+		// not installed.
+
+		private SafeProcess pc = null;
+		private StreamReader pout = null;
 
 		public FilterPdf ()
 		{
@@ -30,12 +32,6 @@ namespace Beagle.Filters {
 		{
 			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("application/pdf"));
 		}
-
-		// FIXME: we should have a reasonable failure mode if pdftotext is
-		// not installed.
-
-		SafeProcess pc = null;
-		StreamReader pout = null;
 
 		protected override void DoPullProperties ()
 		{

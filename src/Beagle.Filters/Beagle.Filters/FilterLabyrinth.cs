@@ -23,18 +23,17 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 //
+
 using System;
 using System.IO;
 using System.Text;
 using System.Xml;
 
 using Beagle.Util;
-using Beagle.Daemon;
 
 namespace Beagle.Filters {
 	
-	public class FilterLabyrinth : Beagle.Daemon.Filter {
-
+	public class FilterLabyrinth : Filter {
 
 		public FilterLabyrinth ()
 		{
@@ -47,11 +46,11 @@ namespace Beagle.Filters {
 			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("x-beagle/x-labyrinth-note"));
 		}
 
-
 		protected override void DoPullProperties ()
 		{
 			StreamReader reader = new StreamReader (FileInfo.FullName, System.Text.Encoding.UTF8);
 			XmlTextReader doc = new XmlTextReader (reader);
+
 			try {
 				 do {
 					// FIXME: Extract more information than mere text from the tags in note-content
@@ -68,15 +67,15 @@ namespace Beagle.Filters {
 						continue;
 					}
 				} while (doc.Read ());
+
 				Finished();
 			} catch (Exception e) {
 				Log.Warn (e, "Unable to index Labyrinth Note {0}", FileInfo.FullName);
 				Error ();
 			} 
+
 			doc.Close();					
 			
 		}
-
-
 	}
 }

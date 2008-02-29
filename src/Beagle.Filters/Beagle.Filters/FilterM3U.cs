@@ -25,14 +25,15 @@
 using System;
 using System.IO;
 
-using Beagle.Daemon;
-
 namespace Beagle.Filters {
-	public class FilterM3U : Beagle.Daemon.Filter {
+
+	public class FilterM3U : Filter {
+
 		public FilterM3U ()
 		{
 			SnippetMode = false;
 			OriginalIsText = true;
+
 			SetFileType ("audio");
 		}
 
@@ -44,6 +45,7 @@ namespace Beagle.Filters {
 		protected override void DoOpen (FileInfo file)
 		{
 			string line = TextReader.ReadLine ();
+
 			if (line != "#EXTM3U")
 				Error ();
 		}
@@ -51,8 +53,10 @@ namespace Beagle.Filters {
 		override protected void DoPull ()
 		{
 			bool pull = false;
+
 			do {
 				string line = TextReader.ReadLine ();
+
 				if (line == null) {
 					Finished ();
 					return;
@@ -63,6 +67,7 @@ namespace Beagle.Filters {
 				//	Path
 				if (line [0] == '#') {
 					int index = line.IndexOf (',');
+
 					if (index != -1 && index < (line.Length - 1))
 						pull = AppendLine (line.Substring (index + 1));
 				} else {

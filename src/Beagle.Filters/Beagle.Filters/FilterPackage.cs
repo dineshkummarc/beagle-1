@@ -30,26 +30,23 @@ using Beagle.Util;
 
 namespace Beagle.Filters {
 
-	public abstract class FilterPackage : Beagle.Daemon.Filter {
-
-		// 1. Store packager information as a single field
-		//    Store packager as dc:creator
-		//    Store license as dc:rights
-		//    Store homepage as searchable
-		private int version = 1;
+	public abstract class FilterPackage : Filter {
 
 		public FilterPackage ()
 		{
+			// 1. Store packager information as a single field
+			//    Store packager as dc:creator
+			//    Store license as dc:rights
+			//    Store homepage as searchable
+			base.SetVersion (1);
+
 			SnippetMode = true;
 			SetFileType ("package");
-
-			base.SetVersion (version);
 		}
 
 		protected new void SetVersion (int version)
 		{
-			this.version += version;
-			base.SetVersion (version);
+			base.SetVersion (base.Version + version);
 		}
 
 		protected abstract bool PullPackageProperties ();

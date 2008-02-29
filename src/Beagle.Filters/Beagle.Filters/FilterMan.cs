@@ -31,7 +31,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 using Beagle.Util;
-using Beagle.Daemon;
 
 using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.BZip2;
@@ -43,7 +42,7 @@ namespace Beagle.Filters {
 	//   .so man3/strcpy.3
 	// Which is in strncpy.3.gz and points to strcpy.3.gz
 
-	public class FilterMan : Beagle.Daemon.Filter {
+	public class FilterMan : Filter {
 
 		// The regular expression for a complete man header line is built to allow a suite of 
 		// non-spaces, or words separated by spaces which are encompassed in quotes

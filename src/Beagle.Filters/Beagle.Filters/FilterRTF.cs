@@ -36,10 +36,10 @@ using System.Windows.Forms.RTF;
 
 namespace Beagle.Filters {
 
-	public class FilterRTF : Beagle.Daemon.Filter {
+	public class FilterRTF : Filter {
 		
-		int		skip_width;
-		int		skip_count;
+		int skip_width;
+		int skip_count;
 
 		static TextMap text_map = null;
 

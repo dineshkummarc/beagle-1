@@ -30,10 +30,11 @@ using System.Xml;
 using System.Text;
 
 using Beagle.Util;
-using Beagle.Daemon;
 
 namespace Beagle.Filters {
-	public class FilterSvg : Beagle.Daemon.Filter {
+
+	public class FilterSvg : Filter {
+
 		private StringBuilder sb = new StringBuilder ();
 
 		// List of keys that should be ignored when adding to content.

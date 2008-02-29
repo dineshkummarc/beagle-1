@@ -43,7 +43,7 @@ using Beagle.Filters;
 
 namespace Beagle.Filters {
 
-	public class FilterTeX : Beagle.Daemon.Filter {
+	public class FilterTeX : Filter {
 
 		private class TeXControlWordType {
 

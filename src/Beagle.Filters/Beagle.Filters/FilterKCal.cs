@@ -35,12 +35,12 @@ using System.IO;
 using System.Text;
 using System.Globalization;
 
-using Beagle.Daemon;
 using Beagle.Util;
 
 namespace Beagle.Filters {
 
-	public abstract class FilterKCal : Beagle.Daemon.Filter {
+	public abstract class FilterKCal : Filter {
+
 		protected Hashtable KCalNamePropertyMapping;
 
 		protected enum KCalType {

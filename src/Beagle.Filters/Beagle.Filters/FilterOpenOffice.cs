@@ -24,7 +24,6 @@
 // DEALINGS IN THE SOFTWARE.
 //
 
-
 using System;
 using System.Collections;
 using System.IO;
@@ -32,13 +31,12 @@ using System.Text;
 using System.Xml;
 
 using Beagle.Util;
-using Beagle.Daemon;
 
 using ICSharpCode.SharpZipLib.Zip;
 
 namespace Beagle.Filters {
     
-	public class FilterOpenOffice : Beagle.Daemon.Filter {
+	public class FilterOpenOffice : Filter {
 
 		private Hashtable hotStyles;
 
