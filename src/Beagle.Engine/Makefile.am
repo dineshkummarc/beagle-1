@@ -262,9 +262,12 @@ ASSEMBLY_SOURCES = \
 
 ASSEMBLY_REFERENCES = \
 	-r:../Beagle.Util/Beagle.Util.dll \
-	$(BEAGLED_LIBS) \
-	$(SHARPZIPLIBS_LIBS) \
-	-r:Mono.Posix
+	-r:../Beagle/Beagle.dll \
+	-r:Mono.Posix \
+	-r:Mono.Data.Sqlite \
+	$(SHARPZIPLIB_LIBS) \
+	$(NDESK_DBUS_GLIB_LIBS)	\
+	$(BEAGLED_LIBS)
 
 $(ASSEMBLY): $(ASSEMBLY_SOURCES)
 	$(CSC) -out:$@ -target:library $(ASSEMBLY_SOURCES) $(ASSEMBLY_REFERENCES)
