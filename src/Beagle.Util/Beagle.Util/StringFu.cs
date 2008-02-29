@@ -912,7 +912,7 @@ namespace Beagle.Util {
 
 			StringBuilder sb = new StringBuilder ();
 			bool first = true;
-			Regex tmp_regex = null;
+
 			foreach (string pattern in patterns) {
 				try {
 					string regex_pattern;
@@ -923,7 +923,9 @@ namespace Beagle.Util {
 						regex_pattern = pattern.Replace (".", @"\.");
 						regex_pattern = regex_pattern.Replace ("*", ".*");
 					}
-					tmp_regex = new Regex (regex_pattern);
+
+					new Regex (regex_pattern);
+
 					sb.Append (String.Format (@"{0}^(?:{1})$", first ? String.Empty : "|", regex_pattern));
 				} catch (System.ArgumentException) {
 					Log.Warn ("Ignoring invalid regex: [{0}]", pattern);

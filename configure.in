@@ -617,6 +617,8 @@ src/Beagle.Util/Beagle.Util/ExternalStringsHack.cs
 src/Beagle.Util/Beagle.Util.dll.config
 src/Beagle/Makefile
 src/Beagle/AssemblyInfo.cs
+src/Beagle.Engine/Makefile
+src/Beagle.Engine/AssemblyInfo.cs
 src/Beagle.Daemon/Makefile
 src/Beagle.Daemon/AssemblyInfo.cs
 src/Beagle.Filters/Makefile

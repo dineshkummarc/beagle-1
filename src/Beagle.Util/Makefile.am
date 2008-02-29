@@ -20,8 +20,8 @@ if OS_FREEBSD
 CSFLAGS += -define:OS_FREEBSD
 endif
 
-EXTSTR = ExternalStringsHack.cs
-EXTSTR_IN = $(srcdir)/$(EXTSTR).in
+EXTSTR = Beagle.Util/ExternalStringsHack.cs
+EXTSTR_IN = $(EXTSTR).in
 $(EXTSTR): $(EXTSTR_IN)
 	sed	-e "s|\@prefix\@|$(prefix)|g"			\
 		-e "s|\@sysconfdir\@|$(sysconfdir)|g"		\
@@ -36,224 +36,170 @@ $(EXTSTR): $(EXTSTR_IN)
 		< $(EXTSTR_IN) > $@
 
 ASSEMBLY_SOURCES = \
-	$(srcdir)/ArrayFu.cs \
-	$(srcdir)/Battery.cs \
-	$(srcdir)/BetterBitArray.cs \
-	$(srcdir)/Camel.cs \
-	$(srcdir)/Config.cs \
-	$(srcdir)/DateTimeUtil.cs \
-	$(srcdir)/DelayedTextWriter.cs \
-	$(srcdir)/DigikamTags.cs \
-	$(srcdir)/DirectoryWalker.cs \
-	$(srcdir)/Evolution.cs \
-	$(srcdir)/ExceptionHandlingThread.cs \
-	$(srcdir)/ExtendedAttribute.cs \
-	$(srcdir)/FileAdvise.cs \
-	$(srcdir)/FileSystem.cs \
-	$(srcdir)/FrequencyStatistics.cs \
-	$(srcdir)/FSpotTools.cs \
-	$(srcdir)/GuidFu.cs \
-	$(srcdir)/HtmlRemovingReader.cs \
-	$(srcdir)/ICalParser.cs \
-	$(srcdir)/ImBuddy.cs \
-	$(srcdir)/Inotify.cs \
-	$(srcdir)/KdeUtils.cs \
-	$(srcdir)/KonqHistoryUtil.cs \
-	$(srcdir)/LineReader.cs \
-	$(srcdir)/Log.cs \
-	$(srcdir)/Logger.cs \
-	$(srcdir)/MultiReader.cs \
-	$(srcdir)/NautilusTools.cs \
-	$(srcdir)/NetworkService.cs \
-	$(srcdir)/Note.cs \
-	$(srcdir)/OperaHistory.cs \
-	$(srcdir)/Password.cs \
-	$(srcdir)/PathFinder.cs \
-	$(srcdir)/PullingReader.cs \
-	$(srcdir)/ReflectionFu.cs \
-	$(srcdir)/SafeProcess.cs \
-	$(srcdir)/Scheduler.cs \
-	$(srcdir)/SmallIntArray.cs \
-	$(srcdir)/Stopwatch.cs \
-	$(srcdir)/StringFu.cs \
-	$(srcdir)/StringMatcher.cs \
-	$(srcdir)/SystemInformation.cs \
-	$(srcdir)/SystemPriorities.cs \
-	$(srcdir)/TeeTextWriter.cs \
-	$(srcdir)/ThreadPond.cs	\
-	$(srcdir)/Timeline.cs \
-	$(srcdir)/TopScores.cs \
-	$(srcdir)/TypeCacheAttribute.cs \
-	$(srcdir)/UnclosableStream.cs \
-	$(srcdir)/UriFu.cs \
-	$(srcdir)/VersionFu.cs \
-	$(srcdir)/XdgMime.cs \
-	$(srcdir)/XmlFu.cs \
-	$(srcdir)/F-Spot/Bim.cs \
-	$(srcdir)/F-Spot/BitConverter.cs \
-	$(srcdir)/F-Spot/Exif.cs \
-	$(srcdir)/F-Spot/IptcFile.cs \
-	$(srcdir)/F-Spot/JpegHeader.cs \
-	$(srcdir)/F-Spot/MetadataStore.cs \
-	$(srcdir)/F-Spot/PngFile.cs \
-	$(srcdir)/F-Spot/PixbufUtils.cs \
-	$(srcdir)/F-Spot/Tiff.cs \
-	$(srcdir)/F-Spot/XmpFile.cs \
-	$(srcdir)/Hal/AccessControl.cs \
-	$(srcdir)/Hal/CPUFreq.cs \
-	$(srcdir)/Hal/Context.cs \
-	$(srcdir)/Hal/Device.cs \
-	$(srcdir)/Hal/IAccessControl.cs \
-	$(srcdir)/Hal/ICPUFreq.cs \
-	$(srcdir)/Hal/IDevice.cs \
-	$(srcdir)/Hal/IKillSwitch.cs \
-	$(srcdir)/Hal/ILaptopPanel.cs \
-	$(srcdir)/Hal/ILightSensor.cs \
-	$(srcdir)/Hal/IManager.cs \
-	$(srcdir)/Hal/IStorage.cs \
-	$(srcdir)/Hal/ISystemPowerManagement.cs \
-	$(srcdir)/Hal/IVolume.cs \
-	$(srcdir)/Hal/IVolumeCrypto.cs \
-	$(srcdir)/Hal/KillSwitch.cs \
-	$(srcdir)/Hal/LaptopPanel.cs \
-	$(srcdir)/Hal/LightSensor.cs \
-	$(srcdir)/Hal/Manager.cs \
-	$(srcdir)/Hal/PropertyModification.cs \
-	$(srcdir)/Hal/Storage.cs \
-	$(srcdir)/Hal/SystemPowerManagement.cs \
-	$(srcdir)/Hal/Volume.cs \
-	$(srcdir)/Hal/VolumeCrypto.cs \
-	$(srcdir)/SemWeb/AssemblyInfo.cs \
-	$(srcdir)/SemWeb/NamespaceManager.cs \
-	$(srcdir)/SemWeb/Util.cs \
-	$(srcdir)/SemWeb/UriMap.cs \
-	$(srcdir)/SemWeb/Resource.cs \
-	$(srcdir)/SemWeb/Statement.cs \
-	$(srcdir)/SemWeb/Store.cs \
-	$(srcdir)/SemWeb/MemoryStore.cs \
-	$(srcdir)/SemWeb/SQLStore.cs \
-	$(srcdir)/SemWeb/RdfReader.cs \
-	$(srcdir)/SemWeb/RdfXmlReader.cs \
-	$(srcdir)/SemWeb/N3Reader.cs \
-	$(srcdir)/SemWeb/RdfWriter.cs \
-	$(srcdir)/SemWeb/RdfXmlWriter.cs \
-	$(srcdir)/SemWeb/N3Writer.cs \
-	$(srcdir)/SemWeb/RSquary.cs \
-	$(srcdir)/SemWeb/LiteralFilters.cs \
-	$(srcdir)/SemWeb/Query.cs \
-	$(srcdir)/SemWeb/Inference.cs \
-	$(srcdir)/SemWeb/RDFS.cs \
-	$(srcdir)/SemWeb/Algos.cs \
-	$(srcdir)/SemWeb/Remote.cs \
-	$(srcdir)/SemWeb/XPathSemWebNavigator.cs \
-	$(srcdir)/QueryKeywordMapping.cs
-
-if ENABLE_THUNDERBIRD
-ASSEMBLY_SOURCES += \
-	$(srcdir)/Thunderbird.cs
-endif
+	Beagle.Util/ArrayFu.cs \
+	Beagle.Util/Battery.cs \
+	Beagle.Util/BetterBitArray.cs \
+	Beagle.Util/Camel.cs \
+	Beagle.Util/Config.cs \
+	Beagle.Util/DateTimeUtil.cs \
+	Beagle.Util/DelayedTextWriter.cs \
+	Beagle.Util/DigikamTags.cs \
+	Beagle.Util/DirectoryWalker.cs \
+	Beagle.Util/Evolution.cs \
+	Beagle.Util/ExceptionHandlingThread.cs \
+	Beagle.Util/ExtendedAttribute.cs \
+	Beagle.Util/FileAdvise.cs \
+	Beagle.Util/FileSystem.cs \
+	Beagle.Util/FrequencyStatistics.cs \
+	Beagle.Util/FSpotTools.cs \
+	Beagle.Util/GuidFu.cs \
+	Beagle.Util/HtmlRemovingReader.cs \
+	Beagle.Util/ICalParser.cs \
+	Beagle.Util/ImBuddy.cs \
+	Beagle.Util/Inotify.cs \
+	Beagle.Util/KdeUtils.cs \
+	Beagle.Util/KonqHistoryUtil.cs \
+	Beagle.Util/LineReader.cs \
+	Beagle.Util/Log.cs \
+	Beagle.Util/Logger.cs \
+	Beagle.Util/MultiReader.cs \
+	Beagle.Util/NautilusTools.cs \
+	Beagle.Util/NetworkService.cs \
+	Beagle.Util/Note.cs \
+	Beagle.Util/OperaHistory.cs \
+	Beagle.Util/Password.cs \
+	Beagle.Util/PathFinder.cs \
+	Beagle.Util/PullingReader.cs \
+	Beagle.Util/ReflectionFu.cs \
+	Beagle.Util/QueryKeywordMapping.cs \
+	Beagle.Util/SafeProcess.cs \
+	Beagle.Util/Scheduler.cs \
+	Beagle.Util/SmallIntArray.cs \
+	Beagle.Util/Stopwatch.cs \
+	Beagle.Util/StringFu.cs \
+	Beagle.Util/StringMatcher.cs \
+	Beagle.Util/SystemInformation.cs \
+	Beagle.Util/SystemPriorities.cs \
+	Beagle.Util/TeeTextWriter.cs \
+	Beagle.Util/ThreadPond.cs	\
+	Beagle.Util/Timeline.cs \
+	Beagle.Util/TopScores.cs \
+	Beagle.Util/TypeCacheAttribute.cs \
+	Beagle.Util/UnclosableStream.cs \
+	Beagle.Util/UriFu.cs \
+	Beagle.Util/VersionFu.cs \
+	Beagle.Util/XdgMime.cs \
+	Beagle.Util/XmlFu.cs \
+	F-Spot/Bim.cs \
+	F-Spot/BitConverter.cs \
+	F-Spot/Exif.cs \
+	F-Spot/IptcFile.cs \
+	F-Spot/JpegHeader.cs \
+	F-Spot/MetadataStore.cs \
+	F-Spot/PngFile.cs \
+	F-Spot/PixbufUtils.cs \
+	F-Spot/Tiff.cs \
+	F-Spot/XmpFile.cs \
+	Hal/AccessControl.cs \
+	Hal/CPUFreq.cs \
+	Hal/Context.cs \
+	Hal/Device.cs \
+	Hal/IAccessControl.cs \
+	Hal/ICPUFreq.cs \
+	Hal/IDevice.cs \
+	Hal/IKillSwitch.cs \
+	Hal/ILaptopPanel.cs \
+	Hal/ILightSensor.cs \
+	Hal/IManager.cs \
+	Hal/IStorage.cs \
+	Hal/ISystemPowerManagement.cs \
+	Hal/IVolume.cs \
+	Hal/IVolumeCrypto.cs \
+	Hal/KillSwitch.cs \
+	Hal/LaptopPanel.cs \
+	Hal/LightSensor.cs \
+	Hal/Manager.cs \
+	Hal/PropertyModification.cs \
+	Hal/Storage.cs \
+	Hal/SystemPowerManagement.cs \
+	Hal/Volume.cs \
+	Hal/VolumeCrypto.cs \
+	SemWeb/NamespaceManager.cs \
+	SemWeb/Util.cs \
+	SemWeb/UriMap.cs \
+	SemWeb/Resource.cs \
+	SemWeb/Statement.cs \
+	SemWeb/Store.cs \
+	SemWeb/MemoryStore.cs \
+	SemWeb/SQLStore.cs \
+	SemWeb/RdfReader.cs \
+	SemWeb/RdfXmlReader.cs \
+	SemWeb/N3Reader.cs \
+	SemWeb/RdfWriter.cs \
+	SemWeb/RdfXmlWriter.cs \
+	SemWeb/N3Writer.cs \
+	SemWeb/RSquary.cs \
+	SemWeb/LiteralFilters.cs \
+	SemWeb/Query.cs \
+	SemWeb/Inference.cs \
+	SemWeb/RDFS.cs \
+	SemWeb/Algos.cs \
+	SemWeb/Remote.cs \
+	SemWeb/XPathSemWebNavigator.cs
 
 ASSEMBLY_REFERENCES = \
-	$(BEAGLED_LIBS) \
-	$(NDESK_DBUS_GLIB_LIBS) \
 	-r:System.Data \
 	-r:Mono.Data.Sqlite \
 	-r:Mono.Posix \
 	-r:System.Web \
-	-r:ICSharpCode.SharpZipLib
+	-r:ICSharpCode.SharpZipLib \
+	$(BEAGLED_LIBS) \
+	$(NDESK_DBUS_GLIB_LIBS)
+
+if ENABLE_THUNDERBIRD
+ASSEMBLY_SOURCES += Beagle.Util/Thunderbird.cs
+endif
 
 if ENABLE_AVAHI
 CSFLAGS += -define:ENABLE_AVAHI
-UTIL_CSFILES += 				\
-	$(srcdir)/AvahiBrowser.cs
-UTIL_ASSEMBLIES += $(AVAHI_SHARP_LIBS)
+ASSEMBLY_SOURCES += Beagle.Util/AvahiBrowser.cs
+ASSEMBLY_REFERENCES += $(AVAHI_SHARP_LIBS)
 endif
 
 if HAS_LIBCHM 
-UTIL_CSFILES +=					\
-	$(srcdir)/ChmFile.cs
+ASSEMBLY_SOURCES += Beagle.Util/ChmFile.cs
 endif
 
 if ENABLE_INOTIFY
-INOTIFY_EXE = Inotify.exe
 CSFLAGS += -define:ENABLE_INOTIFY
-else
-INOTIFY_EXE =
 endif
 
-UTIL_TARGET_FILES = $(UTIL_CSFILES) $(EXTSTR)
+$(ASSEMBLY): $(ASSEMBLY_SOURCES) $(EXTSTR)
+	$(CSC) -unsafe -out:$@ $(CSFLAGS) $(ASSEMBLY_SOURCES) $(EXTSTR) $(ASSEMBLY_REFERENCES)
 
-$(UTIL_TARGET): $(UTIL_TARGET_FILES)
-	$(CSC) -unsafe -out:$@ $(CSFLAGS) $^ $(UTIL_ASSEMBLIES)
+all: $(ASSEMBLY)
 
-UI_UTIL_CSFILES =				\
-	$(srcdir)/CompatFileChooser.cs		\
-	$(srcdir)/GnomeFu.cs              	\
-	$(srcdir)/GtkUtils.cs			\
-	$(srcdir)/HigMessageDialog.cs		\
-	$(srcdir)/XKeybinder.cs
-
-UI_UTIL_ASSEMBLIES =				\
-	$(BEAGLE_UI_LIBS)			\
-	-r:Util.dll
-
-if ENABLE_GALAGO
-UI_UTIL_CSFILES +=				\
-	$(srcdir)/Galago.cs
-
-UI_UTIL_ASSEMBLIES += 				\
-	$(GALAGO_LIBS)
-endif
-
-$(UI_UTIL_TARGET): $(UI_UTIL_CSFILES) $(UTIL_TARGET)
-	$(CSC) -unsafe -out:$@ $(CSFLAGS) $(UI_UTIL_CSFILES) $(UI_UTIL_ASSEMBLIES)
-
-Inotify.exe: $(INOTIFY_TEST_CSFILES)
-	$(CSC) -unsafe -out:$@ $^ -r:Mono.Posix -define:INOTIFY_TEST -define:ENABLE_INOTIFY
-
-ALL_TARGETS =			\
-	$(UTIL_TARGET)
-
-if ENABLE_GUI
-ALL_TARGETS += $(UI_UTIL_TARGET)
-endif
-
-all: $(ALL_TARGETS)
-
-install-data-local: $(ALL_TARGETS)
+install-data-local: $(ASSEMBLY)
 	$(mkinstalldirs) $(DESTDIR)$(pkglibdir)
-	$(INSTALL_DATA) $(UTIL_TARGET) $(UTIL_TARGET).mdb $(UTIL_TARGET_CONFIG) $(DESTDIR)$(pkglibdir)
-if ENABLE_GUI
-	$(INSTALL_DATA) $(UI_UTIL_TARGET) $(UI_UTIL_TARGET).mdb $(srcdir)/$(UI_UTIL_TARGET_CONFIG) $(DESTDIR)$(pkglibdir)
-endif
+	$(INSTALL_DATA) $(ASSEMBLY) $(ASSEMBLY).mdb $(ASSEBMLY_CONFIG) $(DESTDIR)$(pkglibdir)
 
 uninstall-local:
-	rm -f $(DESTDIR)$(pkglibdir)/$(UTIL_TARGET) $(DESTDIR)$(pkglibdir)/$(UTIL_TARGET).mdb $(DESTDIR)$(pkglibdir)/$(UTIL_TARGET_CONFIG)
-	rm -f $(DESTDIR)$(pkglibdir)/$(UI_UTIL_TARGET) $(DESTDIR)$(pkglibdir)/$(UI_UTIL_TARGET).mdb $(DESTDIR)$(pkglibdir)/$(UI_UTIL_TARGET_CONFIG)
-
+	rm -f $(DESTDIR)$(pkglibdir)/$(ASSEMBLY) $(DESTDIR)$(pkglibdir)/$(ASSEMBLY).mdb $(DESTDIR)$(pkglibdir)/$(ASSEMBLY_CONFIG)
 
 COND_CS_FILES =				\
-	$(srcdir)/AvahiBrowser.cs	\
-	$(srcdir)/ChmFile.cs		\
-	$(srcdir)/Galago.cs		\
-	$(srcdir)/Thunderbird.cs
+	AvahiBrowser.cs	\
+	ChmFile.cs		\
+	Thunderbird.cs
 
-EXTRA_DIST =			\
+EXTRA_DIST = \
 	AssemblyInfo.cs.in \
-	$(EXTSTR_IN)		\
-	$(ASSEMBLY_SOURCES)	\
-	$(UI_UTIL_CSFILES)	\
-	$(COND_CS_FILES)	\
-	UiUtil.dll.config	\
-	Util.dll.config.in	\
-	inotify-test
+	$(EXTSTR_IN) \
+	$(ASSEMBLY_SOURCES) \
+	$(COND_CS_FILES) \
+	Util.dll.config.in
 
-CLEANFILES =			\
-	$(EXTSTR)		\
-	$(UTIL_TARGET)		\
-	$(UTIL_TARGET).mdb	\
-	$(UI_UTIL_TARGET)	\
-	$(UI_UTIL_TARGET).mdb	\
-	Inotify.exe		\
-	Inotify.exe.mdb
+CLEANFILES = \
+	$(EXTSTR) \
+	$(UTIL_TARGET) \
+	$(UTIL_TARGET).mdb
 

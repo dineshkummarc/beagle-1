@@ -1,1 +1,1 @@
-SUBDIRS = libbeagleglue Beagle.Util Beagle Beagle.Filters Beagle.Daemon
+SUBDIRS = libbeagleglue Beagle.Util Beagle Beagle.Engine Beagle.Filters Beagle.Daemon

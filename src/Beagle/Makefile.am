@@ -3,14 +3,14 @@ CSC = $(MCS) -debug
 ASSEMBLY_NAME = Beagle
 ASSEMBLY = $(ASSEMBLY_NAME).dll
 
-CSFLAGS = -ASSEMBLY:library $(BEAGLE_DEFINES)
+CSFLAGS = -target:library $(BEAGLE_DEFINES)
 
 if ENABLE_AVAHI
 CSFLAGS += -define:ENABLE_AVAHI
 endif
 
 ASSEMBLY_SOURCES = \
-	Beagle/AssemblyInfo.cs \
+	AssemblyInfo.cs \
 	Beagle/Hit.cs \
 	Beagle/IIndexableGenerator.cs \
 	Beagle/Indexable.cs \
@@ -25,6 +25,7 @@ ASSEMBLY_SOURCES = \
 	Beagle/QueryableStatus.cs \
 	Beagle/RemoteControl.cs \
 	Beagle/Snippet.cs \
+	Beagle/TcpTransport.cs \
 	Beagle/Transport.cs \
 	Beagle/UnixTransport.cs \
 	Beagle/Versioned.cs
@@ -53,3 +54,4 @@ EXTRA_DIST = \
 CLEANFILES = \
 	$(ASSEMBLY) \
 	$(ASSEMBLY).mdb
+
