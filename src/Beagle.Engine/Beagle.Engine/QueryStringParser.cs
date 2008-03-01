@@ -29,14 +29,11 @@ using System.Collections;
 using System.Text.RegularExpressions;
 
 using Beagle.Util;
-using FSQ=Beagle.Daemon.FileSystemQueryable;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
-	public class QueryStringParser {
+	public static class QueryStringParser {
 		
-		private QueryStringParser () { } // a static class
-
 		private static Regex query_string_regex;
 		private static Regex extension_re;
 

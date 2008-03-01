@@ -1,4 +1,6 @@
-SUBDIRS = src data
+SUBDIRS = src 
+
+#data
 
 if BUILD_DOCS
 SUBDIRS +=			\

@@ -31,10 +31,7 @@ using Mono.Data.Sqlite;
 
 namespace Beagle.Util {
 
-	public class SqliteUtils {
-
-		// static class
-		private SqliteUtils () { }
+	public static class SqliteUtils {
 
 		public static int DoNonQuery (SqliteConnection connection, string command_text, string[] param_names, object[] param_args)
 		{
@@ -75,17 +72,19 @@ namespace Beagle.Util {
 		public static int DoNonQuery (SqliteCommand command)
 		{
 			int ret = 0;
+
 			while (true) {
 				try {
 					ret = command.ExecuteNonQuery ();
 					break;
-				} catch (SqliteBusyException ex) {
+				} catch (SqliteBusyException) {
 					Thread.Sleep (50);
 				} catch (Exception e) {
-					Log.Error ( e, "SQL that caused the exception: {0}", command.CommandText);
+					Log.Error (e, "SQL that caused the exception: {0}", command.CommandText);
 					throw;
 				}
 			}
+
 			return ret;
 		}
 		
@@ -93,13 +92,15 @@ namespace Beagle.Util {
 		public static SqliteDataReader ExecuteReaderOrWait (SqliteCommand command)
 		{
 			SqliteDataReader reader = null;
+
 			while (reader == null) {
 				try {
 					reader = command.ExecuteReader ();
-				} catch (SqliteBusyException ex) {
+				} catch (SqliteBusyException) {
 					Thread.Sleep (50);
 				}
 			}
+
 			return reader;
 		}
 
@@ -108,7 +109,7 @@ namespace Beagle.Util {
 			while (true) {
 				try {
 					return reader.Read ();
-				} catch (SqliteBusyException ex) {
+				} catch (SqliteBusyException) {
 					Thread.Sleep (50);
 				}
 			}

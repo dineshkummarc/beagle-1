@@ -30,7 +30,7 @@ using System.Xml.Serialization;
 
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	[RequestMessage (typeof (Beagle.Query))]
 	public class QueryExecutor : RequestMessageExecutor {
@@ -93,9 +93,7 @@ namespace Beagle.Daemon {
 			AttachResult ();
 
 			QueryDriver.ChangedEvent += OnQueryDriverChanged;
-			QueryDriver.DoQuery (query,
-					     this.result,
-					     new RequestMessageExecutor.AsyncResponse (this.SendAsyncResponse));
+			QueryDriver.DoQuery (query, result, new RequestMessageExecutor.AsyncResponse (SendAsyncResponse));
 
 			// Don't send a response; we'll be sending them async
 			return null;

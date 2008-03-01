@@ -26,15 +26,15 @@
 
 using System;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 	
 	[AttributeUsage (AttributeTargets.Class)]
 	public class QueryableFlavor : Attribute {
 
-		public string      Name;
+		public string Name;
 		public QueryDomain Domain;
-		public bool        RequireInotify = true;
-		public bool        RequireExtendedAttributes = false;
-		public string      DependsOn;
+		public bool RequireInotify = true;
+		public bool RequireExtendedAttributes = false;
+		public string DependsOn;
 	}
 }

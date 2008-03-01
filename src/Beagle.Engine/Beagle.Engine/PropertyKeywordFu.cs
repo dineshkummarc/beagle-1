@@ -35,14 +35,12 @@ using System.Xml.Serialization;
 using Beagle;
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
-	public class PropertyKeywordFu {
-		// mapping
+	public static class PropertyKeywordFu {
+
+		// Mappings
 		private static Hashtable property_table;
-
-		// static class
-		private PropertyKeywordFu () { }
 
 		public static IEnumerable Keys {
 			get { return property_table.Keys; }
@@ -134,7 +132,8 @@ namespace Beagle.Daemon {
 		////////////////////////////////////////////////////////
 
 		// return false if property not found!
-		public static bool GetMapping (string keyword, out int num, out string[] name, out PropertyType[] type) {
+		public static bool GetMapping (string keyword, out int num, out string[] name, out PropertyType[] type)
+		{
 			num = 0;
 			name = null;
 			type = null;

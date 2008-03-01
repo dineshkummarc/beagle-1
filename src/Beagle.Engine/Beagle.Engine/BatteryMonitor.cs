@@ -1,7 +1,7 @@
 //
-//  BatteryMonitor.cs
+// BatteryMonitor.cs
 //
-//  Copyright (c) 2007 Lukas Lipka, <lukaslipka@gmail.com>
+// Copyright (c) 2007 Lukas Lipka, <lukaslipka@gmail.com>
 //
 
 using System;
@@ -12,7 +12,7 @@ using Hal;
 
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	public class BatteryMonitor {
 
@@ -44,7 +44,7 @@ namespace Beagle.Daemon {
 					break;
 				}
 			} catch (Exception e) {
-				Log.Error (e, "Failed to acquire a HAL device for battery monitoring");
+				Log.Error (e, "Failed to acquire a HAL device for battery monitoring.");
 			}
 		}
 
@@ -73,6 +73,7 @@ namespace Beagle.Daemon {
 				prev_on_battery = false;
 			} else if (! prev_on_battery && ! on_ac && ! index_on_battery) {
 				Log.Info ("Detected a switch from AC power to battery.  Stopping scheduler.");
+
 				Scheduler.Global.Stop ();
 				prev_on_battery = true;
 			}

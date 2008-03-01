@@ -34,7 +34,7 @@ using Beagle;
 
 // FIXME: Use Lucence.Net highlighting.
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 	
 	public class SnippetFu {
 

@@ -28,25 +28,21 @@ using System;
 using System.Collections;
 using System.IO;
 
-using Beagle.Daemon;
-using Beagle.Util;
 using Beagle;
+using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	// An abstract class which doesn't have any storage backing it.
 	// These backends exist solely to add property change indexables to
 	// existing backends.
+
 	public abstract class ExternalMetadataQueryable : IQueryable {
 
-		private FileAttributesStore fa_store;
+		private FileAttributesStore fa_store = null;
 
 		public ExternalMetadataQueryable ()
 		{
-		}
-
-		public Scheduler ThisScheduler {
-			get { return Scheduler.Global; }
 		}
 
 		public virtual void Start ()
@@ -108,13 +104,14 @@ namespace Beagle.Daemon {
 				reader.Close ();
 			}
 
-			string fingerprint;
+			string fingerprint = null;
+
 			if (external_fingerprint != null)
 				fingerprint = internal_fingerprint + "-" + external_fingerprint;
 			else
 				fingerprint = internal_fingerprint;
 
-			IFileAttributesStore ifa_store;
+			IFileAttributesStore ifa_store = null;
 
 			if (ExtendedAttribute.Supported)
 				ifa_store = new FileAttributesStore_ExtendedAttribute (fingerprint);
@@ -122,6 +119,10 @@ namespace Beagle.Daemon {
 				ifa_store = new FileAttributesStore_Sqlite (storage_path, fingerprint);
 
 			fa_store = new FileAttributesStore (ifa_store);
+		}
+
+		public Scheduler ThisScheduler {
+			get { return Scheduler.Global; }
 		}
 	}
 }

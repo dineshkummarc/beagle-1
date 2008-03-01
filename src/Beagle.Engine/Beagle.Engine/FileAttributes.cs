@@ -29,18 +29,18 @@ using System.IO;
 
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	public class FileAttributes {
 		
-		private Guid     unique_id;
-		private string   path;
-		private DateTime last_mtime;
+		private Guid unique_id;
+		private string path;
 
+		private DateTime last_mtime;
 		private DateTime last_attrtime;
 
-		private string   filter_name;
-		private int      filter_version;
+		private string filter_name;
+		private int filter_version;
 		
 		public Guid UniqueId {
 			get { return unique_id; }

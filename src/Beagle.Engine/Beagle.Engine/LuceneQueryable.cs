@@ -31,7 +31,7 @@ using System.IO;
 
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	public abstract class LuceneQueryable : IQueryable {
 		

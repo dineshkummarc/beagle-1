@@ -27,21 +27,16 @@
 using System;
 using System.Collections;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
-	/*
-
-	QueryResult has a lot of api that is tied to implementation details.
-	The point of this interface is to only expose the minimum amount
-	of QueryResult api to IQueryable.DoQuery implementations. 
-
-	*/
+	// QueryResult has a lot of API that is tied to implementation details.
+	// The point of this interface is to only expose the minimum amount
+	// of QueryResult API to IQueryable.DoQuery implementations. 
 
 	public interface IQueryResult {
 
 		void Add (ICollection some_hits);
 		void Add (ICollection some_hits, int total_matches);
-
 		void Subtract (ICollection some_uris);
 	}
 }

@@ -31,7 +31,7 @@ using System.Xml.Serialization;
 
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	[XmlInclude (typeof (IndexerAddedReceipt)),
 	 XmlInclude (typeof (IndexerRemovedReceipt)),
@@ -85,14 +85,19 @@ namespace Beagle.Daemon {
 		public int NumRemoved = -1;
 	}
 
-	// This fake receipt is sent to the daemon to basically schedule indexing of filter generated indexables
+	// This fake receipt is sent to the daemon to basically schedule
+	// indexing of filter generated indexables
 	public class IndexerIndexablesReceipt : IndexerReceipt {
 
 		public IndexerIndexablesReceipt () { }
-		// FIXME: We could send id here to get "permission" from the backend whether to continue
-		// indexing the generated indexables from some backend scheduled indexable; currently I see
-		// no need.
-		// Another use for the id(s) could to tell the backend what parent indexable(s) are being currently indexed.
-		// This could be useful in displaying correct status information.
+
+		// FIXME: We could send the Id here to get "permission" from
+		// the backend whether to continue indexing the generated
+		// indexables from some backend scheduled indexable, but
+		// currently I see no need.
+		//
+		// Another use for the Id(s) could be to tell the backend what
+		// parent indexable(s) are being currently indexed. This could
+		// be useful in displaying correct status information.
 	}
 }

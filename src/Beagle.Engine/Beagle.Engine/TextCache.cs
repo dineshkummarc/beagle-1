@@ -35,9 +35,9 @@ using ICSharpCode.SharpZipLib.GZip;
 
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
-	// FIXME: This class isn't multithread safe!  This class does not
+	// FIXME: This class isn't multithread safe! This class does not
 	// ensure that different threads don't utilize a transaction started
 	// in a certain thread at the same time.  However, since all the
 	// writes to this database are handled by a single thread, this isn't
@@ -50,10 +50,12 @@ namespace Beagle.Daemon {
 
 		private const string SELF_CACHE_TAG = "*self*";
 		private const string BLOB_TAG = "*blob*";
+
 		public SqliteCommand InsertCommand;
 		public SqliteCommand LookupPathCommand;
 		public SqliteCommand LookupDataCommand;
 		public SqliteCommand DeleteCommand;
+
 		private string text_cache_dir;
 		internal string TextCacheDir {
 			get { return text_cache_dir; }

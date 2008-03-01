@@ -27,7 +27,7 @@
 using System;
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 	
 	public class FileAttributesStore_Mixed : IFileAttributesStore {
 
@@ -47,8 +47,7 @@ namespace Beagle.Daemon {
 
 		public FileAttributes Read (string path)
 		{
-			FileAttributes attr;
-			attr = store_sqlite.Read (path);
+			FileAttributes attr = store_sqlite.Read (path);
 
 			if (attr != null) {
 				// If we have write access to the path but it has attributes
@@ -61,8 +60,10 @@ namespace Beagle.Daemon {
 				bool success = store_ea.Write (attr);
 				if (success)
 					store_sqlite.Drop (path);
-			} else
+			} else {
 				attr = store_ea.Read (path);
+			}
+
 			return attr;
 		}
 
@@ -71,10 +72,10 @@ namespace Beagle.Daemon {
 			if (store_ea.Write (attr)) {
 				// Drop any now-outdated information from the sqlite store.
 				store_sqlite.Drop (attr.Path);
-
 				return true;
-			} else
-				return store_sqlite.Write (attr);
+			}
+				
+			return store_sqlite.Write (attr);
 		}
 
 		public void Drop (string path)

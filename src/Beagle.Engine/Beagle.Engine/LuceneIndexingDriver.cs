@@ -31,10 +31,11 @@ using System.Collections;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
 
+using Beagle.Filters;
 using Beagle.Util;
 using Stopwatch = Beagle.Util.Stopwatch;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	public class LuceneIndexingDriver : LuceneCommon, IIndexer {
 
@@ -536,7 +537,7 @@ namespace Beagle.Daemon {
 			// If we have content, try to find a filter
 			// we we can use to process the indexable
 			try {
-				FilterFactory.FilterIndexable (indexable, (disable_textcache ? null : text_cache), out filter);
+				IndexableFilter.Filter (indexable, (disable_textcache ? null : text_cache), out filter);
 			} catch (Exception e) {
 				indexable.NoContent = true;
 			}

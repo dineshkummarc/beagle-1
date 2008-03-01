@@ -34,7 +34,7 @@ using System.Text;
 
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	class WebServer {
 

@@ -28,9 +28,10 @@ using System;
 using System.Collections;
 using System.IO;
 
+using Beagle.Filters;
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	/**
 	 * This queryable just takes the LuceneQueryable and adds some sane
@@ -42,15 +43,25 @@ namespace Beagle.Daemon {
 	 */
 	public abstract class LuceneFileQueryable : LuceneQueryable {
 
-		public LuceneFileQueryable (string index_name, int minor_version, bool disable_locking) :
-			base (index_name, minor_version, disable_locking)
-		{ }
+		public LuceneFileQueryable (string index_name, int minor_version, bool disable_locking)
+			: base (index_name, minor_version, disable_locking)
+		{
+		}
 
-		public LuceneFileQueryable (string index_name) : this (index_name, -1, false) { }
+		public LuceneFileQueryable (string index_name)
+			: this (index_name, -1, false)
+		{
+		}
 
-		public LuceneFileQueryable (string index_name, bool disable_locking) : this (index_name, -1, disable_locking) { }
+		public LuceneFileQueryable (string index_name, bool disable_locking)
+			: this (index_name, -1, disable_locking)
+		{
+		}
 
-		public LuceneFileQueryable (string index_name, int minor_version) : this (index_name, minor_version, false) { }
+		public LuceneFileQueryable (string index_name, int minor_version)
+			: this (index_name, minor_version, false)
+		{
+		}
 
 		///////////////////////////////////////////////////////////////////////////
 

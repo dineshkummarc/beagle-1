@@ -1,4 +1,11 @@
-CSC = $(MCS) -debug
+# 0162 = Unreachable code detected
+# 0164 = This label has not been referenced
+# 0168 = The variable 'foo' is declared but never used
+# 0169 = The private method/field 'foo' is never used
+# 0219 = Variable is assigned but never used
+
+CSC = $(MCS) -debug -nowarn:0162,0164,0168,0169,0219,0436
+
 
 ASSEMBLY_NAME = Beagle.Engine
 ASSEMBLY = $(ASSEMBLY_NAME).dll
@@ -262,6 +269,7 @@ ASSEMBLY_SOURCES = \
 
 ASSEMBLY_REFERENCES = \
 	-r:../Beagle.Util/Beagle.Util.dll \
+	-r:../Beagle.Filters/Beagle.Filters.dll \
 	-r:../Beagle/Beagle.dll \
 	-r:Mono.Posix \
 	-r:Mono.Data.Sqlite \

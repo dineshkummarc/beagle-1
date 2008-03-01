@@ -29,7 +29,7 @@ using System.Collections;
 
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	public interface IQueryable {
 
@@ -39,9 +39,7 @@ namespace Beagle.Daemon {
 		bool AcceptQuery (Query query);
 
 		// Should not modify query
-		void DoQuery (Query query,
-			      IQueryResult result,
-			      IQueryableChangeData data);
+		void DoQuery (Query query, IQueryResult result, IQueryableChangeData data);
 
 		// Just return the number of matches
 		int DoCountMatchQuery (Query query);

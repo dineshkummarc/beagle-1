@@ -31,7 +31,7 @@ using System.Xml.Serialization;
 
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	[RequestMessage (typeof (DaemonInformationRequest))]
 	public class DaemonInformationExecutor : RequestMessageExecutor {

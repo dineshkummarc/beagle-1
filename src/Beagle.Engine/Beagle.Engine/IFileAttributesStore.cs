@@ -26,18 +26,18 @@
 
 using System;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	public interface IFileAttributesStore {
 
-		FileAttributes Read  (string path);
+		FileAttributes Read (string path);
 
-		bool           Write (FileAttributes attr);
+		bool Write (FileAttributes attr);
 
-		void           Drop  (string path);
+		void Drop (string path);
 
 		// These are not guaranteed to actually do anything.
-		void           BeginTransaction ();
-		void           CommitTransaction ();
+		void BeginTransaction ();
+		void CommitTransaction ();
 	}
 }

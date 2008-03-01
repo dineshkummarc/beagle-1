@@ -2,6 +2,7 @@
 // FileAttributesStore_ExtendedAttribute.cs
 //
 // Copyright (C) 2004 Novell, Inc.
+// Copyright (C) 2006 Lukas Lipka <lukaslipka@gmail.com>
 //
 
 //
@@ -24,13 +25,15 @@
 // SOFTWARE.
 //
 
+// WARNING: This is not portable to Win32
+
 using System;
 using System.IO;
 
 using Beagle.Util;
 
-namespace Beagle.Daemon {
-	
+namespace Beagle.Engine {
+
 	public class FileAttributesStore_ExtendedAttribute : IFileAttributesStore {
 
 		// Version history:
@@ -38,7 +41,7 @@ namespace Beagle.Daemon {
 		// 2: Replace LastIndexedTime with LastAttrTime
 		// 3: Store EA's using a CSV format
 		//    Format: "Version[2] Fingerprint,Uid,LastWriteTime,LastAttrTime,FilterVersion[3] FilterName"
-		private const int EA_VERSION = 3;
+		private const int VERSION = 3;
 
 		public static bool Disable = false;
 
@@ -62,7 +65,7 @@ namespace Beagle.Daemon {
 
 				string[] csv = tmp.Split (',');
 
-				if (int.Parse (csv [0].Substring (0, 2)) != EA_VERSION
+				if (int.Parse (csv [0].Substring (0, 2)) != VERSION
 				    || (index_fingerprint != null && csv [0].Substring (3) != index_fingerprint))
 					return null;
 
@@ -93,10 +96,7 @@ namespace Beagle.Daemon {
 				return false;
 
 			try {
-				if (ExtendedAttribute.OldExists (attr.Path, "Fingerprint"))
-					DropObsoleteAttributes (attr.Path);
-
-				string fingerprint = String.Format ("{0:00} {1}", EA_VERSION, index_fingerprint);
+				string fingerprint = String.Format ("{0:00} {1}", VERSION, index_fingerprint);
 				string uid = GuidFu.ToShortString (attr.UniqueId);
 				string mtime = StringFu.DateTimeToString (attr.LastWriteTime);
 
@@ -137,29 +137,14 @@ namespace Beagle.Daemon {
 			}
 		}
 
-		// IMPORTANT: Remove this post 0.3.3 release!
-		private void DropObsoleteAttributes (string path)
-		{
-			try {
-				ExtendedAttribute.RemoveOld (path, "Fingerprint");
-				ExtendedAttribute.RemoveOld (path, "Uid");
-				ExtendedAttribute.RemoveOld (path, "MTime");
-				ExtendedAttribute.RemoveOld (path, "AttrTime");
-				ExtendedAttribute.RemoveOld (path, "Filter");
-
-				// And some others from Joe's favorite list :-)
-				ExtendedAttribute.RemoveOld (path, "Name");
-				ExtendedAttribute.RemoveOld (path, "IndexTime");
-			} catch { }
-		}
-
 		// There are no transactions for EAs
 		
 		public void BeginTransaction ()
-		{ }
+		{
+		}
 
 		public void CommitTransaction ()
-		{ }
-
+		{
+		}
 	}
 }

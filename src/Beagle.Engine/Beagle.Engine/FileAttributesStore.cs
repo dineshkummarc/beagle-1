@@ -26,15 +26,16 @@
 
 using System;
 
+using Beagle.Filters;
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	public class FileAttributesStore {
 		
 		private static bool Debug = false;
 
-		private IFileAttributesStore ifas;
+		private IFileAttributesStore ifas = null;
 
 		public FileAttributesStore (IFileAttributesStore ifas)
 		{

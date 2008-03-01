@@ -30,7 +30,7 @@ using System.Xml.Serialization;
 
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	public class RemoteIndexerResponse : ResponseMessage {
 

@@ -36,7 +36,7 @@ using LNS = Lucene.Net.Search;
 
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	public class LuceneBitArray : BetterBitArray {
 
@@ -67,8 +67,7 @@ namespace Beagle.Daemon {
 			this.scratch = null;
 		}
 
-		public LuceneBitArray (LNS.IndexSearcher searcher,
-				       LNS.Query query) : this (searcher)
+		public LuceneBitArray (LNS.IndexSearcher searcher, LNS.Query query) : this (searcher)
 		{
 			this.Or (query);
 		}
@@ -79,6 +78,7 @@ namespace Beagle.Daemon {
 				scratch = new BetterBitArray (searcher.MaxDoc ());
 			else
 				scratch.SetAll (false);
+
 			collector.Array = scratch;
 		}
 
@@ -86,6 +86,7 @@ namespace Beagle.Daemon {
 		{
 			this.SetAll (false);
 			this.Or (query);
+
 			return this;
 		}
 
@@ -93,9 +94,12 @@ namespace Beagle.Daemon {
 		{
 			UseScratch ();
 			searcher.Search (query, null, collector);
+
 			if (Debug)
 				Explain (query);
+
 			this.And (scratch);
+
 			return this;
 		}
 
@@ -103,9 +107,12 @@ namespace Beagle.Daemon {
 		{
 			UseScratch ();
 			searcher.Search (query, null, collector);
+
 			if (Debug)
 				Explain (query);
+
 			this.AndNot (scratch);
+
 			return this;
 		}
 
@@ -113,8 +120,10 @@ namespace Beagle.Daemon {
 		{
 			collector.Array = this;
 			searcher.Search (query, null, collector);
+
 			if (Debug)
 				Explain (query);
+
 			return this;
 		}
 		
@@ -122,20 +131,25 @@ namespace Beagle.Daemon {
 		{
 			UseScratch ();
 			searcher.Search (query, null, collector);
+
 			if (Debug)
 				Explain (query);
+
 			this.Xor (scratch);
+
 			return this;
 		}
 
 		private void Explain (LNS.Query query)
 		{
 			int j = 0;
+
 			while (j < collector.Array.Count) {
-				int i;
-				i = collector.Array.GetNextTrueIndex (j);
+				int i = collector.Array.GetNextTrueIndex (j);
+
 				if (i >= collector.Array.Count)
 					break;
+
 				j = i + 1;
 
 				Document doc = searcher.Doc (i);
@@ -159,12 +173,10 @@ namespace Beagle.Daemon {
 			if (pending_uris == null)
 				pending_uris = new ArrayList ();
 
-			int pos;
-
 			// OrdinalComparer gives us the same order that the
 			// URIs are stored as terms in the index, so that our
 			// walk along them is linear.
-			pos = pending_uris.BinarySearch (str, StringFu.OrdinalComparer.Instance);
+			int pos = pending_uris.BinarySearch (str, StringFu.OrdinalComparer.Instance);
 
 			// Value is already present
 			if (pos >= 0)
@@ -203,14 +215,15 @@ namespace Beagle.Daemon {
 			int j = 0;
 			while (j < this.Count) {
 				int i;
+
 				i = this.GetNextTrueIndex (j);
+
 				if (i >= this.Count)
 					break;
+
 				j = i+1;
 
-				Document doc;
-				doc = searcher.Doc (i);
-
+				Document doc = searcher.Doc (i);
 				other.AddUri (doc.Get ("Uri"));
 			}
 
@@ -219,8 +232,7 @@ namespace Beagle.Daemon {
 
 		public void Join (LuceneBitArray other)
 		{
-			LuceneBitArray image;
-			image = new LuceneBitArray (other.searcher);
+			LuceneBitArray image = new LuceneBitArray (other.searcher);
 			this.ProjectOnto (image);
 
 			other.Or (image);

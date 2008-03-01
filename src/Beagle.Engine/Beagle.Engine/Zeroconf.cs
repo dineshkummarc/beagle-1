@@ -33,7 +33,7 @@ using Avahi;
 
 using Beagle.Util;
 
-namespace Beagle.Daemon.Network {        
+namespace Beagle.Engine.Network {        
 
         public class Zeroconf : IDisposable {
 

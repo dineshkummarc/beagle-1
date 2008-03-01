@@ -31,7 +31,7 @@ using System.Xml.Serialization;
 
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	[RequestMessage (typeof (SnippetRequest))]
 	public class SnippetExecutor : RequestMessageExecutor {
@@ -39,16 +39,20 @@ namespace Beagle.Daemon {
 		public override ResponseMessage Execute (RequestMessage req)
 		{
 			SnippetRequest request = (SnippetRequest) req;
+
 			Queryable queryable = QueryDriver.GetQueryable (request.Hit.Source);
-			ISnippetReader snippet_reader;
+
+			ISnippetReader snippet_reader = null;
 			bool full_text = request.FullText;
 
 			if (queryable == null) {
 				Log.Error ("SnippetExecutor: No queryable object matches '{0}'", request.Hit.Source);
+
 				snippet_reader = new SnippetReader (null, null, false);
 				full_text = false;
-			} else
+			} else {
 				snippet_reader = queryable.GetSnippet (request.QueryTerms, request.Hit, full_text);
+			}
 
 			return new SnippetResponse (new SnippetList (full_text, snippet_reader));
 		}

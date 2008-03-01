@@ -34,26 +34,29 @@ using Beagle;
 using Beagle.Util;
 using Stopwatch = Beagle.Util.Stopwatch;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	public class RemoteIndexer : IIndexer {
 
-		static string helper_path;
-		static int helper_pid = -1;
+		private static string helper_path;
+		private static int helper_pid = -1;
 
-		string remote_index_name;
-		int remote_index_minor_version = 0;
-		int last_item_count = -1;
+		private string remote_index_name;
+		private int remote_index_minor_version = 0;
+		private int last_item_count = -1;
 
 		static RemoteIndexer ()
 		{
 			string bihp = Environment.GetEnvironmentVariable ("_BEAGLED_INDEX_HELPER_PATH");
-			if (bihp == null)
+
+			if (String.IsNullOrEmpty (bihp))
 				throw new Exception ("_BEAGLED_INDEX_HELPER_PATH not set!");
 			
 			helper_path = Path.GetFullPath (Path.Combine (bihp, "beagled-index-helper"));
+
 			if (! File.Exists (helper_path))
 				throw new Exception ("Could not find " + helper_path);
+
 			Logger.Log.Debug ("Found index helper at {0}", helper_path);
 		}
 

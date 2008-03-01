@@ -28,7 +28,7 @@ using System;
 
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	[RequestMessage (typeof (Beagle.InformationalMessagesRequest))]
 	public class InformationalMessagesRequestExecutor : RequestMessageExecutor {
@@ -67,6 +67,7 @@ namespace Beagle.Daemon {
 		private void SendIndexingStatusResponse (IndexingStatus status)
 		{
 			Log.Debug ("Sending indexing status change from {0} to {1}", crawl_status, status);
+
 			this.crawl_status = status;
 			this.SendAsyncResponse (new IndexingStatusResponse (status));
 		}

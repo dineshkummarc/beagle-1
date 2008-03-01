@@ -31,7 +31,7 @@ using System.Xml.Serialization;
 using Beagle;
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	public class RemoteIndexerRequest : RequestMessage {
 

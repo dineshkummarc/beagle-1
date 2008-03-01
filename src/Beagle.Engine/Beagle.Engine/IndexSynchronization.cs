@@ -31,7 +31,7 @@ using System.Threading;
 
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	public class IndexSynchronization {
 		

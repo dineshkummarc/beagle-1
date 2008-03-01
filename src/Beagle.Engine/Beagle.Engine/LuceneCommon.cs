@@ -44,7 +44,7 @@ using LNS = Lucene.Net.Search;
 
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	public class LuceneCommon {
 

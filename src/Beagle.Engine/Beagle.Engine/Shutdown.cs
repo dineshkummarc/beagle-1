@@ -27,19 +27,22 @@
 using System;
 using System.Threading;
 using System.Collections;
+
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	public class Shutdown {
 
 		static public bool Debug = false;
 
-		static object shutdownLock = new object ();
-		static Hashtable workers = new Hashtable ();
-		static Hashtable workers_names = new Hashtable ();
-		static bool shutdownRequested = false;
-		static bool shutdownStarted = false;
+		private static GLib.MainLoop main_loop = null;
+
+		private static object shutdownLock = new object ();
+		private static Hashtable workers = new Hashtable ();
+		private static Hashtable workers_names = new Hashtable ();
+		private static bool shutdownRequested = false;
+		private static bool shutdownStarted = false;
 
 		public delegate void ShutdownHandler ();
 		public static event ShutdownHandler ShutdownEvent;
@@ -100,8 +103,6 @@ namespace Beagle.Daemon {
 					shutdownRequested = value;
 			}
 		}
-
-		private static GLib.MainLoop main_loop = null;
 
 		public static void RegisterMainLoop (GLib.MainLoop loop)
 		{

@@ -24,7 +24,7 @@
 // DEALINGS IN THE SOFTWARE.
 //
 
-namespace Beagle.Daemon 
+namespace Beagle.Engine
 {
 	public interface IQueryWorker {
 		void DoWork ();

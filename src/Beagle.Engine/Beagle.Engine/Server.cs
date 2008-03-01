@@ -37,7 +37,7 @@ using Mono.Unix;
 
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	class HttpItemHandler {
 

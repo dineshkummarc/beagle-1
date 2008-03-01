@@ -27,12 +27,12 @@
 using System;
 using System.Collections;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 	
 	public interface IIndexer {
 
 		int GetItemCount ();
 		
-		IndexerReceipt [] Flush (IndexerRequest request);
+		IndexerReceipt[] Flush (IndexerRequest request);
 	}
 }

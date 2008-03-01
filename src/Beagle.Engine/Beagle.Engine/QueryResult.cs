@@ -31,7 +31,7 @@ using System.Diagnostics;
 using System.Threading;
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	public class QueryResult : IQueryResult, IDisposable {
 
@@ -56,7 +56,6 @@ namespace Beagle.Daemon {
 		DateTime finished_time;
 		Hashtable per_worker_started_time = new Hashtable ();
 		bool is_index_listener = false;
-
 
 		public QueryResult ()
 		{

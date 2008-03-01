@@ -33,9 +33,9 @@ using Mono.Data.Sqlite;
 
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
-	// FIXME: This class isn't multithread safe!  This class does not
+	// FIXME: This class isn't multithread safe! This class does not
 	// ensure that different threads don't utilize a transaction started
 	// in a certain thread at the same time.  However, since all the
 	// writes to this database are handled by a single thread, this isn't
@@ -51,19 +51,22 @@ namespace Beagle.Daemon {
 		// 2: Replaced LastIndexedTime with LastAttrTime
 		// 3: Changed STRING to TEXT
 		// 4: Use (directory, filename) as unique constraint
-		const int VERSION = 4;
+		private const int VERSION = 4;
 
 		private SqliteConnection connection;
 		private BitArray path_flags;
 		private int transaction_count = 0;
+
 		public SqliteCommand ReadCommand;
 		public SqliteCommand InsertCommand;
 		public SqliteCommand DeleteCommand;
-		enum TransactionState {
+
+		private enum TransactionState {
 			None,
 			Requested,
 			Started
 		}
+
 		private TransactionState transaction_state;
 
 		public FileAttributesStore_Sqlite (string directory, string index_fingerprint)
@@ -74,7 +77,6 @@ namespace Beagle.Daemon {
 			if (! File.Exists (GetDbPath (directory))) {
 				create_new_db = true;
 			} else {
-				
 				// Funky logic here to deal with sqlite versions.
 				//
 				// When sqlite 3 tries to open an sqlite 2 database,

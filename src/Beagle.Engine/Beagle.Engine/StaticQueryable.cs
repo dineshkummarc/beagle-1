@@ -34,13 +34,14 @@ using System.Xml.Serialization;
 	
 using Beagle.Util;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	public class StaticQueryable : LuceneQueryable 	{
 
 		protected TextCache text_cache;
 
-		public StaticQueryable (string index_name, string index_path, bool read_only_mode) : base (index_path, read_only_mode)
+		public StaticQueryable (string index_name, string index_path, bool read_only_mode) 
+			: base (index_path, read_only_mode)
 		{
 			Logger.Log.Debug ("Initializing static queryable: {0}", index_path);
 
@@ -48,25 +49,27 @@ namespace Beagle.Daemon {
 				try {
 					text_cache = new TextCache (index_path, true);
 				} catch (UnauthorizedAccessException) {
-					Logger.Log.Warn ("Unable to purge static queryable text cache in {0}.  Will run without it.", index_path);
+					Logger.Log.Warn ("Unable to purge static queryable text cache in {0}", index_path);
+					Logger.Log.Warn ("Will run without it.");
 				}
 			}
 		}
 
-		override public ISnippetReader GetSnippet (string[] query_terms, Hit hit, bool full_text) 
+		public override ISnippetReader GetSnippet (string[] query_terms, Hit hit, bool full_text) 
 		{
 			if (text_cache == null)
 				return null;
 
 			// Look up the hit in our local text cache.
 			TextReader reader = text_cache.GetReader (hit.Uri);
+
 			if (reader == null)
 				return null;
 			
 			return SnippetFu.GetSnippet (query_terms, reader, full_text);
 		}
 
-		override protected bool HitIsValid (Uri uri)
+		protected override bool HitIsValid (Uri uri)
 		{
 			// We can't check anything else than file uris
 			if (! uri.IsFile)
@@ -74,8 +77,8 @@ namespace Beagle.Daemon {
 			
 			// FIXME: This is a hack, we need to support parent Uri's in some sane way
 			try {
-				int j = uri.LocalPath.LastIndexOf ('#');
-				string actual_path = ((j == -1) ? uri.LocalPath : uri.LocalPath.Substring (0, j));
+				int i = uri.LocalPath.LastIndexOf ('#');
+				string actual_path = (i == -1) ? uri.LocalPath : uri.LocalPath.Substring (0, i);
 				return File.Exists (actual_path) || Directory.Exists (actual_path);
 			} catch (Exception e) {
 				Logger.Log.Warn ("Exception executing HitIsValid on {0}", uri.LocalPath);

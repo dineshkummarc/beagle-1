@@ -45,7 +45,7 @@ using LNS = Lucene.Net.Search;
 using Beagle.Util;
 using Stopwatch = Beagle.Util.Stopwatch;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	public class LuceneQueryingDriver : LuceneCommon {
 

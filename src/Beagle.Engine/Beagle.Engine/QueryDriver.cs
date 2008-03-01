@@ -31,23 +31,26 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using System.Threading;
-using Beagle.Util;
 using System.Xml.Serialization;
 
-namespace Beagle.Daemon {
+using Beagle.Util;
+
+namespace Beagle.Engine {
 	
 	public class QueryDriver {
 
 		// Contains list of queryables explicitly asked by --allow-backend or --backend name
 		// --allow-backend/--backend name : dont read config information and only start backend 'name'
-		static ArrayList excl_allowed_queryables = new ArrayList ();
+		private static List<string> excl_allowed_queryables = new List<string> ();
 
 		// Contains list of denied queryables from config/arguments (every queryable is enabled by default)
 		// Unless overruled by --allow-backend/--backend name, deny backend only if names appears here.
-		static ArrayList denied_queryables = new ArrayList ();
+		private static List<string> denied_queryables = new List<string> ();
 		
-		static bool to_read_conf = true; // read backends from conf if true
-		static bool done_reading_conf = false;
+		// Read backends from conf if true
+		private static bool to_read_conf = true;
+
+		private static bool done_reading_conf = false;
 
 		static private void ReadBackendsFromConf ()
 		{
@@ -114,7 +117,7 @@ namespace Beagle.Daemon {
 
 		// Paths to static queryables
 
-		static ArrayList static_queryables = new ArrayList ();
+		private static List<string> static_queryables = new List<string> ();
 		
 		static public void AddStaticQueryable (string path) {
 

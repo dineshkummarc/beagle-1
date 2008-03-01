@@ -32,17 +32,17 @@ using System.Collections;
 using Lucene.Net.Analysis;
 using LNSA = Lucene.Net.Analysis.Standard;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	// TokenFilter which does several fancy things
 	// 1. Removes words which are potential noise like dhyhy8ju7q9
 	// 2. Splits email addresses into meaningful tokens
 	// 3. Splits hostnames into subparts
+
 	class NoiseEmailHostFilter : TokenFilter {
 			
 		private bool tokenize_email_hostname;
-
-		TokenStream token_stream;
+		private TokenStream token_stream;
 
 		public NoiseEmailHostFilter (TokenStream input, bool tokenize_email_hostname)
 			: base (input)
@@ -66,10 +66,12 @@ namespace Beagle.Daemon {
 			// <digit> <letter>   1
 			// <x> <punct>+ <x>   1
 			// <x> <punct>+ <y>   2
+
 			const int transitions_cutoff = 4;
 			int last_type = -1, last_non_punct_type = -1, first_type = -1;
 			bool has_letter = false, has_digit = false, has_punctuation = false;
 			int transitions = 0;
+
 			for (int i = 0; i < text.Length && transitions < transitions_cutoff; ++i) {
 				char c = text [i];
 				int type = -1;
@@ -85,7 +87,6 @@ namespace Beagle.Daemon {
 				}
 					
 				if (type != -1) {
-						
 					if (type != last_type) {
 						if (last_type == 3) {
 							if (type != last_non_punct_type)
@@ -99,6 +100,7 @@ namespace Beagle.Daemon {
 						first_type = type;
 
 					last_type = type;
+
 					if (type != 3)
 						last_non_punct_type = type;
 				}

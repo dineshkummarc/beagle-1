@@ -1,43 +1,3 @@
-autostartdir = $(sysconfdir)/xdg/autostart
-autostart_DATA = beagled-autostart.desktop
-
-############################################################
-
-WEBINTERFACE_FILES =				\
-	$(srcdir)/webinterface/default.js	\
-	$(srcdir)/webinterface/propname-table.js\
-	$(srcdir)/webinterface/help.html	\
-	$(srcdir)/webinterface/mappings.xml	\
-	$(srcdir)/webinterface/opensearch.xml	\
-	$(srcdir)/webinterface/index.xsl	\
-	$(srcdir)/webinterface/hitresult.xsl	\
-	$(srcdir)/webinterface/statusresult.xsl	\
-	$(srcdir)/webinterface/default.css
-
-WEBINTERFACE_INDEX_XML_IN=$(srcdir)/webinterface/index.xml.in
-WEBINTERFACE_INDEX_XML=$(srcdir)/webinterface/index.xml
-
-webinterfacedir = $(datadir)/beagle/webinterface
-webinterface_DATA =				\
-	$(WEBINTERFACE_INDEX_XML)		\
-	$(WEBINTERFACE_FILES)
-
-webinterfaceimagesdir = $(webinterfacedir)/images
-webinterfaceimages_DATA =					\
-	$(srcdir)/webinterface/images/beagle-logo.png		\
-	$(srcdir)/webinterface/images/busy-animation.gif	\
-	$(srcdir)/webinterface/images/favicon.png		\
-	$(srcdir)/webinterface/images/system-search.png		\
-	$(srcdir)/webinterface/images/title_bg.png
-
-$(WEBINTERFACE_INDEX_XML): $(WEBINTERFACE_INDEX_XML_IN) $(WEBINTERFACE_FILES)
-	sed 	-e "s|\@VERSION\@|$(VERSION)|"			\
-		-e "s|\@LAST_TIME\@|$(shell date +'%x %X')|"	\
-		< $(WEBINTERFACE_INDEX_XML_IN) > $@
-
-
-############################################################
-
 # Warnings we don't want to see.
 # Most of these are thanks to DotLucene.  It would be nice if we could use
 # "#pragma warning" on these.
@@ -48,17 +8,8 @@ $(WEBINTERFACE_INDEX_XML): $(WEBINTERFACE_INDEX_XML_IN) $(WEBINTERFACE_FILES)
 # 0169 = The private method/field 'foo' is never used
 # 0219 = Variable is assigned but never used
 
-CSC = $(MCS) -debug -nowarn:0162,0164,0168,0169,0219,0436
+CSC = $(MCS) -debug
 
-BACKENDDIR = $(pkglibdir)/Backends
-
-PLUGIN_TARGET = BeagleDaemonPlugins.dll
-
-PLUGIN_CSFLAGS = -target:library
-
-PLUGIN_CSFILES =				\
-	$(srcdir)/Flavor.cs			\
-	$(srcdir)/Filter.cs
 
 PLUGIN_LOCAL_ASSEMBLIES =			\
 	../Util/Util.dll			\

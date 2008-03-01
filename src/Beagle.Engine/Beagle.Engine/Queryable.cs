@@ -31,7 +31,7 @@ using System.Collections;
 using Beagle.Util;
 using Beagle;
 
-namespace Beagle.Daemon {
+namespace Beagle.Engine {
 
 	public class Queryable {
 
@@ -46,32 +46,14 @@ namespace Beagle.Daemon {
 		
 		public void Start ()
 		{
-			if (! Shutdown.ShutdownRequested)
+			if (!Shutdown.ShutdownRequested)
 				iqueryable.Start ();
-		}
-
-		public string Name {
-			get { return flavor.Name; }
-		}
-
-		public QueryDomain Domain {
-			get { return flavor.Domain; }
-		}
-
-		public string DependsOn {
-			get { return flavor.DependsOn; }
-		}
-
-		public IQueryable IQueryable {
-			get { return iqueryable; }
 		}
 
 		public bool AcceptQuery (Query query)
 		{
-			return query != null
-				&& (query.IsIndexListener || ! query.IsEmpty)
-				&& query.AllowsDomain (Domain)
-				&& iqueryable.AcceptQuery (query);
+			return query != null && (query.IsIndexListener || ! query.IsEmpty)
+				&& query.AllowsDomain (Domain) && iqueryable.AcceptQuery (query);
 		}
 				    
 		public void DoQuery (Query query, IQueryResult result, IQueryableChangeData change_data)
@@ -107,7 +89,7 @@ namespace Beagle.Daemon {
 			try {
 				return iqueryable.GetSnippet (query_terms, hit, full_text);
 			} catch (Exception ex) {
-				Logger.Log.Warn (ex, "Caught exception calling DoQuery on '{0}'", Name);
+				Logger.Log.Warn (ex, "Caught exception calling GetSnippet on '{0}'", Name);
 			}
 			
 			return null;
@@ -123,6 +105,22 @@ namespace Beagle.Daemon {
 			status.Name = Name;
 
 			return status;
+		}
+
+		public string Name {
+			get { return flavor.Name; }
+		}
+
+		public QueryDomain Domain {
+			get { return flavor.Domain; }
+		}
+
+		public string DependsOn {
+			get { return flavor.DependsOn; }
+		}
+
+		public IQueryable IQueryable {
+			get { return iqueryable; }
 		}
 	}
 }
