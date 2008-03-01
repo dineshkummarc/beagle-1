@@ -7,6 +7,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{EED7CCE3-A6A2-4163-ACBC-0CA649070432}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <OutDir>..\..\bin\</OutDir>
+    <BaseIntermediateOutputPath>..\..\bin\</BaseIntermediateOutputPath>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Beagle.Util</RootNamespace>
     <AssemblyName>Beagle.Util</AssemblyName>
@@ -17,7 +19,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>..\..\bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -47,10 +49,10 @@
     <Compile Include="Beagle.Util\BetterBitArray.cs" />
     <Compile Include="Beagle.Util\Camel.cs" />
     <Compile Include="Beagle.Util\ChmFile.cs" />
-    <Compile Include="Beagle.Util\CompatFileChooser.cs" />
     <Compile Include="Beagle.Util\Config.cs" />
     <Compile Include="Beagle.Util\DateTimeUtil.cs" />
     <Compile Include="Beagle.Util\DelayedTextWriter.cs" />
+    <Compile Include="Beagle.Util\DigikamTags.cs" />
     <Compile Include="Beagle.Util\DirectoryWalker.cs" />
     <Compile Include="Beagle.Util\Evolution.cs" />
     <Compile Include="Beagle.Util\ExceptionHandlingThread.cs" />
@@ -61,10 +63,7 @@
     <Compile Include="Beagle.Util\FrequencyStatistics.cs" />
     <Compile Include="Beagle.Util\FSpotTools.cs" />
     <None Include="Beagle.Util\Galago.cs" />
-    <Compile Include="Beagle.Util\GnomeFu.cs" />
-    <Compile Include="Beagle.Util\GtkUtils.cs" />
     <Compile Include="Beagle.Util\GuidFu.cs" />
-    <Compile Include="Beagle.Util\HigMessageDialog.cs" />
     <Compile Include="Beagle.Util\HtmlRemovingReader.cs" />
     <Compile Include="Beagle.Util\ICalParser.cs" />
     <Compile Include="Beagle.Util\ImBuddy.cs" />
@@ -102,7 +101,6 @@
     <Compile Include="Beagle.Util\UriFu.cs" />
     <Compile Include="Beagle.Util\VersionFu.cs" />
     <Compile Include="Beagle.Util\XdgMime.cs" />
-    <Compile Include="Beagle.Util\XKeybinder.cs" />
     <Compile Include="Beagle.Util\XmlFu.cs" />
     <Compile Include="F-Spot\Bim.cs" />
     <Compile Include="F-Spot\BitConverter.cs" />

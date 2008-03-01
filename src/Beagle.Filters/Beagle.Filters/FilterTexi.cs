@@ -33,7 +33,7 @@ using System.Text.RegularExpressions;
 
 namespace Beagle.Filters {
 
-	public class FilterTexi : Beagle.Daemon.Filter {
+	public class FilterTexi : Filter {
 
 		static string [] texiKeywords = {"@c ", "\\input ", "@setfilename", "@settitle",
 						 "@setchapternewpage", "@ifinfo", "@end", "@titlepage",
@@ -50,7 +50,7 @@ namespace Beagle.Filters {
 		protected override void RegisterSupportedTypes ()
 		{
 			// Make this a general texi filter.
-			AddSupportedMimeType ("text/x-texinfo");
+			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("text/x-texinfo"));
 		}
 
 		/*

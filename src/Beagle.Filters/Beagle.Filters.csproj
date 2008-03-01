@@ -15,7 +15,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>..\..\bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -36,4 +36,131 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <ItemGroup>
+    <Compile Include="7zip\ICoder.cs" />
+    <Compile Include="Beagle.Filters\Filter.cs" />
+    <Compile Include="Beagle.Filters\FilterAbiword.cs" />
+    <Compile Include="Beagle.Filters\FilterArchive.cs" />
+    <Compile Include="Beagle.Filters\FilterAudio.cs" />
+    <Compile Include="Beagle.Filters\FilterBmp.cs" />
+    <Compile Include="Beagle.Filters\FilterBoo.cs" />
+    <Compile Include="Beagle.Filters\FilterC.cs" />
+    <Compile Include="Beagle.Filters\FilterChm.cs" />
+    <Compile Include="Beagle.Filters\FilterCpp.cs" />
+    <Compile Include="Beagle.Filters\FilterCSharp.cs" />
+    <Compile Include="Beagle.Filters\FilterDeb.cs" />
+    <Compile Include="Beagle.Filters\FilterDesktop.cs" />
+    <None Include="Beagle.Filters\FilterDOC.cs" />
+    <Compile Include="Beagle.Filters\FilterDocbook.cs" />
+    <Compile Include="Beagle.Filters\FilterEbuild.cs" />
+    <Compile Include="Beagle.Filters\FilterEmpathyLog.cs" />
+    <Compile Include="Beagle.Filters\FilterExternal.cs" />
+    <Compile Include="Beagle.Filters\FilterFactory.cs" />
+    <Compile Include="Beagle.Filters\FilterFlavor.cs" />
+    <Compile Include="Beagle.Filters\FilterFortran.cs" />
+    <Compile Include="Beagle.Filters\FilterGif.cs" />
+    <Compile Include="Beagle.Filters\FilterHtml.cs" />
+    <Compile Include="Beagle.Filters\FilterIgnore.cs" />
+    <Compile Include="Beagle.Filters\FilterImage.cs" />
+    <Compile Include="Beagle.Filters\FilterJava.cs" />
+    <Compile Include="Beagle.Filters\FilterJpeg.cs" />
+    <Compile Include="Beagle.Filters\FilterJs.cs" />
+    <Compile Include="Beagle.Filters\FilterKAddressBook.cs" />
+    <Compile Include="Beagle.Filters\FilterKCal.cs" />
+    <Compile Include="Beagle.Filters\FilterKNotes.cs" />
+    <Compile Include="Beagle.Filters\FilterKonqHistory.cs" />
+    <Compile Include="Beagle.Filters\FilterKopeteLog.cs" />
+    <Compile Include="Beagle.Filters\FilterKOrganizer.cs" />
+    <Compile Include="Beagle.Filters\FilterLabyrinth.cs" />
+    <Compile Include="Beagle.Filters\FilterLisp.cs" />
+    <Compile Include="Beagle.Filters\FilterM3U.cs" />
+    <None Include="Beagle.Filters\FilterMail.cs" />
+    <None Include="Beagle.Filters\FilterMan.cs" />
+    <Compile Include="Beagle.Filters\FilterMatlab.cs" />
+    <Compile Include="Beagle.Filters\FilterMonodoc.cs" />
+    <Compile Include="Beagle.Filters\FilterMPlayerVideo.cs" />
+    <None Include="Beagle.Filters\FilterOle.cs" />
+    <Compile Include="Beagle.Filters\FilterOpenOffice.cs" />
+    <Compile Include="Beagle.Filters\FilterPackage.cs" />
+    <Compile Include="Beagle.Filters\FilterPascal.cs" />
+    <Compile Include="Beagle.Filters\FilterPdf.cs" />
+    <Compile Include="Beagle.Filters\FilterPerl.cs" />
+    <Compile Include="Beagle.Filters\FilterPhp.cs" />
+    <Compile Include="Beagle.Filters\FilterPidginLog.cs" />
+    <Compile Include="Beagle.Filters\FilterPls.cs" />
+    <Compile Include="Beagle.Filters\FilterPng.cs" />
+    <None Include="Beagle.Filters\FilterPPT.cs" />
+    <Compile Include="Beagle.Filters\FilterPython.cs" />
+    <Compile Include="Beagle.Filters\FilterRPM.cs" />
+    <Compile Include="Beagle.Filters\FilterRTF.cs" />
+    <Compile Include="Beagle.Filters\FilterRuby.cs" />
+    <Compile Include="Beagle.Filters\FilterScilab.cs" />
+    <Compile Include="Beagle.Filters\FilterScribus.cs" />
+    <Compile Include="Beagle.Filters\FilterShellscript.cs" />
+    <Compile Include="Beagle.Filters\FilterSource.cs" />
+    <Compile Include="Beagle.Filters\FilterSpreadsheet.cs" />
+    <Compile Include="Beagle.Filters\FilterSvg.cs" />
+    <Compile Include="Beagle.Filters\FilterTeX.cs" />
+    <Compile Include="Beagle.Filters\FilterTexi.cs" />
+    <Compile Include="Beagle.Filters\FilterText.cs" />
+    <Compile Include="Beagle.Filters\FilterTiff.cs" />
+    <Compile Include="Beagle.Filters\FilterTotem.cs" />
+    <Compile Include="Beagle.Filters\FilterVideo.cs" />
+    <Compile Include="Beagle.Filters\FilterXslt.cs" />
+    <Compile Include="HtmlAgilityPack\crc32.cs" />
+    <Compile Include="HtmlAgilityPack\Header.cs" />
+    <Compile Include="HtmlAgilityPack\HtmlAttribute.cs" />
+    <Compile Include="HtmlAgilityPack\HtmlDocument.cs" />
+    <Compile Include="HtmlAgilityPack\HtmlEntity.cs" />
+    <Compile Include="HtmlAgilityPack\HtmlNode.cs" />
+    <Compile Include="HtmlAgilityPack\HtmlNodeNavigator.cs" />
+    <Compile Include="HtmlAgilityPack\HtmlWeb.cs" />
+    <Compile Include="HtmlAgilityPack\MixedCodeDocument.cs" />
+    <Compile Include="HtmlAgilityPack\tools.cs" />
+    <Compile Include="System.Windows.Forms.RTF\Charcode.cs" />
+    <Compile Include="System.Windows.Forms.RTF\Charset.cs" />
+    <Compile Include="System.Windows.Forms.RTF\CharsetFlags.cs" />
+    <Compile Include="System.Windows.Forms.RTF\CharsetType.cs" />
+    <Compile Include="System.Windows.Forms.RTF\ClassDelegate.cs" />
+    <Compile Include="System.Windows.Forms.RTF\Color.cs" />
+    <Compile Include="System.Windows.Forms.RTF\DestinationDelegate.cs" />
+    <Compile Include="System.Windows.Forms.RTF\Font.cs" />
+    <Compile Include="System.Windows.Forms.RTF\KeysInit.cs" />
+    <Compile Include="System.Windows.Forms.RTF\KeyStruct.cs" />
+    <Compile Include="System.Windows.Forms.RTF\Major.cs" />
+    <Compile Include="System.Windows.Forms.RTF\Minor.cs" />
+    <Compile Include="System.Windows.Forms.RTF\RTF.cs" />
+    <Compile Include="System.Windows.Forms.RTF\RTFException.cs" />
+    <Compile Include="System.Windows.Forms.RTF\StandardCharCode.cs" />
+    <Compile Include="System.Windows.Forms.RTF\StandardCharName.cs" />
+    <Compile Include="System.Windows.Forms.RTF\Style.cs" />
+    <Compile Include="System.Windows.Forms.RTF\StyleElement.cs" />
+    <Compile Include="System.Windows.Forms.RTF\StyleType.cs" />
+    <Compile Include="System.Windows.Forms.RTF\test.cs" />
+    <Compile Include="System.Windows.Forms.RTF\TextMap.cs" />
+    <Compile Include="System.Windows.Forms.RTF\TokenClass.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="ICSharpCode.SharpZipLib, Version=0.85.4.369, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\win-deps\ICSharpCode.SharpZipLib.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.XML" />
+    <Reference Include="taglib-sharp, Version=2.0.3.0, Culture=neutral, PublicKeyToken=db62eba44689b5b0, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\win-deps\taglib-sharp.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Beagle.Util\Beagle.Util.csproj">
+      <Project>{EED7CCE3-A6A2-4163-ACBC-0CA649070432}</Project>
+      <Name>Beagle.Util</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Beagle\Beagle.csproj">
+      <Project>{F6C2E799-417F-4C13-B5A8-47B98A9B7733}</Project>
+      <Name>Beagle</Name>
+    </ProjectReference>
+  </ItemGroup>
 </Project>

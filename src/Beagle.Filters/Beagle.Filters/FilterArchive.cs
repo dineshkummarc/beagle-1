@@ -224,8 +224,9 @@ namespace Beagle.Filters {
 			FileStream file_stream = File.OpenWrite (filename);
 
 			//Log.Debug ("Storing archive contents in {0}", filename);
-			
+#if LINUX			
 			Mono.Unix.Native.Syscall.chmod (filename, (Mono.Unix.Native.FilePermissions) 384); // 384 is 0600
+#endif
 			
 			BufferedStream buffered_stream = new BufferedStream (file_stream);
 
@@ -286,7 +287,9 @@ namespace Beagle.Filters {
 
 			File.SetLastWriteTimeUtc (filename, mtime);
 
+#if LINUX
 			Mono.Unix.Native.Syscall.chmod (filename, (Mono.Unix.Native.FilePermissions) 256); // 256 is 0400
+#endif
 
 			return filename;
 		}
