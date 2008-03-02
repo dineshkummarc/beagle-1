@@ -366,7 +366,6 @@ zzForAction_brk: ;
 		}
 		
 		/// <summary>the input device </summary>
-		//UPGRADE_ISSUE: Class hierarchy differences between 'java.io.Reader' and 'System.IO.StreamReader' may cause compilation errors. "ms-help://MS.VSCC.v80/dv_commoner/local/redirect.htm?index='!DefaultContextWindowIndex'&keyword='jlca1186'"
 		private System.IO.TextReader zzReader;
 		
 		/// <summary>the current state of the DFA </summary>
@@ -454,7 +453,6 @@ zzForAction_brk: ;
 		/// </summary>
 		/// <param name="in"> the java.io.Reader to read input from.
 		/// </param>
-		//UPGRADE_ISSUE: Class hierarchy differences between 'java.io.Reader' and 'System.IO.StreamReader' may cause compilation errors. "ms-help://MS.VSCC.v80/dv_commoner/local/redirect.htm?index='!DefaultContextWindowIndex'&keyword='jlca1186'"
 		internal StandardTokenizerImpl(System.IO.TextReader in_Renamed)
 		{
 			this.zzReader = in_Renamed;
@@ -469,6 +467,22 @@ zzForAction_brk: ;
 		internal StandardTokenizerImpl(System.IO.Stream in_Renamed):this(new System.IO.StreamReader(in_Renamed, System.Text.Encoding.Default))
 		{
 		}
+		
+		internal static StandardTokenizerImpl GetStandardTokenizerImpl(System.IO.TextReader reader)
+		{
+			if (impl==null)
+			{
+				impl = new StandardTokenizerImpl(reader);
+			}
+			else
+			{
+				impl.yyreset(reader);
+			}
+
+			return impl;
+		}
+
+		private static StandardTokenizerImpl impl = null;
 		
 		/// <summary> Unpacks the compressed character translation table.
 		/// 
@@ -528,7 +542,6 @@ zzForAction_brk: ;
 			}
 			
 			/* finally: fill the buffer with new input */
-			//UPGRADE_TODO: Method 'java.io.Reader.read' was converted to 'System.IO.StreamReader.Read' which has a different behavior. "ms-help://MS.VSCC.v80/dv_commoner/local/redirect.htm?index='!DefaultContextWindowIndex'&keyword='jlca1073_javaioReaderread_char[]_int_int'"
 			int lengthToRead = zzBuffer.Length - zzEndRead;
 			int numRead = zzReader.Read(zzBuffer, zzEndRead, lengthToRead);
 			
@@ -557,7 +570,6 @@ zzForAction_brk: ;
 				zzReader.Close();
 		}
 		
-		
 		/// <summary> Resets the scanner to read from a new input stream.
 		/// Does not close the old reader.
 		/// 
@@ -568,8 +580,7 @@ zzForAction_brk: ;
 		/// </summary>
 		/// <param name="reader">  the new input stream 
 		/// </param>
-		//UPGRADE_ISSUE: Class hierarchy differences between 'java.io.Reader' and 'System.IO.StreamReader' may cause compilation errors. "ms-help://MS.VSCC.v80/dv_commoner/local/redirect.htm?index='!DefaultContextWindowIndex'&keyword='jlca1186'"
-		public void  yyreset(System.IO.StreamReader reader)
+		public void  yyreset(System.IO.TextReader reader)
 		{
 			zzReader = reader;
 			zzAtBOL = true;

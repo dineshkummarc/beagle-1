@@ -55,7 +55,7 @@ namespace Lucene.Net.Analysis.Standard
         /// <summary>Constructs a tokenizer for this Reader. </summary>
         public StandardTokenizer(System.IO.TextReader reader) : base(reader)
         {
-            this.scanner = new StandardTokenizerImpl(reader);
+	    this.scanner = StandardTokenizerImpl.GetStandardTokenizerImpl(reader);
         }
 		
         /// <summary>Returns the next token in the stream, or null at EOS.
