@@ -38,7 +38,7 @@ namespace Beagle.Daemon {
 	// 1. Removes words which are potential noise like dhyhy8ju7q9
 	// 2. Splits email addresses into meaningful tokens
 	// 3. Splits hostnames into subparts
-	class NoiseEmailHostFilter : TokenFilter {
+	public class NoiseEmailHostFilter : TokenFilter {
 			
 		private bool tokenize_email_hostname;
 
