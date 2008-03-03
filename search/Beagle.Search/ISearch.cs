@@ -11,9 +11,12 @@ using org.freedesktop.DBus;
 
 namespace Beagle.Search {
 	
-	[Interface ("org.gnome.Beagle.Search")]
+	[Interface ("org.gnome.Beagle")]
 	public interface ISearch {
-		void Show ();
-		void Hide ();
+
+		bool IconEnabled { get; }
+		bool DocsEnabled { get; }
+
+		void Query (string query);
 	}
 }

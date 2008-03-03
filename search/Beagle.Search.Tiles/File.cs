@@ -21,6 +21,8 @@ namespace Beagle.Search.Tiles {
 
 	public class TileFile : TileTemplate {
 
+		private static ThumbnailFactory thumbnailer = new ThumbnailFactory ();
+
 		public TileFile (Beagle.Hit hit, Beagle.Query query) : base (hit, query)
 		{
 			Title = GetTitle (hit);
@@ -35,54 +37,50 @@ namespace Beagle.Search.Tiles {
 			// AddAction (new TileAction (Catalog.GetString ("Instant-Message"), InstantMessage));
 			AddAction (new TileAction (Catalog.GetString ("Move to Trash"), Gtk.Stock.Delete, MoveToTrash));
 
-			if (! String.IsNullOrEmpty (Hit.GetFirstProperty("dc:author"))) {
-				AddAction(new TileAction ("Find Documents From Same Author", Gtk.Stock.Find, FindSameAuthor));
+			if (! String.IsNullOrEmpty (Hit.GetFirstProperty ("dc:author"))) {
+				AddAction(new TileAction (Catalog.GetString ("Find Documents From Same Author"), Gtk.Stock.Find, FindSameAuthor));
 			}
 
 			EnableOpenWith = true;
 		}
 
-		static ThumbnailFactory thumbnailer = new ThumbnailFactory ();
-
 		protected override void LoadIcon (Gtk.Image image, int size)
 		{
 			// The File tile doesn't respect the icon size because
 			// 48 is too small for thumbnails
+
 			if (!thumbnailer.SetThumbnailIcon (image, Hit, size))
 				base.LoadIcon (image, size);
 
 			// FIXME: Multiple emblems
 			string emblem = Hit.GetFirstProperty ("nautilus:emblem");
-			if (emblem == null)
+
+			if (String.IsNullOrEmpty (emblem))
 				return;
 
-			Gdk.Pixbuf icon_pixbuf = image.Pixbuf.Copy ();
 			Gdk.Pixbuf emblem_pixbuf = WidgetFu.LoadThemeIcon ("emblem-" + emblem, 24);
 
-			if (icon_pixbuf == null || emblem_pixbuf == null) {
-				if (icon_pixbuf != null)
-					icon_pixbuf.Dispose ();
-
-				if (emblem_pixbuf == null)
-					emblem_pixbuf.Dispose ();
-
+			if (emblem_pixbuf == null)
 				return;
-			}
+
+			Gdk.Pixbuf icon = image.Pixbuf.Copy ();
 
 			// If the icon itself is smaller than our requested
-			// emblem, just display the emblem.
-			if (icon_pixbuf.Height < emblem_pixbuf.Height || icon_pixbuf.Width < emblem_pixbuf.Width) {
-				icon_pixbuf.Dispose ();
-				image.Pixbuf.Dispose ();
-				image.Pixbuf = emblem_pixbuf;
+			// emblem, just display the icon.
+
+			if ((icon.Height < emblem_pixbuf.Height || icon.Width < emblem_pixbuf.Width) ||
+			    (icon.Height < (emblem_pixbuf.Height * 2) && icon.Width < (emblem_pixbuf.Width * 2))) {
+				icon.Dispose ();
+				emblem_pixbuf.Dispose ();
 				return;
 			}
 
-			emblem_pixbuf.Composite (icon_pixbuf, 0, 0,
-						 emblem_pixbuf.Width, emblem_pixbuf.Height,
+			emblem_pixbuf.Composite (icon, 0, 0, emblem_pixbuf.Width, emblem_pixbuf.Height,
 						 0, 0, 1, 1, Gdk.InterpType.Bilinear, 255);
+			emblem_pixbuf.Dispose ();
+
 			image.Pixbuf.Dispose ();
-			image.Pixbuf = icon_pixbuf;
+			image.Pixbuf = icon;
 		}
 
 		protected static string GetTitle (Beagle.Hit hit, bool get_parent)

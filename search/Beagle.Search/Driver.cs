@@ -17,13 +17,33 @@ namespace Beagle.Search {
 
 	public class Driver {
 
-		private const string INTERFACE_NAME = "org.gnome.Beagle.Search";
+		private const string BUS_NAME = "org.gnome.Beagle";
 		private const string PATH_NAME = "/org/gnome/Beagle/Search";
+
+		private static bool icon_enabled = false;
+		private static bool docs_enabled = false;
+
+		public static void PrintUsageAndExit ()
+		{
+			VersionFu.PrintHeader ();
+
+			string usage =
+				"Usage: beagle-search [OPTIONS] [<query string>]\n\n" +
+				"Options:\n" +
+				"  --icon\t\t\tAdd an icon to the notification area rather than opening a search window.\n" +
+				"  --search-docs\t\t\tAlso search the system-wide documentation index.\n" +
+				"  --help\t\t\tPrint this usage message.\n" +
+				"  --version\t\t\tPrint version information.\n";
+
+			Console.WriteLine (usage);
+
+			System.Environment.Exit (0);
+		}
 
 		private static string ParseArgs (String[] args)
 		{
-			string query = String.Empty;
 			int i = 0;
+			string query = String.Empty;
 
 			while (i < args.Length) {
 				switch (args [i]) {
@@ -37,13 +57,13 @@ namespace Beagle.Search {
 					Environment.Exit (0);
 					break;
 
-					//case "--icon":
-					//IconEnabled = true;
-					//break;
+				case "--icon":
+					icon_enabled = true;
+					break;
 
-					//case "--search-docs":
-					//search_docs = true;
-					//break;
+				case "--search-docs":
+					docs_enabled = true;
+					break;
 
 				// Ignore session management
 				case "--sm-config-prefix":
@@ -69,57 +89,42 @@ namespace Beagle.Search {
 			return query;
 		}
 
-		public static void PrintUsageAndExit ()
-		{
-			VersionFu.PrintHeader ();
-
-			string usage =
-				"Usage: beagle-search [OPTIONS] [<query string>]\n\n" +
-				"Options:\n" +
-				"  --icon\t\t\tAdd an icon to the notification area rather than opening a search window.\n" +
-				"  --search-docs\t\t\tAlso search the system-wide documentation index.\n" +
-				"  --help\t\t\tPrint this usage message.\n" +
-				"  --version\t\t\tPrint version information.\n";
-
-			Console.WriteLine (usage);
-			System.Environment.Exit (0);
-		}
-
 		public static void Main (string[] args)
 		{
-			// Set our process name
-
-			SystemInformation.SetProcessName ("beagle-search");
-
-			// Initialize our translations catalog
-			
-			Catalog.Init ("beagle", ExternalStringsHack.LocaleDir);
-
-			// Set up DBus for our GLib main loop
-			
 			BusG.Init ();
-
-			// Parse arguments
 
 			string query = ParseArgs (args);
 
-			if (Bus.Session.RequestName (INTERFACE_NAME) != RequestNameReply.PrimaryOwner) {
-				Console.WriteLine ("There is already an instance of beagle-search running!");
+			// If there is already an instance of beagle-search running
+			// request our search proxy object and open up a query in
+			// that instance.
+
+			if (Bus.Session.RequestName (BUS_NAME) != RequestNameReply.PrimaryOwner) {
+				if (icon_enabled == true) {
+					Console.WriteLine ("There is already an instance of beagle-search running.");
+					Console.WriteLine ("Cannot run in --icon mode! Exiting...");
+					Environment.Exit (1);
+				}
+
+				ISearch s = Bus.Session.GetObject<ISearch> (BUS_NAME, new ObjectPath (PATH_NAME));
+				s.Query (query);
+
 				return;
 			}
-			
-			// Init Gnome program
 
+			SystemInformation.SetProcessName ("beagle-search");
+			Catalog.Init ("beagle", ExternalStringsHack.LocaleDir);
+			
 			Gnome.Program program = new Gnome.Program ("search", "0.0", Gnome.Modules.UI, args);
 
-			Search window = new Search (query);
+			// FIXME: Passing these icon and docs enabled properties
+			// sucks. We really need to do something about them.
+			Search search = new Search (icon_enabled, docs_enabled);
+			
+			if (!String.IsNullOrEmpty (query) || !icon_enabled)
+				search.Query (query);
 
-			Bus.Session.Register (INTERFACE_NAME, new ObjectPath (PATH_NAME), window);
-
-			//if (query != null && query != "" && !IconEnabled) {
-			//	window.entry.Text = query;
-			//	window.Search (true);
-			//}
+			Bus.Session.Register (new ObjectPath (PATH_NAME), search);
 
 			program.Run ();
 		}
