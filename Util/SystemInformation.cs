@@ -114,12 +114,16 @@ namespace Beagle.Util {
 		[DllImport ("libbeagleglue.so")]
 		extern static unsafe int screensaver_glue_init ();
 
-		/*
-		 * BeagleDaemon needs to monitor screensaver status
-		 * for faster scheduling when user is idle.
-		 * IndexHelper does not need to monitor screensaver status.
-		 * XssInit is only called from the BeagleDaemon.
-		 */
+		/// <summary>
+		/// BeagleDaemon needs to monitor screensaver status
+		/// for faster scheduling when user is idle.
+		/// IndexHelper does not need to monitor screensaver status.
+		/// XssInit is only called from the BeagleDaemon.
+		///
+		/// </summary>
+		/// <returns>
+		/// A <see cref="System.Boolean"/>
+		/// </returns>
 		public static bool XssInit ()
 		{
 			int has_xss = screensaver_glue_init ();
@@ -174,8 +178,10 @@ namespace Beagle.Util {
 			}
 		}
 
-		// returns number of seconds since input was received
-		// from the user on any input device
+		/// <value>
+		///  returns number of seconds since input was received
+		/// from the user on any input device
+		/// </value>
 		public static double InputIdleTime {
 			get {
 				CheckScreenSaver ();
@@ -345,19 +351,25 @@ namespace Beagle.Util {
 
 		///////////////////////////////////////////////////////////////
 
-		[DllImport("libc")]
-		private static extern int prctl (int option, byte [] arg2, ulong arg3, ulong arg4, ulong arg5);
-
 		// From /usr/include/linux/prctl.h
 		private const int PR_SET_NAME = 15;
+
+		[DllImport("libc")] // Linux
+		private static extern int prctl (int option, byte [] arg2, IntPtr arg3, IntPtr arg4, IntPtr arg5);
+
+		[DllImport ("libc")] // BSD
+		private static extern void setproctitle (byte [] fmt, byte [] str_arg);
 
 		public static void SetProcessName(string name)
 		{
 #if OS_LINUX
-			if (prctl (PR_SET_NAME, Encoding.ASCII.GetBytes (name + '\0'), 0, 0, 0) < 0) {
+			if (prctl (PR_SET_NAME, Encoding.ASCII.GetBytes (name + '\0'), 
+				   IntPtr.Zero, IntPtr.Zero, IntPtr.Zero) < 0) {
 				Logger.Log.Warn ("Couldn't set process name to '{0}': {1}", name,
 						 Mono.Unix.Native.Stdlib.GetLastError ());
 			}
+#elif OS_FREEBSD
+			setproctitle (Encoding.ASCII.GetBytes ("%s\0"), Encoding.ASCII.GetBytes (name + "\0"));
 #endif
 		}
 

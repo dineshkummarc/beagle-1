@@ -1,6 +1,9 @@
 CSC = $(MCS) -debug
 CSFLAGS = -target:exe
 
+ASSEMBLY_NAME = Beagle.Search
+ASSEMBLY = $(ASSEMBLY_NAME).exe
+
 if ENABLE_DESKTOP_LAUNCH
 CSFLAGS += -define:ENABLE_DESKTOP_LAUNCH
 endif
@@ -25,83 +28,70 @@ if ENABLE_AVAHI
 CSFLAGS += -define:ENABLE_AVAHI
 endif
 
-pkglib_DATA = Search.exe Search.exe.mdb
-
-BIN_WRAPPERS = beagle-search
-
-beagle-search: beagle-search.in
-	sed 					\
-	-e "s:@pkglibdir@:${pkglibdir}:" 	\
-	-e "s:@bash@:$(BASH):"			\
-	< $(srcdir)/beagle-search.in > beagle-search
-	chmod a+x beagle-search
-
-CSFILES =					\
-	$(srcdir)/Category.cs			\
-	$(srcdir)/DetailsPane.cs		\
-	$(srcdir)/Entry.cs			\
-	$(srcdir)/GroupView.cs			\
-	$(srcdir)/ListCategory.cs		\
-	$(srcdir)/NotificationArea.cs		\
-	$(srcdir)/Panes.cs			\
-	$(srcdir)/Search.cs			\
-	$(srcdir)/SortedTileList.cs		\
-	$(srcdir)/Spinner.cs			\
-	$(srcdir)/TileCategory.cs		\
-	$(srcdir)/TypeFilter.cs			\
-	$(srcdir)/UIManager.cs			\
-	$(srcdir)/WidgetFu.cs
-
-TILES = 					\
-	$(srcdir)/Tiles/ActionMenuItem.cs	\
-	$(srcdir)/Tiles/Application.cs		\
-	$(srcdir)/Tiles/ArchivedFile.cs		\
-	$(srcdir)/Tiles/AssemblyInfo.cs		\
-	$(srcdir)/Tiles/Audio.cs		\
-	$(srcdir)/Tiles/CApplet.cs		\
-	$(srcdir)/Tiles/Calendar.cs		\
-	$(srcdir)/Tiles/Contact.cs		\
-	$(srcdir)/Tiles/Docbook.cs		\
-	$(srcdir)/Tiles/File.cs			\
-	$(srcdir)/Tiles/Folder.cs		\
-	$(srcdir)/Tiles/HitFlavor.cs		\
-	$(srcdir)/Tiles/IMLog.cs		\
-	$(srcdir)/Tiles/Image.cs		\
-	$(srcdir)/Tiles/MailMessage.cs		\
-	$(srcdir)/Tiles/MailAttachment.cs	\
-	$(srcdir)/Tiles/Manpage.cs		\
-	$(srcdir)/Tiles/Note.cs			\
-	$(srcdir)/Tiles/Presentation.cs		\
-	$(srcdir)/Tiles/RSSFeed.cs		\
-	$(srcdir)/Tiles/Spreadsheet.cs		\
-	$(srcdir)/Tiles/Task.cs			\
-	$(srcdir)/Tiles/TextDocument.cs		\
-	$(srcdir)/Tiles/ThumbnailFactory.cs	\
-	$(srcdir)/Tiles/Tile.cs			\
-	$(srcdir)/Tiles/TileAction.cs		\
-	$(srcdir)/Tiles/TileActivator.cs	\
-	$(srcdir)/Tiles/TileFlat.cs		\
-	$(srcdir)/Tiles/TileGroup.cs		\
-	$(srcdir)/Tiles/TileTemplate.cs		\
-	$(srcdir)/Tiles/Utils.cs		\
-	$(srcdir)/Tiles/Video.cs		\
-	$(srcdir)/Tiles/WebHistory.cs
+SOURCES =							\
+	$(srcdir)/AssemblyInfo.cs				\
+	$(srcdir)/Beagle.Search.Pages/Base.cs			\
+	$(srcdir)/Beagle.Search.Pages/IndexInfo.cs		\
+	$(srcdir)/Beagle.Search.Pages/NoMatch.cs		\
+	$(srcdir)/Beagle.Search.Pages/QuickTips.cs		\
+	$(srcdir)/Beagle.Search.Pages/RootUser.cs		\
+	$(srcdir)/Beagle.Search.Pages/StartDaemon.cs		\
+	$(srcdir)/Beagle.Search.Tiles/ActionMenuItem.cs		\
+	$(srcdir)/Beagle.Search.Tiles/Application.cs		\
+	$(srcdir)/Beagle.Search.Tiles/ArchivedFile.cs		\
+	$(srcdir)/Beagle.Search.Tiles/Audio.cs			\
+	$(srcdir)/Beagle.Search.Tiles/CApplet.cs		\
+	$(srcdir)/Beagle.Search.Tiles/Calendar.cs		\
+	$(srcdir)/Beagle.Search.Tiles/Contact.cs		\	
+	$(srcdir)/Beagle.Search.Tiles/Docbook.cs		\
+	$(srcdir)/Beagle.Search.Tiles/File.cs			\
+	$(srcdir)/Beagle.Search.Tiles/Folder.cs			\
+	$(srcdir)/Beagle.Search.Tiles/HitFlavor.cs		\
+	$(srcdir)/Beagle.Search.Tiles/IMLog.cs			\
+	$(srcdir)/Beagle.Search.Tiles/Image.cs			\
+	$(srcdir)/Beagle.Search.Tiles/MailAttachment.cs		\
+	$(srcdir)/Beagle.Search.Tiles/MailMessage.cs		\
+	$(srcdir)/Beagle.Search.Tiles/Manpage.cs		\
+	$(srcdir)/Beagle.Search.Tiles/Note.cs			\
+	$(srcdir)/Beagle.Search.Tiles/Presentation.cs		\
+	$(srcdir)/Beagle.Search.Tiles/RSSFeed.cs		\
+	$(srcdir)/Beagle.Search.Tiles/Spreadsheet.cs		\
+	$(srcdir)/Beagle.Search.Tiles/Task.cs			\
+	$(srcdir)/Beagle.Search.Tiles/TextDocument.cs		\
+	$(srcdir)/Beagle.Search.Tiles/ThumbnailFactory.cs	\
+	$(srcdir)/Beagle.Search.Tiles/Tile.cs			\
+	$(srcdir)/Beagle.Search.Tiles/TileAction.cs		\
+	$(srcdir)/Beagle.Search.Tiles/TileActivator.cs		\
+	$(srcdir)/Beagle.Search.Tiles/TileFlat.cs		\
+	$(srcdir)/Beagle.Search.Tiles/TileGroup.cs		\
+	$(srcdir)/Beagle.Search.Tiles/TileTemplate.cs		\
+	$(srcdir)/Beagle.Search.Tiles/Utils.cs			\
+	$(srcdir)/Beagle.Search.Tiles/Video.cs			\
+	$(srcdir)/Beagle.Search.Tiles/WebHistory.cs		\
+	$(srcdir)/Beagle.Search.Tray/NotificationArea.cs	\
+	$(srcdir)/Beagle.Search.Tray/TrayIcon.cs		\
+	$(srcdir)/Beagle.Search/CairoFu.cs			\
+	$(srcdir)/Beagle.Search/Category.cs			\
+	$(srcdir)/Beagle.Search/DetailsPane.cs			\
+	$(srcdir)/Beagle.Search/Driver.cs			\
+	$(srcdir)/Beagle.Search/Entry.cs			\
+	$(srcdir)/Beagle.Search/GroupView.cs			\
+	$(srcdir)/Beagle.Search/ISearch.cs			\
+	$(srcdir)/Beagle.Search/ListCategory.cs			\
+	$(srcdir)/Beagle.Search/NotificationArea.cs		\
+	$(srcdir)/Beagle.Search/Panes.cs			\
+	$(srcdir)/Beagle.Search/Search.cs			\
+	$(srcdir)/Beagle.Search/SearchWindow.cs			\
+	$(srcdir)/Beagle.Search/SortedTileList.cs		\
+	$(srcdir)/Beagle.Search/Spinner.cs			\
+	$(srcdir)/Beagle.Search/TileCategory.cs			\
+	$(srcdir)/Beagle.Search/TypeFilter.cs			\
+	$(srcdir)/Beagle.Search/UIManager.cs			\
+	$(srcdir)/Beagle.Search/WidgetFu.cs
 
 if ENABLE_OPEN_WITH
-TILES += $(srcdir)/Tiles/OpenWithMenu.cs
+SOURCES += $(srcdir)/Beagle.Search.Tiles/OpenWithMenu.cs
 endif
-
-PAGES =						\
-	$(srcdir)/Pages/Base.cs			\
-	$(srcdir)/Pages/IndexInfo.cs		\
-	$(srcdir)/Pages/NoMatch.cs		\
-	$(srcdir)/Pages/QuickTips.cs		\
-	$(srcdir)/Pages/RootUser.cs		\
-	$(srcdir)/Pages/StartDaemon.cs
-
-TRAY =						\
-	$(srcdir)/Tray/NotificationArea.cs	\
-	$(srcdir)/Tray/TrayIcon.cs
 
 LOCAL_ASSEMBLIES =			\
 	../Util/Util.dll		\
@@ -111,12 +101,26 @@ LOCAL_ASSEMBLIES =			\
 ASSEMBLIES =				\
 	$(BEAGLE_UI_LIBS)		\
 	$(LOCAL_ASSEMBLIES:%=-r:%)	\
-	-r:Mono.Posix
+	$(NDESK_DBUS_LIBS)		\
+	$(NDESK_DBUS_GLIB_LIBS)		\
+	-r:Mono.Posix			\
+	-r:Mono.Cairo
 
-Search.exe: $(CSFILES) $(TILES) $(PAGES) $(TRAY) $(LOCAL_ASSEMBLIES)
-	$(CSC) -out:$@ $(CSFLAGS) $(CSFILES) $(TILES) $(PAGES) $(TRAY) $(ASSEMBLIES)
+pkglib_DATA = $(ASSEMBLY) $(ASSEMBLY).mdb
 
-Search.exe.mdb: Search.exe
+BIN_WRAPPERS = beagle-search
+
+$(ASSEMBLY): $(SOURCES) $(LOCAL_ASSEMBLIES)
+	$(CSC) -out:$@ $(CSFLAGS) $(SOURCES) $(ASSEMBLIES)
+
+$(ASSEMBLY).mdb: $(ASSEMBLY)
+
+beagle-search: beagle-search.in
+	sed 					\
+	-e "s:@pkglibdir@:${pkglibdir}:" 	\
+	-e "s:@bash@:$(BASH):"			\
+	< $(srcdir)/beagle-search.in > beagle-search
+	chmod a+x beagle-search
 
 @INTLTOOL_DESKTOP_RULE@
 
@@ -145,10 +149,7 @@ uninstall-local:
 	rm -f $(DESTDIR)$(bindir)/beagle-search
 
 EXTRA_DIST =			\
-	$(CSFILES)		\
-	$(TILES)		\
-	$(PAGES)		\
-	$(TRAY)			\
+	$(SOURCES)		\
 	$(man_MANS)		\
 	$(desktop_DATA).in	\
 	$(autostart_DATA)	\
@@ -156,8 +157,8 @@ EXTRA_DIST =			\
 	beagle-search.desktop.in.in
 
 CLEANFILES =			\
-	Search.exe		\
-	Search.exe.mdb		\
+	$(ASSEMBLY)		\
+	$(ASSEMBLY).mdb		\
 	beagle-search		\
 	$(desktop_DATA)		\
 	$(desktop_h_files)

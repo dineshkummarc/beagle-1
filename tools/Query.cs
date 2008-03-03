@@ -31,7 +31,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Threading;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Runtime.InteropServices;
 
 using GLib;
@@ -329,4 +328,3 @@ public class QueryTool {
 		main_loop.Run ();
 	}
 }
-	
