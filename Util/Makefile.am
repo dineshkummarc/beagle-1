@@ -149,6 +149,7 @@ UTIL_CSFILES = 			        	\
 	$(srcdir)/SemWeb/Algos.cs               \
 	$(srcdir)/SemWeb/SparqlClient.cs	\
 	$(srcdir)/SemWeb/XPathSemWebNavigator.cs\
+	$(srcdir)/SemWeb/Euler.cs		\
 	$(srcdir)/QueryKeywordMapping.cs
 
 # Semweb compile flag
