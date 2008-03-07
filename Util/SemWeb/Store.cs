@@ -53,7 +53,7 @@ namespace SemWeb {
 			if (rdfs)
 				ret.AddReasoner(new RDFS(ret));
 			if (euler)
-				throw new Exception ("Euler spec is not shipped with beagle");
+				ret.AddReasoner(new Euler(ret)); // loads it all into memory!
 			
 			return ret;
 		}

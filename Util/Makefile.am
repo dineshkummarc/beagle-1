@@ -122,7 +122,6 @@ UTIL_CSFILES = 			        	\
 	$(srcdir)/Hal/SystemPowerManagement.cs	\
 	$(srcdir)/Hal/Volume.cs			\
 	$(srcdir)/Hal/VolumeCrypto.cs		\
-	$(srcdir)/SemWeb/AssemblyInfo.cs        \
 	$(srcdir)/SemWeb/NamespaceManager.cs    \
 	$(srcdir)/SemWeb/Util.cs                \
 	$(srcdir)/SemWeb/UriMap.cs              \
