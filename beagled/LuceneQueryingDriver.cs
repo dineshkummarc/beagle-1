@@ -350,7 +350,7 @@ namespace Beagle.Daemon {
 				part.Text = _object;
 				part.SearchFullText = false; // We only search properties in RDF query
 				query.AddPart (part);
-				return DoLowLevelRDFQuery (query, null, _object);
+				return DoLowLevelRDFQuery (query, pred_type, predicate, _object);
 			}
 
 			// Return uris for all documents with this property
@@ -363,7 +363,7 @@ namespace Beagle.Daemon {
 				part.Value = field_name;
 				query.AddPart (part);
 
-				return DoLowLevelRDFQuery (query, field_name, null);
+				return DoLowLevelRDFQuery (query, pred_type, predicate, null);
 			}
 
 			// Property query
@@ -373,8 +373,7 @@ namespace Beagle.Daemon {
 				part.Key = predicate;
 				part.Value = _object;
 				query.AddPart (part);
-				string field_name = PropertyToFieldName (pred_type, predicate);
-				return DoLowLevelRDFQuery (query, field_name, _object);
+				return DoLowLevelRDFQuery (query, pred_type, predicate, _object);
 			}
 
 			// Return if the URI exists
@@ -383,7 +382,7 @@ namespace Beagle.Daemon {
 				part.Uri = UriFu.UserUritoEscapedUri (subject); // better be URI!
 				query.AddPart (part);
 				// FIXME: Which properties to return in the hit? All or none ?
-				return DoLowLevelRDFQuery (query, null, null);
+				return DoLowLevelRDFQuery (query, pred_type, predicate, null);
 			}
 
 			// Normal query in the document with this URI
@@ -397,7 +396,7 @@ namespace Beagle.Daemon {
 				part.SearchFullText = false; // We only search properties in RDF query
 				query.AddPart (part);
 
-				return DoLowLevelRDFQuery (query, null, _object);
+				return DoLowLevelRDFQuery (query, pred_type, predicate, _object);
 			}
 
 			// Return URI if the document with this URI contains this property
@@ -426,15 +425,15 @@ namespace Beagle.Daemon {
 				part.Value = _object;
 				query.AddPart (part);
 
-				string field_name = PropertyToFieldName (pred_type, predicate);
-				return DoLowLevelRDFQuery (query, field_name, _object);
+				return DoLowLevelRDFQuery (query, pred_type, predicate, _object);
 			}
 
 			throw new Exception ("Never reaches");
 		}
 
 		private ICollection DoLowLevelRDFQuery (Query query,
-							string field_name,
+							PropertyType pred_type,
+							string predicate,
 							string field_value)
 		{
 
@@ -555,8 +554,8 @@ namespace Beagle.Daemon {
 				secondary_term_docs = secondary_searcher.Reader.TermDocs ();
 		
 			FieldSelector fields = null;
-			if (field_name != null)
-				fields = new MapFieldSelector (new string[] { "Uri", "Timestamp", field_name });
+			if (predicate != null)
+				fields = new MapFieldSelector (new string[] { "Uri", "Timestamp", PropertyToFieldName (pred_type, predicate)});
 
 			for (int match_index = primary_matches.GetNextTrueIndex (0);
 			     match_index < primary_matches.Count; 
@@ -575,7 +574,7 @@ namespace Beagle.Daemon {
 
 				// If predicate was not specified but object was specified,
 				// then figure out the right predicate
-				if (field_name == null && field_value != null) {
+				if (predicate == null && field_value != null) {
 					Hit hit = new Hit ();
 					doc = primary_searcher.Doc (match_index);
 					hit.Uri = GetUriFromDocument (doc);
@@ -587,10 +586,12 @@ namespace Beagle.Daemon {
 						if (! FieldIsPredicate (field, field_value))
 							continue;
 
-						Property prop;
-						prop = GetPropertyFromDocument (field, doc, true);
-						if (prop != null)
-							hit.AddProperty (prop);
+						Property prop = new Property ();
+						prop.Type = pred_type;
+						prop.Key = predicate;
+						prop.Value = field_value;
+						hit.AddProperty (prop);
+
 						found_matching_predicate = true;
 					}
 
@@ -609,10 +610,12 @@ namespace Beagle.Daemon {
 							if (! FieldIsPredicate (field, field_value))
 								continue;
 
-							Property prop;
-							prop = GetPropertyFromDocument (field, doc, false);
-							if (prop != null)
-								hit.AddProperty (prop);
+							Property prop = new Property ();
+							prop.Type = pred_type;
+							prop.Key = predicate;
+							prop.Value = field_value;
+							hit.AddProperty (prop);
+
 							found_matching_predicate = true;
 						}
 					}
@@ -627,7 +630,13 @@ namespace Beagle.Daemon {
 					hits.Add (hit);
 				} else {
 					doc = primary_searcher.Doc (match_index, fields);
-					hits.Add (CreateHit (doc, secondary_reader, secondary_term_docs, fields));
+					Hit hit = CreateHit (doc, secondary_reader, secondary_term_docs, fields);
+					foreach (Property prop in hit.Properties) {
+						if (prop.Key == predicate)
+							prop.Value = field_value;
+					}
+
+					hits.Add (hit);
 				}
 			}
 
