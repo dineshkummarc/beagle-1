@@ -5,11 +5,7 @@ using System.Xml;
 namespace SemWeb {
 	
 	public abstract class Resource :
-#if DOTNET2
-	IComparable<Resource>
-#else
 	IComparable
-#endif
 	{
 		internal object ekKey, ekValue;
 		internal ArrayList extraKeys;
@@ -71,11 +67,7 @@ namespace SemWeb {
 			extraKeys.Add(k);
 		}
 
-#if DOTNET2
-		public int CompareTo(Resource other) {
-#else
 		public int CompareTo(object other) {
-#endif
 			// We'll make an ordering over resources.
 			// First named entities, then bnodes, then literals.
 			// Named entities are sorted by URI.
