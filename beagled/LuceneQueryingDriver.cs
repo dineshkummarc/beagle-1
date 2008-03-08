@@ -380,7 +380,7 @@ namespace Beagle.Daemon {
 			// Return if the URI exists
 			if (subject != String.Empty && predicate == String.Empty && _object == String.Empty) {
 				QueryPart_Uri part = new QueryPart_Uri ();
-				part.Uri = new Uri (subject); // better be URI!
+				part.Uri = UriFu.UserUritoEscapedUri (subject); // better be URI!
 				query.AddPart (part);
 				// FIXME: Which properties to return in the hit? All or none ?
 				return DoLowLevelRDFQuery (query, null, null);
@@ -389,7 +389,7 @@ namespace Beagle.Daemon {
 			// Normal query in the document with this URI
 			if (subject != String.Empty && predicate == String.Empty && _object != String.Empty) {
 				QueryPart_Uri uri_part = new QueryPart_Uri ();
-				uri_part.Uri = new Uri (subject); // better be URI!
+				uri_part.Uri = UriFu.UserUritoEscapedUri (subject); // better be URI!
 				query.AddPart (uri_part);
 
 				QueryPart_Text part = new QueryPart_Text ();
@@ -405,7 +405,7 @@ namespace Beagle.Daemon {
 				ArrayList returned_uris = new ArrayList (1);
 
 				ArrayList uri_list = new ArrayList (1);
-				uri_list.Add (new Uri (subject));
+				uri_list.Add (UriFu.UserUritoEscapedUri (subject));
 
 				string field_name = PropertyToFieldName (pred_type, predicate);
 				FieldSelector fields = new MapFieldSelector (new string[] { "Uri", "Timestamp", field_name });
@@ -417,7 +417,7 @@ namespace Beagle.Daemon {
 			// Property query in the document with this URI
 			if (subject != String.Empty && predicate != String.Empty && _object != String.Empty) {
 				QueryPart_Uri uri_part = new QueryPart_Uri ();
-				uri_part.Uri = new Uri (subject); // better be URI!
+				uri_part.Uri = UriFu.UserUritoEscapedUri (subject); // better be URI!
 				query.AddPart (uri_part);
 
 				QueryPart_Property part = new QueryPart_Property ();
