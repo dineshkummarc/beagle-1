@@ -2,6 +2,7 @@
 // SemWebClient.cs
 //
 // Copyright (C) 2007 Enrico Minack <minack@l3s.de>
+// Copyright (C) 2008 D Bera <dbera.web@gmail.com>
 //
 
 //
@@ -33,6 +34,13 @@ public class SemWebClient {
 	public static void Main (string[] args)
 	{
 		BeagleSource source = new BeagleSource ();
+
+		TestSource (source);
+		TestEmailThreads (source);
+	}
+
+	private static void TestSource (SelectableSource source)
+	{
 		source.RDFToBeagle = new BeagleSource.RDFToBeagleHook (RDFToBeagle);
 		source.BeagleToRDF = new BeagleSource.BeagleToRDFHook (EmailToEntity);
 
@@ -54,6 +62,32 @@ public class SemWebClient {
 			source.Select (filter, writer);
 	}
 
+	// WARNING! This will generate all threads, pretty expensive
+	private static void TestEmailThreads (SelectableSource source)
+	{
+		source.BeagleToRDF = new BeagleSource.BeagleToRDFHook (MsgIdToEntity);
+		Store store = new Store (source);
+
+		Entity inthread = BeagleSource.BeaglePropertyToEntity ("inthread");
+
+		/* NOTE: change the subject to whatever email subject you wish */
+		const string Subject = "beagle";
+		string rules = "@prefix : <http://beagle-project.org/property#>.\n" +
+			"\n" +
+			/* every message is in its own thread */
+			"{ ?email :prop:t:dc:title \"" + Subject + "\" . ?email :prop:k:fixme:msgid ?msg . } => { ?msg :inthread ?msg } .\n" +
+			/* if any email refers to some email in thread, then this email is also in thread */
+			"{ ?ref :inthread ?parent . ?email1 :prop:k:fixme:reference ?ref . ?email1 :prop:k:fixme:msgid ?msg .} => {?msg :inthread ?parent} .\n";
+
+		Euler engine = new Euler(new N3Reader(new StringReader(rules)));
+
+		Statement msg_in_thread = new Statement (new Variable ("msg"), inthread, new Variable ("parent"));
+
+		foreach (Proof p in engine.Prove (store, new Statement[] { msg_in_thread })) {
+			Console.WriteLine(p);
+		}
+	}
+
 	// Make URIs out of certain objects
 	private static void RDFToBeagle (Entity subj, Entity pred, Resource obj, out Uri s, out string p, out string o)
 	{
@@ -69,6 +103,8 @@ public class SemWebClient {
 				o = obj.Uri;
 				if (o.StartsWith ("mailto://"))
 					o = o.Substring (9);
+				else if (o.StartsWith ("email://"))
+					o = o.Substring (8);
 			}
 		}
 	}
@@ -80,6 +116,17 @@ public class SemWebClient {
 		// Create URIs for email addresses
 		if (prop.Key == "fixme:from_address" || prop.Key == "fixme:cc_address" || prop.Key == "fixme:to_address")
 			_object = new Entity ("mailto://" + prop.Value);
+		else
+			_object = new Literal (prop.Value);
+	}
+
+	private static void MsgIdToEntity (Property prop, out Resource _object)
+	{
+		_object = null;
+
+		// Create URIs for email msg ids
+		if (prop.Key == "fixme:msgid" || prop.Key == "fixme:reference")
+			_object = new Entity ("email://" + prop.Value);
 		else
 			_object = new Literal (prop.Value);
 	}
