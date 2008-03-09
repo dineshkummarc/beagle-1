@@ -616,8 +616,19 @@ namespace Beagle.Daemon {
 			Document primary_doc = null, secondary_doc = null;
 
 			try {
+				// Add a callback to extract emails and links from the anaylyzer
+				// and add them to secondary_doc's "References" field.
+				IndexingAnalyzer.AddLink = delegate (string s, bool email)
+							    {
+								    // Only add emails for now
+								    // NoiseFilter is not good with URLs
+								    if (! email || indexable.Links == null)
+									    return;
+								    indexable.Links.Add (s);
+							    };
 				BuildDocuments (indexable, out primary_doc, out secondary_doc);
 				primary_writer.AddDocument (primary_doc);
+				IndexingAnalyzer.AddLink = null;
 			} catch (Exception ex) {
 					
 				// If an exception was thrown, something bad probably happened
@@ -645,6 +656,10 @@ namespace Beagle.Daemon {
 
 				secondary_writer.AddDocument (secondary_doc);
 			}
+
+			// Store the extracted links in the textcache
+			if (! disable_textcache && text_cache != null)
+				text_cache.AddLinks (indexable.Uri, indexable.Links);
 
 			AdjustItemCount (1);
 		}

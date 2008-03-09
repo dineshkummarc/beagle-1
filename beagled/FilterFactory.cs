@@ -332,6 +332,7 @@ namespace Beagle.Daemon {
 
 					indexable.SetTextReader (candidate_filter.GetTextReader ());
 					indexable.SetHotTextReader (candidate_filter.GetHotTextReader ());
+					indexable.Links = candidate_filter.Links;
 
 					if (Debug)
 						Logger.Log.Debug ("Successfully filtered {0} with {1}", path, candidate_filter);

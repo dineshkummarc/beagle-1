@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Reflection;
@@ -229,6 +230,7 @@ namespace Beagle.Daemon {
 		private StringBuilder text_builder = new StringBuilder (DEFAULT_CHARS_TO_PULL);
 		private ArrayList textPool;
 		private ArrayList hotPool;
+		private IList<string> links_list = new List<string> ();
 
 		private bool last_was_structural_break = false;
 		const string WHITESPACE = " ";
@@ -446,6 +448,11 @@ namespace Beagle.Daemon {
 				snippetWriter.WriteLine ();
 
 			return UpdateCharsAdded (1);
+		}
+
+		public void AddLink (string link)
+		{
+			links_list.Add (link);
 		}
 
 		//private bool NeedsWhiteSpace (ArrayList array)
@@ -891,6 +898,10 @@ namespace Beagle.Daemon {
 		public TextReader GetHotTextReader ()
 		{
 			return new PullingReader (new PullingReader.Pull (PullHotText));
+		}
+
+		public IList<string> Links {
+			get { return links_list; }
 		}
 
 		//////////////////////////////

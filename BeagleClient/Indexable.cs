@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -121,6 +122,9 @@ namespace Beagle {
 
 		// When should we try to filter this indexable?
 		private IndexableFiltering filtering = IndexableFiltering.Automatic;
+
+		// List of links found in the content while indexing
+		private IList<string> links = null;
 
 		// Local state: these are key/value pairs that never get serialized
 		// into XML
@@ -418,6 +422,12 @@ namespace Beagle {
 		public void SetBinaryStream (Stream stream)
 		{
 			binary_stream = stream;
+		}
+
+		[XmlIgnore]
+		public IList<string> Links {
+			get { return links; }
+			set { links = value; }
 		}
 
 		[XmlArrayItem (ElementName="Property", Type=typeof (Property))]

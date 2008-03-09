@@ -27,7 +27,9 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading;
 
 using Mono.Data.Sqlite;
@@ -50,10 +52,12 @@ namespace Beagle.Daemon {
 
 		private const string SELF_CACHE_TAG = "*self*";
 		private const string BLOB_TAG = "*blob*";
-		public SqliteCommand InsertCommand;
-		public SqliteCommand LookupPathCommand;
-		public SqliteCommand LookupDataCommand;
-		public SqliteCommand DeleteCommand;
+		private SqliteCommand InsertCommand;
+		private SqliteCommand LookupPathCommand;
+		private SqliteCommand LookupDataCommand;
+		private SqliteCommand DeleteCommand;
+		private SqliteCommand UpdateLinksCommand;
+		private SqliteCommand LookupLinksCommand;
 		private string text_cache_dir;
 		internal string TextCacheDir {
 			get { return text_cache_dir; }
@@ -166,7 +170,8 @@ namespace Beagle.Daemon {
 							"CREATE TABLE textcache_data (            " +
 							"  uri      TEXT UNIQUE NOT NULL,  " +
 							"  filename TEXT NOT NULL,         " +
-							"  data     BLOB                     " +
+							"  data     BLOB,                  " +
+							"  links    TEXT                   " +
 							")");
 			}
 			this.InitCommands ();
@@ -182,6 +187,12 @@ namespace Beagle.Daemon {
 			LookupDataCommand.CommandText = "SELECT filename, data FROM textcache_data WHERE uri=@uri";
 			DeleteCommand = new SqliteCommand (this.connection);
 			DeleteCommand.CommandText = "DELETE FROM textcache_data WHERE uri=@uri";
+
+			UpdateLinksCommand = new SqliteCommand (this.connection);
+			UpdateLinksCommand.CommandText = "UPDATE textcache_data SET links=@links WHERE uri=@uri";
+
+			LookupLinksCommand = new SqliteCommand (this.connection);
+			LookupLinksCommand.CommandText = "SELECT links FROM textcache_data WHERE uri=@uri";
 		}
 		private SqliteConnection Open (string db_filename)
 		{
@@ -458,7 +469,7 @@ namespace Beagle.Daemon {
 
 			lock (connection) {
 				
-				LookupDataCommand.Parameters.AddWithValue("@uri",UriToString (uri));
+				LookupDataCommand.Parameters.AddWithValue ("@uri", UriToString (uri));
 				using (SqliteDataReader reader = SqliteUtils.ExecuteReaderOrWait (LookupDataCommand)) {
 					if (! SqliteUtils.ReadOrWait (reader)) {
 						if (self_cache)
@@ -466,9 +477,9 @@ namespace Beagle.Daemon {
 						return null;
 					}
 
-				filename = reader.GetString (0);
-				if (! reader.IsDBNull (1))
-					blob = reader.GetValue (1) as byte [];
+					filename = reader.GetString (0);
+					if (! reader.IsDBNull (1))
+						blob = reader.GetValue (1) as byte [];
 				}
 
 			}
@@ -517,6 +528,56 @@ namespace Beagle.Daemon {
 				}
 			}
 		}
+
+		public void AddLinks (Uri uri, IList<string> links)
+		{
+			lock (connection) {
+				string path = LookupPathRawUnlocked (uri);
+				if (path == null)
+					return;
+				MaybeStartTransaction_Unlocked ();
+				UpdateLinksCommand.Parameters.AddWithValue("@uri", UriToString (uri));
+				UpdateLinksCommand.Parameters.AddWithValue("@links", GetLinksText (links));
+				SqliteUtils.DoNonQuery (UpdateLinksCommand);
+			}
+		}
+
+		private string GetLinksText (IList<string> links)
+		{
+			if (links == null || links.Count == 0)
+				return String.Empty;
+
+			StringBuilder sb = new StringBuilder ();
+			foreach (string s in links) {
+				sb.Append (s);
+				sb.Append (' ');
+			}
+
+			return sb.ToString ();
+		}
+
+		public IList<string> GetLinks (Uri uri)
+		{
+			string links_text = null;
+			List<string> links = null;
+
+			lock (connection) {
+				LookupLinksCommand.Parameters.AddWithValue ("@uri", UriToString (uri));
+				using (SqliteDataReader reader = SqliteUtils.ExecuteReaderOrWait (LookupLinksCommand)) {
+					if (! SqliteUtils.ReadOrWait (reader))
+						return null;
+
+					links_text = reader.GetString (0);
+				}
+			}
+
+			if (String.IsNullOrEmpty (links_text))
+				return null;
+
+			return links_text.Split (links_separator, StringSplitOptions.RemoveEmptyEntries);
+		}
+
+		static readonly char[] links_separator = new char[] {' '};
 
 		private void MaybeStartTransaction_Unlocked ()
 		{
