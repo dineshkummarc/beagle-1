@@ -7,7 +7,7 @@
 using System.Reflection;
 
 using Beagle;
-using Beagle.Daemon;
+using Beagle.Engine;
 
 [assembly: AssemblyVersion("@VERSION@")]
 [assembly: AssemblyTitle ("Beagle.Engine")]
@@ -35,7 +35,7 @@ using Beagle.Daemon;
 )]
 
 // All backends in this assembly must be registered here.
-[assembly: IQueryableTypes (
+/*[assembly: IQueryableTypes (
 	typeof (Beagle.Daemon.AkregatorQueryable.AkregatorQueryable),
 	typeof (Beagle.Daemon.BlamQueryable.BlamQueryable),
 	typeof (Beagle.Daemon.FileSystemQueryable.FileSystemQueryable),
@@ -57,4 +57,4 @@ using Beagle.Daemon;
 	typeof (Beagle.Daemon.StaticQueryable),
 	typeof (Beagle.Daemon.TomboyQueryable.TomboyQueryable),
 	typeof (Beagle.Daemon.EmpathyQueryable.EmpathyQueryable)                   
-)]
+)]*/

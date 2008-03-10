@@ -31,10 +31,11 @@ using System.Threading;
 using Mono.Unix;
 
 using Beagle;
+using Beagle.Engine;
 using Beagle.Util;
 using Stopwatch = Beagle.Util.Stopwatch;
 
-namespace Beagle.Engine {
+namespace Beagle.Daemon {
 
 	public class RemoteIndexer : IIndexer {
 

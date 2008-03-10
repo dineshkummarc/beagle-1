@@ -34,6 +34,7 @@ using System.Threading;
 using Thread = System.Threading.Thread;
 using GLib;
 
+using Beagle.Engine;
 using Beagle.Util;
 using Log = Beagle.Util.Log;
 using Stopwatch = Beagle.Util.Stopwatch;
