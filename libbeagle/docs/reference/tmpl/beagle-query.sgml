@@ -1,0 +1,148 @@
+<!-- ##### SECTION Title ##### -->
+BeagleQuery
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### ENUM BeagleQueryDomain ##### -->
+<para>
+
+</para>
+
+@BEAGLE_QUERY_DOMAIN_LOCAL: 
+@BEAGLE_QUERY_DOMAIN_SYSTEM: 
+@BEAGLE_QUERY_DOMAIN_NEIGHBORHOOD: 
+@BEAGLE_QUERY_DOMAIN_GLOBAL: 
+
+<!-- ##### STRUCT BeagleQuery ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SIGNAL BeagleQuery::finished ##### -->
+<para>
+
+</para>
+
+@beaglequery: the object which received the signal.
+@arg1: 
+
+<!-- ##### SIGNAL BeagleQuery::hits-added ##### -->
+<para>
+
+</para>
+
+@beaglequery: the object which received the signal.
+@arg1: 
+
+<!-- ##### SIGNAL BeagleQuery::hits-subtracted ##### -->
+<para>
+
+</para>
+
+@beaglequery: the object which received the signal.
+@arg1: 
+
+<!-- ##### FUNCTION beagle_query_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_query_add_part ##### -->
+<para>
+
+</para>
+
+@query: 
+@part: 
+
+
+<!-- ##### FUNCTION beagle_query_add_text ##### -->
+<para>
+
+</para>
+
+@query: 
+@str: 
+
+
+<!-- ##### FUNCTION beagle_query_set_domain ##### -->
+<para>
+
+</para>
+
+@query: 
+@domain: 
+
+
+<!-- ##### FUNCTION beagle_query_add_domain ##### -->
+<para>
+
+</para>
+
+@query: 
+@domain: 
+
+
+<!-- ##### FUNCTION beagle_query_remove_domain ##### -->
+<para>
+
+</para>
+
+@query: 
+@domain: 
+
+
+<!-- ##### FUNCTION beagle_query_set_max_hits ##### -->
+<para>
+
+</para>
+
+@query: 
+@max_hits: 
+
+
+<!-- ##### FUNCTION beagle_query_get_max_hits ##### -->
+<para>
+
+</para>
+
+@query: 
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_query_get_exact_text ##### -->
+<para>
+
+</para>
+
+@query: 
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_query_get_stemmed_text ##### -->
+<para>
+
+</para>
+
+@query: 
+@Returns: 
+
+

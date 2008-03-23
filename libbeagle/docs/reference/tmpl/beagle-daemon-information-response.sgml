@@ -1,0 +1,79 @@
+<!-- ##### SECTION Title ##### -->
+BeagleDaemonInformationResponse
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT BeagleDaemonInformationResponse ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION beagle_daemon_information_response_get_version ##### -->
+<para>
+
+</para>
+
+@response: 
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_daemon_information_response_get_scheduler_information ##### -->
+<para>
+
+</para>
+
+@response: 
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_daemon_information_response_get_human_readable_status ##### -->
+<para>
+
+</para>
+
+@response: 
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_daemon_information_response_get_index_status ##### -->
+<para>
+
+</para>
+
+@response: 
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_daemon_information_response_get_index_information ##### -->
+<para>
+
+</para>
+
+@response: 
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_daemon_information_response_is_indexing ##### -->
+<para>
+
+</para>
+
+@response: 
+@Returns: 
+
+

@@ -1,0 +1,49 @@
+<!-- ##### SECTION Title ##### -->
+BeagleQueryPart
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### MACRO BEAGLE_QUERY_PART_TARGET_ALL ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### ENUM BeagleQueryPartLogic ##### -->
+<para>
+
+</para>
+
+@BEAGLE_QUERY_PART_LOGIC_REQUIRED: 
+@BEAGLE_QUERY_PART_LOGIC_PROHIBITED: 
+
+<!-- ##### STRUCT BeagleQueryPart ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION beagle_query_part_set_logic ##### -->
+<para>
+
+</para>
+
+@part: 
+@logic: 
+
+
