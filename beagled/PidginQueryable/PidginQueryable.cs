@@ -54,7 +54,9 @@ namespace Beagle.Daemon.PidginQueryable {
 		private void StartWorker() 
 		{
 			bool gaim_exists = Directory.Exists (Path.Combine (PathFinder.HomeDir, ".gaim"));
+			gaim_exists = gaim_exists && Directory.Exists (Path.Combine (Path.Combine (PathFinder.HomeDir, ".gaim"), "logs"));
 			bool pidgin_exists = Directory.Exists (Path.Combine (PathFinder.HomeDir, ".purple"));
+			pidgin_exists = pidgin_exists && Directory.Exists (Path.Combine (Path.Combine (PathFinder.HomeDir, ".purple"), "logs"));
 
 			if (!pidgin_exists && !gaim_exists) {
 				GLib.Timeout.Add (polling_interval, new GLib.TimeoutHandler (CheckForExistence));
@@ -88,7 +90,9 @@ namespace Beagle.Daemon.PidginQueryable {
 		private bool CheckForExistence ()
 		{
 			bool gaim_exists = Directory.Exists (Path.Combine (PathFinder.HomeDir, ".gaim"));
+			gaim_exists = gaim_exists && Directory.Exists (Path.Combine (Path.Combine (PathFinder.HomeDir, ".gaim"), "logs"));
 			bool pidgin_exists = Directory.Exists (Path.Combine (PathFinder.HomeDir, ".purple"));
+			pidgin_exists = pidgin_exists && Directory.Exists (Path.Combine (Path.Combine (PathFinder.HomeDir, ".purple"), "logs"));
 
 			if (gaim_exists || pidgin_exists) {
 				this.Start ();
@@ -125,7 +129,7 @@ namespace Beagle.Daemon.PidginQueryable {
 			return true;
 		}
 
-		public override ISnippetReader GetSnippet (string [] query_terms, Hit hit, bool full_text)
+		public override ISnippetReader GetSnippet (string [] query_terms, Hit hit, bool full_text, int ctx_length, int snp_length)
 		{
 			TextReader reader = TextCache.UserCache.GetReader (hit.Uri);
 
@@ -137,7 +141,7 @@ namespace Beagle.Daemon.PidginQueryable {
 			if (line[0] == '<')
 				reader = new HtmlRemovingReader (reader);
 
-			return SnippetFu.GetSnippet (query_terms, reader, full_text);
+			return SnippetFu.GetSnippet (query_terms, reader, full_text, ctx_length, snp_length);
 		}
 
 		public ImBuddyListReader ImBuddyListReader {

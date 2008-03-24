@@ -47,6 +47,10 @@ namespace Beagle {
 		// should know that.
 		public bool FullText = false; // default, not fulltext
 
+		public int ContextLength = -1; // Use system default = 6 if not specified
+
+		public int SnippetLength = -1; // 200, if not specified
+
 		public SnippetRequest () : base (false) { }
 
 		public SnippetRequest (Query query, Hit hit) : base (false)
@@ -145,12 +149,15 @@ namespace Beagle {
 
 		public void AddMatchFragment (int query_term_index, string text)
 		{
+			text = StringFu.CleanupInvalidXmlCharacters (text);
+			if (String.IsNullOrEmpty (text))
+				return;
+
 			if (Fragments == null)
 				Fragments = new ArrayList (3); // mostly will be 3 fragments
 
 			// Before we send a snippet over the wire, clean up any
 			// characters that would be invalid in XML.
-			text = StringFu.CleanupInvalidXmlCharacters (text);
 			Fragments.Add (new Fragment (query_term_index, text));
 		}
 

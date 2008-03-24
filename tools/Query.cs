@@ -69,8 +69,12 @@ public class QueryTool {
 					   (lastQueryTime - queryStartTime).TotalSeconds);
 		}
 
-		if (verbose && response.NumMatches >= 0)
-			Console.WriteLine ("Returned latest {0} results out of total {1} matches", response.Hits.Count, response.NumMatches);
+		if (verbose) {
+			if (response.NumMatches >= 0)
+				Console.WriteLine ("Returned latest {0} results out of total {1} matches", response.Hits.Count, response.NumMatches);
+			else
+				Console.WriteLine ("Returned latest {0} results", response.Hits.Count);
+		}
 
 		if (! display_hits) {
 			count += response.Hits.Count;

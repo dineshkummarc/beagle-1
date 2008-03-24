@@ -357,6 +357,7 @@ namespace Beagle.Daemon {
 			if (Shutdown.ShutdownRequested) {
 				foreach (DeferredInfo di in deferred_indexables)
 					di.Cleanup ();
+				deferred_indexables.Clear ();
 
 				foreach (Indexable indexable in request_indexables)
 					indexable.Cleanup ();
@@ -503,6 +504,7 @@ namespace Beagle.Daemon {
 			if (Shutdown.ShutdownRequested) {
 				foreach (DeferredInfo di in deferred_indexables)
 					di.Cleanup ();
+				deferred_indexables.Clear ();
 
 				primary_writer.Close ();
 				if (secondary_writer != null)
@@ -542,7 +544,8 @@ namespace Beagle.Daemon {
 			// If we have content, try to find a filter
 			// we we can use to process the indexable
 			try {
-				FilterFactory.FilterIndexable (indexable, (disable_textcache ? null : text_cache), out filter);
+				if (! FilterFactory.FilterIndexable (indexable, (disable_textcache ? null : text_cache), out filter))
+					indexable.NoContent = true;
 			} catch (Exception e) {
 				indexable.NoContent = true;
 			}
@@ -740,6 +743,7 @@ namespace Beagle.Daemon {
 			lock (flush_lock) {
 				foreach (DeferredInfo di in deferred_indexables)
 					di.Cleanup ();
+				deferred_indexables.Clear ();
 			}
 		}
 	}

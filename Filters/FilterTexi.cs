@@ -31,6 +31,8 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 
+using Beagle.Daemon;
+
 namespace Beagle.Filters {
 
 	public class FilterTexi : Beagle.Daemon.Filter {
@@ -44,13 +46,13 @@ namespace Beagle.Filters {
 		public FilterTexi ()
 		{
 			// FIXME: Should this be documentation ?
-			SetFileType ("document");
+			SetFileType ("documentation");
 		}
 
 		protected override void RegisterSupportedTypes ()
 		{
 			// Make this a general texi filter.
-			AddSupportedMimeType ("text/x-texinfo");
+			AddSupportedFlavor (FilterFlavor.NewFromMimeType ("text/x-texinfo"));
 		}
 
 		/*
@@ -66,7 +68,6 @@ namespace Beagle.Filters {
 				line = line.Replace (keyword, String.Empty);
 
 			AppendLine (line);
-			AppendWhiteSpace ();
 		}
 	}
 }

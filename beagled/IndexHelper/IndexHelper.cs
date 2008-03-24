@@ -137,7 +137,11 @@ namespace Beagle.IndexHelper {
 
 			Server.Init ();
 
+#if MONO_1_9
+			Shutdown.SetupSignalHandlers (new Shutdown.SignalHandler (HandleSignal));
+#else
 			SetupSignalHandlers ();
+#endif
 
 			Shutdown.ShutdownEvent += OnShutdown;
 

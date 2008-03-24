@@ -106,7 +106,6 @@ namespace Beagle {
 			Logger.Log.Debug ("Received response:\n{0}\n", r.ReadToEnd ());
 			deserialize_stream.Seek (0, SeekOrigin.Begin);
 #endif
-
 			ResponseWrapper wrapper = (ResponseWrapper)resp_serializer.Deserialize (deserialize_stream);
 			ResponseMessage response = wrapper.Message;
 			deserialize_stream.Close ();

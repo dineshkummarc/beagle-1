@@ -87,7 +87,7 @@ namespace Beagle.Daemon {
 		// 18: add IsPersistent to properties, and adjust coded values
 		//     in AddPropertyToDocument() and GetPropertyFromDocument();
 		//     changed subdate field format rules for better readability
-		// 19: store a list of current properties in a field
+		// 19: Update lucene and analyzer (lucene.net-2.1)
 		private const int MAJOR_VERSION = 19;
 		private int minor_version = 0;
 

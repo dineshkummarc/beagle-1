@@ -36,7 +36,7 @@ using System.Xml.Serialization;
 
 namespace Beagle.Daemon {
 	
-	public class QueryDriver {
+	public static class QueryDriver {
 
 		// Contains list of queryables explicitly asked by --allow-backend or --backend name
 		// --allow-backend/--backend name : dont read config information and only start backend 'name'
@@ -130,6 +130,7 @@ namespace Beagle.Daemon {
 
 		public static int IndexingDelay {
 			set { indexing_delay = value; }
+			get { return indexing_delay; }
 		}
 
 		//////////////////////////////////////////////////////////////////////////////////////
@@ -533,7 +534,7 @@ namespace Beagle.Daemon {
 					continue;
 				if (sb.Length > 0)
 					sb.Append (' ');
-				sb.Append (LuceneCommon.Stem (split [i]));
+				sb.Append (LuceneCommon.Stem (split [i].ToLower ()));
 			}
 			response.StemmedText.Add (sb.ToString ());
 		}
@@ -692,6 +693,26 @@ namespace Beagle.Daemon {
 				}
 
 				return false;
+			}
+		}
+
+		/////////////////////////////////////////////////////////
+
+		// Various debug hooks; especially persistant state information and memory issues
+
+		public static void DebugHook ()
+		{
+			Log.Debug ("Debughook called:");
+			LuceneQueryable l;
+			foreach (Queryable q in Queryables) {
+				l = q.IQueryable as LuceneQueryable;
+				if (l == null)
+					continue;
+				try {
+					l.DebugHook ();
+				} catch (Exception e) {
+					Log.Debug (e, "Exception during Debughook for {0}", q.Name);
+				}
 			}
 		}
 	}

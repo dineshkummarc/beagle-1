@@ -4,7 +4,7 @@
 
 AC_INIT(beagled/BeagleDaemon.cs)
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(beagle, 0.3.3)
+AM_INIT_AUTOMAKE(beagle, 0.3.4)
 
 ########################################################################
 
@@ -66,10 +66,19 @@ else
   AC_MSG_RESULT([found])
 fi
 
-# check that we have the require version of mono
-PKG_CHECK_MODULES(MONO, mono >= $MONO_REQUIRED) 
-
 BEAGLE_DEFINES=""
+
+# check that we have the require version of mono
+
+# Temporary: check for mono-1.9
+PKG_CHECK_MODULES(MONO, mono >= 1.9, mono_1_9=yes, mono_1_9=no) 
+if test "x$mono_1_9" = "xno"; then
+	AC_MSG_RESULT([missing mono >= 1.9. Searching for mono >= 1.2.4])
+	PKG_CHECK_MODULES(MONO, mono >= $MONO_REQUIRED) 
+else
+	AC_MSG_RESULT([found mono >= 1.9])
+	BEAGLE_DEFINES="$BEAGLE_DEFINES -define:MONO_1_9"
+fi
 
 # check for various mono DLLs that we need.
 needed_dlls="Mono.Data.Sqlite Mono.Posix System.Data System.Web ICSharpCode.SharpZipLib"
@@ -224,7 +233,12 @@ if test "x$enable_gui" = "xyes"; then
 ])
 	AC_SUBST(LIBTRAYICON_CFLAGS)
 	AC_SUBST(LIBTRAYICON_LIBS)
-	
+
+	AC_PATH_PROG(MSGFMT, msgfmt, no)
+	if test "x$MSGFMT" = "xno"; then
+		AC_MSG_ERROR([You need to install gettext, or pass --disable-gui to build without GUI support])
+	fi
+
 fi
 
 dnl ----------------------------------------------
@@ -398,14 +412,6 @@ AC_SUBST(BEAGLED_LIBS)
 GSF_SHARP_PREFIX=`$PKG_CONFIG --variable=prefix gsf-sharp`
 GMIME_SHARP_PREFIX=`$PKG_CONFIG --variable=prefix gmime-sharp`
 
-dnl ----------------------------------------------
-AC_ARG_ENABLE([bludgeon],
-	AC_HELP_STRING([--disable-bludgeon], [Disable bludgeon testing tool]),
-	enable_bludgeon=$enableval,
-	enable_bludgeon=yes)
-AM_CONDITIONAL(ENABLE_BLUDGEON, test "x$enable_bludgeon" = "xyes")
-
-	
 dnl ----------------------------------------------
 dnl Epiphany Extension
 
@@ -633,8 +639,6 @@ firefox-extension/Makefile
 thunderbird-extension/Makefile
 doc/Makefile
 doc/api/Makefile
-bludgeon/Makefile
-RDFAdapter/Makefile
 conf-data/Makefile
 beagle-0.0.pc
 beagle-daemon.pc
