@@ -1,0 +1,42 @@
+<!-- ##### SECTION Title ##### -->
+BeagleQueryPartHuman
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT BeagleQueryPartHuman ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION beagle_query_part_human_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_query_part_human_set_string ##### -->
+<para>
+
+</para>
+
+@part: 
+@string: 
+
+

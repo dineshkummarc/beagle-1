@@ -1,0 +1,181 @@
+<!-- ##### SECTION Title ##### -->
+BeagleProperty
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT BeagleProperty ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ENUM BeaglePropertyType ##### -->
+<para>
+
+</para>
+
+@BEAGLE_PROPERTY_TYPE_UNKNOWN: 
+@BEAGLE_PROPERTY_TYPE_TEXT: 
+@BEAGLE_PROPERTY_TYPE_KEYWORD: 
+@BEAGLE_PROPERTY_TYPE_DATE: 
+@BEAGLE_PROPERTY_TYPE_LAST: 
+
+<!-- ##### FUNCTION beagle_property_new ##### -->
+<para>
+
+</para>
+
+@type: 
+@key: 
+@value: 
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_property_free ##### -->
+<para>
+
+</para>
+
+@prop: 
+
+
+<!-- ##### FUNCTION beagle_property_get_type ##### -->
+<para>
+
+</para>
+
+@prop: 
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_property_set_type ##### -->
+<para>
+
+</para>
+
+@prop: 
+@type: 
+
+
+<!-- ##### FUNCTION beagle_property_get_key ##### -->
+<para>
+
+</para>
+
+@prop: 
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_property_set_key ##### -->
+<para>
+
+</para>
+
+@prop: 
+@key: 
+
+
+<!-- ##### FUNCTION beagle_property_get_value ##### -->
+<para>
+
+</para>
+
+@prop: 
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_property_set_value ##### -->
+<para>
+
+</para>
+
+@prop: 
+@value: 
+
+
+<!-- ##### FUNCTION beagle_property_get_is_searched ##### -->
+<para>
+
+</para>
+
+@prop: 
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_property_set_is_searched ##### -->
+<para>
+
+</para>
+
+@prop: 
+@is_searched: 
+
+
+<!-- ##### FUNCTION beagle_property_get_is_mutable ##### -->
+<para>
+
+</para>
+
+@prop: 
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_property_set_is_mutable ##### -->
+<para>
+
+</para>
+
+@prop: 
+@is_mutable: 
+
+
+<!-- ##### FUNCTION beagle_property_get_is_stored ##### -->
+<para>
+
+</para>
+
+@prop: 
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_property_set_is_stored ##### -->
+<para>
+
+</para>
+
+@prop: 
+@is_stored: 
+
+
+<!-- ##### FUNCTION beagle_property_get_is_persistent ##### -->
+<para>
+
+</para>
+
+@prop: 
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_property_set_is_persistent ##### -->
+<para>
+
+</para>
+
+@prop: 
+@is_persistent: 
+
+

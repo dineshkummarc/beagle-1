@@ -1,0 +1,34 @@
+<!-- ##### SECTION Title ##### -->
+BeagleIndexingStatusResponse
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT BeagleIndexingStatusResponse ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION beagle_indexing_status_response_is_indexing ##### -->
+<para>
+
+</para>
+
+@response: 
+@Returns: 
+
+

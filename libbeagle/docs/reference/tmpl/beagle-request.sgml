@@ -1,0 +1,48 @@
+<!-- ##### SECTION Title ##### -->
+BeagleRequest
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT BeagleRequest ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SIGNAL BeagleRequest::closed ##### -->
+<para>
+
+</para>
+
+@beaglerequest: the object which received the signal.
+
+<!-- ##### SIGNAL BeagleRequest::error ##### -->
+<para>
+
+</para>
+
+@beaglerequest: the object which received the signal.
+@arg1: 
+
+<!-- ##### SIGNAL BeagleRequest::response ##### -->
+<para>
+
+</para>
+
+@beaglerequest: the object which received the signal.
+@arg1: 
+
