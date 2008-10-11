@@ -403,6 +403,38 @@ $(THUNDERBIRD_TARGET): $(THUNDERBIRD_CSFILES) $(THUNDERBIRD_LOCAL_ASSEMBLIES)
 
 ############################################################
 
+###
+### Banshee backend
+###
+
+BANSHEE_DIR = $(srcdir)/BansheeQueryable
+
+BANSHEE_TARGET = BansheeBackends.dll
+
+BANSHEE_CSFLAGS = $(BACKEND_CSFLAGS)
+
+BANSHEE_CSFILES =						\
+	$(BANSHEE_DIR)/BansheeQueryable.cs			\
+	$(BANSHEE_DIR)/BansheeIndexer.cs 		\
+	$(BANSHEE_DIR)/BansheeIndexableGenerator.cs
+
+BANSHEE_LOCAL_ASSEMBLIES =					\
+	../Util/Util.dll					\
+	../BeagleClient/Beagle.dll				\
+	./BeagleDaemonLib.dll
+
+BANSHEE_ASSEMBLIES =						\
+	-r:Mono.Posix						\
+	$(BEAGLED_LIBS)                 			\
+	$(BANSHEE_INDEXER_LIBS)					\
+	$(BANSHEE_LOCAL_ASSEMBLIES:%=-r:%)
+
+$(BANSHEE_TARGET): $(BANSHEE_CSFILES) $(BANSHEE_LOCAL_ASSEMBLIES)
+	$(CSC) -out:$@ $(BANSHEE_CSFLAGS) $(BANSHEE_CSFILES) $(BANSHEE_ASSEMBLIES)
+
+
+############################################################
+
 ### GMail and other Google backends
 
 XEMAIL_DIR = $(srcdir)/xemail-net/src
@@ -766,6 +798,10 @@ if ENABLE_THUNDERBIRD
 ALL_TARGETS += $(THUNDERBIRD_TARGET)
 endif
 
+if ENABLE_BANSHEE
+ALL_TARGETS += $(BANSHEE_TARGET)
+endif
+
 if ENABLE_EVOLUTION
 ALL_TARGETS +=				\
 	$(EVO_DLL_TARGET)
@@ -837,11 +873,25 @@ endif
 if ENABLE_GOOGLEBACKENDS
 	$(INSTALL_DATA) $(GOOGLE_BACKEND_TARGET) $(GOOGLE_BACKEND_TARGET).mdb $(DESTDIR)$(BACKENDDIR)
 endif
+if ENABLE_BANSHEE
+	$(INSTALL_DATA) $(BANSHEE_TARGET)                 $(DESTDIR)$(BACKENDDIR)
+	$(INSTALL_DATA) $(BANSHEE_TARGET).mdb             $(DESTDIR)$(BACKENDDIR)
+	for ASM in $(BANSHEE_INDEXER_ASSEMBLIES); do \
+		$(INSTALL_DATA) $$ASM $(DESTDIR)$(BACKENDDIR); \
+	done;
+endif
 
 uninstall-local:
 if ENABLE_THUNDERBIRD
 	rm -f $(DESTDIR)$(BACKENDDIR)/$(THUNDERBIRD_TARGET)
 	rm -f $(DESTDIR)$(BACKENDDIR)/$(THUNDERBIRD_TARGET).mdb
+endif
+if ENABLE_BANSHEE
+	rm -f $(DESTDIR)$(BACKENDDIR)/$(BANSHEE_TARGET)
+	rm -f $(DESTDIR)$(BACKENDDIR)/$(BANSHEE_TARGET).mdb
+	for ASM in $(BANSHEE_INDEXER_ASSEMBLIES); do \
+		rm -f $(DESTDIR)$(BACKENDDIR)/`basename $$ASM`; \
+	done;
 endif
 if ENABLE_EVOLUTION
 	rm -f $(DESTDIR)$(BACKENDDIR)/$(EVO_DLL_TARGET)
@@ -912,6 +962,7 @@ EXTRA_DIST = \
 	$(DAEMON_CSFILES)			\
 	$(EVO_DLL_CSFILES)			\
 	$(THUNDERBIRD_CSFILES)			\
+	$(BANSHEE_CSFILES)			\
 	$(GOOGLE_BACKEND_CSFILES)		\
 	$(EXTRACT_CONTENT_CSFILES)		\
 	$(DUMP_INDEX_CSFILES)			\
@@ -958,6 +1009,8 @@ CLEANFILES = \
 	$(REMOVABLE_INDEX_WRAPPER)			\
 	$(THUNDERBIRD_TARGET)			\
 	$(THUNDERBIRD_TARGET).mdb		\
+	$(BANSHEE_TARGET)			\
+	$(BANSHEE_TARGET).mdb			\
 	$(GOOGLE_BACKEND_TARGET)		\
 	$(GOOGLE_BACKEND_TARGET).mdb		\
 	$(WEBINTERFACE_INDEX_XML)
