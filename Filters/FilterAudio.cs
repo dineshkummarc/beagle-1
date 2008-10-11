@@ -38,7 +38,8 @@ namespace Beagle.Filters {
 		{
 			// 1: Added duration and bitrate property
 			// 2. Use TagLib-Sharp for filtering. Also index lots of new properties provided by TagLib#
-			SetVersion (2);
+			// 3. Index both album artist and track artist; the generic artist tag should be track artist
+			SetVersion (3);
 			SetFileType ("audio");
 		}
 
@@ -108,6 +109,9 @@ namespace Beagle.Filters {
 			AddProperty (Beagle.Property.New ("dc:title", tag.Title));
 
 			foreach (string artist in tag.AlbumArtists)
+				AddProperty (Beagle.Property.New ("fixme:albumartist", artist));
+
+			foreach (string artist in tag.Artists)
 				AddProperty (Beagle.Property.New ("fixme:artist", artist));
 
 			foreach (string performer in tag.Performers)
