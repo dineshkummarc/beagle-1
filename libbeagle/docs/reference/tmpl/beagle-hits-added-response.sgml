@@ -1,0 +1,43 @@
+<!-- ##### SECTION Title ##### -->
+BeagleHitsAddedResponse
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT BeagleHitsAddedResponse ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION beagle_hits_added_response_get_hits ##### -->
+<para>
+
+</para>
+
+@response: 
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_hits_added_response_get_num_matches ##### -->
+<para>
+
+</para>
+
+@response: 
+@Returns: 
+
+

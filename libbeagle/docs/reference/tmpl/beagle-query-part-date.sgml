@@ -1,0 +1,51 @@
+<!-- ##### SECTION Title ##### -->
+BeagleQueryPartDate
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT BeagleQueryPartDate ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION beagle_query_part_date_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION beagle_query_part_date_set_start_date ##### -->
+<para>
+
+</para>
+
+@part: 
+@start_date: 
+
+
+<!-- ##### FUNCTION beagle_query_part_date_set_end_date ##### -->
+<para>
+
+</para>
+
+@part: 
+@end_date: 
+
+
