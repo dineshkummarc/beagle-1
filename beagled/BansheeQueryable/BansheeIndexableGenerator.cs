@@ -76,7 +76,7 @@ namespace Beagle.Daemon.BansheeQueryable
         
         public bool HasNextIndexable ()
         {
-            if (current_index <= index_results.Length) {
+            if (current_index < index_results.Length) {
                 return true;
             }
             
