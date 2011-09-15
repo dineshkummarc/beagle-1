@@ -8,19 +8,21 @@
 # Copyright (C) 2005 The GNOME Foundation
 # This file is distributed under the same license as the beagle package.
 # Jorge González <jorgegonz@svn.gnome.org>, 2007, 2008, 2009.
+# Daniel Mustieles <daniel.mustieles@gmail.com>, 2011.
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: beagle.HEAD\n"
 "Report-Msgid-Bugs-To: http://bugzilla.gnome.org/enter_bug.cgi?"
 "product=beagle&component=general\n"
-"POT-Creation-Date: 2009-08-18 17:15+0000\n"
-"PO-Revision-Date: 2009-08-22 13:22+0200\n"
-"Last-Translator: Jorge González <jorgegonz@svn.gnome.org>\n"
+"POT-Creation-Date: 2009-08-22 11:23+0000\n"
+"PO-Revision-Date: 2011-09-15 11:48+0200\n"
+"Last-Translator: Daniel Mustieles <daniel.mustieles@gmail.com>\n"
 "Language-Team: Español <gnome-es-list@gnome.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: UTF-8\n"
-"Plural-Forms:  nplurals=2; plural=(n != 1);\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: KBabel 1.11.4\n"
 
 #: ../ImLogViewer/ImLogViewer.glade.h:1
@@ -286,7 +288,6 @@ msgid "Start search service"
 msgstr "Iniciar el servicio de búsqueda"
 
 #: ../search/Beagle.Search.Pages/StartDaemon.cs:34
-#| msgid "Automatically s_tart searching after the user has stopped typing"
 msgid "Automatically start service on login"
 msgstr "Iniciar automáticamente el servicio al iniciar sesiónº"
 
@@ -999,8 +1000,8 @@ msgid ""
 "Are you sure you wish to remove this path from the list of directories to be "
 "included for indexing?"
 msgstr ""
-"¿Seguro que quiere quitar esta ruta de la lista de directorios que se "
-"excluirán de la indexación?"
+"¿Seguro que quiere quitar esta ruta de la lista de carpetas que se excluirán "
+"de la indexación?"
 
 #: ../tools/Settings.cs:597
 msgid "Remove item"
@@ -1343,7 +1344,7 @@ msgstr "_Patrón de nombre de archivo"
 
 #: ../tools/settings.glade.h:28
 msgid "I_ndex my home directory"
-msgstr "_Indexar mi directorio personal"
+msgstr "_Indexar mi carpeta personal"
 
 #: ../tools/settings.glade.h:29
 msgid ""
