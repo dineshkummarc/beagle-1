@@ -7,7 +7,7 @@ msgid ""
 msgstr "Project-Id-Version: beagle Gnome HEAD\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2006-08-27 02:06+0200\n"
-"PO-Revision-Date: 2006-08-27 16:27+0930\n"
+"PO-Revision-Date: 2011-10-27 19:47+1100\n"
 "Last-Translator: Clytie Siddall <clytie@riverland.net.au>\n"
 "Language-Team: Vietnamese <gnomevi-list@lists.sourceforge.net>\n"
 "MIME-Version: 1.0\n"
@@ -75,8 +75,7 @@ msgstr "Việc tìm kiếm « {0} » không khớp với tập tin nào nằm tr
 msgid ""
 "You can change the scope of your search using the \"Search\" menu. A broader "
 "search scope might produce more results."
-msgstr "Bạn có thể sửa đổi phạm vị tìm kiếm bằng mục trình đơn « Tìm kiếm ». Phạm vị "
-"tìm kiếm rộng hơn có thể được nhiều kết quả hơn."
+msgstr "Bạn có thể sửa đổi phạm vi tìm kiếm bằng mục trình đơn « Tìm kiếm ». Phạm vi tìm kiếm rộng hơn có thể được nhiều kết quả hơn."
 
 #: ../search/Pages/NoMatch.cs:26
 msgid ""
