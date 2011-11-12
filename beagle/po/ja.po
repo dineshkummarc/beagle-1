@@ -6,10 +6,11 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: beagle trunk\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-01-28 23:33+0900\n"
-"PO-Revision-Date: 2009-01-28 22:44+0900\n"
-"Last-Translator: Takeshi AIHANA <takeshi.aihana@gmail.com>\n"
+"Report-Msgid-Bugs-To: http://bugzilla.gnome.org/enter_bug.cgi?"
+"product=beagle&keywords=I18N+L10N&component=general\n"
+"POT-Creation-Date: 2011-11-06 08:54+0000\n"
+"PO-Revision-Date: 2011-11-12 21:49+0900\n"
+"Last-Translator: OKANO Takayoshi <kano@na.rim.or.jp>\n"
 "Language-Team: Japanese <takeshi.aihana@gmail.com>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -263,11 +264,11 @@ msgstr ""
 "セキュリティ対策のため、Beagle を root 権限では起動できません。一般ユーザ権限"
 "で再起動して下さい。"
 
-#: ../search/Beagle.Search.Pages/StartDaemon.cs:17
+#: ../search/Beagle.Search.Pages/StartDaemon.cs:23
 msgid "Search service not running"
 msgstr "検索サービスが起動されていません"
 
-#: ../search/Beagle.Search.Pages/StartDaemon.cs:19
+#: ../search/Beagle.Search.Pages/StartDaemon.cs:25
 msgid ""
 "The search service does not appear to be running. You can start it by "
 "clicking the button below."
@@ -275,9 +276,15 @@ msgstr ""
 "検索サービスが起動されていないようです。下にあるボタンをクリックするとサービ"
 "スを起動できます。"
 
-#: ../search/Beagle.Search.Pages/StartDaemon.cs:22
+#: ../search/Beagle.Search.Pages/StartDaemon.cs:28
 msgid "Start search service"
 msgstr "検索サービスを起動する"
+
+#: ../search/Beagle.Search.Pages/StartDaemon.cs:34
+#, fuzzy
+#| msgid "Automatically s_tart searching after the user has stopped typing"
+msgid "Automatically start service on login"
+msgstr "検索する語句の入力を止めたら自動的に検索を開始する(_T)"
 
 #: ../search/Beagle.Search.Tiles/ArchivedFile.cs:40
 #, csharp-format
@@ -357,7 +364,7 @@ msgstr "E-メールを送信する"
 #. FIXME: s/"gtk-info"/Gtk.Stock.Info/ when we can depend on gtk# 2.8
 #. AddAction (new TileAction (Catalog.GetString ("Show Information"), "gtk-info", ShowInformation));
 #: ../search/Beagle.Search.Tiles/File.cs:38
-#: ../search/Beagle.Search.Tiles/Folder.cs:38
+#: ../search/Beagle.Search.Tiles/Folder.cs:39
 msgid "Move to Trash"
 msgstr "ゴミ箱へ移動する"
 
@@ -366,23 +373,23 @@ msgid "Find Documents From Same Author"
 msgstr "同じ作者のドキュメントを検索する"
 
 #: ../search/Beagle.Search.Tiles/File.cs:170
-#: ../search/Beagle.Search.Tiles/Folder.cs:51
+#: ../search/Beagle.Search.Tiles/Folder.cs:52
 #: ../search/Beagle.Search.Tiles/Note.cs:71
 msgid "Last Edited:"
 msgstr "最終変更日時:"
 
 #: ../search/Beagle.Search.Tiles/File.cs:175
-#: ../search/Beagle.Search.Tiles/Folder.cs:52
+#: ../search/Beagle.Search.Tiles/Folder.cs:53
 #: ../search/Beagle.Search.Tiles/Image.cs:87
 #: ../search/Beagle.Search.Tiles/Video.cs:45
 msgid "Full Path:"
 msgstr "パス名:"
 
-#: ../search/Beagle.Search.Tiles/Folder.cs:31
+#: ../search/Beagle.Search.Tiles/Folder.cs:32
 msgid "Empty"
 msgstr "空"
 
-#: ../search/Beagle.Search.Tiles/Folder.cs:33
+#: ../search/Beagle.Search.Tiles/Folder.cs:34
 #, csharp-format
 msgid "Contains {0} Item"
 msgid_plural "Contains {0} Items"
@@ -650,14 +657,14 @@ msgstr "エントリのクリア"
 msgid "Quit"
 msgstr "終了"
 
-#: ../search/Beagle.Search/Category.cs:142
+#: ../search/Beagle.Search/Category.cs:127
 #, csharp-format
 msgid "{0} result"
 msgid_plural "{0} results"
 msgstr[0] "検索結果: {0}個"
 msgstr[1] "検索結果: {0}個"
 
-#: ../search/Beagle.Search/Category.cs:144
+#: ../search/Beagle.Search/Category.cs:129
 #, csharp-format
 msgid "{0}-{1} of {2}"
 msgstr "{0}-{1} / {2}"
@@ -957,8 +964,8 @@ msgid ""
 "The selected path wasn't added. The list contains items that supersedes it "
 "and the data is already being indexed."
 msgstr ""
-"指定したパスを含んだアイテムがが既に登録され、そのインデックスが作成されてい"
-"るので、そのパスは登録しません。"
+"指定したパスを含んだアイテムが既に登録され、そのインデックスが作成されている"
+"ので、そのパスは登録しません。"
 
 #: ../tools/Settings.cs:531
 msgid "Path not added"
@@ -1322,7 +1329,7 @@ msgstr "ファイル名のパターン(_P)"
 
 #: ../tools/settings.glade.h:28
 msgid "I_ndex my home directory"
-msgstr "ホーム・フォルダのインデックスを作成する(_I)"
+msgstr "ホーム・フォルダのインデックスを作成する(_N)"
 
 #: ../tools/settings.glade.h:29
 msgid ""
