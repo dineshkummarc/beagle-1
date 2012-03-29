@@ -14,8 +14,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: beagle.HEAD\n"
 "Report-Msgid-Bugs-To: http://bugzilla.gnome.org/enter_bug.cgi?"
-"product=beagle&component=general\n"
-"POT-Creation-Date: 2009-08-22 11:23+0000\n"
+"product=beagle&keywords=I18N+L10N&component=general\n"
+"POT-Creation-Date: 2011-09-15 09:56+0000\n"
 "PO-Revision-Date: 2011-09-15 11:48+0200\n"
 "Last-Translator: Daniel Mustieles <daniel.mustieles@gmail.com>\n"
 "Language-Team: Español <gnome-es-list@gnome.org>\n"
@@ -139,13 +139,13 @@ msgstr[1] "{0} bytes"
 #: ../Util/StringFu.cs:233
 #, csharp-format
 msgid "{0:0.0} KB"
-msgstr "{0:0.0} KiB"
+msgstr "{0:0.0} KB"
 
 #. Translators: {0} is a file size in megabytes
 #: ../Util/StringFu.cs:236
 #, csharp-format
 msgid "{0:0.0} MB"
-msgstr "{0:0.0} MiB"
+msgstr "{0:0.0} MB"
 
 #: ../epiphany-extension/beagle.py.in:167
 #, python-format
